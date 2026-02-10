@@ -1,0 +1,326 @@
+\documentclass[11pt]{article}
+
+% Keep packages minimal for TeX Live "basic" installs.
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{array}
+
+\geometry{margin=1in}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue
+}
+
+% ---------------------------------------------------------------------------
+% Convenience macros (avoid Unicode Greek in text; use LaTeX math symbols)
+% ---------------------------------------------------------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\N}{\mathbb{N}}
+
+\newcommand{\PatentTitle}{Closed-Loop Resonance Lock Controllers Using Multi-Sensor Resonance Scores for Rotating-Field and Virtual-Rotor Systems}
+\newcommand{\Docket}{NTL-PROV-009}
+\newcommand{\Inventors}{[Inventor Names]}
+\newcommand{\Assignee}{[Assignee / Organization]}
+\newcommand{\FilingDate}{February 1, 2026}
+
+\begin{document}
+
+\begin{center}
+{\LARGE \textbf{\PatentTitle}}\\[0.75em]
+{\large \textbf{Docket:} \Docket}\\[0.25em]
+{\large \textbf{Inventors:} \Inventors}\\[0.25em]
+{\large \textbf{Assignee:} \Assignee}\\[0.25em]
+{\large \textbf{Date:} \FilingDate}\\[0.75em]
+\end{center}
+
+\vspace{-0.5em}
+\hrule
+\vspace{0.75em}
+
+% ===========================================================================
+% ABSTRACT (PATENT)
+% ===========================================================================
+\section*{Abstract}
+
+Disclosed are apparatus, systems, methods, and non-transitory computer-readable media for discovering, locking onto, and maintaining operation at resonant operating points in rotating-field systems, including mechanical rotors and solid-state virtual-rotor phased arrays. In various embodiments, a controller receives synchronized sensor streams (e.g., driver current and voltage, harmonic content, thermal signatures, vibration, EMI probes, magnetometers, and/or force proxies) and computes a \emph{multi-sensor resonance score} that estimates whether the system is operating in a desired resonant regime. The controller executes a closed-loop optimization that adjusts one or more control variables (e.g., drive frequency, phase, pulse width, amplitude, duty, phase order, or commutation offsets) to maximize the resonance score subject to safety constraints and operating envelopes.
+
+In one embodiment, resonance search is performed by sweeping a ranked list of candidate setpoints produced by a resonance-map computation. In one embodiment, resonance maintenance is performed using a phase-locked-loop-like (PLL-like) controller or a dither-and-lock method that estimates the gradient of the resonance score with respect to the control variables. In one embodiment, the controller includes artifact rejection gates and null-test comparators that suppress false positives due to thermal, vibrational, or EMI coupling. The disclosed closed-loop resonance lock controller enables reproducible operation, safe envelope enforcement, and deterministic replay across experimental runs and hardware builds.
+
+% ===========================================================================
+% TECHNICAL FIELD
+% ===========================================================================
+\section*{Technical Field}
+
+The present disclosure relates to closed-loop control of rotating-field systems, and more particularly to controllers that compute multi-sensor resonance scores and adjust control variables to locate and maintain resonant operating points while rejecting artifacts and enforcing safety envelopes.
+
+% ===========================================================================
+% BACKGROUND
+% ===========================================================================
+\section*{Background}
+
+Rotating-field systems can exhibit narrowband operating behavior where system response changes sharply over small changes in drive frequency, phase, or pulse timing. In many systems, resonance peaks drift due to temperature, supply rail variation, component aging, and load changes. Manual tuning is slow and irreproducible, and open-loop operation can be unsafe when the system crosses into unstable regimes.
+
+Furthermore, sensitive experiments and high-gain devices are vulnerable to apparent ``effects'' that are actually artifacts (e.g., thermal buoyancy, vibration coupling, sensor EMI pickup). Without a control architecture that (i) uses multiple sensors, (ii) enforces synchronized measurement, (iii) gates decisions on artifact checks, and (iv) maintains stable lock in closed loop, results are often irreproducible.
+
+Accordingly, there is a need for a closed-loop resonance lock controller that uses multi-sensor resonance scoring, provides repeatable search and lock procedures, and integrates safety constraints and artifact rejection.
+
+% ===========================================================================
+% SUMMARY
+% ===========================================================================
+\section*{Summary}
+
+This disclosure provides a closed-loop resonance lock controller for rotating-field systems.
+
+In one aspect, the controller computes a resonance score \(R(t)\) from multiple synchronized sensor features, and adjusts control variables to maximize \(R(t)\) subject to safety constraints.
+
+In another aspect, the controller performs an ordered resonance search using candidate setpoints, detects candidate peaks, and validates peaks via replication or null comparisons.
+
+In another aspect, the controller maintains lock using a PLL-like loop, gradient ascent, or dither-based slope estimation, while enforcing thermal, electrical, and timing integrity constraints.
+
+In another aspect, the controller includes artifact rejection gates and safe fallback behaviors (detune, neutral patterns, shutdown).
+
+% ===========================================================================
+% BRIEF DESCRIPTION OF DRAWINGS
+% ===========================================================================
+\section*{Brief Description of the Drawings}
+
+Drawings may be provided later. For purposes of this specification:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{FIG. 1} depicts a rotating-field system with a closed-loop resonance controller.
+  \item \textbf{FIG. 2} depicts a multi-sensor resonance score computed from synchronized sensor features.
+  \item \textbf{FIG. 3} depicts a resonance search protocol using ranked candidate setpoints and peak detection.
+  \item \textbf{FIG. 4} depicts a resonance lock maintenance loop using dither-based slope estimation.
+  \item \textbf{FIG. 5} depicts artifact rejection gates and null-test comparators.
+  \item \textbf{FIG. 6} depicts safety envelope enforcement and fallback behaviors.
+\end{itemize}
+
+% ===========================================================================
+% DEFINITIONS
+% ===========================================================================
+\section*{Definitions and Notation}
+
+Unless otherwise indicated:
+\begin{itemize}[leftmargin=*]
+  \item A \emph{rotating-field system} includes any system driven by a commutation schedule to produce a rotating field pattern, including mechanical rotors and stationary phased arrays.
+  \item A \emph{control variable} refers to any adjustable quantity including frequency, phase, pulse width, amplitude, duty, phase order, or commutation offsets.
+  \item A \emph{sensor stream} refers to a time series sampled with a defined timebase, including electrical, thermal, mechanical, and environmental sensors.
+  \item A \emph{feature} refers to a scalar derived from a sensor stream (e.g., harmonic amplitude at drive frequency).
+  \item A \emph{resonance score} \(R\) refers to a scalar computed from multiple features intended to quantify ``how resonant'' the system is.
+  \item A \emph{lock} refers to maintaining \(R\) above a threshold with bounded variation while staying within safety envelopes.
+  \item A \emph{null-test comparator} refers to a control schedule or control geometry used to detect artifacts by comparison.
+\end{itemize}
+
+% ===========================================================================
+% DETAILED DESCRIPTION
+% ===========================================================================
+\section*{Detailed Description}
+
+\subsection*{1. System Overview}
+
+In one embodiment, the system comprises:
+\begin{itemize}[leftmargin=*]
+  \item a rotating-field generator (virtual rotor array or mechanical rotor);
+  \item a driver subsystem implementing commutation and waveform realization;
+  \item synchronized sensors measuring electrical, thermal, mechanical, and/or environmental quantities;
+  \item a controller that computes resonance scores and applies closed-loop updates;
+  \item a safety governor capable of detuning or shutdown.
+\end{itemize}
+
+\subsection*{2. Sensor Inputs and Synchronization}
+
+\paragraph{2.1 Example sensor modalities (non-limiting).}
+Sensors include, without limitation:
+\begin{itemize}[leftmargin=*]
+  \item per-phase current and voltage sensing;
+  \item total supply current and voltage;
+  \item temperature sensors (coils, drivers, ambient);
+  \item accelerometers and strain gauges;
+  \item EMI probes and magnetometers;
+  \item pressure gauges (for vacuum tests);
+  \item force/thrust proxies (load cell, torsion pendulum).
+\end{itemize}
+
+\paragraph{2.2 Timebase requirements.}
+In one embodiment, sensors are synchronized to a common clock or are timestamped against a monotonic clock. In one embodiment, the controller compensates for known sensor latency and uses aligned windows for feature extraction.
+
+\subsection*{3. Feature Extraction}
+
+\paragraph{3.1 Drive-keyed features.}
+Let \(u(t)\) be a drive reference derived from the commutation schedule (e.g., expected sign sequence, phase marker, or PWM reference). In one embodiment, the controller computes:
+\begin{itemize}[leftmargin=*]
+  \item harmonic amplitude near the drive frequency;
+  \item lock-in (demodulated) amplitude with reference \(u(t)\);
+  \item phase coherence between measured signal and \(u(t)\);
+  \item distortion metrics (harmonic ratio, spectral flatness).
+\end{itemize}
+
+\paragraph{3.2 Thermal and drift features.}
+In one embodiment, the controller computes:
+\begin{itemize}[leftmargin=*]
+  \item temperature slope \(\mathrm{d}T/\mathrm{d}t\);
+  \item drift rate of baseline force channel;
+  \item correlation between thermal and force channels (artifact indicator).
+\end{itemize}
+
+\paragraph{3.3 Vibration/EMI features.}
+In one embodiment, the controller computes:
+\begin{itemize}[leftmargin=*]
+  \item coherence between accelerometer and force channels;
+  \item EMI amplitude at drive harmonics and sensor input nodes;
+  \item magnetometer changes correlated with drive transitions.
+\end{itemize}
+
+\subsection*{4. Multi-Sensor Resonance Score}
+
+\paragraph{4.1 Normalized feature vector.}
+Let \(\phi_j(t)\) be normalized features (e.g., scaled to \([0,1]\) or z-scored) for \(j=1,\dots,M\).
+
+\paragraph{4.2 Weighted score (example).}
+In one embodiment, define:
+\begin{equation}
+  R(t) := \sum_{j=1}^{M} w_j \,\phi_j(t),
+  \label{eq:R}
+\end{equation}
+with weights \(w_j\ge 0\). The weights may be fixed, learned from calibration data, or configured by policy.
+
+\paragraph{4.3 Gated score (artifact rejection).}
+In one embodiment, the score is gated by artifact checks:
+\begin{equation}
+  R_{\text{gate}}(t) :=
+  \begin{cases}
+    R(t) & \text{if all artifact gates pass},\\
+    0    & \text{otherwise}.
+  \end{cases}
+  \label{eq:Rgate}
+\end{equation}
+Artifact gates can include: excessive vibration coherence, excessive EMI pickup, thermal correlation above threshold, or sensor saturation.
+
+\paragraph{4.4 Stability score.}
+In one embodiment, the controller computes a stability score over a window:
+\[
+\mathrm{Stab}(t_0;N) := 1 - \mathrm{Var}\{R_{\text{gate}}(t_0),\dots,R_{\text{gate}}(t_0+N-1)\},
+\]
+and requires \(\mathrm{Stab}\) above threshold for lock qualification.
+
+\subsection*{5. Resonance Search Protocol}
+
+\paragraph{5.1 Candidate setpoints.}
+In one embodiment, the controller receives a ranked list of candidate setpoints (frequency, pulse width, phase table) computed from geometry and constraints.
+
+\paragraph{5.2 Coarse sweep.}
+In one embodiment, the controller executes a coarse sweep:
+\begin{itemize}[leftmargin=*]
+  \item setpoint \(\to\) dwell for \(t_{\text{dwell}}\);
+  \item compute \(R_{\text{gate}}\) and \(\mathrm{Stab}\);
+  \item record peak candidates exceeding thresholds.
+\end{itemize}
+
+\paragraph{5.3 Fine sweep and peak confirmation.}
+In one embodiment, the controller performs a fine sweep around each candidate peak and requires replication (e.g., multiple runs or reverse-direction checks) prior to declaring a lock candidate.
+
+\subsection*{6. Lock Maintenance (Closed Loop)}
+
+\paragraph{6.1 Control variables.}
+Let control vector \(x\) include one or more of: drive frequency \(f\), phase offset \(\delta\), pulse width \(\tau\), amplitude \(A\), duty \(d\), and phase order.
+
+\paragraph{6.2 Dither-and-lock slope estimation (example).}
+In one embodiment, apply a small dither \(\Delta\) to a control variable (e.g., frequency):
+\[
+f_{\pm} = f \pm \Delta,
+\]
+measure \(R_{\text{gate}}(f_{+})\) and \(R_{\text{gate}}(f_{-})\), and estimate slope:
+\[
+\widehat{\frac{\partial R}{\partial f}} \approx \frac{R_{\text{gate}}(f_{+}) - R_{\text{gate}}(f_{-})}{2\Delta}.
+\]
+Update:
+\[
+f \leftarrow f + K \widehat{\frac{\partial R}{\partial f}},
+\]
+with gain \(K>0\), subject to constraints.
+
+\paragraph{6.3 Multi-objective constrained control.}
+In one embodiment, the controller maximizes \(R_{\text{gate}}\) subject to:
+\[
+I \le I_{\max},\quad T \le T_{\max},\quad \text{jitter} \le J_{\max},\quad \text{and safety envelope bounds}.
+\]
+
+\paragraph{6.4 Lock qualification and retention.}
+In one embodiment, the system declares ``locked'' when \(R_{\text{gate}}\ge R_{\min}\) and \(\mathrm{Stab}\ge S_{\min}\) for a configured duration. The system exits lock if thresholds are violated persistently.
+
+\subsection*{7. Safety Integration}
+
+In one embodiment, the controller integrates with a safety governor:
+\begin{itemize}[leftmargin=*]
+  \item if \(R_{\text{gate}}\) becomes unstable or safety constraints approach limits, detune or reduce amplitude;
+  \item if a hard fault is detected, immediate shutdown.
+\end{itemize}
+
+\subsection*{8. Deterministic Replay and Evidence Bundles}
+
+In one embodiment, each run produces a bundle containing:
+\begin{itemize}[leftmargin=*]
+  \item geometry/config IDs, schedule IDs, controller parameters and gains;
+  \item all raw sensor streams and derived features;
+  \item all control actions and state transitions;
+  \item checksums/hashes for integrity.
+\end{itemize}
+
+% ===========================================================================
+% CLAIMS (DRAFT / PROVISIONAL-STYLE)
+% ===========================================================================
+\section*{Claims (Draft)}
+
+\textbf{Note:} The following claims are an initial, non-limiting claim set intended to preserve multiple fallback positions. Final claim strategy should be reviewed by counsel.
+
+\subsection*{Independent Claims}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{(System)} A resonance lock control system for a rotating-field generator, the system comprising: a controller configured to receive a plurality of synchronized sensor streams, compute a resonance score based on features extracted from the sensor streams, and adjust at least one control variable of a commutation schedule to increase the resonance score subject to one or more safety constraints.
+
+  \item \textbf{(Method)} A method of operating a rotating-field system, the method comprising: executing a sweep across candidate setpoints; computing a gated resonance score that is suppressed when an artifact gate fails; selecting a lock candidate setpoint based on the gated resonance score; and maintaining lock at the lock candidate setpoint by adjusting at least one of frequency, phase, pulse width, amplitude, or duty based on closed-loop measurements of the gated resonance score.
+
+  \item \textbf{(Non-transitory medium)} A non-transitory computer-readable medium storing instructions that, when executed by one or more processors, cause the one or more processors to: compute a resonance score as a weighted combination of normalized features derived from multiple sensors; compute a stability metric for the resonance score; and issue detuning or shutdown commands when at least one of the resonance score, stability metric, or a safety constraint violates a configured threshold.
+\end{enumerate}
+
+\subsection*{Dependent Claims (Examples; Non-Limiting)}
+
+\begin{enumerate}[leftmargin=*]
+  \setcounter{enumi}{3}
+  \item The system of claim 1, wherein the plurality of synchronized sensor streams include at least one of per-phase current, per-phase voltage, temperature, vibration, EMI, or a force proxy.
+  \item The system of claim 1, wherein computing the resonance score comprises computing a lock-in amplitude keyed to a drive reference derived from the commutation schedule.
+  \item The method of claim 2, wherein maintaining lock comprises dithering a control variable and estimating a slope of the gated resonance score.
+  \item The method of claim 2, wherein the artifact gate comprises a vibration coherence threshold or an EMI threshold.
+  \item The non-transitory medium of claim 3, wherein the instructions further cause the one or more processors to output a deterministic replay bundle including sensor data and controller actions.
+  \item The method of claim 2, further comprising reversing a phase order and comparing resonance scores for sign consistency.
+  \item The system of claim 1, further comprising enforcing a safety envelope that limits dwell time and ramp rate at candidate setpoints.
+\end{enumerate}
+
+% ===========================================================================
+% FALLBACK POSITIONS / ADDITIONAL EMBODIMENTS
+% ===========================================================================
+\section*{Additional Embodiments and Fallback Positions (Non-Limiting)}
+
+\begin{itemize}[leftmargin=*]
+  \item Resonance scores may be computed using weighted sums, learned models, Bayesian estimators, or other sensor-fusion methods.
+  \item Artifact gates may include thermal correlation checks, sensor saturation checks, coherence checks, or null-test comparisons.
+  \item Control updates may use PLL loops, gradient ascent, extremum-seeking control, model predictive control, or combinations thereof.
+  \item Candidate setpoints may be provided by a resonance-map computation, a learned model, or an operator-specified list.
+  \item The controller may coordinate multiple rotating-field generators and may include multi-rotor vectoring logic.
+\end{itemize}
+
+\vspace{1em}
+\hrule
+\vspace{0.75em}
+\noindent \textbf{End of Specification (Draft)}
+
+\end{document}
+

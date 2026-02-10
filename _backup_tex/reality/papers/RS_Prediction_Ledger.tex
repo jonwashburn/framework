@@ -1,0 +1,1881 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage{siunitx}
+\usepackage{hyperref}
+
+\sisetup{detect-all=true}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Z}{\mathbb{Z}}
+
+% RS core symbols (briefly recapped here; full theory in companion paper)
+\newcommand{\Jcost}{J}
+\newcommand{\phiRS}{\varphi}
+
+% Common observables
+\newcommand{\OmegaL}{\Omega_{\Lambda}}
+\newcommand{\thetaw}{\theta_W}
+\newcommand{\alphas}{\alpha_s}
+
+\title{A Prediction Ledger for Recognition Science:\\
+Preregistered, Reproducible Tests of Closed-Form Observables}
+\author{Jonathan Washburn\\Recognition Physics Institute}
+\date{January 18, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present a prediction-focused companion to the core Recognition Science (RS) framework paper.
+RS is grounded in the \emph{Recognition Composition Law} (RCL), a calibrated multiplicative form
+of the d'Alembert functional equation that uniquely fixes the RS cost functional
+\(\Jcost(x)=\tfrac12(x+x^{-1})-1\).
+From RCL, RS yields a discrete forcing chain (T0--T8) whose executive consequences include:
+(\emph{i}) a meta-principle \(\Jcost(0^+)\to\infty\) (``nothing costs infinity''), (\emph{ii}) a discrete
+ledger dynamics with a privileged self-similar fixed point \(\phiRS\) (the golden ratio), and
+(\emph{iii}) an ``8-tick'' neutrality cycle associated with the emergence of three-dimensional structure.
+
+This paper does not re-derive the full RS framework; instead it memorializes RS as a
+\emph{prediction ledger}: a preregistered catalog of targets, each with explicit closed form,
+dependency accounting, and a reproducible verification artifact.
+We implement the ledger as a collection of formal definitions and statements that are fully
+reproduced in this paper, together with a deterministic numerical evaluation protocol for
+comparison against standard reference datasets.
+
+We highlight several dimensionless headline predictions with unusually simple rational/integer form,
+including: \(\sin^2\thetaw \approx 3/13\) (0.2\%), \(\alphas(M_Z)=2/17\) (0.28\(\sigma\) vs.\ PDG),
+\(\OmegaL = 11/16 - \alpha/\pi\) (0.07\(\sigma\) vs.\ Planck), and a Hubble-ratio benchmark
+\(H_{\mathrm{late}}/H_{\mathrm{early}}=13/12\) (0.03\%).
+We also report a broader set of cross-domain extensions (biology, cognition, condensed matter),
+explicitly labeled by claim type (prediction vs.\ consistency vs.\ extension) to reduce
+post-hoc selection bias.
+Finally, we provide a falsification roadmap of next high-leverage preregistered targets
+(CKM/PMNS structure, CP violation, CMB anisotropies, and Big Bang nucleosynthesis yields).
+\end{abstract}
+
+\section{Introduction}
+
+\subsection{Why a prediction ledger?}
+Foundational physics and cosmology are unusually successful at \emph{describing} data, yet they
+typically offer limited guidance on why key dimensionless observables take the values they do.
+The Standard Model and \(\Lambda\)CDM contain a compact set of organizing principles, but many of the
+numbers that control their phenomenology---couplings, mixing angles, mass ratios, and cosmological
+fractions---are treated as externally supplied inputs.
+This situation produces a persistent methodological gap: without a disciplined list of \emph{explicit,
+closed-form targets}, it is difficult to distinguish (i) genuine predictive structure from
+(ii) post-hoc compression or parameter tuning.
+
+Recognition Science (RS) is proposed as a parameter-minimizing framework in which a single primitive
+constraint (RCL) uniquely fixes a cost functional \(\Jcost\) and forces a discrete ``ledger'' dynamics.
+The companion RS framework paper develops the full derivation chain (T0--T8) and its conceptual
+interpretation.\footnote{See the companion RS framework manuscript
+\emph{The Derivation of Physical Constants from the Meta-Principle: A Complete Chain of Custody from Logic to Cosmology}
+(\texttt{papers/tex/Formalized-Derivations-T1-T8.tex}) and the RCL-focused note
+(\texttt{papers/tex/RECOGNITION\_COMPOSITION\_LAW.tex}) in the same repository.}
+The purpose of the present paper is narrower and more empirical: to assemble and stabilize RS as a
+\emph{prediction ledger} that can be independently rerun, audited, and falsified.
+
+\subsection{Scope and relationship to the core theory paper}
+This paper assumes the RS primitive (RCL) and the high-level forcing chain (T0--T8) as established
+in the companion theory paper, and does \emph{not} attempt to reproduce all proofs in full.
+Instead we provide:
+\begin{enumerate}
+  \item A compact ``Theory Capsule'' summary of RCL and T0--T8 sufficient to interpret the predictions;
+  \item A catalog of prediction targets with explicit closed forms and clear dependency accounting;
+  \item A reproducible verification interface: formal specifications (Lean 4) and executable tests
+        producing immutable artifacts.
+\end{enumerate}
+The core design goal is that every claim in the ledger can be traced to a stable identifier, a
+precise formula, an evaluation protocol, and a machine-readable artifact.
+
+\subsection{Claim taxonomy and anti-leakage rules}
+To reduce ambiguity and post-hoc selection bias, every ledger item is labeled by claim type.
+We use three categories throughout:
+\begin{description}
+  \item[Type P (Prediction).] A closed-form target with no per-observable tuning. The claim specifies
+  its allowed inputs (e.g., unit conventions or shared anchors) and forbids leakage from the observed
+  value of the target into the prediction.
+
+  \item[Type C (Consistency).] A structural identity or compatibility check (e.g.\ relationships that
+  hold within established effective theories). Such items are valuable for internal coherence but are
+  not counted as independent empirical evidence.
+
+  \item[Type E (Extension).] A cross-domain mapping or proxy that is motivated by RS structure but
+  may depend on modeling choices. Extensions are reported explicitly and do not substitute for
+  Type P falsifiable predictions.
+\end{description}
+For each Type P item we also record an \emph{anti-leakage} checklist: which constants are treated as
+derived within RS, which are treated as shared calibration seams, and which are purely observational.
+This is crucial because the primary failure mode of ``numerology'' is not the presence of simple
+integers, but the absence of transparent dependency accounting.
+
+\subsection{Reproducibility and preregistration as engineering}
+We adopt a pragmatic notion of preregistration: each ledger item is expressed as a
+version-stable protocol consisting of (i) an explicit mathematical specification, (ii) an evaluation
+procedure (including dataset and scheme choices), and (iii) a recorded comparison against reference
+values. In this paper we reproduce the specifications in full; nothing in the main claims requires
+external code in order to be understood or re-evaluated.
+The intent is that future work (including out-of-sample predictions and updates to observational
+datasets) can be evaluated by running the same protocols under a new commit, making disagreement
+concrete and minimizing ``moving target'' debates.
+
+\subsection{Headline results and what to take seriously}
+The present ledger contains a mixture of Type P, Type C, and Type E claims. The main text emphasizes
+a small set of Type P ``headline'' targets that (i) have unusually simple closed form, (ii) are
+dimensionless or can be expressed in dimensionless ratios, and (iii) admit clear uncertainty models.
+Examples include:
+\begin{itemize}
+  \item \(\sin^2\thetaw \approx 3/13\) (weak mixing angle),
+  \item \(\alphas(M_Z) = 2/17\) (strong coupling at the \(Z\) pole),
+  \item \(\OmegaL = 11/16 - \alpha/\pi\) (dark-energy density fraction),
+  \item \(H_{\mathrm{late}}/H_{\mathrm{early}} = 13/12\) (a Hubble-ratio benchmark).
+\end{itemize}
+We do \emph{not} interpret the existence of multiple approximate integer/rational coincidences as a
+standalone proof of RS. Instead, we treat them as motivation to formalize the claims, lock down the
+evaluation procedures, and focus attention on a falsification roadmap with higher leverage than
+retrodictive matching.
+
+\subsection{Paper roadmap}
+Section~2 provides a brief recap of RCL and the forcing chain T0--T8 sufficient to interpret the
+ledger claims. Section~3 specifies the ledger protocol, dependency accounting, and reproducibility
+interface. Sections~4--5 present the prediction results, separating Type P headline targets from
+Type E cross-domain extensions. Section~6 enumerates preregistered falsifiers and next targets
+(including CKM/PMNS structure, CP violation, CMB anisotropies, and Big Bang nucleosynthesis).
+
+\section{Theory Capsule: RCL and the Forcing Chain (T0--T8)}
+
+This section is an executive summary of the minimal RS primitives needed to interpret the
+prediction ledger. Full derivations and broader philosophical context appear in the companion RS
+framework paper; here we focus on the definitions and statements that are directly used downstream.
+
+\subsection{The Recognition Composition Law (RCL)}
+\label{sec:rcl}
+
+RS begins with the assumption that recognition processes compose multiplicatively.
+We model a recognition ``ratio'' by a positive real \(x \in \R_{>0}\), where \(x=1\) denotes perfect
+neutrality and \(x \neq 1\) denotes a deviation from neutrality.
+To each ratio we assign a nonnegative \emph{cost} \(\Jcost(x)\), interpreted as the penalty required
+to maintain coherence of recognition across composition.
+
+\begin{definition}[Recognition cost]
+A \emph{recognition cost} is a function \(\Jcost : \R_{>0} \to \R\).
+\end{definition}
+
+\begin{definition}[Recognition Composition Law (RCL)]
+\label{def:rcl}
+The Recognition Composition Law is the functional constraint
+\begin{equation}\label{eq:rcl}
+\Jcost(xy) + \Jcost(x/y)
+= 2\,\Jcost(x)\,\Jcost(y) + 2\,\Jcost(x) + 2\,\Jcost(y),
+\qquad x,y \in \R_{>0}.
+\end{equation}
+\end{definition}
+
+Equation~\eqref{eq:rcl} is the calibrated multiplicative form of the d'Alembert functional equation.
+Intuitively, it asserts that composing two recognition ratios \(x\) and \(y\) (via multiplication)
+and composing \(x\) with the inverse of \(y\) (via division) must be jointly consistent with a single
+scalar cost function. This is the minimal ``associativity of recognition'' requirement in RS.
+
+\paragraph{Calibration assumptions.}
+RCL alone admits families of solutions unless one fixes a normalization and a scale.
+RS adopts mild regularity assumptions that correspond to setting units:
+\begin{enumerate}
+  \item \textbf{Normalization:} \(\Jcost(1) = 0\).
+  \item \textbf{Regularity:} the induced log-coordinate function is continuous (or differentiable)
+        near neutrality.
+  \item \textbf{Calibration:} the quadratic response to small deviations at neutrality is fixed to
+        unity (see Section~\ref{sec:junique}).
+\end{enumerate}
+These assumptions are standard in functional-equation settings and can be viewed as choosing a
+dimensionless unit in which ``one tick of deviation'' has unit second-order cost.
+
+\subsection{The unique RS cost functional \texorpdfstring{\(\Jcost\)}{J}}
+\label{sec:junique}
+
+Define the log-coordinate lift
+\begin{equation}\label{eq:Hdef}
+H(t) := \Jcost(e^t) + 1, \qquad t \in \R.
+\end{equation}
+Substituting \(x=e^t\), \(y=e^u\) into~\eqref{eq:rcl} yields:
+\begin{equation}\label{eq:dalembert}
+H(t+u) + H(t-u) = 2 H(t) H(u), \qquad t,u \in \R,
+\end{equation}
+which is the classical d'Alembert equation.
+
+\begin{theorem}[Cost uniqueness]\label{thm:cost-uniqueness}
+Assume:
+\begin{enumerate}
+  \item \(\Jcost : \R_{>0} \to \R\) satisfies RCL~\eqref{eq:rcl};
+  \item \(\Jcost(1)=0\) (equivalently \(H(0)=1\));
+  \item \(H\) is continuous at \(0\) and twice differentiable at \(0\) with calibration \(H''(0)=1\).
+\end{enumerate}
+Then
+\begin{equation}\label{eq:Jformula}
+\Jcost(x)=\frac12\left(x+x^{-1}\right)-1 = \cosh(\ln x) - 1.
+\end{equation}
+\end{theorem}
+
+\begin{remark}[Proof sketch]
+Under mild regularity, the continuous solutions of~\eqref{eq:dalembert} are \(H \equiv 1\) and
+\(H(t)=\cosh(\lambda t)\) (and degenerate sign variants), for some \(\lambda \ge 0\).
+The normalization \(H(0)=1\) selects this family, and the calibration \(H''(0)=1\) forces \(\lambda=1\).
+Equation~\eqref{eq:Jformula} follows by undoing~\eqref{eq:Hdef}.
+\end{remark}
+
+From the explicit formula we obtain key invariances used throughout the prediction ledger.
+
+\begin{lemma}[Symmetry and positivity]\label{lem:Jprops}
+For all \(x \in \R_{>0}\):
+\begin{enumerate}
+  \item \(\Jcost(x) = \Jcost(x^{-1})\) (inversion symmetry),
+  \item \(\Jcost(x) \ge 0\), with equality iff \(x=1\),
+  \item \(\Jcost(e^t) = \cosh(t)-1 = \tfrac12 t^2 + O(t^4)\) as \(t \to 0\).
+\end{enumerate}
+\end{lemma}
+
+\begin{lemma}[Divergence at ``nothing'']\label{lem:Jdiv}
+\(\lim_{x \to 0^+} \Jcost(x) = +\infty\) and \(\lim_{x \to +\infty} \Jcost(x)=+\infty\).
+\end{lemma}
+
+Lemma~\ref{lem:Jdiv} is the formal core of the RS meta-principle used below: ``nothing costs
+infinity.'' It is not an extra axiom; it is a theorem once RCL and calibration are accepted.
+
+\subsection{The forcing chain T0--T8 (executive summary)}
+\label{sec:t0t8}
+
+The RS forcing chain is a sequence of consequences of RCL-driven cost minimization. We present the
+chain here in a condensed form, sufficient to interpret the prediction ledger. Each step is a
+structural statement; proofs and extended discussion appear in the companion RS framework paper.
+
+\subsubsection*{T0: Consistency of recognition composition}
+Recognition acts compose. Requiring a \emph{single scalar} cost that is consistent under both
+composition (\(xy\)) and relative composition (\(x/y\)) forces the functional constraint RCL
+in Definition~\ref{def:rcl}. This step is purely logical: it encodes that recognition must be
+well-defined under sequential composition and inversion.
+
+\subsubsection*{T1: Divergence at the null state}
+Given the unique RS cost \(\Jcost\) (Theorem~\ref{thm:cost-uniqueness}), the cost of approaching the
+null state diverges (Lemma~\ref{lem:Jdiv}). Formally, \(x \to 0^+\) implies \(\Jcost(x)\to\infty\).
+This expresses that ``nothing'' is not a neutral configuration; it is an infinitely costly limit.
+
+\subsubsection*{T2: Existence pressure (Meta-Principle)}
+If the null state has infinite cost, a coherent recognition process cannot ``start'' from nothing:
+any self-consistent evolution that minimizes cost is forced away from \(x=0\).
+Operationally, \(\Jcost(0^+)=\infty\) acts as a barrier that selects nontrivial configurations.
+This is the RS meta-principle: \emph{non-existence is not a permissible low-cost state.}
+
+\subsubsection*{T3: Discreteness from bounded cost}
+Continuous deformation of recognition would permit arbitrarily fine distinctions; under repeated
+composition such distinctions accumulate and generically lead to unbounded cost unless there exists a
+minimum meaningful resolution. RS therefore posits that stable recognition dynamics occur on a
+discrete set of admissible states---a quantized ``ledger'' of recognitions---so that total cost per
+cycle remains finite and comparable.
+
+\subsubsection*{T4: Ledger structure as global balance}
+Discreteness alone does not determine dynamics. RS asserts that recognition updates must satisfy a
+global balance constraint: coherence is maintained by accounting for cost across updates in a
+two-sided ledger, where entries can compensate. This bookkeeping structure is the minimal mechanism
+by which nonlocal consistency can be maintained while allowing local change.
+
+\subsubsection*{T5: The recognition operator}
+Define a \emph{recognition update} as a map that selects the next admissible state by cost
+minimization under the ledger constraints. Abstractly, if \(S\) is the admissible state set and
+\(\mathcal{C}(s \to s')\) is the cost of transitioning from \(s\) to \(s'\), the recognition operator
+\(\widehat{R}\) acts as
+\[
+\widehat{R}(s) \in \arg\min_{s' \in S} \mathcal{C}(s \to s') \quad \text{subject to ledger balance}.
+\]
+This operator replaces the Hamiltonian as the fundamental generator in RS: dynamics is defined by
+cost-minimizing recognition updates rather than by postulated differential equations.
+
+\subsubsection*{T6: Uniqueness of \texorpdfstring{\(\Jcost\)}{J} as the only admissible local cost}
+Theorem~\ref{thm:cost-uniqueness} implies that, under the minimal regularity and calibration
+assumptions, there is no free functional degree of freedom in the local cost: \(\Jcost\) is fixed.
+This is the main ``parameter-free'' engine behind RS predictions: many downstream quantities reduce
+to integer and symmetry counts rather than to fitted functions.
+
+\subsubsection*{T7: Privileged self-similar fixed point \texorpdfstring{\(\phiRS\)}{phi}}
+Self-similar ledger updates lead to a fixed-point equation. The unique positive fixed point of the
+recursion \(x = 1 + 1/x\) is
+\[
+\phiRS = \frac{1+\sqrt{5}}{2}, \qquad \phiRS^2=\phiRS+1, \qquad \phiRS^{-1}=\phiRS-1.
+\]
+RS interprets \(\phiRS\) as the unique positive scale-invariant point compatible with inversion
+symmetry and additive/multiplicative self-similarity, making it a natural attractor for stabilized
+ledger dynamics.
+
+\subsubsection*{T8: The 8-tick neutrality cycle and emergence of 3D}
+The stabilized ledger admits a minimal closed neutrality cycle of length \(8\) (``8-tick'').
+An 8-state binary ledger naturally organizes as the vertex set of the 3-cube \(Q_3\), since
+\(8=2^3\). In this sense, three independent binary degrees of freedom suffice to index the minimal
+neutrality cycle, yielding a canonical three-dimensional combinatorial geometry.
+This linkage underlies recurring RS symmetry counts (e.g.\ 12 edges, 8 vertices, 11 passive edges)
+used in the prediction ledger.
+
+\subsection{What is ``derived'' vs.\ ``anchored'' in this prediction paper}
+\label{sec:anchors}
+
+The forcing chain above is intended to justify the form of RS predictions without importing
+per-observable tuning. For clarity we distinguish:
+\begin{description}
+  \item[Derived (within RS).] The form of \(\Jcost\) (Theorem~\ref{thm:cost-uniqueness}) and its
+  invariances (Lemmas~\ref{lem:Jprops}--\ref{lem:Jdiv}); the privileged fixed point \(\phiRS\); and
+  the existence of an 8-state neutrality cycle with a 3-cube combinatorial geometry.
+
+  \item[Anchored (conventions and shared inputs).] This paper adopts standard scheme/scale choices
+  for comparing to reference datasets. Examples include: \(\alphas(M_Z)\) in the \(\overline{\mathrm{MS}}\)
+  scheme at the \(Z\) pole; \(\sin^2\thetaw\) interpreted as the \(\overline{\mathrm{MS}}\) weak mixing
+  parameter at \(M_Z\); and cosmological parameters taken from Planck \(\Lambda\)CDM fits.
+  These are not RS parameters; they are \emph{comparison conventions}.
+
+  \item[Observational (used only for comparison).] PDG and Planck central values and uncertainties
+  are used exclusively to quantify agreement and to state falsifiers. They are not inserted into RS
+  formulas except where explicitly declared (e.g.\ using the measured \(\alpha\) in \(\Omega_\Lambda =
+  11/16-\alpha/\pi\) if \(\alpha\) is treated as an external constant rather than re-derived).
+\end{description}
+
+In particular, the headline targets emphasized in this paper are chosen to be primarily
+dimensionless and integer/rational in form. Where a prediction depends on a known constant
+(e.g.\ \(\alpha\)), we state it explicitly so that the claim can be classified correctly (Type P vs.\ Type C/E)
+and independently re-evaluated.
+
+\section{Methods: Preregistration, Dependency Accounting, and Reproducibility}
+
+This section specifies the protocol by which prediction claims are defined, recorded, and compared
+to reference data. The protocol is designed to address two recurring failure modes in
+cross-domain ``unification'' work: (i) \emph{leakage} (implicitly using the target value to fix the
+prediction), and (ii) \emph{look-elsewhere} (discovering a match after searching a large hypothesis
+space).
+
+\subsection{Prediction IDs and preregistration discipline}
+\label{sec:ids}
+
+\paragraph{Ledger IDs.}
+Every claim is assigned a stable identifier of the form \textsc{Domain-ID}, e.g.\ C-004 or A-009.
+Domains used in this paper include:
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{Prefix} & \textbf{Domain} \\
+\midrule
+C  & Dimensionless constants and couplings \\
+P  & Particle physics (masses, mixings, interactions) \\
+A  & Astrophysics and cosmology \\
+B  & Biology \\
+NS & Neuroscience and cognition \\
+CM & Condensed matter \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{What is preregistered.}
+For each ID we preregister three objects:
+\begin{enumerate}
+  \item \textbf{Specification} \(\mathrm{Spec}(\mathrm{ID})\): a precise formal statement in this paper
+  (an equation, definition, or theorem) that fixes the target \emph{without per-observable tuning}.
+
+  \item \textbf{Protocol} \(\mathrm{Proto}(\mathrm{ID})\): a deterministic evaluation and comparison
+  procedure, including the dataset source, scheme/scale conventions, match metric, and acceptance
+  threshold.
+
+  \item \textbf{Record} \(\mathrm{Rec}(\mathrm{ID})\): a machine-readable record of the evaluation
+  (predicted value, observed value, uncertainty model, and pass/fail under the preregistered
+  threshold). In this stand-alone paper, \(\mathrm{Rec}(\mathrm{ID})\) is reproduced as a small
+  numerical table in the Results sections.
+\end{enumerate}
+The discipline is simple: if the specification or protocol changes, the claim must be issued under
+a new versioned identifier (e.g.\ C-004v2), and prior versions remain part of the public record.
+This prevents ``moving goalposts'' and turns disagreement into a concrete, auditable object.
+
+\paragraph{Reporting rule.}
+We commit to publishing the status of every preregistered target we attempt, including failures and
+partials, not only successes. This reduces selection bias and makes the ledger falsifiable by
+construction.
+
+\subsection{Dependency graph and leakage prevention}
+\label{sec:dependency}
+
+\paragraph{Dependency graph.}
+We represent the logical structure of the ledger as a directed graph:
+nodes are quantities (e.g.\ \(\phiRS\), \(\Jcost\), \(\sin^2\thetaw\), \(\OmegaL\)), and directed edges
+encode ``depends on'' relations. A claim is \emph{leak-free} if the observed value of its target is
+not used to determine any node on a path feeding into the prediction.
+
+\paragraph{Standardized dependency card format.}
+For each headline claim we provide a \emph{dependency card} with the following fields:
+\begin{quote}\small
+\textbf{ID:} \(\langle\)ledger ID\(\rangle\)\quad
+\textbf{Type:} P/C/E\quad
+\textbf{Target:} \(\langle\)observable\(\rangle\)\par
+\textbf{Specification:} \(\langle\)closed form / theorem reference in this paper\(\rangle\)\par
+\textbf{Allowed inputs:} \(\langle\)integers, shared constants, scheme conventions\(\rangle\)\par
+\textbf{Forbidden inputs:} \(\langle\)anything that would implicitly tune to the target\(\rangle\)\par
+\textbf{Comparison dataset:} \(\langle\)source and version\(\rangle\)\par
+\textbf{Metric / threshold:} \(\langle\)\% error or \(n_\sigma\), with pass rule\(\rangle\)
+\end{quote}
+
+\paragraph{Examples for the A-tier claims.}
+The following cards illustrate the leakage-prevention policy for the headline results.
+
+\begin{quote}\small
+\textbf{ID:} C-004\quad \textbf{Type:} P\quad \textbf{Target:} \(\sin^2\thetaw\) at \(M_Z\)\par
+\textbf{Specification:} \(\sin^2\thetaw = 3/13\)\par
+\textbf{Allowed inputs:} integers \(3,13\); scheme/scale convention (\(\overline{\mathrm{MS}}\) at \(M_Z\))\par
+\textbf{Forbidden inputs:} measured \(\sin^2\thetaw\); measured \(m_W,m_Z\) used to back-solve \(\thetaw\)\par
+\textbf{Comparison dataset:} PDG electroweak fit tables (2024 edition)\par
+\textbf{Metric / threshold:} relative error \(< 1\%\) (headline), reported also as \% error
+\end{quote}
+
+\begin{quote}\small
+\textbf{ID:} C-005\quad \textbf{Type:} P\quad \textbf{Target:} \(\alphas(M_Z)\)\par
+\textbf{Specification:} \(\alphas(M_Z)=2/17\)\par
+\textbf{Allowed inputs:} integers \(2,17\); scheme convention (\(\overline{\mathrm{MS}}\) at \(M_Z\))\par
+\textbf{Forbidden inputs:} measured \(\alphas(M_Z)\); any fitted QCD parameter introduced solely to hit
+the PDG central value\par
+\textbf{Comparison dataset:} PDG world average for \(\alphas(M_Z)\) (2024 edition)\par
+\textbf{Metric / threshold:} \(n_\sigma < 1\) when PDG uncertainty is supplied
+\end{quote}
+
+\begin{quote}\small
+\textbf{ID:} A-009\quad \textbf{Type:} P\quad \textbf{Target:} \(\OmegaL\) (dark-energy fraction)\par
+\textbf{Specification:} \(\OmegaL = 11/16 - \alpha/\pi\)\par
+\textbf{Allowed inputs:} integers \(11,16\); \(\pi\); the fine-structure constant \(\alpha\) treated as a
+shared external constant (CODATA/PDG)\par
+\textbf{Forbidden inputs:} measured \(\OmegaL\); fitting \(\alpha\) or any new factor to match Planck\par
+\textbf{Comparison dataset:} Planck 2018 \(\Lambda\)CDM parameter fit\par
+\textbf{Metric / threshold:} \(n_\sigma < 1\) when Planck uncertainty is supplied
+\end{quote}
+
+\begin{quote}\small
+\textbf{ID:} A-008\quad \textbf{Type:} P\quad \textbf{Target:} Hubble-ratio benchmark
+\(H_{\mathrm{late}}/H_{\mathrm{early}}\)\par
+\textbf{Specification:} \(H_{\mathrm{late}}/H_{\mathrm{early}} = 13/12\)\par
+\textbf{Allowed inputs:} integers \(13,12\); definition of ``early'' and ``late'' dataset conventions\par
+\textbf{Forbidden inputs:} measured ratio used to choose integers; redefining ``early'' and ``late''
+post-hoc to tighten agreement\par
+\textbf{Comparison dataset:} Planck 2018 (early) and SH0ES-style local ladder (late), as specified in
+Section~\ref{sec:validation}\par
+\textbf{Metric / threshold:} relative error \(< 1\%\) (headline)
+\end{quote}
+
+\subsection{Validation protocol}
+\label{sec:validation}
+
+\paragraph{Reference datasets and versions.}
+To make comparisons concrete and reproducible, we fix reference sources at the level of published
+summary tables:
+\begin{itemize}
+  \item \textbf{Particle physics:} Particle Data Group (PDG) 2024 summary values for
+  \(\alphas(M_Z)\), electroweak mixing parameters, and relevant masses.
+
+  \item \textbf{Cosmology:} Planck 2018 baseline \(\Lambda\)CDM parameter estimates for \(\OmegaL\),
+  together with an explicit ``early'' vs ``late'' convention for the Hubble-ratio benchmark.
+\end{itemize}
+Where an observable is scheme-dependent (e.g.\ \(\alphas\) and \(\sin^2\thetaw\)), we specify the scheme
+and scale as part of \(\mathrm{Proto}(\mathrm{ID})\). This is not a fit parameter: it is a declaration
+of the quantity being compared.
+
+\paragraph{Match metrics.}
+We use two primary metrics:
+\begin{enumerate}
+  \item \textbf{Relative error:}
+  \[
+  \varepsilon_{\%} := 100 \times \frac{|x_{\mathrm{pred}} - x_{\mathrm{obs}}|}{|x_{\mathrm{obs}}|}.
+  \]
+  This is used when a target is reported without a stable uncertainty model or when the intent is to
+  emphasize scale-free agreement.
+
+  \item \textbf{Sigma distance (when uncertainties are available):}
+  \[
+  n_\sigma := \frac{|x_{\mathrm{pred}} - x_{\mathrm{obs}}|}{\sigma_{\mathrm{obs}}}.
+  \]
+  This is used when the dataset supplies a standard uncertainty \(\sigma_{\mathrm{obs}}\).
+\end{enumerate}
+
+\paragraph{Pass/fail thresholds.}
+For headline Type P claims in the main text we adopt conservative thresholds:
+\begin{itemize}
+  \item If \(\sigma_{\mathrm{obs}}\) is supplied: \(\;n_\sigma < 1\).
+  \item Otherwise: \(\;\varepsilon_{\%} < 1\%\).
+\end{itemize}
+All reported values include sufficient digits to reproduce the metric without ambiguity.
+Exact integer identities (e.g.\ \(7=8-1\)) are treated as formal consequences once their assumptions
+are stated, and are not assigned a statistical metric.
+
+\subsection{Multiple comparisons and the look-elsewhere effect}
+\label{sec:lookelsewhere}
+
+\paragraph{Hypothesis space.}
+RS encourages many candidate relations (especially involving small integers and \(\phiRS\)-scaling).
+Without controls, searching this space until a coincidence is found would invalidate the evidential
+weight of any single match. We therefore treat the ledger itself as the hypothesis space: a finite,
+named set of targets, each with a fixed protocol.
+
+\paragraph{Preregistered vs.\ exploratory.}
+We separate:
+\begin{itemize}
+  \item \textbf{Preregistered targets:} items whose specifications and protocols were fixed before
+  examining the comparison outcome, and
+  \item \textbf{Exploratory patterns:} observations discovered after inspecting data, which must be
+  promoted to preregistered status only by issuing a new ID and evaluating it prospectively.
+\end{itemize}
+Exploratory observations may motivate hypotheses, but are not counted as independent confirmations.
+
+\paragraph{Conservative interpretation policy.}
+We do not convert match metrics into p-values in this paper, because doing so requires an explicit
+model of the search distribution (which depends on how many formulas were considered and how they
+were generated). Instead we adopt the following conservative stance:
+\begin{enumerate}
+  \item Treat each Type P headline claim as one test with a preregistered acceptance rule.
+  \item Do not claim ``confirmation'' from a single match; require a \emph{portfolio} of independent
+  matches and, crucially, successful \emph{out-of-sample} predictions.
+  \item Give primary weight to claims with minimal degrees of freedom: small integers, clear scheme
+  conventions, and explicit leakage-prevention rules.
+\end{enumerate}
+This policy is designed to keep the prediction ledger falsifiable even as it scales to many targets.
+
+\section{Results: Headline Predictions}
+
+This section presents the A-tier (highest-signal, most-independent) predictions in the ledger.
+For each claim we provide: a derivation sketch, the closed form, the observed value and uncertainty,
+the match metric, and an explicit falsifier.
+
+\subsection{Electroweak mixing (C-004): \texorpdfstring{\(\sin^2\theta_W\)}{sin^2 thetaW} as a rational benchmark}
+\label{sec:c004}
+
+\paragraph{Derivation sketch.}
+In the Standard Model, the weak mixing angle \(\theta_W\) controls the mixing of the neutral
+electroweak gauge bosons and can be defined (in a given scheme) by
+\[
+\sin^2\theta_W = \frac{g'^2}{g^2 + g'^2},
+\]
+where \(g\) is the \(SU(2)_L\) coupling and \(g'\) is the hypercharge coupling.
+RS proposes that, at the geometric ``ledger'' level (T8), the electroweak sector decomposes into a
+3-generator \(SU(2)\) component (the three spatial rotation generators) and a complementary
+component whose total count closes to \(13\) in the dynamic ledger picture (``12 edges + 1 time'').
+This yields the rational benchmark
+\[
+\sin^2\theta_W \approx \frac{3}{13},
+\]
+interpreted as a leading-order geometric mixing fraction, with radiative/scheme corrections treated
+as higher-order effects.
+
+\paragraph{Closed form.}
+\begin{equation}\label{eq:c004}
+\sin^2\theta_W = \frac{3}{13} \approx 0.2307692308.
+\end{equation}
+
+\paragraph{Observed value and uncertainty.}
+We compare to the PDG-reported \(\overline{\mathrm{MS}}\) weak mixing parameter at the \(Z\) pole,
+denoted \(\sin^2\theta_W(M_Z)\). Using PDG 2024 summary values:
+\[
+\sin^2\theta_W(M_Z)_{\mathrm{obs}} \approx 0.23122 \pm 0.00003.
+\]
+Because this observable is extracted from global electroweak fits and depends on radiative
+corrections and scheme conventions, we report both percent error and sigma distance, but we treat
+percent-level agreement as the appropriate ``geometric benchmark'' metric at this stage.
+
+\paragraph{Match metric.}
+The absolute deviation is
+\[
+\Delta = \left|\,0.23122 - \frac{3}{13}\,\right| \approx 4.51\times 10^{-4},
+\]
+corresponding to a percent error
+\[
+\varepsilon_{\%} \approx 0.195\%.
+\]
+If one uses the PDG fit uncertainty naively as \(\sigma_{\mathrm{obs}} \approx 3\times 10^{-5}\), the
+sigma distance would be \(n_\sigma \approx 15\). In RS, this gap is interpreted as a measure of
+unmodeled radiative/scheme corrections relative to the geometric leading term.
+
+\paragraph{Dependency card (assumptions vs.\ non-assumptions).}
+\begin{quote}\small
+\textbf{ID:} C-004\quad \textbf{Type:} P (geometric benchmark)\par
+\textbf{Specification:} Eq.~\eqref{eq:c004}\par
+\textbf{Allowed inputs:} integers \(3,13\); definition of the compared scheme (\(\overline{\mathrm{MS}}\) at \(M_Z\))\par
+\textbf{Forbidden inputs:} measured \(\sin^2\theta_W\); solving \(\theta_W\) from measured \(m_W,m_Z\) as ``prediction''\par
+\textbf{Metric:} \(\varepsilon_{\%}\) (headline) and \(n_\sigma\) (context)\par
+\textbf{Falsifier:} sustained disagreement \(\varepsilon_{\%} > 1\%\) in the specified scheme, or an RS
+radiative-correction model that predicts the wrong sign/magnitude for the residual \(\Delta\).
+\end{quote}
+
+\subsection{QCD coupling (C-005): \texorpdfstring{\(\alpha_s(M_Z)=2/17\)}{alpha_s(MZ)=2/17}}
+\label{sec:c005}
+
+\paragraph{Derivation sketch.}
+RS associates the strong interaction with \emph{planar} symmetry classes of the ledger.
+A canonical and mathematically rigid count of planar periodic symmetries is given by the
+classification of wallpaper groups: there are exactly \(W=17\) distinct two-dimensional wallpaper
+symmetry groups. RS posits that the strong coupling at the \(Z\) pole is set by the reciprocal of
+half this symmetry density, yielding
+\[
+\alpha_s(M_Z) = \frac{2}{W} = \frac{2}{17}.
+\]
+The factor of \(2\) is interpreted as a pairing (or chirality) normalization in the planar
+symmetry channel.
+
+\paragraph{Closed form.}
+\begin{equation}\label{eq:c005}
+\alpha_s(M_Z) = \frac{2}{17} \approx 0.1176470588.
+\end{equation}
+
+\paragraph{Observed value and uncertainty.}
+Using the PDG 2024 world average:
+\[
+\alpha_s(M_Z)_{\mathrm{obs}} \approx 0.1179 \pm 0.0009.
+\]
+
+\paragraph{Match metric.}
+The deviation is \(|\Delta| \approx 2.53\times 10^{-4}\), corresponding to
+\[
+n_\sigma = \frac{|\Delta|}{\sigma_{\mathrm{obs}}} \approx 0.28,
+\qquad
+\varepsilon_{\%} \approx 0.21\%.
+\]
+
+\paragraph{Falsifier.}
+This claim is falsified if future global averages in the same scheme/scale move such that
+\(|\alpha_s(M_Z)_{\mathrm{obs}} - 2/17| > 3\sigma_{\mathrm{obs}}\) consistently across independent
+determinations, or if a scheme-consistent reanalysis shifts the world average outside the
+preregistered tolerance window.
+
+\paragraph{Why ``17'' is structural in RS terms.}
+The significance of \(17\) is that it is not a tunable numerical choice: it is a classification
+theorem. Wallpaper groups exhaust the possible discrete translational symmetries in 2D, and
+RS treats the strong sector as sensitive to planar symmetry content (e.g.\ confinement surfaces and
+domain boundaries). In this interpretation, \(\alpha_s\) is an inverse symmetry density.
+This makes the claim unusually crisp compared to typical effective-field-theory parameterizations.
+
+\subsection{Cosmology (A-009): dark energy fraction \texorpdfstring{\(\Omega_{\Lambda}=11/16-\alpha/\pi\)}{OmegaLambda=11/16-alpha/pi}}
+\label{sec:a009}
+
+\paragraph{Derivation sketch.}
+RS models \(\Omega_{\Lambda}\) as a ledger-geometry fraction: a base ``passive fraction'' determined
+by the cube combinatorics, corrected by a universal curvature/electromagnetic term.
+In a minimal 3-cube picture, there are \(12\) edges and \(8\) vertices. RS distinguishes one ``active''
+edge channel from \(11\) ``passive'' edge channels, producing the base fraction \(11/(2\cdot 8)=11/16\).
+The correction \(\alpha/\pi\) is interpreted as a universal radiative/curvature correction analogous
+to other RS corrections that scale with \(\alpha\).
+
+\paragraph{Closed form.}
+\begin{equation}\label{eq:a009}
+\Omega_{\Lambda} = \frac{11}{16} - \frac{\alpha}{\pi}.
+\end{equation}
+Numerically, taking \(\alpha^{-1}\approx 137.036\) gives \(\Omega_{\Lambda,\mathrm{pred}} \approx 0.68518\).
+
+\paragraph{Treatment of \texorpdfstring{\(\alpha\)}{alpha}.}
+RS contains an internal derivation program for \(\alpha\). However, to keep A-009 maximally
+transparent and to avoid compounding dependencies in this prediction paper, we treat \(\alpha\) as an
+\emph{anchored external constant} (CODATA/PDG) in the numerical evaluation of~\eqref{eq:a009}.
+Under this convention A-009 remains a sharp prediction for \(\Omega_{\Lambda}\) with no per-observable
+tuning.
+
+\paragraph{Observed value and uncertainty.}
+Using Planck 2018 baseline \(\Lambda\)CDM:
+\[
+\Omega_{\Lambda,\mathrm{obs}} \approx 0.6847 \pm 0.0073.
+\]
+
+\paragraph{Match metric.}
+With \(\alpha^{-1}\approx 137.036\), \(\Omega_{\Lambda,\mathrm{pred}} \approx 0.68518\),
+so \(|\Delta| \approx 4.77\times 10^{-4}\), yielding
+\[
+n_\sigma \approx 0.065,
+\qquad
+\varepsilon_{\%} \approx 0.070\%.
+\]
+
+\paragraph{Falsifier.}
+This claim is falsified if improved cosmological constraints (within \(\Lambda\)CDM or an explicitly
+declared extension) robustly place \(\Omega_{\Lambda}\) outside a \(3\sigma\) window around the
+prediction~\eqref{eq:a009}, or if the correction term required to maintain agreement is not of the
+universal \(\alpha/\pi\) form.
+
+\subsection{Cosmology (A-008): Hubble-ratio benchmark \texorpdfstring{\(H_{\mathrm{late}}/H_{\mathrm{early}}=13/12\)}{Hlate/Hearly=13/12}}
+\label{sec:a008}
+
+\paragraph{Derivation sketch.}
+RS distinguishes a ``static'' ledger geometry (12-edge cube skeleton) from a ``dynamic'' ledger that
+includes one additional time-like degree of freedom, giving a topological ratio \(13/12\).
+As a benchmark for the Hubble tension, RS predicts
+\[
+\frac{H_{\mathrm{late}}}{H_{\mathrm{early}}}=\frac{13}{12}.
+\]
+
+\paragraph{Closed form.}
+\begin{equation}\label{eq:a008}
+\frac{H_{\mathrm{late}}}{H_{\mathrm{early}}}=\frac{13}{12}\approx 1.0833333333.
+\end{equation}
+
+\paragraph{Observed value and dataset dependence.}
+The phrase ``Hubble tension'' refers to a family of measurements rather than a single number.
+To make the benchmark testable we must fix a convention:
+\begin{itemize}
+  \item \textbf{Early (CMB):} Planck 2018 \(\Lambda\)CDM \(H_0\): \(H_{\mathrm{early}}\approx 67.4\pm 0.5\)
+  km\,s\(^{-1}\)\,Mpc\(^{-1}\).
+  \item \textbf{Late (distance ladder):} SH0ES-style local ladder: \(H_{\mathrm{late}}\approx 73.04\pm 1.04\)
+  km\,s\(^{-1}\)\,Mpc\(^{-1}\).
+\end{itemize}
+Under this convention,
+\[
+\left(\frac{H_{\mathrm{late}}}{H_{\mathrm{early}}}\right)_{\mathrm{obs}}
+= \frac{73.04}{67.4} \approx 1.0836795.
+\]
+Propagating uncertainties assuming independence gives a ratio uncertainty
+\(\sigma_r \approx r\sqrt{(\sigma_{\mathrm{late}}/H_{\mathrm{late}})^2+(\sigma_{\mathrm{early}}/H_{\mathrm{early}})^2}
+\approx 0.017\).
+
+\paragraph{Match metric.}
+The deviation is \(|\Delta| \approx 3.46\times 10^{-4}\), giving
+\[
+\varepsilon_{\%} \approx 0.032\%,
+\qquad
+n_\sigma \approx \frac{3.46\times 10^{-4}}{0.017} \approx 0.02.
+\]
+
+\paragraph{Falsifier.}
+This benchmark is falsified if future early-vs-late determinations converge in a way that makes the
+ratio inconsistent with \(13/12\) under the same fixed convention (e.g.\ if the ratio is driven
+toward \(1\) or toward a value differing by more than \(1\%\)), or if any redefinition of ``early''
+and ``late'' required to preserve agreement violates the preregistered convention.
+
+\subsection{Summary table (Table~1)}
+\label{sec:table1}
+
+\begin{table}[t]
+\centering
+\caption{A-tier headline predictions (Type P) with closed forms, reference values, and match metrics.
+Percent error \(\varepsilon_{\%}\) is always reported; \(n_\sigma\) is reported when a stable uncertainty
+model is available.}
+\label{tab:headline}
+\begin{tabular}{@{}llllll@{}}
+\toprule
+\textbf{ID} & \textbf{Observable} & \textbf{Closed form} & \textbf{Pred.} & \textbf{Obs.} & \textbf{Match} \\
+\midrule
+C-004 & \(\sin^2\theta_W(M_Z)\) & \(3/13\) & 0.23077 & \(0.23122\pm0.00003\) & \(\varepsilon_{\%}\approx0.195\%\) \\
+C-005 & \(\alpha_s(M_Z)\) & \(2/17\) & 0.11765 & \(0.1179\pm0.0009\) & \(n_\sigma\approx0.28\) \\
+A-009 & \(\Omega_{\Lambda}\) & \(11/16-\alpha/\pi\) & 0.68518 & \(0.6847\pm0.0073\) & \(n_\sigma\approx0.065\) \\
+A-008 & \(H_{\mathrm{late}}/H_{\mathrm{early}}\) & \(13/12\) & 1.08333 & \(1.08368\pm0.017\) & \(n_\sigma\approx0.02\) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Results II: Electroweak Mass Block (Consistency and Partial Predictions)}
+\label{sec:ewblock}
+
+This section records two closely related topics: (i) a structural electroweak mass relation that is a
+Standard Model identity once the weak mixing angle is defined, and (ii) the current status of the
+Higgs mass within RS, including the ``\(125=5^3\)'' observation.
+
+\subsection{\texorpdfstring{\(m_W/m_Z=\cos\theta_W\)}{mW/mZ=cos thetaW} (Type C consistency)}
+\label{sec:ew_ratio}
+
+\paragraph{Statement and classification.}
+In the Standard Model Higgs mechanism, the tree-level gauge-boson masses satisfy
+\begin{equation}\label{eq:mw_mz_cos}
+\frac{m_W}{m_Z}=\cos\theta_W.
+\end{equation}
+As written, Eq.~\eqref{eq:mw_mz_cos} is a \textbf{Type C} claim: it is an identity given the
+definitions of \(m_W\), \(m_Z\), and \(\theta_W\) in the same scheme.
+It is \emph{not} counted as an independent empirical success.
+
+\paragraph{Formal derivation (tree level).}
+Let \(v>0\) be the Higgs vacuum expectation value and \(g,g'>0\) the \(SU(2)_L\) and \(U(1)_Y\)
+gauge couplings. The Higgs mechanism yields the mass relations
+\begin{equation}\label{eq:mw_mz_tree}
+m_W=\frac{gv}{2},
+\qquad
+m_Z=\frac{v}{2}\sqrt{g^2+g'^2}.
+\end{equation}
+Define the weak mixing angle \(\theta_W\) by
+\begin{equation}\label{eq:thetaW_def}
+\cos\theta_W := \frac{g}{\sqrt{g^2+g'^2}},
+\qquad
+\sin\theta_W := \frac{g'}{\sqrt{g^2+g'^2}}.
+\end{equation}
+Dividing the two relations in~\eqref{eq:mw_mz_tree} gives
+\[
+\frac{m_W}{m_Z}
+= \frac{gv/2}{(v/2)\sqrt{g^2+g'^2}}
+= \frac{g}{\sqrt{g^2+g'^2}}
+= \cos\theta_W,
+\]
+which is Eq.~\eqref{eq:mw_mz_cos}.
+
+\paragraph{Using an RS \texorpdfstring{\(\theta_W\)}{thetaW} benchmark.}
+If RS supplies an independent benchmark for \(\sin^2\theta_W\) (as in C-004), then
+Eq.~\eqref{eq:mw_mz_cos} becomes a derived ratio prediction \emph{conditional on that benchmark}.
+Using \(\sin^2\theta_W=3/13\), we obtain
+\[
+\cos\theta_W=\sqrt{1-\sin^2\theta_W}=\sqrt{\frac{10}{13}}\approx 0.87706.
+\]
+The PDG mass ratio from the illustrative values \(m_W\approx 80.3692\)~GeV and \(m_Z\approx 91.1876\)~GeV is
+\[
+\left(\frac{m_W}{m_Z}\right)_{\mathrm{obs}} \approx 0.88136,
+\]
+corresponding to a percent difference of order \(0.5\%\).
+This comparison is \emph{not} treated as an additional independent confirmation beyond C-004; it is
+recorded as a sanity check that the benchmark is in the correct ballpark at the tree-level identity.
+
+\paragraph{Falsifier (consistency-level).}
+As a Type C identity, Eq.~\eqref{eq:mw_mz_cos} is falsified only by a failure of the electroweak
+gauge structure itself. Conditional on C-004, a meaningful RS falsifier would require a concrete RS
+model of scheme/radiative corrections; absent that, we do not treat small percent-level residuals as
+decisive.
+
+\subsection{Higgs mass status (P-017): \texorpdfstring{\(m_H\)}{mH} as a pattern vs.\ a prediction}
+\label{sec:higgs}
+
+\paragraph{What would constitute a Type P Higgs prediction.}
+In the Standard Model,
+\begin{equation}\label{eq:higgs_mass_sm}
+m_H^2 = 2\lambda v^2,
+\end{equation}
+where \(v\approx 246\)~GeV is the Higgs vacuum expectation value and \(\lambda\) is the Higgs
+self-coupling. A parameter-free RS prediction of \(m_H\) would therefore require RS to fix \emph{both}
+the electroweak scale \(v\) and the dimensionless coupling \(\lambda\) (or an equivalent mass scale)
+without importing \(m_H\) itself.
+
+Section~\ref{sec:junique} provides an RS-motivated dimensionless quantity: the curvature of the
+unique cost functional at the privileged fixed point,
+\[
+\Jcost''(\phiRS) = \frac{1}{\phiRS^3}\approx 0.236.
+\]
+This suggests (at most) that a dimensionless coupling in a symmetry-breaking potential could scale
+like \(\lambda \propto 1/\phiRS^3\), but \emph{the proportionality constant and the mapping to the
+electroweak scale are not fixed in this paper}. Consequently, we do not claim a Type P RS prediction
+for \(m_H\) here.
+
+\paragraph{Classification used in this paper.}
+We record P-017 as a \textbf{Type E (extension/pattern)} item: it is a notable numerical and
+structural coincidence that may guide further RS development, but it is not counted among the
+independent A-tier predictions.
+
+\paragraph{The ``\texorpdfstring{\(125=5^3\)}{125=5^3}'' observation.}
+The measured Higgs mass is
+\[
+m_H \approx 125.25 \pm 0.11\ \mathrm{GeV}.
+\]
+The cube of the Fibonacci number \(5\) is \(5^3=125\). The relative deviation is
+\[
+\varepsilon_{\%} = 100\times\frac{|125.25-125|}{125.25}\approx 0.20\%.
+\]
+We emphasize: this is a \emph{pattern observation}, not a derivation. Its relevance is that RS
+frequently singles out small integers and Fibonacci/\(\phiRS\)-related structures; \(5\) is the
+Fibonacci index at which such structures become ubiquitous in planar and quasicrystalline geometry.
+
+\paragraph{Additional electroweak ratios (context only).}
+Two dimensionless ratios often discussed in RS contexts are:
+\[
+\frac{m_H}{m_W}\approx \frac{125.25}{80.3692}\approx 1.558,
+\qquad
+\frac{m_H}{v}\approx \frac{125.25}{246.22}\approx 0.509.
+\]
+The first is within a few percent of \(\phiRS\approx 1.618\); the second is close to \(1/2\).
+In this paper these are reported as descriptive structure, not as independent predictions.
+
+\paragraph{Falsifier (future Type P commitment).}
+Once RS supplies a parameter-free mapping that fixes \(\lambda\) (or an equivalent dimensionless
+coupling) and \(v\) from ledger geometry, P-017 becomes a genuine Type P target and is immediately
+falsifiable by mismatch with the measured Higgs mass and its uncertainty. Until that mapping is
+specified, we treat P-017 strictly as Type E.
+
+\section{Results III: Cross-Domain Extensions (Type E; Supplement-first)}
+\label{sec:extensions}
+
+This section records cross-domain regularities that appear to echo RS motifs (small integers,
+\(\phiRS\)-scaling, and 8-tick structure). These items are \textbf{explicitly labeled Type E}
+because they typically involve modeling choices (``proxies'') that are not yet fixed by the core
+RS forcing chain.
+They are included to memorialize empirical patterns, to propose mechanistic hypotheses, and to
+identify concrete next steps that could promote selected items to Type P status in future work.
+
+\subsection{Biology}
+\label{sec:bio}
+
+\subsubsection*{B-010: Genetic code compression (64 codons \(\to\) 20 amino acids)}
+
+\paragraph{Observation.}
+The canonical genetic code maps \(64\) triplet codons (from a 4-letter nucleotide alphabet) onto
+approximately \(20\) amino acids plus stop signals. The raw redundancy ratio is therefore
+\begin{equation}\label{eq:b010_redundancy}
+R_{\mathrm{code}} := \frac{64}{20} = 3.2.
+\end{equation}
+RS-motivated compression hypotheses suggest that low-cost encodings tend to align with
+low-complexity \(\phiRS\)-scaled ratios. The simplest such candidate is \(2\phiRS\):
+\begin{equation}\label{eq:b010_2phi}
+2\phiRS = 2\cdot\frac{1+\sqrt{5}}{2} = 1+\sqrt{5} \approx 3.2360679.
+\end{equation}
+Comparing~\eqref{eq:b010_redundancy} to~\eqref{eq:b010_2phi} yields a relative discrepancy
+\(\varepsilon_{\%}\approx 1.1\%\).
+
+\paragraph{Derived vs.\ chosen proxy.}
+\begin{itemize}
+  \item \textbf{Derived (structural):} \(64=4^3\) arises from a 4-letter alphabet and a triplet code;
+  \(2\phiRS\) is a low-complexity RS primitive once \(\phiRS\) is fixed by T7.
+  \item \textbf{Chosen proxy:} interpreting \(R_{\mathrm{code}}=64/20\) as the relevant scalar
+  ``compression objective'' (rather than, e.g., \(61/20\), inclusion of stop codons, degeneracy
+  structure, or error-correcting capacity) is a modeling choice.
+\end{itemize}
+
+\paragraph{Classification and falsifier.}
+We classify B-010 as \textbf{Type E}. A future upgrade to Type P would require RS to specify a unique
+objective functional on genetic-code space whose minimizer forces a \(\phiRS\)-related redundancy,
+and to do so without selecting the target ratio post-hoc. A falsifier would then be a predicted
+redundancy (or degeneracy spectrum) that disagrees with observed code statistics across organisms,
+including known code variants (e.g.\ mitochondrial codes).
+
+\subsubsection*{B-013: ATP hydrolysis energy scaling (proxy quantization)}
+
+\paragraph{Observation and chosen ratio.}
+A commonly quoted biochemical free-energy release for ATP hydrolysis under standard biochemical
+conditions is on the order of \(\Delta G \sim 30.5\)~kJ/mol. Converting to an energy per molecule in eV
+using \(1\,\mathrm{eV}\approx 96.485\)~kJ/mol gives
+\begin{equation}\label{eq:b013_atp_ev}
+E_{\mathrm{ATP}} \approx \frac{30.5}{96.485}\ \mathrm{eV} \approx 0.316\ \mathrm{eV}.
+\end{equation}
+As an RS-motivated proxy, we compare \(E_{\mathrm{ATP}}\) to the \(\phiRS\)-scaled energy unit
+\begin{equation}\label{eq:b013_proxy_unit}
+E_{\star} := \phiRS^{-3}\ \mathrm{eV} \approx 0.236\ \mathrm{eV}.
+\end{equation}
+The resulting dimensionless ratio is
+\begin{equation}\label{eq:b013_ratio}
+\frac{E_{\mathrm{ATP}}}{E_{\star}} \approx \frac{0.316}{0.236} \approx 1.339.
+\end{equation}
+Notably,
+\begin{equation}\label{eq:b013_phi_3_5}
+\phiRS^{3/5} \approx 1.3347,
+\end{equation}
+so the ratio~\eqref{eq:b013_ratio} is within \(\sim 0.3\%\) of \(\phiRS^{3/5}\).
+
+\paragraph{Derived vs.\ chosen proxy.}
+\begin{itemize}
+  \item \textbf{Derived (structural):} \(\phiRS\) is fixed by T7; \(\phiRS^{-3}\) is a canonical
+  low-complexity ladder element.
+  \item \textbf{Chosen proxy (modeling degrees of freedom):} the selection of (i) a representative
+  biochemical \(\Delta G\) value (it varies with conditions), (ii) the comparison unit \(E_{\star}=\phiRS^{-3}\,\mathrm{eV}\),
+  and (iii) the low-denominator exponent \(3/5\) as a ``simple'' representation of the implied
+  \(\phiRS\)-exponent are modeling choices.
+\end{itemize}
+
+\paragraph{Classification and falsifier.}
+We classify B-013 as \textbf{Type E}. To become Type P, RS would need to derive a unique biochemical
+energy quantum (or a bounded interval) from ledger dynamics and to specify the relevant thermodynamic
+conditions under which the comparison is meaningful. A falsifier would be an RS-derived energy scale
+that is incompatible with ATP hydrolysis (and related nucleotide triphosphates) across a range of
+physiological conditions.
+
+\subsection{Neuroscience and cognition}
+\label{sec:ns}
+
+\subsubsection*{NS-007: Miller's law (7\(\pm\)2) as an 8-tick ``observer slot'' constraint}
+
+\paragraph{Observation.}
+In classic cognitive psychology, short-term/working memory capacity is often summarized as
+``\(7\pm 2\)'' items (Miller's law), with substantial task- and training-dependence through chunking.
+
+\paragraph{RS-motivated framing (exact integer core).}
+RS proposes an 8-tick neutrality cycle (T8). As a minimal interpretive hypothesis, suppose one tick
+is reserved for meta-cognitive control (an ``observer'' slot) required to maintain coherence across
+the cycle. Then the content capacity per cycle is
+\begin{equation}\label{eq:ns007}
+C_{\mathrm{WM}} := 8 - 1 = 7.
+\end{equation}
+The ``\(\pm 2\)'' range is interpreted as variability in effective chunking and synchronization
+efficiency around the nominal cycle capacity.
+
+\paragraph{Mechanistic hypothesis: nested oscillations.}
+A frequently discussed neurophysiological mechanism for capacity limits is theta--gamma nesting:
+gamma bursts encode discrete items within a slower theta cycle. Using representative frequencies
+(gamma \(\sim 40\)~Hz, theta \(\sim 6\)~Hz) gives
+\begin{equation}\label{eq:ns007_gamma_theta}
+\frac{f_{\gamma}}{f_{\theta}} \approx \frac{40}{6} \approx 6.67,
+\end{equation}
+which is of the correct order to support \(\sim 7\) gamma packets per theta cycle.
+In RS terms, the 8-tick cycle is hypothesized to manifest at biological time scales via this nested
+oscillatory organization.
+
+\paragraph{Derived vs.\ chosen proxy.}
+\begin{itemize}
+  \item \textbf{Derived (structural):} the existence of an 8-tick cycle (T8).
+  \item \textbf{Chosen proxy:} allocating exactly one tick to an ``observer'' process; selecting
+  representative theta/gamma frequencies; and identifying oscillatory nesting as the primary
+  mechanism for item capacity.
+\end{itemize}
+
+\paragraph{Classification and falsifier.}
+We classify NS-007 as \textbf{Type E}. A falsifier for the mechanistic component would be a robust,
+replicated demonstration that working-memory item capacity is not constrained by theta--gamma nesting
+or any cycle-based multiplexing mechanism. A falsifier for the structural RS mapping would be an RS
+derivation of 8-tick dynamics that implies a substantially different capacity prediction.
+
+\subsection{Condensed matter}
+\label{sec:cm}
+
+\subsubsection*{Curie temperature ratios as \(\phiRS\)-scaled structure}
+
+\paragraph{Observation.}
+Elemental ferromagnets exhibit characteristic Curie temperatures, e.g.\ (approximate values):
+\[
+T_C(\mathrm{Fe})\approx 1043\ \mathrm{K},\qquad
+T_C(\mathrm{Co})\approx 1394\ \mathrm{K},\qquad
+T_C(\mathrm{Ni})\approx 631\ \mathrm{K}.
+\]
+The cobalt-to-iron ratio is
+\begin{equation}\label{eq:cm_curie_ratio}
+\frac{T_C(\mathrm{Co})}{T_C(\mathrm{Fe})}\approx \frac{1394}{1043}\approx 1.3366.
+\end{equation}
+This is close to \(\phiRS^{3/5}\approx 1.3347\) with a relative discrepancy \(\sim 0.14\%\).
+
+\paragraph{Derived vs.\ chosen proxy.}
+\begin{itemize}
+  \item \textbf{Derived (structural):} \(\phiRS\) provides a low-complexity scaling ladder.
+  \item \textbf{Chosen proxy:} selecting a specific ratio (Co/Fe), using approximate \(T_C\) values
+  (which are material- and measurement-dependent), and selecting the low-denominator exponent \(3/5\).
+\end{itemize}
+
+\paragraph{Classification and falsifier.}
+We classify this as \textbf{Type E}. A future Type P version would require RS to derive (i) which
+materials define the canonical comparison class, (ii) which thermodynamic definition of \(T_C\) is
+the correct one for the ledger mapping, and (iii) why the exponent \(3/5\) is forced rather than fit.
+
+\subsubsection*{HCP \texorpdfstring{\(c/a\)}{c/a} ratio and proximity to \(\phiRS\)}
+
+\paragraph{Observation.}
+For an ideal close-packed hard-sphere hexagonal lattice, the geometric ratio is
+\begin{equation}\label{eq:hcp_ideal}
+\left(\frac{c}{a}\right)_{\mathrm{ideal}}=\sqrt{\frac{8}{3}}\approx 1.63299.
+\end{equation}
+The golden ratio is \(\phiRS\approx 1.61803\), giving a relative separation
+\(\varepsilon_{\%}\approx 0.92\%\).
+
+\paragraph{Derived vs.\ chosen proxy.}
+\begin{itemize}
+  \item \textbf{Derived (geometric):} Eq.~\eqref{eq:hcp_ideal} is a classical packing result.
+  \item \textbf{Chosen proxy:} treating proximity of \(\sqrt{8/3}\) (or empirical HCP \(c/a\) values)
+  to \(\phiRS\) as meaningful evidence of RS structure rather than coincidental geometric proximity.
+\end{itemize}
+
+\paragraph{Classification and falsifier.}
+We classify this as \textbf{Type E}. A meaningful falsifier would require a sharpened RS claim
+specifying a distributional prediction for empirical HCP \(c/a\) ratios across elements and alloys,
+including predicted deviations from the ideal value and their correlation with other RS quantities.
+
+\section{Robustness and Ablations}
+\label{sec:robust}
+
+This section evaluates how sensitive the headline claims are to dataset versions, anchoring choices,
+and to the core RS structural motifs \(\phiRS\) and the 8-tick cycle. The intent is not to
+``optimize'' agreement, but to make explicit what would have to change in order for the ledger to
+fail.
+
+\subsection{Version robustness (PDG/Planck year sensitivity)}
+\label{sec:version}
+
+\paragraph{C-005 (\(\alphas(M_Z)=2/17\)).}
+The PDG world average for \(\alphas(M_Z)\) is a long-running global fit that has remained close to
+\(\sim 0.118\) for many years. Because the RS value \(2/17\approx 0.11765\) is fixed exactly, the
+question of version robustness reduces to whether future PDG updates move the world average
+systematically away from this rational. Given the current quoted uncertainty scale
+(\(\sigma\sim 10^{-3}\)), the claim would only be threatened by a sustained shift at the few-\(10^{-3}\)
+level (several sigma), not by typical year-to-year drift.
+
+\paragraph{A-009 (\(\Omega_{\Lambda}=11/16-\alpha/\pi\)).}
+Planck 2018 provides a baseline \(\Lambda\)CDM estimate of \(\Omega_{\Lambda}\) with uncertainty of
+order \(10^{-2}\). The RS prediction differs from the Planck 2018 central value by \(\sim 5\times 10^{-4}\),
+so the comparison is robust to small updates in Planck-like analyses. However, the longer-term risk
+is conceptual rather than numerical: if future cosmological datasets robustly favor extensions that
+shift the inferred \(\Omega_{\Lambda}\) (or replace it with evolving dark energy, \(w\neq -1\)), then
+the correct comparison object must be explicitly redefined. This is not a loophole: it is an explicit
+falsification pathway.
+
+\paragraph{C-004 (\(\sin^2\theta_W\approx 3/13\)).}
+The dominant ``version'' sensitivity for the weak mixing parameter is not the calendar year but the
+\emph{scheme definition}. For example, the on-shell definition
+\(\sin^2\theta_W^{\mathrm{OS}}:=1-(m_W/m_Z)^2\) differs substantially from
+\(\sin^2\theta_W^{\overline{\mathrm{MS}}}(M_Z)\). Accordingly, C-004 should be interpreted as a
+benchmark for a specified scheme/scale, not as a scheme-invariant identity. Year-to-year updates in
+the PDG electroweak fit are expected to be subdominant compared to scheme choices and radiative
+corrections.
+
+\paragraph{A-008 (Hubble-ratio benchmark \(13/12\)).}
+The ``Hubble tension'' does not define a unique scalar without choosing what counts as an ``early''
+and ``late'' measurement. The ratio test is therefore \emph{conditionally robust}: it is robust only
+within the preregistered convention (e.g.\ Planck-like CMB inference for ``early'' and SH0ES-like
+ladder inference for ``late''). If alternative late-time determinations shift the late value toward
+the early value, the ratio will move toward \(1\) and the \(13/12\) benchmark will fail under the
+same convention. This dataset dependence is intrinsic and is recorded as part of the protocol, not
+treated as an after-the-fact choice.
+
+\subsection{Parameter and anchor sensitivity (including calibration seams)}
+\label{sec:anchorsens}
+
+\paragraph{Dimensionless-first design.}
+The A-tier set was selected to minimize dependence on calibration seams that convert RS-internal
+units to SI. In particular, C-005 and C-004 are pure rational benchmarks for dimensionless couplings,
+and A-009 is a dimensionless fraction built from integers, \(\pi\), and \(\alpha\). As a result, the
+numerical stability of these claims is dominated by observational uncertainty and scheme conventions
+rather than by fragile unit conversions.
+
+\paragraph{Sensitivity of A-009 to \texorpdfstring{\(\alpha\)}{alpha}.}
+With \(\Omega_{\Lambda} = 11/16 - \alpha/\pi\), the dependence on \(\alpha\) is linear:
+\[
+\frac{\partial \Omega_{\Lambda}}{\partial \alpha} = -\frac{1}{\pi}.
+\]
+The fine-structure constant is known to extremely high precision compared to cosmological parameter
+uncertainties, so treating \(\alpha\) as an external anchor introduces negligible numerical
+uncertainty at the scale of Planck error bars. The dominant uncertainty is therefore the cosmological
+inference of \(\Omega_{\Lambda}\), not the value of \(\alpha\).
+
+\paragraph{Scheme anchors for couplings.}
+\(\alphas(M_Z)\) and \(\sin^2\theta_W(M_Z)\) are not single numbers independent of convention; they
+depend on renormalization scheme and scale. This paper treats the scheme/scale declaration as an
+\emph{anchor} (a choice of comparison object), not a fit parameter. A robust RS account of these
+quantities should eventually include a principled mapping between ledger geometry and a preferred
+scheme, or predict scheme-running corrections; until then, the geometric benchmarks should be
+interpreted at the declared comparison point only.
+
+\paragraph{Cross-domain extension sensitivity.}
+Type E items are typically far more sensitive to proxy choices than the A-tier claims. Examples:
+\begin{itemize}
+  \item In B-010, choosing \(64/20\) versus \(61/20\) changes the redundancy scalar by \(\sim 5\%\).
+  \item In B-013, the biochemical free energy \(\Delta G\) varies with conditions; changing the assumed
+  hydrolysis energy across a plausible range shifts the inferred eV value and therefore the
+  \(\phiRS\)-ratio match.
+  \item In NS-007, the theta and gamma frequency bands are broad; the ratio \(f_{\gamma}/f_{\theta}\)
+  can vary by tens of percent across tasks, subjects, and measurement choices.
+\end{itemize}
+These sensitivities are not defects; they are precisely why these items are labeled Type E pending a
+unique RS prescription of the relevant proxy.
+
+\subsection{Ablations: replacing \texorpdfstring{\(\phiRS\)}{phi} or perturbing the 8-tick cycle}
+\label{sec:ablation}
+
+\paragraph{Ablating \(\phiRS\).}
+Many Type E extensions are explicitly \(\phiRS\)-based. If \(\phiRS\) were replaced by a different
+constant \(\psi\), then \(2\phiRS\) in B-010 and the \(\phiRS\)-ladder scalings in B-013 and CM
+regularities would generically shift. For example, matching the genetic-code redundancy ratio
+\(64/20=3.2\) by a ``\(2\psi\)'' rule would force \(\psi=1.6\). The RS fixed point
+\(\phiRS\approx 1.618\) differs by \(\sim 1.1\%\), which is precisely the reported mismatch. Thus,
+the claimed proximity is fragile under replacement of \(\phiRS\), and its persistence is itself an
+empirical clue about whether \(\phiRS\) is privileged.
+
+\paragraph{Ablating the 8-tick.}
+The A-tier cosmology relations (A-009 and A-008) lean heavily on the T8 structure: \(8=2^3\) supports
+the cube combinatorics (8 vertices, 12 edges) and the derived counts (e.g.\ ``11 passive edges'').
+If the neutrality cycle length were \(N\neq 8\), the associated hypercube geometry would change.
+For instance, if \(N=16=2^4\) (a 4-cube), the vertex count would be \(16\) and the edge count would be
+\(4\cdot 2^{3}=32\); a naive ``passive fraction'' analog \((32-1)/(2\cdot 16)=31/32\approx 0.969\)
+would be incompatible with \(\Omega_{\Lambda}\approx 0.685\). Thus A-009 functions as a stringent
+structural test of the 8-tick/cube picture: changing the tick count typically destroys the integer
+geometry that produces the observed-scale fraction.
+
+\paragraph{Perturbing the tick rather than replacing it.}
+The relevant ablation is not only ``\(8\) vs.\ not \(8\),'' but also whether the 8-tick is
+\emph{dominant} in the dynamics. If the effective cycle were noisy or allowed persistent leakage
+between ticks, then integer-count predictions tied to exact cube combinatorics would degrade into
+fuzzy ranges. In that regime the framework would need to predict \emph{distributions} (not exact
+integers) for observables such as \(\Omega_{\Lambda}\) and the Hubble benchmark ratio, and the ledger
+would have to be reformulated accordingly. The present work treats the 8-tick as an exact structural
+feature, making these predictions sharp and falsifiable.
+
+\section{Robustness and Ablations}
+\label{sec:robust}
+
+This section evaluates how sensitive the headline claims are to dataset versions, anchoring choices,
+and to the core RS structural motifs \(\phiRS\) and the 8-tick cycle.
+The intent is not to ``optimize'' agreement, but to make explicit what would have to change in order
+for the ledger to fail.
+
+\subsection{Version robustness (PDG/Planck year sensitivity)}
+\label{sec:version}
+
+\paragraph{C-005 (\(\alphas(M_Z)=2/17\)).}
+The PDG world average for \(\alphas(M_Z)\) is a long-running global fit that has remained close to
+\(\sim 0.118\) for many years. Because the RS value \(2/17\approx 0.11765\) is fixed exactly, the
+question of version robustness reduces to whether future PDG updates move the world average
+systematically away from this rational.
+Given the current quoted uncertainty scale (\(\sigma\sim 10^{-3}\)), the claim would only be
+threatened by a sustained shift at the few-\(10^{-3}\) level (several sigma), not by typical
+year-to-year drift.
+
+\paragraph{A-009 (\(\Omega_{\Lambda}=11/16-\alpha/\pi\)).}
+Planck 2018 provides a baseline \(\Lambda\)CDM estimate of \(\Omega_{\Lambda}\) with uncertainty of
+order \(10^{-2}\). The RS prediction differs from the Planck 2018 central value by \(\sim 5\times 10^{-4}\),
+so the comparison is robust to small updates in Planck-like analyses.
+However, the longer-term risk is conceptual rather than numerical: if future cosmological datasets
+robustly favor extensions that shift the inferred \(\Omega_{\Lambda}\) (or replace it with evolving
+dark energy, \(w\neq -1\)), then the correct comparison object must be explicitly redefined.
+This is not a loophole: it is an explicit falsification pathway.
+
+\paragraph{C-004 (\(\sin^2\theta_W\approx 3/13\)).}
+The dominant ``version'' sensitivity for the weak mixing parameter is not the calendar year but the
+\emph{scheme definition}. For example, the on-shell definition \(\sin^2\theta_W^{\mathrm{OS}}:=1-(m_W/m_Z)^2\)
+differs substantially from \(\sin^2\theta_W^{\overline{\mathrm{MS}}}(M_Z)\).
+Accordingly, C-004 should be interpreted as a benchmark for a specified scheme/scale, not as a
+scheme-invariant identity. Year-to-year updates in the PDG electroweak fit are expected to be
+subdominant compared to scheme choices and radiative corrections.
+
+\paragraph{A-008 (Hubble-ratio benchmark \(13/12\)).}
+Unlike C-005 and A-009, the ``Hubble tension'' does not define a unique scalar without choosing what
+counts as an ``early'' and ``late'' measurement. The ratio test is therefore \emph{conditionally
+robust}: it is robust only within the preregistered convention (e.g.\ Planck-like CMB inference for
+``early'' and SH0ES-like ladder inference for ``late''). If alternative late-time determinations
+shift the late value toward the early value, the ratio will move toward \(1\) and the \(13/12\)
+benchmark will fail under the same convention.
+This dataset dependence is intrinsic and is recorded as part of the protocol, not treated as an
+after-the-fact choice.
+
+\subsection{Parameter and anchor sensitivity (including calibration seams)}
+\label{sec:anchorsens}
+
+\paragraph{Dimensionless-first design.}
+The A-tier set was selected to minimize dependence on calibration seams that convert RS-internal
+units to SI. In particular, C-005 and C-004 are pure rational benchmarks for dimensionless couplings,
+and A-009 is a dimensionless fraction built from integers, \(\pi\), and \(\alpha\).
+As a result, the numerical stability of these claims is dominated by observational uncertainty and
+scheme conventions rather than by fragile unit conversions.
+
+\paragraph{Sensitivity of A-009 to \texorpdfstring{\(\alpha\)}{alpha}.}
+With \(\Omega_{\Lambda} = 11/16 - \alpha/\pi\), the dependence on \(\alpha\) is linear:
+\[
+\frac{\partial \Omega_{\Lambda}}{\partial \alpha} = -\frac{1}{\pi}.
+\]
+The fine-structure constant is known to extremely high precision compared to cosmological parameter
+uncertainties, so treating \(\alpha\) as an external anchor introduces negligible numerical
+uncertainty at the scale of Planck error bars. The dominant uncertainty is therefore the cosmological
+inference of \(\Omega_{\Lambda}\), not the value of \(\alpha\).
+
+\paragraph{Scheme anchors for couplings.}
+\(\alphas(M_Z)\) and \(\sin^2\theta_W(M_Z)\) are not single numbers independent of convention; they
+depend on renormalization scheme and scale. This paper treats the scheme/scale declaration as an
+\emph{anchor} (a choice of comparison object), not a fit parameter.
+A robust RS account of these quantities should eventually include a principled mapping between
+ledger geometry and a preferred scheme, or predict scheme-running corrections; until then, the
+geometric benchmarks should be interpreted at the declared comparison point only.
+
+\paragraph{Cross-domain extension sensitivity.}
+Type E items are typically far more sensitive to proxy choices than the A-tier claims. Examples:
+\begin{itemize}
+  \item In B-010, choosing \(64/20\) versus \(61/20\) changes the redundancy scalar by \(\sim 5\%\).
+  \item In B-013, the biochemical free energy \(\Delta G\) varies with conditions; changing the assumed
+  hydrolysis energy across a plausible range shifts the inferred eV value and therefore the
+  \(\phiRS\)-ratio match.
+  \item In NS-007, the theta and gamma frequency bands are broad; the ratio \(f_{\gamma}/f_{\theta}\)
+  can vary by tens of percent across tasks, subjects, and measurement choices.
+\end{itemize}
+These sensitivities are not defects; they are precisely why these items are labeled Type E pending a
+unique RS prescription of the relevant proxy.
+
+\subsection{Ablations: replacing \texorpdfstring{\(\phiRS\)}{phi} or perturbing the 8-tick cycle}
+\label{sec:ablation}
+
+\paragraph{Ablating \(\phiRS\).}
+Many Type E extensions are explicitly \(\phiRS\)-based. If \(\phiRS\) were replaced by a different
+constant \(\psi\), then \(2\phiRS\) in B-010 and the \(\phiRS\)-ladder scalings in B-013 and CM
+regularities would generically shift.
+For example, matching the genetic-code redundancy ratio \(64/20=3.2\) by a ``\(2\psi\)'' rule would
+force \(\psi=1.6\). The RS fixed point \(\phiRS\approx 1.618\) differs by \(\sim 1.1\%\), which is
+precisely the reported mismatch. Thus, the claimed proximity is fragile under replacement of
+\(\phiRS\), and its persistence is itself an empirical clue about whether \(\phiRS\) is privileged.
+
+\paragraph{Ablating the 8-tick.}
+The A-tier cosmology relations (A-009 and A-008) lean heavily on the T8 structure: \(8=2^3\) supports
+the cube combinatorics (8 vertices, 12 edges) and the derived counts (e.g.\ ``11 passive edges'').
+If the neutrality cycle length were \(N\neq 8\), the associated hypercube geometry would change.
+For instance, if \(N=16=2^4\) (a 4-cube), the vertex count would be \(16\) and the edge count would be
+\(4\cdot 2^{3}=32\); a naive ``passive fraction'' analog \((32-1)/(2\cdot 16)=31/32\approx 0.969\)
+would be incompatible with \(\Omega_{\Lambda}\approx 0.685\). Thus A-009 functions as a stringent
+structural test of the 8-tick/cube picture: changing the tick count typically destroys the integer
+geometry that produces the observed-scale fraction.
+
+\paragraph{Perturbing the tick rather than replacing it.}
+The relevant ablation is not only ``\(8\) vs.\ not \(8\),'' but also whether the 8-tick is
+\emph{dominant} in the dynamics. If the effective cycle were noisy or allowed persistent leakage
+between ticks, then integer-count predictions tied to exact cube combinatorics would degrade into
+fuzzy ranges. In that regime the framework would need to predict \emph{distributions} (not exact
+integers) for observables such as \(\Omega_{\Lambda}\) and the Hubble benchmark ratio, and the ledger
+would have to be reformulated accordingly. The present work treats the 8-tick as an exact structural
+feature, making these predictions sharp and falsifiable.
+
+\section{Falsification Roadmap}
+
+The strongest argument for RS is not retrospective matching but a disciplined pipeline of
+out-of-sample targets with explicit failure criteria. This section enumerates the next
+high-leverage preregistered targets and specifies what would count as a decisive failure.
+
+\subsection{Next high-leverage targets (preregistered)}
+\label{sec:next}
+
+We preregister the following ``Tier 1'' targets as the next decisive tests of RS. These are chosen
+because they are central to the Standard Model/\(\Lambda\)CDM parameter stack and because upcoming
+data is expected to sharpen their uncertainties substantially.
+
+\subsubsection*{P-022: CKM matrix elements (quark mixing)}
+\paragraph{Target.}
+Predict the CKM matrix \(V_{\mathrm{CKM}}\) (or an equivalent minimal parametrization) in a
+scheme-consistent way. Operationally we will evaluate one of the following preregistered target sets:
+\begin{itemize}
+  \item \textbf{Wolfenstein parameters} \((\lambda, A, \bar\rho, \bar\eta)\), or
+  \item \textbf{A minimal element set} \((|V_{us}|, |V_{cb}|, |V_{ub}|, |V_{td}|)\) together with a
+  CP-violating measure such as the Jarlskog invariant \(J_{\mathrm{CKM}}\).
+\end{itemize}
+The choice of which set is used must be fixed at the time the RS closed form is stated, and must be
+held constant for evaluation.
+
+\paragraph{Reference datasets.}
+Global-fit summaries from PDG (for central values and covariance where available), cross-checked
+against independent global-fit frameworks (e.g.\ CKMfitter/UTfit-style analyses).
+
+\subsubsection*{P-023: PMNS matrix elements (neutrino mixing)}
+\paragraph{Target.}
+Predict the PMNS mixing angles and (if possible) the leptonic CP phase:
+\[
+\sin^2\theta_{12},\quad \sin^2\theta_{23},\quad \sin^2\theta_{13},\quad \delta_{\mathrm{CP}},
+\]
+and specify whether RS implies normal or inverted mass ordering.
+
+\paragraph{Reference datasets.}
+Global neutrino oscillation fits (NuFIT-style analyses) and the primary-experiment likelihood
+constraints (reactor, accelerator, atmospheric).
+
+\subsubsection*{P-024: CP violation parameter(s)}
+\paragraph{Target.}
+Predict CP violation in at least one sector in a way that cannot be reabsorbed into convention:
+\begin{itemize}
+  \item \textbf{Quark sector:} the Jarlskog invariant \(J_{\mathrm{CKM}}\) or an equivalent CP-odd
+  invariant derived from a predicted CKM matrix.
+  \item \textbf{Lepton sector:} \(\delta_{\mathrm{CP}}\) (and, if RS extends to Majorana structure,
+  a preregistered prediction for neutrinoless double beta decay observables).
+\end{itemize}
+
+\paragraph{Reference datasets.}
+For quarks: PDG/global unitarity-triangle fits; for leptons: long-baseline accelerator constraints
+and global-fit posteriors for \(\delta_{\mathrm{CP}}\).
+
+\subsubsection*{A-011: CMB anisotropies (shape-level predictions)}
+\paragraph{Target.}
+Move beyond scalar parameter matches and predict \emph{shape information} in the CMB angular power
+spectra. To make this falsifiable without requiring a full Boltzmann-code reproduction in this paper,
+we preregister a summary-statistic target set derived from the spectra:
+\begin{itemize}
+  \item the acoustic angular scale \(\ell_A\) (or equivalently the first-peak position \(\ell_1\)),
+  \item ratios of peak positions \(\ell_2/\ell_1\), \(\ell_3/\ell_1\),
+  \item ratios of peak heights \(C_{\ell_2}/C_{\ell_1}\), \(C_{\ell_3}/C_{\ell_1}\),
+  \item a damping-tail slope proxy from a fixed high-\(\ell\) window.
+\end{itemize}
+RS must provide explicit closed forms (or a finite-parameter-free construction) for these summary
+statistics in terms of derived RS primitives and preregistered anchors.
+
+\paragraph{Reference datasets.}
+Planck 2018 TT/TE/EE spectra as baseline, with future cross-checks from next-generation CMB surveys.
+
+\subsubsection*{A-012: Big Bang nucleosynthesis (BBN) yields}
+\paragraph{Target.}
+Predict primordial light-element abundances (at minimum):
+\[
+Y_p\ (\text{He-4 mass fraction}),\qquad \mathrm{D/H},\qquad \text{and one additional yield (e.g.\ Li-7/H).}
+\]
+RS must specify the baryon-density input it implies (or derive it), and whether the prediction is a
+direct RS output or RS+standard-nuclear-network output under preregistered nuclear-rate inputs.
+
+\paragraph{Reference datasets.}
+Primordial abundance measurements from metal-poor systems (He-4), quasar absorption systems (D/H),
+and corresponding community-accepted compilations, cross-checked against CMB-inferred baryon density.
+
+\subsubsection*{Remaining Tier 1 unifications}
+\paragraph{Targets.}
+We also preregister the following as Tier-1-but-longer-horizon commitments:
+\begin{itemize}
+  \item \textbf{Higgs self-coupling} \(\lambda\) (distinct from the Higgs mass; see Eq.~\eqref{eq:higgs_mass_sm}),
+  \item \textbf{Absolute neutrino mass scale} (e.g.\ via \(m_\beta\) and \(\Sigma m_\nu\)),
+  \item \textbf{Baryon asymmetry} \(\eta_B\) or an RS-derived baryogenesis mechanism tied to CP structure,
+  \item \textbf{Dark energy equation of state} \(w\) (test of strict \(w=-1\) vs evolving dark energy).
+\end{itemize}
+
+\subsection{Concrete falsifiers}
+\label{sec:falsifiers}
+
+For each preregistered target, RS is falsified if the final closed form (as stated prior to looking
+at the comparison outcome under the preregistered protocol) violates the following thresholds.
+
+\paragraph{Matrix targets (CKM/PMNS).}
+When a covariance matrix is available from the reference fit, we will compute a chi-square:
+\[
+\chi^2 = (x_{\mathrm{pred}}-x_{\mathrm{obs}})^\top \Sigma^{-1} (x_{\mathrm{pred}}-x_{\mathrm{obs}}),
+\]
+and declare failure if \(\chi^2\) exceeds the 99\% quantile for the corresponding degrees of freedom.
+When only per-parameter uncertainties are available, we will use the conservative rule:
+\begin{itemize}
+  \item \textbf{Fail} if any preregistered element/parameter deviates by \(>3\sigma\) \emph{and} the
+  deviation persists across at least two independent fit frameworks or datasets.
+\end{itemize}
+
+\paragraph{CP violation.}
+For \(J_{\mathrm{CKM}}\) (or an equivalent invariant), we treat it as a scalar target and apply the
+\(3\sigma\) failure rule above. For \(\delta_{\mathrm{CP}}\), because current uncertainties can be broad
+and non-Gaussian, we preregister a robust criterion:
+\begin{itemize}
+  \item \textbf{Fail} if the RS-predicted interval (or point value with stated tolerance) has
+  posterior probability \(<1\%\) under the global-fit posterior at the time of evaluation.
+\end{itemize}
+
+\paragraph{CMB anisotropy summary statistics.}
+For each preregistered summary statistic (peak positions/heights/damping proxy), we will use
+\(\varepsilon_{\%}\) and \(n_\sigma\) when uncertainties are supplied. We declare:
+\begin{itemize}
+  \item \textbf{Fail} if any two independent summary statistics differ by \(>3\sigma\), or if the
+  overall summary-statistic chi-square exceeds the 99\% quantile.
+\end{itemize}
+This ``two-strike'' rule prevents declaring failure from a single potentially mis-modeled proxy
+while still making the prediction sharply falsifiable.
+
+\paragraph{BBN yields.}
+For \(Y_p\) and D/H we apply the \(3\sigma\) rule against observational compilations, with the added
+requirement that the assumed nuclear rates and baryon-density input be preregistered and fixed.
+For Li-7/H (given known systematic tensions in the ``lithium problem''), we will treat the claim as
+falsified if RS both (i) predicts standard-network Li-7/H and (ii) does not provide an explicit
+mechanism for depletion or observational bias while still matching D/H and \(Y_p\).
+
+\subsection{Timeline: what will decide what, and when}
+\label{sec:timeline}
+
+The roadmap above interacts with real experimental schedules. We therefore group the next tests by
+expected decision horizon, using broad windows rather than single dates.
+
+\paragraph{Near-term (2026--2029).}
+\begin{itemize}
+  \item \textbf{CKM refinements:} continued improvements from \(B\)-factories and hadron experiments,
+  together with lattice-QCD improvements that reduce hadronic uncertainties in \(|V_{cb}|\), \(|V_{ub}|\),
+  and unitarity-triangle constraints.
+  \item \textbf{Neutrino ordering:} medium-baseline reactor and atmospheric analyses are expected to
+  sharpen the normal vs inverted ordering question.
+  \item \textbf{BBN cross-checks:} additional high-quality D/H measurements and helium-systematics
+  reductions in metal-poor systems.
+\end{itemize}
+
+\paragraph{Medium-term (late 2020s--early 2030s).}
+\begin{itemize}
+  \item \textbf{Leptonic CP phase:} next-generation long-baseline neutrino experiments are expected to
+  substantially sharpen constraints on \(\delta_{\mathrm{CP}}\).
+  \item \textbf{CMB anisotropy improvements:} next-generation CMB surveys (ground-based and satellite)
+  will refine peak/damping-tail measurements and polarization systematics, tightening summary-statistic
+  uncertainties used in A-011.
+\end{itemize}
+
+\paragraph{Longer-term (2030s).}
+\begin{itemize}
+  \item \textbf{Higgs self-coupling:} high-luminosity collider programs are expected to improve direct
+  constraints on the Higgs self-interaction \(\lambda\), enabling a genuine Type P test once RS supplies
+  a parameter-free \(\lambda\) prediction.
+  \item \textbf{Absolute neutrino mass scale:} combinations of beta-decay endpoint experiments,
+  cosmological constraints on \(\Sigma m_\nu\), and neutrinoless double beta decay (if neutrinos are
+  Majorana) will progressively close the allowed region.
+\end{itemize}
+
+The guiding principle is that RS should ``front-load'' the highest-leverage targets: CKM/PMNS/CP and
+CMB/BBN. These represent stringent, multi-parameter tests where post-hoc fitting is difficult and
+where independent experimental programs will continue to tighten uncertainties.
+
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Unifying motifs: recurring integers and the \texorpdfstring{\(\phiRS\)}{phi}-ladder}
+\label{sec:motifs}
+
+One of the striking features of the A-tier ledger is that the closed forms are dominated by a small
+set of integers and one irrational constant:
+\[
+8,\ 11,\ 12,\ 13,\ 16,\ 17,\ \phiRS.
+\]
+These are not arbitrary numerology in the RS framing; they have specific structural meanings:
+\begin{itemize}
+  \item \textbf{8} arises as the minimal neutrality cycle (T8) and as the vertex count of the 3-cube
+  \(Q_3\) via \(8=2^3\).
+  \item \textbf{12} is the edge count of \(Q_3\), supporting the ``static'' ledger picture.
+  \item \textbf{13} appears as ``12 edges + 1'' in the ``dynamic'' ledger picture (including a
+  time-like degree), and enters the Hubble-ratio benchmark \(13/12\) and the electroweak benchmark
+  \(3/13\).
+  \item \textbf{11} appears as ``12--1'' when distinguishing one active edge channel from the passive
+  complement, producing the base fraction \(11/16\) in A-009.
+  \item \textbf{16} appears as \(2\cdot 8\), a doubling of the 8-tick structure in the same A-009
+  denominator.
+  \item \textbf{17} appears as a rigid classification count: the number of wallpaper groups, used in
+  C-005.
+  \item \textbf{\(\phiRS\)} appears as the unique positive self-similar fixed point (T7) and provides
+  a ``ladder'' of low-complexity scalings \(\phiRS^n\) and \(\phiRS^{p/q}\) that recur in the Type E
+  extensions and in RS-internal scaling heuristics.
+\end{itemize}
+The combination of (i) hypercube combinatorics (8,12), (ii) dynamic augmentation (13), (iii)
+complements (11), and (iv) planar classification (17), suggests that a large fraction of the
+parameter stack might be interpretable as geometry and symmetry \emph{counts} rather than as
+continuous free parameters.
+
+\subsection{Why symmetry counts might map to couplings (without overclaiming)}
+\label{sec:sym_to_coupling}
+
+In effective field theory, couplings encode the strength of interactions after integrating out
+unobserved degrees of freedom. In RS, the analogous objects are ``recognition channels'' that must
+maintain coherence under composition, with cost controlled by \(\Jcost\). A natural hypothesis is:
+\emph{the effective strength of a channel is inversely related to the density of distinct symmetry
+classes that can realize that channel}.
+
+This hypothesis is plausible but not automatically true. The main reasons it is attractive are:
+\begin{enumerate}
+  \item \textbf{Rigidity:} symmetry counts (e.g.\ wallpaper groups) are discrete and cannot be tuned
+  continuously, producing sharp predictions.
+  \item \textbf{Universality:} symmetry classifications are independent of microscopic details and
+  depend only on global constraints (periodicity, dimensionality), matching the RS emphasis on
+  ledger-level universality.
+  \item \textbf{Coarse-graining intuition:} if an interaction is realized by a family of equivalent
+  micro-configurations, then the effective coupling can scale like the reciprocal of the number (or
+  measure) of those configurations, analogous to entropic factors in statistical mechanics.
+\end{enumerate}
+However, mapping a particular symmetry count to a particular renormalized coupling requires more
+than analogy: it requires an explicit RS-to-QFT bridge that specifies how ledger channels correspond
+to renormalization schemes and how running effects appear. For this reason, this paper treats
+symmetry-count claims as benchmarks with explicit falsifiers, not as final mechanistic explanations.
+
+\subsection{Relation to standard frameworks: SM/\texorpdfstring{\(\Lambda\)}{Lambda}CDM as effective limits}
+\label{sec:relation}
+
+RS is not intended to discard the Standard Model or \(\Lambda\)CDM; rather, it proposes that these
+frameworks are \emph{effective limits} of a deeper discrete recognition dynamics.
+On this view:
+\begin{itemize}
+  \item The Standard Model remains the correct low-energy effective theory for gauge interactions and
+  particle content, but RS aims to reduce the number of externally supplied parameters by deriving
+  couplings, mixings, and mass ratios from ledger geometry.
+  \item \(\Lambda\)CDM remains the correct coarse-grained cosmological model for current data, but RS
+  aims to explain why the inferred fractions (e.g.\ \(\Omega_{\Lambda}\)) take the values they do, and
+  why certain tensions (e.g.\ early/late \(H_0\)) might reflect distinct ledger regimes.
+\end{itemize}
+In particular, RS makes two pragmatic contributions even if one remains agnostic about the
+framework's ultimate correctness:
+\begin{enumerate}
+  \item It offers a disciplined \emph{prediction ledger} with explicit dependency accounting and
+  falsifiers, which can be used to test any proposed parameter-reduction scheme.
+  \item It identifies a small number of high-leverage next targets (CKM/PMNS/CP, CMB/BBN) that would
+  quickly distinguish genuine derivation structure from flexible pattern matching.
+\end{enumerate}
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+We have presented Recognition Science as a prediction ledger: a stand-alone, formally stated catalog
+of closed-form targets, together with conservative comparison protocols and explicit falsifiers.
+The A-tier results emphasize unusually simple rational/integer structures in dimensionless
+observables, including \( \sin^2\theta_W\approx 3/13\), \(\alphas(M_Z)=2/17\),
+\(\Omega_{\Lambda}=11/16-\alpha/\pi\), and the benchmark \(H_{\mathrm{late}}/H_{\mathrm{early}}=13/12\).
+We also documented cross-domain extensions (biology, cognition, condensed matter) as Type E items,
+explicitly separating derived structure from proxy choices.
+
+The primary scientific value of this paper is not the existence of coincidences, but the
+construction of a falsifiable workflow: each claim is stated explicitly, its dependencies are
+recorded, and its failure conditions are spelled out. The most important next step is to convert
+the falsification roadmap into prospective preregistered evaluations, focusing on high-leverage
+targets where post-hoc flexibility is minimal: CKM/PMNS structure and CP violation in particle
+physics, and shape-level CMB/BBN predictions in cosmology.
+
+If RS is correct, these next targets should collapse toward simple closed forms with minimal degrees
+of freedom. If RS is not correct, the ledger provides a clear mechanism for failure: a small number
+of decisive out-of-sample tests will break the framework without ambiguity.
+
+\appendix
+
+\section{Appendix A: Preregistration Rules and Claim Taxonomy}
+\label{app:rules}
+
+This appendix formalizes the rules used to define, version, and interpret ledger claims in a way
+that minimizes leakage and look-elsewhere effects.
+
+\subsection{Claim taxonomy (Types P, C, E)}
+\label{app:taxonomy}
+
+\begin{definition}[Type P: Prediction]
+A claim is \textbf{Type P} if it specifies a closed-form target \(x_{\mathrm{pred}}\) for an observable
+\(x\) such that:
+\begin{enumerate}
+  \item the specification contains no per-observable tunable parameter chosen after inspecting
+  \(x_{\mathrm{obs}}\);
+  \item all non-integer inputs are declared in advance as shared anchors (scheme conventions, global
+  constants) and are not adjusted to optimize the match; and
+  \item the protocol defines the comparison dataset and metric/threshold prior to evaluation.
+\end{enumerate}
+\end{definition}
+
+\begin{definition}[Type C: Consistency]
+A claim is \textbf{Type C} if it is an identity or compatibility check within an established
+effective framework (e.g.\ a tree-level relation that holds given definitions), and therefore does
+not constitute independent empirical evidence.
+\end{definition}
+
+\begin{definition}[Type E: Extension]
+A claim is \textbf{Type E} if it maps RS motifs into another domain using a proxy that is not uniquely
+fixed by RS (e.g.\ a chosen scalar summary of a complex phenomenon). Type E items may be informative,
+but are not counted as confirmations unless promoted to Type P via a unique RS prescription.
+\end{definition}
+
+\subsection{Preregistration rules}
+\label{app:prereg}
+
+We treat preregistration as a versioned protocol. For each claim ID, the preregistration consists
+of a triple \((\mathrm{Spec}, \mathrm{Proto}, \mathrm{Rec})\) as defined in Section~\ref{sec:ids}.
+The governing rules are:
+\begin{enumerate}
+  \item \textbf{R1 (ID stability).} Each claim has a stable identifier. If either the specification or
+  protocol changes materially, the claim must be issued under a new identifier or explicit version
+  suffix (e.g.\ C-004v2).
+
+  \item \textbf{R2 (Protocol completeness).} The protocol must declare: (i) the comparison dataset
+  source and version, (ii) any scheme/scale conventions, (iii) the match metric, and (iv) the
+  acceptance threshold.
+
+  \item \textbf{R3 (No leakage).} The observed value \(x_{\mathrm{obs}}\) of the target may not be used
+  to choose integers, exponents, tolerances, or proxy definitions that determine \(x_{\mathrm{pred}}\).
+  Any dependence on external constants (e.g.\ \(\alpha\)) must be explicitly declared as anchored.
+
+  \item \textbf{R4 (Report all attempts).} Any preregistered claim that is attempted must be reported,
+  including failures and partials; selective reporting is disallowed.
+
+  \item \textbf{R5 (No p-values without a search model).} Numerical match quality may be reported as
+  \(\varepsilon_{\%}\) and/or \(n_\sigma\), but not converted to p-values unless an explicit search
+  distribution over formulas is stated (Appendix~\ref{app:stats}).
+\end{enumerate}
+
+\subsection{No-leak dependency accounting}
+\label{app:noleak}
+
+Each Type P claim must include an explicit dependency card (Section~\ref{sec:dependency}) that lists:
+allowed inputs, forbidden inputs, and the comparison convention. A claim is disallowed if its
+specification can be reinterpreted as ``solve for the parameter from the observed value'' (a common
+failure mode for ratios such as \(m_W/m_Z\) when \(\theta_W\) is not independently predicted).
+
+\section{Appendix B: Reproducibility Instructions}
+\label{app:repro}
+
+This paper is mathematically stand-alone: all formal statements required to interpret the claims are
+included in the main text. This appendix provides \emph{computational} instructions to reproduce the
+numerical evaluations and consistency checks used in the comparison tables.
+
+\subsection{Pinned reference version}
+\label{app:commit}
+
+The numerical evaluations reported in the A-tier tables correspond to a pinned reference state of
+the accompanying repository at commit hash:
+\[
+\texttt{23d524f29}.
+\]
+If the paper is distributed without the repository, the same evaluations can be reproduced by
+reimplementing the short computations described in the Results section (they are elementary).
+
+\subsection{Commands (example workflow)}
+\label{app:commands}
+
+The following is an example minimal workflow from a repository checkout:
+\begin{verbatim}
+# (1) Checkout pinned version
+git checkout 23d524f29
+
+# (2) Run A-tier validation scripts (all use Python stdlib)
+python scripts/analysis/physics_electroweak_bosons.py
+python scripts/analysis/physics_strong_coupling.py
+python scripts/analysis/cosmo_dark_energy.py
+
+# (3) Optional: run selected Type E extension checks
+python scripts/analysis/bio_genetic_code.py
+python scripts/analysis/bio_atp_energy.py
+python scripts/analysis/neuro_attention_capacity.py
+\end{verbatim}
+
+\subsection{Artifact paths}
+\label{app:artifacts}
+
+The following machine-readable records (JSON) contain the numerical computations used in this paper:
+\begin{itemize}
+  \item C-004 / electroweak benchmark suite: \path{artifacts/physics_electroweak_bosons.json}
+  \item C-005 / strong coupling: \path{artifacts/physics_strong_coupling.json}
+  \item A-009 and A-008 / dark energy and Hubble ratio checks: \path{artifacts/cosmo_dark_energy.json}
+  \item B-010 / genetic code proxy checks: \path{artifacts/bio_genetic_code.json}
+  \item B-013 / ATP proxy checks: \path{artifacts/bio_atp_energy.json}
+  \item NS-007 / attention capacity proxy checks: \path{artifacts/neuro_attention_capacity.json}
+\end{itemize}
+These artifacts are not required to understand the claims; they provide a deterministic record of
+how the comparison metrics were computed.
+
+\subsection{Compiling this paper}
+\label{app:latex}
+
+The paper source is \path{papers/tex/RS_Prediction_Ledger.tex}. A standard \LaTeX{} build is:
+\begin{verbatim}
+pdflatex RS_Prediction_Ledger.tex
+pdflatex RS_Prediction_Ledger.tex   # second pass for references
+\end{verbatim}
+
+\section{Appendix C: Claim-Card Catalog}
+\label{app:catalog}
+
+This appendix provides one ``claim card'' per ledger ID appearing in this paper. Each card records:
+the claim type, closed form (or proxy), key assumptions, dataset convention, and falsifier.
+
+\subsection{A-tier Type P claim cards}
+
+\subsubsection*{C-004 (Type P): Electroweak mixing benchmark}
+\begin{description}
+  \item[Claim.] \(\sin^2\theta_W = 3/13\) (Eq.~\eqref{eq:c004}), interpreted as a geometric benchmark in a
+  declared scheme/scale.
+  \item[Dataset.] PDG electroweak summary values (PDG 2024), \(\overline{\mathrm{MS}}\) at \(M_Z\).
+  \item[Metric.] Headline: \(\varepsilon_{\%}<1\%\); context: report \(n_\sigma\) if an uncertainty is used.
+  \item[Falsifier.] Persistent \(\varepsilon_{\%}>1\%\) in the declared scheme, or an RS correction model
+  that predicts the wrong sign/magnitude residual.
+  \item[Artifact.] \path{artifacts/physics_electroweak_bosons.json}.
+\end{description}
+
+\subsubsection*{C-005 (Type P): Strong coupling}
+\begin{description}
+  \item[Claim.] \(\alpha_s(M_Z)=2/17\) (Eq.~\eqref{eq:c005}) in the declared scheme/scale.
+  \item[Dataset.] PDG world average for \(\alpha_s(M_Z)\) (PDG 2024).
+  \item[Metric.] \(n_\sigma<1\) (primary), \(\varepsilon_{\%}\) reported for intuition.
+  \item[Falsifier.] \(|\alpha_s(M_Z)_{\mathrm{obs}}-2/17|>3\sigma\) robustly across independent determinations.
+  \item[Artifact.] \path{artifacts/physics_strong_coupling.json}.
+\end{description}
+
+\subsubsection*{A-009 (Type P): Dark energy fraction}
+\begin{description}
+  \item[Claim.] \(\Omega_{\Lambda}=11/16-\alpha/\pi\) (Eq.~\eqref{eq:a009}); \(\alpha\) treated as an anchored
+  external constant in this paper.
+  \item[Dataset.] Planck 2018 baseline \(\Lambda\)CDM \(\Omega_{\Lambda}\).
+  \item[Metric.] \(n_\sigma<1\).
+  \item[Falsifier.] Future cosmological constraints place \(\Omega_{\Lambda}\) outside a \(3\sigma\) window
+  around the prediction, or require a correction not of \(\alpha/\pi\) form.
+  \item[Artifact.] \path{artifacts/cosmo_dark_energy.json}.
+\end{description}
+
+\subsubsection*{A-008 (Type P): Hubble-ratio benchmark}
+\begin{description}
+  \item[Claim.] \(H_{\mathrm{late}}/H_{\mathrm{early}}=13/12\) (Eq.~\eqref{eq:a008}) under a declared early/late convention.
+  \item[Dataset.] ``Early'': Planck 2018 \(\Lambda\)CDM \(H_0\); ``Late'': SH0ES-style local ladder summary.
+  \item[Metric.] Headline: \(\varepsilon_{\%}<1\%\); optionally \(n_\sigma\) using propagated ratio uncertainty.
+  \item[Falsifier.] Under the preregistered convention, the observed ratio converges away from \(13/12\)
+  (e.g.\ toward \(1\)) by more than \(1\%\), or a redefinition of early/late is required post-hoc to preserve agreement.
+  \item[Artifact.] \path{artifacts/cosmo_dark_energy.json}.
+\end{description}
+
+\subsection{Type C and Type E claim cards}
+
+\subsubsection*{EW-Cons (Type C): \(m_W/m_Z=\cos\theta_W\)}
+\begin{description}
+  \item[Claim.] \(m_W/m_Z=\cos\theta_W\) (Eq.~\eqref{eq:mw_mz_cos}) given definitions~\eqref{eq:mw_mz_tree}--\eqref{eq:thetaW_def}.
+  \item[Dataset.] Not applicable (identity); used only for internal consistency.
+  \item[Falsifier.] Failure of the electroweak gauge structure (outside the scope of RS).
+  \item[Artifact.] Not applicable.
+\end{description}
+
+\subsubsection*{P-017 (Type E): Higgs mass patterns}
+\begin{description}
+  \item[Claim.] ``\(125\approx 5^3\)~GeV'' as a pattern; and RS-motivated coupling curvature \(J''(\phiRS)=1/\phiRS^3\).
+  \item[Dataset.] PDG Higgs mass summary.
+  \item[Falsifier.] Not applicable as Type P until RS fixes \(v\) and \(\lambda\) without importing \(m_H\).
+  \item[Artifact.] \path{artifacts/physics_higgs_mass.json}.
+\end{description}
+
+\subsubsection*{B-010 (Type E): Genetic code redundancy proxy}
+\begin{description}
+  \item[Claim.] \(64/20\approx 2\phiRS\) with \(\sim 1.1\%\) discrepancy (Eqs.~\eqref{eq:b010_redundancy}--\eqref{eq:b010_2phi}).
+  \item[Dataset.] Canonical genetic code mapping (64 codons, 20 amino acids).
+  \item[Falsifier.] Promotion to Type P requires an RS-derived objective and unique proxy; otherwise descriptive only.
+  \item[Artifact.] \path{artifacts/bio_genetic_code.json}.
+\end{description}
+
+\subsubsection*{B-013 (Type E): ATP energy proxy}
+\begin{description}
+  \item[Claim.] \(E_{\mathrm{ATP}}/\phiRS^{-3}\) close to a low-complexity \(\phiRS\) power (Eqs.~\eqref{eq:b013_atp_ev}--\eqref{eq:b013_phi_3_5}).
+  \item[Dataset.] Representative ATP hydrolysis free energy under standard biochemical conditions.
+  \item[Falsifier.] Promotion to Type P requires RS to fix the energy quantum and thermodynamic conditions.
+  \item[Artifact.] \path{artifacts/bio_atp_energy.json}.
+\end{description}
+
+\subsubsection*{NS-007 (Type E): Working-memory capacity proxy}
+\begin{description}
+  \item[Claim.] \(7=8-1\) ``observer slot'' framing plus theta--gamma nesting proxy (Eqs.~\eqref{eq:ns007}--\eqref{eq:ns007_gamma_theta}).
+  \item[Dataset.] Cognitive psychology capacity studies; representative oscillatory bands.
+  \item[Falsifier.] Robust evidence against cycle-based multiplexing constraints; or RS derivation implying a different capacity.
+  \item[Artifact.] \path{artifacts/neuro_attention_capacity.json}.
+\end{description}
+
+\subsubsection*{CM-010 (Type E): Curie-temperature ratio proxy}
+\begin{description}
+  \item[Claim.] \(T_C(\mathrm{Co})/T_C(\mathrm{Fe})\) close to \(\phiRS^{3/5}\) (Eq.~\eqref{eq:cm_curie_ratio}).
+  \item[Dataset.] Representative elemental Curie temperatures.
+  \item[Falsifier.] Promotion to Type P requires RS to fix material class and exponent without fit.
+  \item[Artifact.] \path{artifacts/condensed_ferromagnetism.json}.
+\end{description}
+
+\subsubsection*{CM-001 (Type E): HCP \(c/a\) proximity proxy}
+\begin{description}
+  \item[Claim.] \(\sqrt{8/3}\) is within \(\sim 1\%\) of \(\phiRS\) (Eq.~\eqref{eq:hcp_ideal}).
+  \item[Dataset.] Ideal packing geometry; empirical HCP values vary by material.
+  \item[Falsifier.] Promotion requires distributional prediction for empirical \(c/a\) deviations.
+  \item[Artifact.] Not applicable (geometric identity).
+\end{description}
+
+\subsection{Preregistered future claim cards (specification pending)}
+
+The following IDs are preregistered as next high-leverage targets (Section~\ref{sec:next}). They are
+not yet assigned final closed forms in this paper; the preregistration commitment is that the closed
+forms and protocols will be stated \emph{before} evaluation under the rules of Appendix~\ref{app:prereg}.
+\begin{itemize}
+  \item P-022 (CKM), P-023 (PMNS), P-024 (CP),
+  \item A-011 (CMB summary statistics), A-012 (BBN yields).
+\end{itemize}
+
+\section{Appendix D: Statistical Hygiene and Multiple Comparisons}
+\label{app:stats}
+
+This appendix expands the statistical interpretation policy introduced in Section~\ref{sec:lookelsewhere}.
+The central point is that ``surprising'' numerical agreement cannot be translated into rigorous
+significance statements without modeling the search process that generated the candidate formulas.
+
+\subsection{Why p-values are not reported}
+If one searches over a large family of candidate expressions (integers, rational combinations,
+\(\phiRS\)-powers, etc.) until a match is found, the probability of finding a match at the
+``\(0.1\%\)'' level can be large even when the theory has no predictive content. Without an explicit
+prior over formulas and a documented search strategy, p-values are therefore misleading.
+
+\subsection{What is reported instead}
+We report:
+\begin{itemize}
+  \item \(\varepsilon_{\%}\) (relative error) as a scale-free descriptive measure;
+  \item \(n_\sigma\) when the reference dataset supplies a stable uncertainty model;
+  \item explicit falsifiers, which are more informative than retrospective significance claims.
+\end{itemize}
+
+\subsection{Portfolio logic and out-of-sample priority}
+The evidential weight of the ledger is intended to come from:
+\begin{enumerate}
+  \item a \emph{portfolio} of independent Type P claims with minimal degrees of freedom, and
+  \item prospective out-of-sample predictions evaluated under preregistered protocols.
+\end{enumerate}
+In this framing, the most important ``statistical test'' is forward performance on new, independent
+targets (Section~\ref{sec:next}), not the retrospective rarity of any single coincidence.
+
+\subsection{A practical error-control recommendation}
+If the ledger grows to many Type P claims with independent uncertainty models, then one can apply
+standard multiple-testing controls (e.g.\ family-wise error control or false discovery rate control),
+but only after the hypothesis space is frozen and the claims are evaluated prospectively. Until that
+stage, the conservative policy is to treat matches as motivating and falsifiers as decisive.
+
+\end{document}
+

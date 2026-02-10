@@ -1,0 +1,189 @@
+# RSA FACTOR PREDICTION IMPROVEMENT PLAN
+# Target: 0.61% → <0.1% average error
+# Timeline: 4 phases over ~2 weeks
+# Author: Jonathan Washburn & Assistant
+
+================================================================================
+PHASE 1: DATA COLLECTION & INFRASTRUCTURE (Days 1-3)
+================================================================================
+
+Objective: Expand dataset from 7 to 10,000+ factored RSA moduli
+
+Deliverables:
+1. ct_harvest.py - Certificate Transparency weak key harvester
+2. synthetic_rsa_generator.py - Generate balanced/imbalanced test sets  
+3. rsa_corpus_database.json - Unified storage format
+4. data_quality_validator.py - Ensure corpus integrity
+
+Success Metrics:
+- [ ] 1,000+ real weak RSA keys from public sources
+- [ ] 10,000 synthetic balanced pairs (256-2048 bits)
+- [ ] 10,000 synthetic imbalanced pairs (Δ=1,2,3)
+- [ ] Automated validation pipeline
+
+Data Sources:
+- Debian OpenSSL bug (2008) - ~30k compromised keys
+- Let's Encrypt 512-bit legacy certs
+- Academic RSA challenges (completed)
+- CTF/Wargame solutions
+- GitHub leaked private keys
+
+Implementation Order:
+1. synthetic_rsa_generator.py (immediate, provides training data)
+2. ct_harvest.py (requires API setup)
+3. Database schema and validator
+
+================================================================================
+PHASE 2: IMBALANCE PREDICTION (Days 4-6)
+================================================================================
+
+Objective: Predict Δ from N alone with >80% accuracy
+
+Deliverables:
+1. imbalance_feature_extractor.py - Extract predictive features from N
+2. imbalance_predictor_model.py - LightGBM/XGBoost classifier
+3. imbalance_analysis_report.pdf - Feature importance & patterns
+4. Updated optimized_final_predictor.py with auto-Δ
+
+Success Metrics:
+- [ ] 80%+ accuracy on 3-class problem (Δ ∈ {0, 1, ≥2})
+- [ ] Feature importance analysis identifies top-5 signals
+- [ ] Error reduction: 30%+ on imbalanced test set
+
+Feature Engineering:
+- N mod 2^k for k ∈ {8,12,16,20,24,32}
+- Bit pattern analysis (runs, transitions)
+- Prime residues: N mod p for small primes
+- MSB/LSB distribution statistics
+- Entropy measures of bit blocks
+
+Model Architecture:
+- Primary: LightGBM with 100 trees, depth 6
+- Baseline: Logistic regression for interpretability
+- Ensemble: Average predictions if time permits
+
+================================================================================
+PHASE 3: ADVANCED K-MODEL & DENOMINATOR OPTIMIZATION (Days 7-10)
+================================================================================
+
+Objective: Refine k(n,Δ) model and optimize denominator selection
+
+Deliverables:
+1. drift_model_fitter.py - Fit α(n) for large-n correction
+2. denominator_spectrum_analyzer.py - Find optimal denominator set
+3. bayesian_denominator_weights.py - Adaptive weight learning
+4. coherence_integrated_scorer.py - Joint k+C8 optimization
+
+Success Metrics:
+- [ ] Drift model reduces >500-bit errors by 30%
+- [ ] Denominator hit rate >90% on first choice
+- [ ] Average error <0.3% on full test set
+- [ ] Worst-case error <1%
+
+Technical Improvements:
+- Cubic k-model with proper regularization
+- Denominators up to 509 + targeted composites
+- Bayesian weight updates with Dirichlet prior
+- C8 coherence term with optimal γ weight
+
+Optimization Strategy:
+- Grid search γ ∈ [10^-4, 10^-2]
+- Cross-validation on 80/20 split
+- Track per-denominator success rates
+- Prune denominators with <0.1% usage
+
+================================================================================
+PHASE 4: PRODUCTION OPTIMIZATION & SCALING (Days 11-14)
+================================================================================
+
+Objective: Production-ready system with <1ms latency at scale
+
+Deliverables:
+1. gpu_rational_sweep.py - CUDA/OpenCL parallel search
+2. simd_coherence_calculator.py - AVX2/NEON optimized C8
+3. key_generator_classifier.py - Route by key source
+4. production_predictor_api.py - REST API with caching
+
+Success Metrics:
+- [ ] <1ms prediction latency for 4096-bit moduli
+- [ ] API handles 10k requests/second
+- [ ] Docker container <100MB
+- [ ] 99.9% uptime over 48-hour test
+
+Performance Targets:
+- Rational search: 100μs (GPU) vs 1ms (CPU)
+- C8 calculation: 50μs (SIMD) vs 200μs (scalar)
+- End-to-end: 300μs p50, 1ms p99
+- Memory usage: <500MB resident
+
+Deployment Architecture:
+- FastAPI with Redis cache
+- Optional GPU support via CUDA
+- Prometheus metrics export
+- Docker + K8s ready
+
+================================================================================
+EXECUTION TRACKING
+================================================================================
+
+Daily Standup Format:
+- Yesterday: [completed deliverables]
+- Today: [current focus]
+- Blockers: [technical/data issues]
+- Metrics: [error rates, latency]
+
+Week 1 Checkpoint:
+- Data collection complete
+- Imbalance predictor trained
+- Error rate <0.4%
+
+Week 2 Checkpoint:
+- All models optimized
+- Production system live
+- Error rate <0.15%
+
+Risk Mitigation:
+- If CT data scarce → focus on synthetic
+- If imbalance prediction <70% → adjust targets
+- If GPU unavailable → optimize CPU path
+- If <0.1% unachievable → document limits
+
+================================================================================
+IMMEDIATE ACTIONS (NEXT 2 HOURS)
+================================================================================
+
+1. Create synthetic_rsa_generator.py
+   - Generate 1000 test moduli immediately
+   - Balance: 500 balanced, 500 imbalanced
+   - Range: 256-1024 bits for quick testing
+
+2. Create imbalance_feature_extractor.py
+   - Implement basic feature extraction
+   - Test on current RSA-challenge set
+   - Validate feature distributions
+
+3. Update optimized_final_predictor.py
+   - Add hooks for imbalance predictor
+   - Add C8 scoring term
+   - Benchmark current performance
+
+================================================================================
+SUCCESS CRITERIA
+================================================================================
+
+Must Have (Phase 1-2):
+✓ 10k+ training samples
+✓ Automated imbalance prediction
+✓ Error <0.4% average
+
+Should Have (Phase 3):
+✓ Denominator optimization
+✓ Drift correction
+✓ Error <0.2% average
+
+Nice to Have (Phase 4):
+✓ GPU acceleration
+✓ Production API
+✓ Error <0.1% average
+
+================================================================================ 

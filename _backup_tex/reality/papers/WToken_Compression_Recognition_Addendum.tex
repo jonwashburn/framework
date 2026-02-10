@@ -1,0 +1,193 @@
+\documentclass[12pt]{article}
+
+% Packages (kept minimal for portability)
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage{booktabs}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!70!black,
+  citecolor=blue!70!black,
+  urlcolor=blue!70!black
+}
+
+% Theorem environments
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% Notation
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Rp}{\R_{>0}}
+\newcommand{\phiG}{\varphi}
+\newcommand{\J}{J}
+\newcommand{\WT}{\mathsf{WToken}}
+\newcommand{\Concept}{\mathsf{Concept}}
+
+\title{\textbf{WTokens as Compression}\\[0.25em]
+\large Selection = Recognition (WToken-Specific Addendum)}
+
+\author{Jonathan Washburn}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This short addendum isolates the new WToken-specific consequences of the Algebra of Aboutness.
+The general reference framework defines a \emph{symbol} as a configuration that both \emph{means} an object
+(minimizes reference cost) and \emph{compresses} it (has strictly lower intrinsic cost).
+We formalize two new claims in the Recognition Science WToken setting:
+(1) \emph{WTokens as compression:} if \(\J(\WT) < \J(\Concept)\), the WToken can serve as a valid symbolic
+carrier for the concept; in particular, Level-0 WTokens satisfy \(\J=0\) and therefore compress every
+positive-cost concept.
+(2) \emph{Selection = recognition:} choosing the optimal WToken is exactly a cost-minimizing projection onto
+a discrete \(\phiG\)-lattice, i.e., an explicit \(\arg\min\) of reference mismatch.
+We cite the corresponding certified results from the Lean development.
+\end{abstract}
+
+\section{Scope}
+The Algebra of Aboutness provides a general, configuration-independent theory of reference.
+This addendum does \emph{not} re-derive those general foundations.
+Instead, it isolates the new material introduced by instantiating that framework with WTokens:
+\begin{itemize}
+  \item the induced WToken cost functional \(\J_W\),
+  \item the compression guarantee for Level-0 WTokens, and
+  \item the cost-minimizing projection (geodesic selection) used for recognition.
+\end{itemize}
+
+\section{The universal cost functional}
+\begin{definition}[Recognition cost]
+Let \(x\in\Rp\). Define
+\begin{equation}
+  \J(x) := \frac{1}{2}\bigl(x + x^{-1}\bigr) - 1.
+\end{equation}
+\end{definition}
+
+This \(\J\) is nonnegative on \(\Rp\), symmetric under inversion, and has a unique zero-point at \(x=1\).
+
+\section{WTokens as a \(\phiG\)-lattice cost space}
+WToken identity includes several discrete coordinates (mode family, \(\phiG\)-level, and a \(\tau\)-offset).
+For cost and reference selection, the only intrinsic coordinate is the \(\phiG\)-level.
+
+\begin{definition}[\(\phiG\)-level ratio map]
+Fix the golden ratio \(\phiG = \tfrac{1+\sqrt{5}}{2}\).
+A WToken has discrete level \(k\in\{0,1,2,3\}\) and is assigned a characteristic ratio \(\phiG^k\).
+Its intrinsic cost is
+\begin{equation}
+  \J_W(w) := \J\bigl(\phiG^k\bigr).
+\end{equation}
+\end{definition}
+
+In the codebase, this is realized by \texttt{wtokenRatio} and \texttt{wtokenCost} in
+\texttt{IndisputableMonolith/Foundation/WTokenReference.lean}.
+
+\section{WTokens as compression: the Level-0 universality theorem}
+In the Aboutness framework, the \emph{compression half} of symbolhood is the strict inequality
+\(\J_S(s) < \J_O(o)\). The WToken specialization makes this strikingly explicit.
+
+\begin{theorem}[Level-0 WTokens have zero intrinsic cost]
+Let \(w\) be any Level-0 WToken. Then \(\J_W(w)=0\).
+\end{theorem}
+\begin{proof}
+This is exactly the certified theorem \texttt{level0\_zero\_cost}.
+Since Level-0 corresponds to exponent \(k=0\), the associated ratio is \(\phiG^0=1\), and \(\J(1)=0\).
+\end{proof}
+
+\begin{theorem}[Universal compression by Level-0]
+Let \(c\) be any concept with positive intrinsic cost \(\J(c)>0\).
+Let \(w_0\) be a fixed Level-0 WToken. Then
+\begin{equation}
+  \J_W(w_0) < \J(c).
+\end{equation}
+\end{theorem}
+\begin{proof}
+This is exactly the certified theorem \texttt{level0\_wtoken\_is\_universal\_symbol}.
+By the previous theorem, \(\J_W(w_0)=0\), so the inequality reduces to \(0<\J(c)\).
+\end{proof}
+
+\begin{remark}[Interpretation]
+Level-0 WTokens act as \emph{universal compressors} for any positive-cost concept.
+This provides the WToken-specific semantic content of the ``mathematical backbone'':
+zero intrinsic cost means the symbol can be attached to any \(\J>0\) object without violating the
+compression budget.
+\end{remark}
+
+\section{Selection = recognition: cost-minimizing projection onto the ladder}
+Compression alone is not the entire story; the Aboutness framework also requires that a symbol
+\emph{means} an object by minimizing reference mismatch cost.
+In the WToken setting, the central operational step is a projection onto the \(\phiG\)-ladder.
+
+\subsection{Reference mismatch cost}
+For a positive input ratio \(r\in\Rp\) and a candidate \(\phiG\)-level \(k\in\{0,1,2,3\}\), define
+\begin{equation}
+  \mathrm{Ref}(r,k) := \J\bigl(r / \phiG^k\bigr).
+\end{equation}
+
+A WToken selection rule is then an explicit \(\arg\min\) of \(\mathrm{Ref}(r,k)\) over the finite ladder.
+
+\subsection{Geodesic selection theorem (certified)}
+\begin{theorem}[Geodesic projection minimizes reference mismatch]
+Let \(r\in\Rp\).
+Let \(k^*\in\{0,1,2,3\}\) be the selected \(\phiG\)-level returned by \texttt{projectOntoPhiLattice}.
+Then for every ladder level \(k\in\{0,1,2,3\}\),
+\begin{equation}
+  \J\bigl(r/\phiG^{k^*}\bigr) \le \J\bigl(r/\phiG^{k}\bigr).
+\end{equation}
+\end{theorem}
+\begin{proof}
+This is exactly the certified theorem \texttt{projection\_minimizes\_reference}.
+In Lean, \texttt{projectOntoPhiLattice} is defined as the minimizer of \(\mathrm{Ref}(r,k)\) over a
+finite set of \(\phiG\)-levels.
+\end{proof}
+
+\begin{remark}[Log-rounding as an efficient implementation]
+Although the proof is formulated as a finite \(\arg\min\), the minimizer is well-approximated by
+\(k^* \approx \mathrm{round}(\log_{\phiG}(r))\).
+This explains the phenomenological ``snap'' from a continuous input field to discrete semantic atoms.
+\end{remark}
+
+\section{Recognition operator as cost minimization}
+Recognition Science treats recognition as the act of selecting cost-minimizing configurations.
+The WToken specialization makes this explicit: recognition of a ratio-valued input is exactly the
+minimizing projection onto the \(\phiG\)-ladder.
+
+\begin{remark}[What this addendum establishes]
+\begin{itemize}
+  \item \textbf{Compression:} Level-0 WTokens satisfy \(\J_W=0\) and therefore compress any \(\J>0\)
+  concept.
+  \item \textbf{Selection:} The WToken \(\phiG\)-level is selected by minimizing reference mismatch cost.
+\end{itemize}
+The remaining (domain-specific) work is to characterize when the selected WToken also satisfies the
+full \emph{meaning} condition for a chosen concept class.
+\end{remark}
+
+\section*{Formal verification anchors}
+\begin{itemize}
+  \item \texttt{IndisputableMonolith/Foundation/WTokenReference.lean}
+    \begin{itemize}
+      \item \texttt{wtokenCost}, \texttt{wtokenRatio}
+      \item \texttt{level0\_zero\_cost}
+      \item \texttt{level0\_wtoken\_is\_universal\_symbol}
+      \item \texttt{projectOntoPhiLattice}
+      \item \texttt{projection\_minimizes\_reference}
+    \end{itemize}
+\end{itemize}
+
+\begin{thebibliography}{9}
+\bibitem{aboutness}
+J. Washburn,
+\emph{The Algebra of Aboutness: Reference as Cost-Minimizing Compression},
+preprint (see \texttt{papers/tex/Algebra\_of\_Aboutness.tex}).
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,195 @@
+\documentclass[11pt]{article}
+
+% Packages (keep minimal for broad TeX compatibility)
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{microtype}
+
+% Manual definitions for compatibility (avoid siunitx dependency)
+\newcommand{\angstrom}{\text{\normalfont\AA}}
+\newcommand{\SI}[2]{#1\,\text{#2}}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+
+\geometry{margin=1in}
+
+\title{\textbf{PATENT B (Draft): Temperature-Compensated Microwave Irradiation System}\\
+\large For Frequency-Selective Modulation of Protein Folding (Device/System Specification)}
+
+\author{
+Jonathan Washburn\\
+\texttt{jon@recognitionphysics.org}
+}
+
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Status:} Technical draft for counsel; \textbf{not legal advice}.\\
+\textbf{Related internal documents:} \code{docs/JAMMING_PATENT_OUTLINES.md}; \code{docs/JAMMING_PROTOCOL.md}; \code{docs/RS_JAMMING_FREQUENCY_PAPER.pdf}; \code{run_e41_jamming_calc.py}.\\
+\textbf{Note on examples:} any ``Example'' describing expected outcomes is \textbf{prophetic} unless explicitly stated as experimentally observed.
+
+\section*{Abstract (Patent)}
+Disclosed are systems and devices for delivering narrowband microwave irradiation to an aqueous biomolecular sample (e.g., a protein solution) while maintaining substantially constant sample temperature such that observed changes in folding kinetics and/or stability can be distinguished from dielectric heating. In embodiments, the system comprises: (i) a microwave source configured to generate radiation in a Ku-band frequency range; (ii) an applicator configured to couple the radiation into a sample cell; (iii) a temperature sensing and control subsystem configured to maintain the sample temperature within a tolerance during irradiation; and optionally (iv) power monitoring to estimate absorbed power and/or (v) an integrated optical readout (e.g., fluorescence, CD) for real-time folding measurements. The system supports frequency sweeps, off-resonance controls, matched-heating controls, and operation at frequencies near \SI{14.653}{GHz} and related harmonics/subharmonics.
+
+\section{Field of the invention}
+The present disclosure relates to microwave instrumentation and biophysical assay systems, and more particularly to temperature-compensated microwave irradiation systems for applying frequency-specific electromagnetic perturbations to aqueous biomolecular samples while controlling and/or matching thermal confounds.
+
+\section{Background}
+Microwave irradiation of aqueous samples can induce strong dielectric heating, particularly in the Ku band. In many practical geometries, temperature gradients and uncontrolled heating dominate any subtle frequency-dependent effects, making experiments difficult to reproduce and interpret.
+
+Accordingly, there is a need for systems that can deliver microwave fields into aqueous samples while (i) tightly controlling bulk temperature, (ii) optionally controlling absorbed power across frequencies, and (iii) integrating or synchronizing with a folding readout, so that frequency-selective effects can be tested without being confounded by heating artifacts.
+
+\section{Summary of the invention}
+In one aspect, a system is provided comprising:
+\begin{itemize}
+    \item a microwave source configured to output narrowband electromagnetic radiation in a microwave frequency band;
+    \item an applicator configured to couple the radiation into a sample volume containing an aqueous biomolecular sample;
+    \item a temperature control subsystem comprising one or more temperature sensors and one or more thermal actuators, configured to maintain the sample temperature within a tolerance during irradiation; and
+    \item optionally, a measurement subsystem configured to measure a folding metric of a biomolecule in the sample.
+\end{itemize}
+
+In embodiments, the system further comprises a power monitoring subsystem configured to estimate delivered, reflected, and absorbed microwave power, and a controller configured to adjust power and/or duty cycle to match heating across frequencies.
+
+\section{Brief description of drawings}
+Drawings are not included in this draft. A complete filing typically includes:
+\begin{itemize}
+    \item Fig. 1: block diagram of the system (source, applicator, sample cell, sensors, control loop, readout).
+    \item Fig. 2: example applicator geometries (waveguide cell, resonant cavity, stripline, dielectric probe).
+    \item Fig. 3: example sample cell embodiments (cuvette, thin-path cell, microfluidic channel).
+    \item Fig. 4: control loop diagram for maintaining constant temperature and/or constant absorbed power.
+    \item Fig. 5: example calibration curves (delivered/reflected power vs frequency; heating baseline).
+    \item Fig. 6: synchronized measurement timing diagram (irradiation pulses vs readout sampling).
+\end{itemize}
+
+\section{Detailed description}
+
+\subsection{Definitions}
+Unless otherwise stated:
+\begin{itemize}
+    \item \textbf{Sample cell}: a structure containing an aqueous sample volume, including a cuvette, vial, well, microfluidic channel, or flow cell.
+    \item \textbf{Applicator}: a structure configured to couple microwave energy into the sample cell, including a waveguide section, cavity resonator, stripline/microstrip structure, or dielectric probe.
+    \item \textbf{Temperature control subsystem}: a combination of sensors and actuators (Peltier, circulating bath, resistive heater, fluid flow) controlled to maintain sample temperature.
+    \item \textbf{Bulk temperature}: an average temperature representative of the sample volume, which may be estimated by one or more sensors and/or by a calibrated model.
+    \item \textbf{Power monitoring subsystem}: circuitry and sensors for measuring incident and reflected power (e.g., directional coupler + detector), enabling estimation of absorbed power.
+    \item \textbf{Controller}: hardware and/or software configured to control frequency, power, duty cycle, and thermal actuators, optionally in closed-loop.
+\end{itemize}
+
+\subsection{System overview (block-level)}
+In one embodiment, the system comprises:
+\begin{enumerate}
+    \item \textbf{Microwave generation}: a signal generator or synthesizer providing a controllable frequency output, optionally followed by an amplifier. The system supports sweeping frequency across a band (e.g., \SI{10}{GHz} to \SI{20}{GHz}) and holding frequency at a setpoint.
+    \item \textbf{Coupling and applicator}: a coupling network (e.g., coax-to-waveguide adapter) and an applicator that delivers the microwave field to the sample cell.
+    \item \textbf{Sample cell}: a container holding the aqueous protein sample, placed within or adjacent to the applicator.
+    \item \textbf{Thermal subsystem}: one or more temperature sensors (thermistor/RTD/thermocouple/IR sensor) and one or more actuators (Peltier stage, circulating bath, heater, flow) controlled to maintain a temperature setpoint.
+    \item \textbf{Optional readout}: a measurement subsystem (fluorescence, CD, etc.) configured to measure a folding metric, synchronized with irradiation.
+    \item \textbf{Optional power monitoring}: directional coupler(s) and detectors to measure incident/reflected power, optionally used to estimate absorbed power and to equalize heating across frequencies.
+\end{enumerate}
+
+\subsection{Applicator embodiments}
+\paragraph{Waveguide sample cell.}
+In one embodiment, the applicator comprises a waveguide section (e.g., Ku-band) with a sample cell positioned at a defined field maximum or coupling aperture. The sample cell may be a thin-path container to reduce absorption length and temperature gradients.
+
+\paragraph{Cavity resonator.}
+In one embodiment, the applicator comprises a resonant cavity with adjustable coupling to the microwave source. The cavity may increase field strength for a given input power while requiring careful calibration of absorbed power and heating.
+
+\paragraph{Stripline/microstrip.}
+In one embodiment, the applicator comprises a planar stripline or microstrip structure adjacent to a microfluidic channel. This embodiment can support small sample volumes, reduced thermal mass, and rapid thermal control.
+
+\paragraph{Dielectric probe.}
+In one embodiment, the applicator comprises a dielectric probe inserted into or placed adjacent to the sample container. This embodiment supports flexible geometry at the expense of potentially higher local heating, which is mitigated via pulsing and thermal control.
+
+\subsection{Sample cell embodiments}
+\paragraph{Thin-path cell.}
+In one embodiment, the sample cell has a small thickness (e.g., \(\le 1\) mm) in the direction of microwave propagation to reduce internal temperature gradients. The cell may be made of low-loss dielectric materials compatible with aqueous samples.
+
+\paragraph{Microfluidic flow cell.}
+In one embodiment, the sample flows through a microfluidic channel during irradiation, providing convective thermal management and enabling time-resolved measurements at controlled residence times.
+
+\subsection{Thermal control embodiments}
+\paragraph{Constant-temperature mode (primary).}
+In one embodiment, a closed-loop controller maintains the sample at a fixed setpoint (e.g., \(25\,^{\circ}\mathrm{C}\)) while irradiation is applied. Control can be based on sensor feedback at/near the sample cell.
+
+\paragraph{Matched-heating mode (control logic).}
+In one embodiment, the controller adjusts microwave duty cycle and/or power to match a target temperature trajectory across different frequencies (or across ``on'' vs ``off'' conditions). This supports resonance-versus-heating discrimination.
+
+\paragraph{Absorbed-power matching.}
+In one embodiment, the system measures incident and reflected microwave power and estimates absorbed power. The controller selects input power/duty cycle such that absorbed power is matched across frequencies while maintaining the same bulk temperature setpoint.
+
+\subsection{Measurement/readout embodiments}
+\paragraph{Fluorescence integration.}
+In one embodiment, the system includes a fluorescence module (LED/laser excitation, filters, detector) to monitor intrinsic tryptophan fluorescence or labeled FRET constructs during irradiation. Measurements are synchronized with irradiation pulses to reduce electromagnetic interference.
+
+\paragraph{CD integration.}
+In one embodiment, the system is configured for CD readout at 222 nm (either via integrated optics or via an external CD spectrometer with a compatible sample cell).
+
+\paragraph{Dual readout.}
+In one embodiment, two independent readouts are used to detect artifacts (e.g., fluorescence + scattering; CD + fluorescence).
+
+\subsection{Calibration and safety embodiments}
+\paragraph{Frequency-dependent coupling calibration.}
+In one embodiment, the system characterizes coupling versus frequency (e.g., S11 reflection) and stores a calibration curve used to normalize delivered fields and/or absorbed power.
+
+\paragraph{Heating baseline measurement.}
+In one embodiment, the system measures heating response versus frequency in a blank buffer to build a baseline dielectric heating model; subsequent protein measurements are compared to this baseline under matched conditions.
+
+\paragraph{Shielding and interlocks.}
+In one embodiment, the system includes RF shielding, leakage monitoring, and interlocks that disable irradiation when enclosures are opened.
+
+\section{Examples (prophetic unless otherwise stated)}
+\subsection*{Example 1: Bench-top Ku-band folding jamming apparatus}
+A signal generator and amplifier produce a narrowband output in the Ku band. A directional coupler measures incident/reflected power. A waveguide sample cell holds a thin-path aqueous protein sample on a Peltier stage. A fluorescence readout measures a folding metric while the controller maintains \(25\,^{\circ}\mathrm{C}\). The controller performs a frequency sweep in the range \SI{14.0}{GHz}--\SI{15.2}{GHz} while matching bulk temperature across steps.
+
+\subsection*{Example 2: Microfluidic thin-path applicator}
+A planar stripline applicator is integrated with a microfluidic channel containing an aqueous sample. Temperature sensors are embedded near the channel. Flow provides convective thermal management. The system performs pulsed irradiation at a set frequency while measuring fluorescence through an optical window.
+
+\section{Claims (starter set; for counsel refinement)}
+\noindent\textbf{What follows is a technical starter claim set to guide drafting. Counsel should rewrite for jurisdiction, support, and scope.}
+
+\begin{enumerate}
+    \item A system for modulating folding of a biomolecule in an aqueous sample, comprising:
+    \begin{enumerate}
+        \item a microwave source configured to output narrowband electromagnetic radiation in a microwave frequency band;
+        \item an applicator configured to couple the narrowband electromagnetic radiation into a sample cell containing the aqueous sample;
+        \item a temperature control subsystem comprising one or more temperature sensors and one or more thermal actuators; and
+        \item a controller configured to operate the microwave source and the temperature control subsystem such that a bulk temperature of the aqueous sample is maintained within a temperature tolerance during irradiation.
+    \end{enumerate}
+
+    \item The system of claim 1, wherein the microwave frequency band comprises \SI{10}{GHz} to \SI{20}{GHz}.
+
+    \item The system of claim 1, wherein the controller is configured to sweep a frequency of the microwave source across a predefined band and to record a folding metric as a function of frequency.
+
+    \item The system of claim 1, further comprising a measurement subsystem configured to measure a folding metric of the biomolecule during irradiation.
+
+    \item The system of claim 4, wherein the measurement subsystem comprises a fluorescence detection subsystem.
+
+    \item The system of claim 4, wherein the measurement subsystem comprises a circular dichroism (CD) measurement subsystem configured to measure ellipticity at a wavelength near 222 nm.
+
+    \item The system of claim 1, further comprising a power monitoring subsystem configured to measure incident power and reflected power, and to estimate absorbed power by the aqueous sample.
+
+    \item The system of claim 7, wherein the controller is configured to adjust power and/or duty cycle as a function of frequency to match absorbed power across a frequency sweep.
+
+    \item The system of claim 1, wherein the applicator comprises a waveguide section.
+
+    \item The system of claim 1, wherein the applicator comprises a resonant cavity.
+
+    \item The system of claim 1, wherein the applicator comprises a stripline or microstrip structure adjacent to a microfluidic channel.
+
+    \item The system of claim 1, wherein the applicator comprises a dielectric probe.
+
+    \item The system of claim 1, wherein the sample cell comprises a thin-path cell having a thickness of at most 1 mm in a direction of microwave propagation.
+
+    \item The system of claim 1, wherein the temperature tolerance is \(\pm 0.2\,^{\circ}\mathrm{C}\) or tighter.
+
+    \item The system of claim 1, wherein the controller is configured to operate the microwave source in a pulsed mode with a duty cycle selected to reduce bulk heating while maintaining constant bulk temperature.
+
+    \item The system of claim 1, further comprising shielding and one or more safety interlocks configured to disable irradiation when an enclosure is opened.
+\end{enumerate}
+
+\end{document}
+
+

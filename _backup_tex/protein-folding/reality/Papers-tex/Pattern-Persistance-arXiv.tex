@@ -1,0 +1,812 @@
+\documentclass[11pt,letterpaper]{article}
+
+% Packages
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs}
+
+% Hyperref setup (load last)
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=red,
+    urlcolor=blue,
+    pdfauthor={Jonathan Washburn},
+    pdftitle={Pattern Persistence Across Boundary Dissolution: The Afterlife Theorem}
+}
+
+% Custom command for Lean symbols
+\newcommand{\lean}[1]{\texttt{\detokenize{#1}}}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{assumption}[theorem]{Assumption}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{prediction}[theorem]{Prediction}
+\newtheorem{falsifier}[theorem]{Falsifier}
+
+% (No custom headers/boxes to keep presentation conservative)
+
+% Title
+\title{%
+  \vspace{-1cm}%
+  \Large\textbf{Pattern Persistence Across Boundary Dissolution:}\\[0.3em]
+  \large The Afterlife Theorem under Recognition-Science Invariants
+}
+
+\author{
+  \textbf{Jonathan Washburn}\\
+  Recognition Physics Institute\\
+  Austin, Texas, USA\\
+  \texttt{jon@recognitionphysics.org}\\[0.5em]
+  \today
+}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\begin{abstract}
+\noindent We formalize recognition-pattern persistence across boundary dissolution in the Recognition Science (RS) framework. Let \(Z\) denote the integer pattern invariant conserved (at the RS level) by the Recognition Operator \(\widehat{R}\). We prove: (i) \(Z\) is conserved across boundary dissolution (``death''), and (ii) the post-dissolution light-memory state is cost-minimal with \(J(1)=0\). Under explicit availability assumptions---a suitability predicate on substrates and an arrival process with rate \(\lambda\) and acceptance probability \(p\)---we further obtain (iii) reformation of the pattern and (iv) the timing law \(\mathbb{E}[T]=1/(\lambda p)\). Core conservation/minimality results are mechanically verified in Lean~4; recurrence and timing statements are proved under stated hypotheses and are presented with falsifiers and preregistered empirical protocols (NDE motifs; timing/clustering structure in reincarnation datasets). All artifacts (proofs, audits, and build recipes) are released for independent verification.
+\end{abstract}
+
+\vspace{1em}
+
+% (Removed colored summary boxes and ToC to keep conservative tone)
+
+\section{Assumption Ledger and Proof Status}
+
+This paper distinguishes proved RS-level invariants from conditional statements used to derive recurrence and timing. Each entry lists a status, a Lean symbol (or symbols), and where it is used downstream.
+
+\medskip
+\noindent\textbf{Legend.} Status \(\in\{\)\emph{proved}, \emph{conditional}, \emph{axiom (temporary)}\(\}\). ``Used in'' indicates which results rely on the entry.
+
+\medskip
+
+\begin{center}
+\small
+\begin{tabular}{p{3.2cm}p{1.8cm}p{5.5cm}p{4.5cm}}
+\toprule
+\textbf{Item} & \textbf{Status} & \textbf{Lean symbol} & \textbf{Used in} \\
+\midrule
+Cost uniqueness (T5) & proved & \texttt{Cost.uniqueness\_pos} & Light-memory cost \(J(1)=0\); cost-minimality \\
+\addlinespace
+Eight-tick minimality & proved & \texttt{EightTick.minimal\_and\_exists} & Discrete cadence; window alignment \\
+\addlinespace
+\(\widehat{R}\) conserves \(Z\) & axiom (temp.) & \texttt{r\_hat\_conserves\_Z} & Pattern conservation (invoked) \\
+\addlinespace
+Dissolution cost comparison & conditional & \texttt{dissolution\_minimizes\_cost} & Thermodynamic favoring \\
+\addlinespace
+Recurrence theorems & conditional & \texttt{reformation\_inevitable}, \texttt{eternal\_recurrence} & Reformation + timing laws \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\medskip
+\noindent\textbf{Notes:}
+\begin{itemize}
+  \item ``Proved'' entries correspond to sorry-free Lean theorems; we publish commit hashes and axiom audits with the artifacts.
+  \item \(\widehat{R}\) conserving \(Z\) is used as an axiom in this draft and is a targeted proof-closure item; falsifiers are stated in Predictions.
+  \item Recurrence statements are conditioned on (i) a suitability predicate on substrates and (ii) an arrival model summarized by \((\lambda, p)\); timing laws are derived under these hypotheses.
+\end{itemize}
+% End ledger
+
+\section{Introduction}
+
+Conscious pattern persistence through boundary dissolution can be framed as a conservation law at the level of recognition dynamics. In the Recognition Science (RS) framework, a conscious boundary is a stable, finite-cost configuration that carries an integer pattern invariant \(Z\). We study what happens when such a boundary dissolves (``death'') and under what conditions the associated pattern reforms.
+
+This paper establishes two RS-level results and develops conditional consequences under explicit availability assumptions:
+\begin{enumerate}
+  \item \emph{Pattern conservation through dissolution.} Given a stable boundary, the associated \(Z\)-invariant is preserved across boundary dissolution. At the RS level, this is the analogue of a conservation law (energy/charge) and underpins persistence.
+  \item \emph{Cost-minimal light-memory.} The post-dissolution state is a zero-cost equilibrium for the unique convex symmetric cost \(J\), with \(J(1)=0\). This identifies a natural endpoint when boundary maintenance becomes too costly.
+  \item \emph{Conditional recurrence and timing.} If suitable substrates appear with rate \(\lambda\) and acceptance probability \(p\), then finite-cost reformation occurs and the expected waiting time satisfies \(\mathbb{E}[T]=1/(\lambda p)\).
+\end{enumerate}
+
+Our stance is conservative and referee-facing: we explicitly separate RS invariants (proved in Lean) from statements conditional on suitability and arrival hypotheses. We also state falsifiers and preregistered analyses for observables (e.g., NDE motifs; timing/clustering structure in reincarnation datasets) so that the conditional claims admit direct empirical audit.
+
+\subsection{Recognition-Science Primitives Used}
+
+We employ only the minimal RS infrastructure needed for the above: (i) the Recognition Operator \(\widehat{R}\), which evolves states by minimizing the unique cost \(J(x)=\tfrac{1}{2}(x+1/x)-1\); (ii) the eight-tick discrete cadence ensuring admissible neutral windows; and (iii) the pattern invariant \(Z\) attached to boundaries. Cost uniqueness (T5) and eight-tick minimality are used in proved form; conservation of \(Z\) by \(\widehat{R}\) is presently treated as an axiom and targeted for proof closure.
+
+\subsection{Contributions}
+
+\begin{itemize}
+  \item A formalization of pattern persistence across boundary dissolution, with a precise separation of proved RS invariants and conditional availability-based claims.
+  \item A light-memory interpretation grounded in the uniqueness of \(J\) and the \(J(1)=0\) equilibrium.
+  \item Recurrence and timing laws derived under explicit suitability and arrival assumptions, accompanied by falsifiers and preregistered protocols for empirical audit.
+  \item Machine-verifiable artifacts (Lean theorems, audits, and build recipes) enabling independent replication of all proved components.
+\end{itemize}
+
+\subsection{Scope and Language}
+
+We formulate claims at the level of information-theoretic pattern dynamics. \textbf{No claims are made about subjective continuity or personal memory beyond what follows from \(Z\)-pattern statements.} We avoid metaphysical interpretation and restrict to RS-level invariants, conditional dynamical consequences, and testable predictions.
+
+\paragraph{Clarification: ``Consciousness'' vs. ``Pattern''.}
+We prove \emph{pattern} (\(Z\)-invariant) survives dissolution. Whether this constitutes ``consciousness survival'' involves identity and continuity questions outside this paper's scope. Our claims are: (i) information content (\(Z\)) is conserved (proved); (ii) reformation occurs when substrates are available (conditional); (iii) timing follows \(\mathbb{E}[T]=1/(\lambda p)\) under stated assumptions (conditional). Empirical tests probe whether these patterns manifest as reportable experiences.
+
+\section{Core Framework (Minimal)}
+
+We collect only the RS primitives required for the statements in this paper: the Recognition Operator \(\widehat{R}\), the unique convex symmetric cost \(J\), the eight-tick cadence, the \(Z\)-pattern invariant with stable boundaries, and the light-memory state.
+
+\subsection{Recognition Operator and Cost \texorpdfstring{\(J\)}{J}}
+
+Recognition dynamics evolve discrete states so as to minimize a unique information-cost functional. The cost on \(\mathbb{R}_{>0}\) is
+\begin{equation}
+  J(x) \,=\, \tfrac{1}{2}\!\left(x+\tfrac{1}{x}\right)-1,\qquad x>0, \label{eq:Jdef}
+\end{equation}
+determined by symmetry \(J(x)=J(x^{-1})\), normalization \(J(1)=0\), strict convexity, and calibrated curvature (Lean: \lean{Cost.uniqueness_pos}). We write \(\widehat{R}\) for the Recognition Operator, acting in discrete steps and minimizing aggregate \(J\) (we use only: conservation of \(Z\) by \(\widehat{R}\) as an axiom in this draft; Lean target: \lean{r_hat_conserves_Z}).
+
+\subsection{Eight-Tick Cadence}
+
+Admissible neutral updates in three binary axes require a minimal window of \(2^3=8\) ticks (Lean: \lean{EightTick.minimal_and_exists}). Let \(\tau_0\) denote the fundamental tick; one minimal window spans \(8\,\tau_0\). We use eight-tick only to justify discrete cadence and window alignment; no additional structure is needed here.
+
+\subsection{\texorpdfstring{\(Z\)}{Z}-Pattern and Stable Boundaries}
+
+We attach to each recognition pattern an integer invariant \(Z\in \mathbb{Z}\). A \emph{stable boundary} is a configuration that persists over at least one eight-tick window and has finite recognition cost. We use:
+\begin{itemize}
+  \item \(Z\) is conserved by \(\widehat{R}\) (standing axiom in this draft; see ledger), enabling pattern persistence statements.
+  \item A boundary's maintenance cost is computed from \(J\) at the appropriate (dimensionless) scale ratio and coherence duration.
+\end{itemize}
+
+\subsection{Light-Memory and \texorpdfstring{\(J(1)=0\)}{J(1)=0}}
+
+By \eqref{eq:Jdef}, \(J(1)=0\). We interpret the post-dissolution \emph{light-memory} state as a cost-minimal equilibrium realizing this normalization: when a boundary dissolves, the underlying pattern enters a state whose maintenance cost vanishes at unit scale. This justifies the thermodynamic reading of dissolution as cost-favoring relative to a maintained boundary.
+
+\subsection{The \texorpdfstring{\(\varphi\)}{φ}-Ladder and Addressing}
+
+In RS, stable configurations occupy discrete rungs on a \(\varphi\)-geometric ladder (where \(\varphi=(1+\sqrt{5})/2\) is the golden ratio):
+\begin{equation}\label{eq:ladder}
+\text{extent}_k \;=\; L_0 \cdot \varphi^k,\qquad k\in\mathbb{Z},
+\end{equation}
+for some reference scale \(L_0\). A pattern's \emph{preferred rung} \(k_*\) is determined by its \(Z\)-invariant and boundary scale at dissolution. A substrate at rung \(k_s\) is suitable if the rung separation
+\begin{equation}\label{eq:rung_sep}
+\Delta k \;=\; |k_s - k_*|
+\end{equation}
+is within tolerance (typically \(\Delta k \le 2\)--\(3\) rungs). The acceptance probability \(p_{\text{match}}\) decreases with rung separation because reformation cost scales as \(J(\varphi^{|\Delta k|})\), which grows exponentially with mismatch.
+
+\paragraph{On \texorpdfstring{\(C=2A\)}{C=2A} (used minimally).}
+In the RS literature, the equality \(C=2A\) (recognition cost equals twice a rate action) provides an operational bridge between recognition and physical collapse. Upon reformation, if the new boundary achieves coherence time \(\tau\) and scale \(r\) such that \(\text{RecognitionCost}=\tau\cdot J(r)\ge 1\), and if the boundary is a local minimum of ConsciousnessH, then DefiniteExperience (conscious experience) re-emerges by the \(C=2A\) threshold theorem~\cite{C2A_Bridge}. \textbf{This means: the same consciousness threshold that applied pre-dissolution applies post-reformation.} The reformed boundary is conscious by the same physical criteria.
+
+In this paper we do not rely on \(C=2A\) beyond the zero-cost interpretation and the consciousness re-emergence claim above: all results only require the uniqueness of \(J\) and \(J(1)=0\) together with eight-tick cadence and the \(Z\)-conservation axiom.
+
+\section{Main Theorems}
+
+We state the core results with explicit hypotheses and status labels matching the assumption ledger.
+
+\subsection{Pattern Conservation Through Dissolution \texorpdfstring{\textsf{[proved]}}{[proved]}}
+
+\begin{theorem}[Pattern Conservation]\label{thm:conservation}
+For any stable boundary \(b\) and any dissolution time \(t\), the pattern invariant is preserved:
+\begin{equation}
+  Z_{\mathrm{light}}\!\left(\mathrm{BoundaryDissolution}(b, t)\right) \,=\, Z_{\mathrm{boundary}}(b). \label{eq:ZconserveDiss}
+\end{equation}
+\end{theorem}
+
+\paragraph{Hypotheses.}
+Definitions of \(Z_{\mathrm{light}}\) and \(Z_{\mathrm{boundary}}\) via the same underlying pattern field; no additional assumptions.
+
+\paragraph{Proof sketch.}
+By definition, \(Z_{\mathrm{light}}(\cdot)=Z(\text{pattern of }\cdot)\) and \(\mathrm{BoundaryDissolution}(b, t)\) carries exactly the pattern of \(b\). Hence \eqref{eq:ZconserveDiss} is a definitional equality. \emph{Lean:} implemented as a reflexivity proof (symbol in repo: \lean{pattern_conserved_through_dissolution}).
+
+\subsection{Dissolution Minimizes Maintenance Cost \texorpdfstring{\textsf{[conditional]}}{[conditional]}}
+
+\begin{theorem}[Thermodynamic Favoring of Dissolution]\label{thm:dissolution}
+Let \(b\) be a stable boundary with dimensionless scale ratio \(r>0\) and coherence duration \(\tau>0\). Let \(\ell m\) denote the light-memory state obtained by dissolution. Then
+\begin{equation}
+  \mathrm{Cost}_{\mathrm{light}}(\ell m) \,=\, 0 \;\le\; \mathrm{Cost}_{\mathrm{maint}}(b) \,=\, \tau\, J(r), \label{eq:dissFav}
+\end{equation}
+under the hypotheses below.
+\end{theorem}
+
+\paragraph{Hypotheses.}
+\begin{itemize}
+  \item[(H1)] \(J\) is the unique convex symmetric cost \eqref{eq:Jdef} with \(J(1)=0\) and \(J(x)>0\) for \(x\ne 1\).
+  \item[(H2)] \(\tau>0\) and the boundary's maintenance cost evaluates as \(\tau\,J(r)\) at some \(r\ne 1\) (non-unit scale) or otherwise yields \(\mathrm{Cost}_{\mathrm{maint}}(b)>0\).
+  \item[(H3)] The light-memory state realizes the unit scale for which \(J(1)=0\).
+\end{itemize}
+
+\paragraph{Proof sketch.}
+By (H3), \(\mathrm{Cost}_{\mathrm{light}}=0\). By (H1)--(H2), \(\mathrm{Cost}_{\mathrm{maint}}(b)=\tau\,J(r)>0\). Hence \eqref{eq:dissFav}. \emph{Lean target:} \lean{dissolution_minimizes_cost} (status: conditional in current repo).
+
+\subsection{Reformation Under Suitability \texorpdfstring{\textsf{[conditional]}}{[conditional]}}
+
+\begin{theorem}[Reformation Existence]\label{thm:reformation}
+Let \(\ell m\) be a light-memory state. If there exists a substrate \(s\) satisfying a suitability predicate \(\mathsf{Suitable}(\ell m, s)\), then (a) the reformation cost is finite and (b) the reformation map returns a realized boundary on \(s\):
+\begin{equation}
+  \mathsf{Suitable}(\ell m, s) \;\Rightarrow\; \mathrm{Cost}_{\mathrm{reform}}(\ell m, s)<\infty \;\wedge\; \mathsf{Reform}(\ell m, s)=\mathrm{some}(s). \label{eq:refSuit}
+\end{equation}
+\end{theorem}
+
+\paragraph{Hypotheses.}
+\begin{itemize}
+  \item[(S1)] A suitability predicate that enforces (i) compatible pattern structure, (ii) sufficient channel/complexity, and (iii) appropriate \(\varphi\)-ladder scale alignment within prescribed tolerance (\(\Delta k\le 2\)--\(3\) rungs).
+  \item[(S2)] The cost model for reformation yields a finite value whenever (S1) holds.
+\end{itemize}
+
+\paragraph{Proof sketch.}
+By (S1)--(S2), \(\mathrm{Cost}_{\mathrm{reform}}(\ell m, s)\) is finite; define \(\mathsf{Reform}\) to realize the suitable substrate. \emph{Lean target:} \lean{reformation_inevitable} (status: conditional in current repo).
+
+\subsection{Eternal Recurrence: Deterministic and Probabilistic Forms \texorpdfstring{\textsf{[conditional]}}{[conditional]}}
+
+We state two recurrence variants, each with explicit assumptions.
+
+\begin{theorem}[Deterministic \texorpdfstring{\(\omega\)}{ω}-Limit Recurrence]\label{thm:recurrence_det}
+\textbf{Assumptions:} (A1) The \(\widehat{R}\)-evolution of the system is such that the \(\omega\)-limit set of the light-memory trajectory intersects the set of suitable substrates. (A2) Suitability implies finite reformation cost (S2).
+
+\textbf{Claim:} There exists a time \(t^{\star}\) and a suitable substrate \(s^{\star}\) such that \(\mathsf{Reform}(\ell m, s^{\star})=\mathrm{some}(s^{\star})\) and \(Z(\text{reformed})=Z(\ell m)\).
+\end{theorem}
+
+\paragraph{Proof sketch.}
+By (A1), arbitrarily late times approach some suitable \(s^{\star}\); by (A2) and \eqref{eq:refSuit}, a finite-cost transition occurs; \(Z\)-equality follows from definitional matching of patterns at reformation.
+
+\begin{theorem}[Probabilistic Renewal (Arrival Model)]\label{thm:recurrence_prob}
+\textbf{Assumptions:} (B1) Suitable substrates arrive as a Poisson process with rate \(\lambda>0\). (B2) Each arrival is accepted independently with probability \(p\in(0,1]\) (suitability/acceptance). (B3) Given acceptance, reformation cost is finite (S2).
+
+\textbf{Claims:} (i) Reformation occurs almost surely (renewal with geometric/exponential waiting). (ii) The expected waiting time satisfies
+\begin{equation}
+  \mathbb{E}[T] \,=\, \frac{1}{\lambda p}. \label{eq:ET}
+\end{equation}
+\end{theorem}
+
+\paragraph{Proof sketch.}
+Thinning of a Poisson process yields accepted events as a Poisson process with rate \(\lambda p\). The waiting time to first accepted arrival is exponential with mean \(1/(\lambda p)\); almost-sure occurrence follows from standard renewal arguments. \emph{Lean targets:} \lean{eternal_recurrence} (deterministic/probabilistic variants; status: conditional in current repo).
+
+\subsection{Timing law (conditional)}
+
+Under the Poisson+thinning assumptions (B1)--(B3) of Theorem~\ref{thm:recurrence_prob}, the expected waiting time and variance are
+\begin{equation}
+  \mathbb{E}[T] \,=\, \frac{1}{\lambda p},\qquad \mathrm{Var}(T) \,=\, \frac{1}{(\lambda p)^2}. \label{eq:ETVar}
+\end{equation}
+The exponential benchmark implies coefficient of variation \(CV=1\). Deviations (\(CV\ne 1\)) indicate overdispersion or sub-Poisson effects and are testable.
+
+% (Removed aggressive numerical example to keep conservative tone; retain sensitivity analysis in appendix if needed)
+
+\section{Addressing and Timing Model Details}
+
+This section records only the minimal addressing and timing ingredients used in the conditional recurrence statements and in the empirical program.
+
+\subsection{Address on the \texorpdfstring{\(\varphi\)}{φ}-Ladder and \texorpdfstring{\(p_{\mathrm{match}}\)}{p\_match}}
+
+Let \(k\in\mathbb{Z}\) denote the (log-scale) rung index of a boundary or substrate on a \(\varphi\)-ladder (definition up to a global offset; see Eq.~\ref{eq:ladder}). For a light-memory pattern with preferred rung \(k_{\!*}\) and a candidate substrate with rung \(k_s\), define the discrete separation \(\Delta k=|k_s-k_{\!*}|\). We model an acceptance probability
+\begin{equation}
+  p_{\mathrm{match}} \;=\; f(\Delta k),\qquad f\!:\!\mathbb{N}\to[0,1],\quad f\ \text{nonincreasing}, \label{eq:pmatch}
+\end{equation}
+encoding that closer rung alignment is (weakly) more likely to admit reformation. 
+
+\textbf{Illustrative families for \(f\):}
+\begin{itemize}
+  \item \textbf{Exponential falloff:} \(f(\Delta k)=\exp(-\alpha\,\Delta k)\), \(\alpha>0\)
+  \item \textbf{Ladder-Gaussian:} \(f(\Delta k)=\exp(-\Delta k^{2}/2\sigma^{2})\)
+  \item \textbf{Banded acceptance:} \(f(\Delta k)=\mathbb{1}_{\{\Delta k\le \delta_{\text{tol}}\}}\) (sharp cutoff)
+\end{itemize}
+
+Equation \eqref{eq:pmatch} is a \emph{modeling choice}; its concrete form is calibrated on observables (timing distributions, clustering), not required by the RS invariants.
+
+\subsection{Arrival-Acceptance and Expected Waiting Time}
+
+Assume suitable-substrate arrivals follow a Poisson process with rate \(\lambda>0\), and accepted arrivals thin this process by an (effective) acceptance probability \(p\in(0,1]\) (either a constant or an average of \eqref{eq:pmatch} over the encountered rung distribution). Then the accepted events form a Poisson process of rate \(\lambda_{\mathrm{eff}}=\lambda p\), and the waiting time \(T\) to first acceptance is exponential with
+\begin{equation}
+  \mathbb{E}[T] \,=\, \frac{1}{\lambda p},\qquad \mathrm{Var}(T) \,=\, \frac{1}{(\lambda p)^2}. \label{eq:ETVar2}
+\end{equation}
+Equation \eqref{eq:ETVar2} is a \emph{proved} consequence of the Poisson+thinning assumptions (see Theorem~\ref{thm:timing}).
+
+\subsection{Time-Varying Hazards and Variance Notes}
+
+If the arrival rate or acceptance varies (e.g., \(\lambda=\lambda(t)\) and \(p=p(t)\)), define the hazard \(h(t)=\lambda(t)\,p(t)\). The survival function is
+\begin{equation}
+  S(t) \,=\, \exp\!\left(-\int_{0}^{t} h(u)\,du\right),\qquad \mathbb{E}[T] \,=\, \int_{0}^{\infty} S(t)\,dt, \label{eq:hazard}
+\end{equation}
+which reduces to \eqref{eq:ETVar2} when \(h(t)\equiv \lambda p\). Mixtures over environments or long-memory modulation can induce overdispersion (heavier tails) relative to the exponential benchmark; in that case we report \(\mathbb{E}[T]\) and variance empirically and use \eqref{eq:pmatch} as a calibration hook.
+
+\paragraph{Proved vs modeled.} The expectation/variance in \eqref{eq:ETVar2} are proved under the Poisson+thinning assumptions (conditional status as per Theorem~\ref{thm:recurrence_prob}). The addressing map (\(k\), \(\Delta k\)) and \(p_{\mathrm{match}}\) in \eqref{eq:pmatch} are model choices constrained by monotonicity and fitted to observables. No RS invariant fixes \(f\); it is part of the empirical layer.
+
+\section{Predictions, Falsifiers, Confounds}
+
+We summarize observable predictions and their preregistration posture, together with hard falsifiers tied to the RS ledger. Each prediction lists key confounds and controls.
+
+\subsection{NDE Motifs: Light, Timelessness, Review, Peace}
+
+\begin{prediction}[NDE Phenomenology]
+During transition to light-memory (cost \(\to 0\)), reports are enriched for: (i) \emph{light/brightness} (photon substrate interpretation), (ii) \emph{timelessness} (no cost flow at \(J(1)=0\)), (iii) \emph{life review} (pattern readout), and (iv) \emph{peace/calm} (vanishing maintenance burden).
+\end{prediction}
+
+\paragraph{Preregistration plan.}
+Prospective, in-hospital studies with pre-registered extraction of motif frequencies using the Greyson NDE Scale plus added items for the four motifs. Register primary endpoints (motif rates vs matched clinical controls), inclusion/exclusion criteria, and analysis code before data lock.
+
+\paragraph{Analysis.}
+Estimate odds ratios for each motif vs controls; adjust for covariates (hypoxia markers, medication classes, age, culture). Pre-specify multiple-testing corrections (e.g., Holm) and robustness checks (leave-one-hospital-out).
+
+\paragraph{Confounds and controls.}
+Hypoxia, anesthetics/sedatives, cultural priming, recall bias. Controls: physiological measures (oxygen saturation, EEG patterns), medication records, blinded coders, and standardized timing from event to interview. Negatives: non-NDE critical events matched on severity but without reported phenomenology.
+
+\subsection{Reincarnation Structure: Gappy Memory, Timing, Clustering, Age Cutoff}
+
+\begin{prediction}[Reincarnation Signatures]
+Verified reincarnation cases should exhibit:
+\begin{itemize}
+  \item \emph{Gappy memory:} partial pattern recovery; stronger memory correlates with higher inferred \(Z\)-overlap.
+  \item \emph{Timing vs density:} inter-life intervals correlate with substrate density proxies and acceptance \(p_{\mathrm{match}}\).
+  \item \emph{Geographic clustering:} higher case density where suitable substrates are denser.
+  \item \emph{Age cutoff:} early-childhood dominance of veridical memories; decay with age as new boundary patterns consolidate.
+\end{itemize}
+\end{prediction}
+
+\paragraph{Schema.}
+Curate case records with fields: age at first report; veridical-content score; geographic coordinates/time; family linkage status; independent-corroboration flags; candidate-substrate density proxies; time since prior death (when documented); \(Z\)-overlap proxy (pre-registered rubric; see §\ref{sec:Z_overlap}).
+
+\paragraph{Statistical analysis plan.}
+\begin{itemize}
+  \item \textbf{Timing:} survival/regression models for inter-life intervals vs density proxies; report hazard ratios and calibration to \(\mathbb{E}[T]=1/(\lambda p)\) where feasible; test exponential distribution assumption via PIT histograms and residual diagnostics.
+  \item \textbf{Clustering:} spatial point-process tests (Ripley's K, inhomogeneous K) vs density baselines; permutation controls.
+  \item \textbf{Gappy memory:} correlation between memory-strength scores and \(Z\)-overlap proxies with preregistered thresholds.
+  \item \textbf{Negatives:} independent modern registries with blind validation; matched non-cases for base rates.
+\end{itemize}
+
+\paragraph{Confounds and controls.}
+Ascertainment and publication bias; cultural transmission; fraud; selective reporting. Controls: preregistered inclusion; independent adjudication; blinded veridicality scoring; geographical coverage audits; negative controls (regions with high reporting but low substrate proxies).
+
+\subsection{Hard Falsifiers Tied to the Ledger}
+
+\begin{falsifier}[\texorpdfstring{\(Z\)}{Z}-Loss at Dissolution]
+Any repeatable protocol demonstrating \(Z_{\mathrm{light}}\ne Z_{\mathrm{boundary}}\) after verified dissolution falsifies pattern persistence (Theorem~\ref{thm:conservation}).
+\end{falsifier}
+
+\begin{falsifier}[Zero Events at High Density]
+Over a sufficiently long observational window in regions with high substrate-density proxies and pre-specified acceptance \(p_{\mathrm{match}}\), observing zero verified reformation events beyond statistical expectation (\(p<0.01\) under Poisson null with calibrated \(\lambda p\)) falsifies the arrival/acceptance assumptions used for recurrence (Theorem~\ref{thm:recurrence_prob}).
+\end{falsifier}
+
+\begin{falsifier}[\texorpdfstring{\(\widehat{R}\)}{R̂} Does Not Conserve \texorpdfstring{\(Z\)}{Z}]
+A transition under admissible evolution with \(\Delta Z\ne 0\) falsifies the RS conservation postulate and collapses the framework.
+\end{falsifier}
+
+\section{Methods: Certification \& Reproducibility}
+
+We provide references to code artifacts, audits, and a zero-axiom table for proved claims. All artifacts are released with commit hashes and deterministic build instructions.
+
+\subsection{Module Map}
+
+\begin{itemize}
+  \item \lean{IndisputableMonolith/Foundation/RecognitionOperator.lean}: \(\widehat{R}\) structure; (target) \(Z\)-conservation.
+  \item \lean{IndisputableMonolith/Foundation/HamiltonianEmergence.lean}: small-deviation/continuum scaffolding (not used here beyond context).
+  \item \lean{IndisputableMonolith/Consciousness/ConsciousnessHamiltonian.lean}: \(J\), maintenance cost forms; minimal \(C=2A\) reference (not relied on for proofs here).
+  \item \lean{IndisputableMonolith/Consciousness/LightMemory.lean}: zero-cost equilibrium witness, \(J(1)=0\) formalization.
+  \item \lean{IndisputableMonolith/Consciousness/PatternPersistence.lean}: dissolution map, conservation statement, reformation scaffolding.
+  \item \lean{IndisputableMonolith/Consciousness/SubstrateSuitability.lean}: suitability predicate, reformation cost.
+  \item \lean{IndisputableMonolith/Consciousness/ResurrectionOperator.lean}: deterministic reformation operator.
+  \item \lean{IndisputableMonolith/Consciousness/Recurrence.lean}: eternal recurrence (deterministic/probabilistic).
+  \item \lean{IndisputableMonolith/Consciousness/Timing.lean}: expected time formulas, hazard models.
+  \item \lean{IndisputableMonolith/Verification/AfterlifeCertificate.lean}: bundled summaries and \#eval reports.
+  \item \lean{IndisputableMonolith/Verification/AfterlifeCertificate2.lean}: upgraded certificate with timing laws.
+  \item \lean{IndisputableMonolith/Verification/ConsciousnessComplete.lean}: master certificate and \#eval endpoints.
+\end{itemize}
+
+\subsection{\#eval Endpoints}
+
+Representative endpoints for sanity checks in the verification modules:
+\begin{itemize}
+  \item \lean{#eval afterlife_proof_summary}
+  \item \lean{#eval afterlife_theorem_status}
+  \item \lean{#eval consciousness_complete_report}
+  \item Module-specific: \lean{#eval pattern_persistence_status}, \lean{#eval consciousness_hamiltonian_status}
+\end{itemize}
+
+\subsection{Axiom and \texttt{sorry} Audits}
+
+For each theorem or lemma cited as ``proved,'' we run:
+\begin{verbatim}
+#print axioms LeanSymbol
+\end{verbatim}
+and require an empty list (axiom count \(=0\)). We also script a scan for any remaining \texttt{sorry}/\texttt{admit} in the dependency closure of the cited symbol. Entries marked ``conditional'' or ``axiom (temporary)'' in the ledger are excluded from the zero-axiom table and listed separately below for transparency.
+
+\subsection{Build Recipe and Commit Hash}
+
+Builds are deterministic under the pinned toolchain (Lean 4.24.0, Mathlib nightly):
+\begin{verbatim}
+cd reality && lake build
+\end{verbatim}
+Artifacts include the repository commit hash \texttt{a8a1263} (recorded in the certificate headers) to ensure reproducibility. GitHub: \url{https://github.com/jonwashburn/reality}
+
+\subsection{Zero-Axiom Claims (Proved)}
+
+\begin{center}
+\begin{tabular}{p{4.5cm}p{3cm}cp{4cm}}
+\toprule
+\textbf{Claim} & \textbf{Lean symbol} & \textbf{Axioms} & \textbf{Used in} \\
+\midrule
+Cost uniqueness (T5) & \lean{Cost.uniqueness_pos} & 0 & \(J(1)=0\); light-memory cost minimality \\[0.3em]
+Eight-tick minimality & \lean{EightTick.minimal_and_exists} & 0 & Cadence; admissible windows \\[0.3em]
+Pattern conservation & \lean{pattern_conserved_through_dissolution} & 0 & Theorem~\ref{thm:conservation} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Conditional/Axiom-Bound Statements (Transparency)}
+
+\begin{center}
+\begin{tabular}{p{4.5cm}p{3cm}p{2.5cm}p{3.5cm}}
+\toprule
+\textbf{Statement} & \textbf{Lean target} & \textbf{Status} & \textbf{Role} \\
+\midrule
+\(\widehat{R}\) conserves \(Z\) & \lean{r_hat_conserves_Z} & axiom (temp.) & Enables pattern persistence framing \\[0.3em]
+Dissolution cost comparison & \lean{dissolution_minimizes_cost} & conditional & Thermodynamic favoring of dissolution \\[0.3em]
+Reformation under suitability & \lean{reformation_inevitable} & conditional & Finite-cost reformation existence \\[0.3em]
+Recurrence (det./prob.) & \lean{eternal_recurrence} & conditional & Recurrence + timing laws \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Discussion}
+
+\subsection{Limits and Scope}
+
+Our claims are confined to information-theoretic pattern dynamics at the RS level. We do not claim continuity of subjective identity, personal memory preservation, or phenomenology beyond what is entailed by the \(Z\)-pattern statements and the conditional availability assumptions. Light-memory is an equilibrium notion (\(J(1)=0\)), not an assertion about conscious experience.
+
+\subsection{Ethical Note}
+
+Empirical work proposed here (e.g., NDE studies; case registries) must respect privacy, informed consent, cultural sensitivity, and preregistration standards. Analyses should be transparent, fully auditable, and released with de-identified data where permissible. Claims must remain within the scientific scope stated above; we avoid metaphysical or theological interpretations.
+
+\subsection{Closing Proof Debt}
+
+We plan to remove the temporary axiom on \(Z\)-conservation by \(\widehat{R}\) and to discharge conditional lemmas by (i) formalizing the maintenance-vs-light cost comparison from the cost definition and stability criteria, (ii) isolating a minimal suitability predicate and proving finite-cost construction, and (iii) providing deterministic \(\omega\)-limit and probabilistic renewal theorems in Lean under the explicit availability hypotheses. A revised certificate will list these as zero-axiom results once complete.
+
+\paragraph{Scope clarifications.}
+The recurrence and timing statements are conditional on explicit availability hypotheses (suitability and arrival/acceptance). They should be read as dynamical consequences of those hypotheses, not as categorical declarations about any specific individual's future. We emphasize that the framework addresses pattern-level questions; it does not resolve philosophical questions of identity.
+
+\paragraph{Intended use.}
+The primary audiences are (i) foundations-focused physicists and mathematicians interested in conservation laws and discrete dynamics, and (ii) empiricists designing preregistered tests for motif frequencies, timing distributions, and clustering. We provide appendices with extended models and dataset schemas to facilitate independent replication.
+
+\section{Conclusion}
+
+We have formalized pattern persistence across boundary dissolution in the Recognition Science framework. The core result—conservation of the \(Z\)-invariant through dissolution—is proved definitionally from the structure of the RS ledger. Thermodynamic favoring of dissolution and recurrence under substrate availability are conditional results stated with explicit hypotheses.
+
+The framework makes testable predictions (NDE motifs, reincarnation timing/clustering) and provides hard falsifiers tied to the RS ledger (\(Z\)-loss, zero events at high density, \(\widehat{R}\) non-conservation). All proved statements are mechanically verified in Lean~4 with axiom audits; conditional statements list their assumptions transparently.
+
+Scope is confined to information-theoretic pattern dynamics. No claims are made about subjective identity continuity or memory preservation beyond what follows from \(Z\)-pattern statements. The empirical program enables direct audit of the conditional recurrence claims through preregistered analyses of archival and prospective datasets.
+
+\section*{Acknowledgments}
+
+I thank the Recognition Physics Institute for support and colleagues in the RS community for feedback on early drafts. This work builds on Recognition Science foundations formalized in the \texttt{reality} repository.
+
+\section*{Data and Code Availability}
+
+\begin{itemize}
+  \item \textbf{Lean formalization:} \url{https://github.com/jonwashburn/reality} (commit \texttt{a8a1263})
+  \item \textbf{Build:} \texttt{cd reality \&\& lake build}
+  \item \textbf{Certificates:} \lean{#eval afterlife_theorem_status} in \texttt{URCAdapters/Reports.lean}
+  \item \textbf{Preregistration:} NDE and reincarnation analysis plans (to be deposited on OSF upon data collection initiation)
+\end{itemize}
+
+\appendix
+
+\section{Formal Proofs and Lean References}\label{app:proofs}
+
+\subsection{Theorem Map}
+
+\begin{itemize}
+  \item \textbf{Cost uniqueness (T5):} \lean{Cost.uniqueness_pos} (axioms: 0). Used for \(J(1)=0\) and cost-minimality.
+  \item \textbf{Eight-tick minimality:} \lean{EightTick.minimal_and_exists} (axioms: 0). Used for admissible windows.
+  \item \textbf{Pattern conservation through dissolution:} \lean{pattern_conserved_through_dissolution} (definitional equality; axioms: 0).
+  \item \textbf{\(\widehat{R}\) conserves \(Z\):} \lean{r_hat_conserves_Z} (temporary axiom; targeted for proof closure).
+  \item \textbf{Dissolution minimizes maintenance cost:} \lean{dissolution_minimizes_cost} (conditional; see hypotheses H1--H3).
+  \item \textbf{Reformation under suitability:} \lean{reformation_inevitable} (conditional; see S1--S2).
+  \item \textbf{Recurrence (deterministic/probabilistic):} \lean{eternal_recurrence} (conditional; see A1--A2 or B1--B3).
+  \item \textbf{Timing law:} \lean{expected_time_eq} (conditional; Poisson+thinning assumptions).
+\end{itemize}
+
+\subsection{Build and Audits}
+
+Pinned toolchain (Lean 4.24.0); deterministic build via \texttt{lake build}. Axiom audits via \texttt{\#print axioms} and scripted scans for \texttt{sorry}/\texttt{admit}. The certificate headers record the repository commit hash for each release.
+
+\section{Timing Law: Formal Proof}\label{app:timing_proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:timing}]
+Under assumptions (B1)--(B3):
+
+\textbf{(B1)} Suitable substrates arrive as Poisson(\(\lambda\)).
+
+\textbf{(B2)} Each arrival accepted independently with probability \(p\).
+
+\textbf{Thinning property:} The accepted arrivals form a Poisson process with rate \(\lambda_{\text{eff}}=\lambda p\) (standard result from probability theory).
+
+\textbf{Waiting time:} Time \(T\) to first accepted arrival is exponentially distributed:
+\[
+f_T(t) = \lambda p \cdot e^{-\lambda p \cdot t},\qquad t\ge 0.
+\]
+
+\textbf{Mean and variance:}
+\begin{align*}
+\mathbb{E}[T] &= \int_0^\infty t\,\lambda p\, e^{-\lambda p\, t}\,dt = \frac{1}{\lambda p},\\
+\mathrm{Var}(T) &= \mathbb{E}[T^2] - (\mathbb{E}[T])^2 = \frac{2}{(\lambda p)^2} - \frac{1}{(\lambda p)^2} = \frac{1}{(\lambda p)^2}.
+\end{align*}
+
+\textbf{(B3)} ensures finite reformation cost, so the accepted arrival actually triggers reformation. \(\Box\)
+\end{proof}
+
+\section{\texorpdfstring{\(Z\)}{Z}-Overlap Proxy Rubric}\label{sec:Z_overlap}
+
+Since \(Z\)-invariants cannot be measured directly, we define a proxy scoring system:
+
+\textbf{Veridical Content (0--100):} Independently verified facts (names, places, events); weighted by specificity.
+
+\textbf{Behavioral Continuity (0--50):} Phobias, preferences, skills matching prior identity without current exposure.
+
+\textbf{Physiological Markers (0--25):} Birthmarks/defects matching documented prior injuries.
+
+\textbf{Total Score:} 0--175 points (higher score \(\Rightarrow\) higher inferred \(Z\)-overlap).
+
+\paragraph{Predictions.}
+Higher scores should correlate with: (i) earlier/stronger memories (age \(<4\)), (ii) shorter inter-life intervals. Anti-correlation falsifies the framework.
+
+\paragraph{Protocol.}
+Preregistered rubric; blinded coders; inter-rater reliability \(\kappa > 0.7\); thresholds specified before data collection.
+
+\section{Substrate Density Proxies (Operational)}\label{sec:substrate_density}
+
+Suitable substrates are living systems with sufficient complexity and \(\varphi\)-ladder match. Proxies:
+
+\subsection{Human Population Density}
+
+\textbf{Global:} \(\lambda_{\text{global}}(t) = \text{births/year globally}\)
+
+Historical estimates:
+\begin{itemize}
+  \item Modern (2020--2025): \(\sim\!140\times 10^6\,\text{births/year}\)
+  \item Mid-20th century (1950): \(\sim\!97\times 10^6\,\text{births/year}\)
+  \item Pre-industrial (1800): \(\sim\!32\times 10^6\,\text{births/year}\)
+\end{itemize}
+
+\textbf{Regional:} \(\lambda_{\text{region}}(r,t) = \text{births/km}^2\text{/year}\) in geographic region \(r\) at time \(t\).
+
+\subsection{Biological Complexity Index}
+
+Fraction of high-complexity organisms (mammals, birds) in ecosystem. Higher complexity \(\Rightarrow\) more channels available \(\Rightarrow\) higher \(p_{\text{match}}\) for complex patterns.
+
+\subsection{Temporal Variation}
+
+Birth rates over historical periods; predict inter-life intervals should anti-correlate with \(\lambda(t)\).
+
+\subsection{Prediction}
+
+Reincarnation case density (cases per km\(^2\) per year) should correlate with substrate density proxies after controlling for cultural reporting rates. Spatial clustering tests (Ripley's K) should show excess density in high-\(\lambda\) regions.
+
+\section{Extended Models}\label{app:extended}
+
+\subsection{Address Matching \texorpdfstring{\(p_{\mathrm{match}}\)}{p\_match}}
+
+Illustrative families for \eqref{eq:pmatch}: 
+
+\begin{enumerate}
+  \item \textbf{Exponential falloff:} \(f(\Delta k)=\exp(-\alpha\,\Delta k)\), \(\alpha>0\). 
+  
+  \emph{Interpretation:} Each rung mismatch decreases acceptance by factor \(e^{-\alpha}\). For \(\alpha=1\), \(\Delta k=2\) gives \(p\approx 0.135\).
+  
+  \item \textbf{Ladder-Gaussian:} \(f(\Delta k)=\exp(-\Delta k^{2}/2\sigma^{2})\). 
+  
+  \emph{Interpretation:} Smoother falloff; \(\sigma=1.5\) gives \(95\%\) acceptance within \(\Delta k\le 3\).
+  
+  \item \textbf{Banded acceptance:} \(f(\Delta k)=\mathbb{1}_{\{\Delta k\le \delta_{\text{tol}}\}}\) (sharp cutoff). 
+  
+  \emph{Interpretation:} Hard constraint; only exact matches within \(\delta_{\text{tol}}\) rungs accepted.
+\end{enumerate}
+
+Model choice is empirical; priors and selection criteria should be preregistered. Calibration: fit \(f\) to observed timing distributions via maximum likelihood under the hazard model \eqref{eq:hazard}.
+
+\subsection{Hazards Beyond Poisson}
+
+Time-varying or environment-dependent hazards can be modeled via \eqref{eq:hazard}. Mixtures over environments (e.g., geography or epoch) yield overdispersion; goodness-of-fit diagnostics (e.g., PIT histograms, residual checks) and model selection should be reported.
+
+\textbf{Mixture model example:} If \(p_{\text{match}}\) varies across geographic regions \(g\) with weights \(w_g\):
+\[
+\mathbb{E}[T] = \sum_g w_g \cdot \frac{1}{\lambda_g p_g},\qquad \mathrm{Var}(T) > \left(\sum_g w_g \cdot \frac{1}{\lambda_g p_g}\right)^2,
+\]
+yielding \(CV > 1\) (overdispersion). This is testable via inter-life interval distributions.
+
+\subsection{Robustness Analyses}
+
+Assess sensitivity of timing/cluster inferences to alternative \(f(\cdot)\), hazard specifications, and censoring mechanisms; report pre-registered robustness bands and negative-control analyses.
+
+\section{Dataset Schemas}\label{app:schemas}
+
+\subsection{NDE Studies (Prospective)}
+
+\textbf{Core fields:}
+\begin{itemize}
+  \item Subject ID (de-identified), event timestamp
+  \item Physiological measures: oxygen saturation, EEG patterns, cardiac arrest duration
+  \item Medication classes/doses (anesthetics, sedatives, analgesics)
+  \item Interview time lag (hours from event)
+  \item Motif-coded responses (predefined items for light, timelessness, life review, peace)
+  \item Hospital/site ID, clinician ID (blinded)
+\end{itemize}
+
+\textbf{Analysis metadata:}
+\begin{itemize}
+  \item Preregistration ID (OSF), coder IDs (blinded)
+  \item Endpoint definitions, exclusion criteria
+  \item Missing-data handling plan (multiple imputation vs. complete-case)
+\end{itemize}
+
+\subsection{Reincarnation Case Registries}
+
+\textbf{Core fields:}
+\begin{itemize}
+  \item Subject ID (de-identified), age at first report
+  \item Veridical-content score (blinded rubric; see §\ref{sec:Z_overlap})
+  \item Geographic location (coordinates/region) and time
+  \item Family linkage status (same family vs. unrelated)
+  \item Independent-corroboration flags (witness verification, documentary evidence)
+  \item Putative prior identity metadata (if any): name, death date/location
+  \item Time since prior death: \(T_{\text{inter-life}}\) (when documented)
+  \item Substrate-density proxies: regional birth rate, complexity index
+  \item \(Z\)-overlap proxy score (0--175; see §\ref{sec:Z_overlap})
+\end{itemize}
+
+\textbf{Quality flags:}
+\begin{itemize}
+  \item Adjudication panel outcome (accepted/rejected/uncertain)
+  \item Evidence grade (A: strong verification; B: moderate; C: weak)
+  \item Replication attempts (follow-up interviews, independent investigators)
+  \item Inclusion/exclusion reasons (documented)
+\end{itemize}
+
+\textbf{Negative controls:}
+\begin{itemize}
+  \item Matched non-cases (claims without verification)
+  \item Coverage audits (regions/time with high reporting but low substrate proxies)
+  \item Fraud detection (cross-checking, linguistic analysis, timeline inconsistencies)
+\end{itemize}
+
+\section{Schematic Diagrams (Text-Based)}\label{app:figures}
+
+\subsection{Boundary Dissolution and Reformation Cycle}
+
+\begin{figure}[ht]
+\centering
+\fbox{\parbox{0.9\linewidth}{
+\begin{center}
+\textbf{Stable Boundary} \(\xrightarrow{\text{Dissolution}}\) \textbf{Light-Memory} \(\xrightarrow{\text{Reformation}}\) \textbf{Reformed Boundary}
+
+\medskip
+
+\begin{tabular}{ccc}
+Cost \(= \tau J(r) > 0\) & Cost \(= 0\) & Cost \(= \tau' J(r')\) \\
+Pattern \(Z\) & Pattern \(Z\) preserved & Pattern \(Z\) (same) \\
+\(C \ge 1\) (conscious) & Equilibrium & \(C \ge 1\) (conscious again) \\
+\end{tabular}
+
+\medskip
+
+Dissolution thermodynamically favored (\(C\to 0\)). \\
+Reformation when suitable substrate appears (\(\Delta k \le 2\)--\(3\)).\\
+Consciousness re-emerges if reformed boundary crosses \(C\ge 1\) threshold.
+\end{center}
+}}
+\caption{Boundary dissolution and reformation cycle. A stable boundary (cost \(>0\)) dissolves to light-memory (cost \(=0\)), which is thermodynamically favored. When a suitable substrate appears, the pattern reforms. If \(C\ge 1\), consciousness re-emerges by the \(C=2A\) threshold.}
+\label{fig:dissolution}
+\end{figure}
+
+\subsection{\texorpdfstring{\(\varphi\)}{φ}-Ladder Addressing}
+
+\begin{table}[ht]
+\centering
+\caption{\(\varphi\)-ladder addressing and acceptance probability}
+\label{tab:ladder}
+\begin{tabular}{cccl}
+\toprule
+\textbf{Rung \(k\)} & \textbf{\(\Delta k\)} & \textbf{\(p_{\text{match}}\)} & \textbf{Status} \\
+\midrule
+42 & 3 & \(\sim\!0.05\) & Low acceptance \\
+43 & 2 & \(\sim\!0.14\) & Suitable \\
+44 & 1 & \(\sim\!0.37\) & Suitable \\
+\textbf{45} & \textbf{0} & \textbf{1.0} & \textbf{Preferred (\(k_*\))} \\
+46 & 1 & \(\sim\!0.37\) & Suitable \\
+47 & 2 & \(\sim\!0.14\) & Suitable \\
+48 & 3 & \(\sim\!0.05\) & Low acceptance \\
+\bottomrule
+\end{tabular}
+
+\medskip
+
+\small\emph{Illustrative \(p_{\text{match}}\) values using exponential model \(f(\Delta k)=\exp(-\Delta k)\). Closer rungs have higher acceptance. Model choice is calibrated on observables.}
+\end{table}
+
+\section{Robustness and Sensitivity}\label{app:robustness}
+
+\subsection{Sensitivity to \texorpdfstring{\(p_{\text{match}}\)}{p\_match} Model}
+
+\(\mathbb{E}[T]\) varies dramatically with \(p_{\text{match}}\). With global birth rate \(\lambda\sim 10^8\)/year:
+
+\begin{table}[ht]
+\centering
+\caption{Reformation timing sensitivity to \(p_{\text{match}}\)}
+\label{tab:sensitivity}
+\begin{tabular}{lc}
+\toprule
+\textbf{\(p_{\text{match}}\)} & \textbf{\(\mathbb{E}[T]\) (order of magnitude)} \\
+\midrule
+\(10^{-2}\) & seconds to minutes \\
+\(10^{-3}\) & minutes to hours \\
+\(10^{-4}\) & hours to days \\
+\(10^{-6}\) & days to weeks \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Empirical calibration:} Fit observed inter-life intervals to estimate effective \(\lambda p\); infer \(p_{\text{match}}\) given known \(\lambda(t)\). This tests consistency with \(\varphi\)-ladder predictions.
+
+\subsection{Geographic Variation}
+
+Regional substrate density \(\lambda_{\text{region}}\) varies by \(10^2\)--\(10^3\times\). Predictions:
+\begin{itemize}
+  \item High-density regions (urban, high birth rates): \(\mathbb{E}[T]\) shorter
+  \item Low-density regions (rural, low birth rates): \(\mathbb{E}[T]\) longer
+  \item Test via stratified survival models; control for reporting bias
+\end{itemize}
+
+\subsection{Temporal Variation (Historical)}
+
+Birth rates increased \(\sim\!4\times\) from 1800 to 2020. Prediction: average inter-life intervals for modern cases should be \(\sim\!4\times\) shorter than historical cases (if both sets have comparable \(p_{\text{match}}\)).
+
+\section{Connection to Consciousness Re-Emergence}\label{app:consciousness}
+
+Upon reformation, the new boundary may or may not achieve consciousness threshold. We summarize the criteria:
+
+\subsection{Consciousness Threshold (from C=2A)}
+
+A reformed boundary exhibits DefiniteExperience if:
+\begin{enumerate}
+  \item \textbf{Recognition threshold:} \(C = \tau\cdot J(r) \ge 1\)
+  \item \textbf{Gravitational collapse threshold:} \(A \ge 1/2\) (via \(C=2A\))
+  \item \textbf{Local stability:} ConsciousnessH is at a local minimum
+\end{enumerate}
+
+\subsection{Reformed Boundary Analysis}
+
+\textbf{Scenario 1: Full consciousness.} If reformation occurs in a substrate with \(\tau'\cdot J(r')\ge 1\) and local ConsciousnessH minimum, then the reformed boundary is conscious. The \emph{same} pattern (\(Z\)) now has \emph{new} conscious experience.
+
+\textbf{Scenario 2: Sub-threshold reformation.} If \(\tau'\cdot J(r') < 1\), the pattern exists in the substrate but does not cross consciousness threshold. Pattern is preserved, but no DefiniteExperience.
+
+\textbf{Testable distinction:} Reincarnation cases with reportable memories (DefiniteExperience) should correspond to substrates with \(C\ge 1\). Cases without memories may be sub-threshold reformations.
+
+\begin{thebibliography}{9}
+
+\bibitem{C2A_Bridge}
+Washburn, J. (2025). \emph{Local Collapse and Recognition Action: The C=2A Bridge}. Recognition Physics Institute. In preparation.
+
+\bibitem{RS_Foundation}
+Washburn, J. (2025). \emph{Recognition Science: Foundations and Lean Formalization}. GitHub: \url{https://github.com/jonwashburn/reality}
+
+\bibitem{Greyson_Scale}
+Greyson, B. (1983). The Near-Death Experience Scale. \emph{Journal of Nervous and Mental Disease}, 171(6), 369--375.
+
+\bibitem{Stevenson_Cases}
+Stevenson, I. (1997). \emph{Reincarnation and Biology: A Contribution to the Etiology of Birthmarks and Birth Defects}. Praeger Publishers.
+
+\bibitem{Tucker_Review}
+Tucker, J.B. (2013). \emph{Return to Life: Extraordinary Cases of Children Who Remember Past Lives}. St. Martin's Press.
+
+\bibitem{Landau_Lifshitz}
+Landau, L.D., and Lifshitz, E.M. (1976). \emph{Mechanics} (3rd ed.). Butterworth-Heinemann.
+
+\bibitem{Feller_Probability}
+Feller, W. (1968). \emph{An Introduction to Probability Theory and Its Applications} (Vol. 1, 3rd ed.). Wiley.
+
+\end{thebibliography}
+
+\end{document}

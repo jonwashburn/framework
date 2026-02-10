@@ -1,0 +1,193 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{hyperref}
+
+% Simple page style
+\pagestyle{plain}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\begin{document}
+
+\begin{center}
+\textbf{\LARGE PATENT APPLICATION}\\[0.5cm]
+\textbf{\Large Method and System for Calibrating Symmetry Diagnostics\\with Always-Positive Mapping and Logged Seam Envelope}\\[1cm]
+
+\begin{tabular}{rl}
+\textbf{Application Type:} & Utility Patent \\
+\textbf{Filing Date:} & January 25, 2026 \\
+\textbf{Inventor:} & Jonathan Washburn \\
+\textbf{Technology Field:} & Fusion Energy / Metrology / Control Systems \\
+\textbf{International Class:} & G21B 1/00; G01D 18/00; G05B 23/02 \\
+\end{tabular}
+\end{center}
+
+\vspace{1cm}
+\hrule
+\vspace{0.5cm}
+
+\section*{ABSTRACT}
+
+A method and system for calibrating diagnostic signals in fusion reactor control systems to ensure strict positivity and traceability. The invention introduces an ``Always-Positive'' calibration mapping (e.g., exponential) that transforms raw, potentially negative error signals (e.g., mode amplitudes) into strictly positive dimensionless ratios required by ledger-based cost functions that are undefined or ill-conditioned at nonpositive ratios (e.g., due to reciprocal terms). The system logs the calibration mapping type and parameters, and records the calibration-envelope assumption as an explicit seam declaration inside an auditable artifact that includes cryptographic hashes (e.g., SHA-256) over a canonical representation of the run inputs and/or provenance file hashes. This approach prevents invalid ratio inputs that would otherwise trigger numerical exceptions or incorrect controller behavior, and provides a formal mechanism for tracking empirical assumptions bridging physical measurements to formally specified control logic.
+
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+
+\section{BACKGROUND OF THE INVENTION}
+
+\subsection{Technical Field}
+
+This invention relates generally to the calibration of diagnostic instruments in safety-critical control systems, and specifically to methods for mapping raw physical measurements to the dimensionless inputs required by rigorous control algorithms in nuclear fusion.
+
+\subsection{Description of Related Art}
+
+Advanced control algorithms often require inputs that satisfy strict mathematical properties. For example, the ``Symmetry Ledger'' control method (co-pending application PF-02) uses a cost function $J(r) = \frac{1}{2}(r + r^{-1}) - 1$ which requires the input ratio $r$ to be strictly positive ($r > 0$).
+
+However, raw diagnostic signals from fusion experiments are often zero-centered error signals (e.g., $P_2 = -0.05$ $\mu$m) or can be negative due to noise. Standard affine calibration ($r = 1 + g \cdot x$) fails if the error $x$ is large enough to make $r \le 0$, causing the control algorithm to crash or diverge.
+
+Furthermore, in safety-critical systems, it is essential to distinguish between mathematically proven control logic and the empirical assumptions used to interpret sensors. Current systems often hard-code calibration constants, obscuring the ``seam'' where physical reality meets formal logic.
+
+There is a need for a calibration method that guarantees valid inputs for the controller while rigorously documenting the empirical assumptions.
+
+\section{SUMMARY OF THE INVENTION}
+
+The present invention provides a \textbf{Robust Calibration System} comprising two key innovations:
+
+\begin{enumerate}
+    \item \textbf{Always-Positive Mapping:} A calibration function that maps the entire domain of raw input values $x \in (-\infty, \infty)$ to the strictly positive codomain $r \in (0, \infty)$. A preferred embodiment uses the exponential map:
+    \[
+    r = \exp(g \cdot x)
+    \]
+    where $g$ is a gain factor. This ensures that $r$ is never zero or negative, regardless of the magnitude of the error $x$, while preserving the linear approximation $r \approx 1 + gx$ for small errors.
+
+    \item \textbf{Logged Seam Envelope:} Every calibrated value is accompanied by a structured metadata record (a ``Seam Note'') that explicitly declares:
+    \begin{itemize}
+        \item The calibration formula used.
+        \item The parameter values (gain, offset).
+        \item A calibration-envelope declaration (e.g., a facility policy identifier, a named assumption, and/or a numeric validity envelope when available).
+        \item A cryptographic hash binding the calibration configuration to the run inputs (e.g., a SHA-256 of canonical JSON inputs that include the calibration metadata).
+    \end{itemize}
+\end{enumerate}
+
+This system ensures that the downstream controller always receives valid inputs, avoiding numerical faults, while simultaneously generating an audit trail that allows safety engineers to verify exactly how physical measurements were interpreted.
+
+\section{BRIEF DESCRIPTION OF THE DRAWINGS}
+
+\begin{itemize}
+    \item \textbf{FIG. 1} compares the standard affine calibration with the inventive exponential calibration.
+    \item \textbf{FIG. 2} is a block diagram of the calibration module within the control pipeline.
+    \item \textbf{FIG. 3} illustrates the structure of a Seam Note artifact.
+\end{itemize}
+
+\section{DETAILED DESCRIPTION OF EMBODIMENTS}
+
+\subsection{Definitions}
+
+\begin{itemize}
+    \item \textbf{Raw Signal ($x$):} The output from a diagnostic instrument (e.g., voltage, pixel count, Legendre coefficient).
+    \item \textbf{Calibrated Ratio ($r$):} A dimensionless, strictly positive value representing the state relative to an ideal target. $r=1$ is ideal.
+    \item \textbf{Seam:} The interface between an empirical system (the physical world/sensors) and a formal system (the control logic).
+    \item \textbf{Seam Note:} A data structure recording the assumptions made at a Seam.
+\end{itemize}
+
+\subsection{Calibration Mappings}
+
+The system supports multiple mapping types, selectable via configuration.
+
+\subsubsection{1. Affine Mapping (Standard)}
+\[ r = 1 + g \cdot x \]
+This is the traditional linear approximation. It is valid only when $g \cdot x > -1$ and the resulting ratio remains strictly positive. In one embodiment, the system detects $r \le \epsilon$ as an explicit seam-violation condition and rejects the measurement (or requires a different mapping), with the triggering condition and parameters logged.
+
+\subsubsection{2. Exponential Mapping (Inventive)}
+\[ r = \exp(g \cdot x) \]
+This mapping has unique advantages for ledger-based control:
+\begin{itemize}
+    \item \textbf{Strict Positivity:} $r > 0$ for all real $x$.
+    \item \textbf{Even-in-error ledger objective (when used with reciprocal-symmetric costs):} If the downstream cost satisfies $J(r) = J(1/r)$, and $r = e^{gx}$, then $1/r = e^{-gx}$, so $J(e^{gx}) = J(e^{-gx})$. This is useful when the ledger objective is intended to penalize the \emph{magnitude} of a deviation irrespective of sign. In embodiments requiring directional control, the raw signed value $x$ may be carried alongside the ratio for actuator selection as a separate seam-labeled signal.
+    \item \textbf{Linear Limit:} For small $x$, $e^{gx} \approx 1 + gx$, recovering the standard behavior near the operating point.
+\end{itemize}
+
+\subsection{Seam Logging Pipeline}
+
+When the control system processes a shot:
+\begin{enumerate}
+    \item \textbf{Ingest:} Raw data $x$ is received.
+    \item \textbf{Transform:} The configured mapping (e.g., Exponential) is applied to generate $r$.
+    \item \textbf{Record:} A \texttt{SeamNote} object is instantiated.
+    \begin{verbatim}
+    SeamNote(
+        name="calibration_mapping",
+        kind="seam",
+        details={
+            "type": "exp",
+            "gain": 1.5,
+            "formula": "r = exp(g*m)"
+        }
+    )
+    \end{verbatim}
+    \item \textbf{Bundle:} The \texttt{SeamNote} is appended to the run artifact for the shot; the raw values and computed ratios are stored as explicit outputs.
+    \item \textbf{Hash:} The artifact computes and stores an \texttt{input\_hash} (e.g., SHA-256 over canonical JSON of the inputs, including calibration parameters). Input file hashes (e.g., CSV or image hashes) may also be stored. If required, the full artifact JSON may be hashed or signed by an external facility process to provide non-repudiation.
+\end{enumerate}
+
+\subsection{Application to Paper Digitization}
+
+The system is also applied to the ingestion of legacy data (e.g., digitizing plots from scientific papers). In this embodiment, the ``Raw Signal'' is the value read from the plot, and the ``Seam Note'' includes provenance data (DOI, Figure ID, digitization tool). This allows historical data to be treated with the same rigor as live facility data.
+
+\section{CLAIMS}
+
+\begin{enumerate}
+    \item \textbf{A method for calibrating diagnostic signals in a control system, comprising:}
+    \begin{enumerate}
+        \item receiving a raw input signal representing a physical deviation from a target state;
+        \item applying a non-linear transformation function to the raw input signal to generate a dimensionless ratio, wherein the transformation function guarantees a strictly positive output for all real-valued inputs;
+        \item generating a metadata record comprising parameters of the transformation function and a calibration-envelope declaration or validity envelope definition; and
+        \item outputting the dimensionless ratio to a control algorithm and the metadata record to an audit log.
+    \end{enumerate}
+
+    \item The method of claim 1, wherein the non-linear transformation function is an exponential function of the form $r = \exp(g \cdot x)$, where $r$ is the ratio, $x$ is the raw input, and $g$ is a gain parameter.
+
+    \item The method of claim 1, wherein the control algorithm utilizes a cost function that is undefined or ill-conditioned for nonpositive ratios (including cost functions containing a reciprocal term), and the strictly positive output prevents numerical exception.
+
+    \item The method of claim 1, wherein the control system computes and stores a cryptographic digest (e.g., SHA-256) over a canonical representation of run inputs including the metadata record, thereby binding the calibration parameters to the control event.
+
+    \item \textbf{A calibration system for fusion reactor diagnostics, comprising:}
+    \begin{enumerate}
+        \item a configuration store holding calibration parameters including mapping type and gain;
+        \item a transformation engine configured to map signed error signals to strictly positive mode ratios using the stored parameters;
+        \item a seam logger configured to generate structured artifacts documenting the mapping applied to each signal; and
+        \item an interface to a symmetry ledger control loop that consumes the mode ratios.
+    \end{enumerate}
+
+    \item The system of claim 5, wherein the transformation engine supports both affine ($1+gx$) and exponential ($\exp(gx)$) mappings, selectable via the configuration store.
+
+    \item \textbf{A non-transitory computer-readable medium storing instructions that, when executed by a processor, cause a system to:}
+    \begin{enumerate}
+        \item ingest a raw measurement value;
+        \item compute a control input value using a mathematical function that maps the entire real line to the positive real line;
+        \item create a persistent record identifying the mathematical function and the raw measurement value as an empirical seam; and
+        \item provide the control input value to a safety-critical feedback loop.
+    \end{enumerate}
+\end{enumerate}
+
+\section*{APPENDIX: Implementation Evidence}
+
+The core logic of this invention is implemented in the accompanying software artifacts:
+\begin{itemize}
+    \item \textbf{Python implementation (calibration mappings + logging):}
+    \begin{itemize}
+        \item \texttt{fusion/simulator/control/paper\_modes\_demo.py}: \texttt{--calibration exp} maps $m \mapsto r=\exp(gm)$ and logs \texttt{SeamNote(name="calibration\_mapping", ...)} plus outputs.
+        \item \texttt{fusion/simulator/control/jag\_demo.py}: \texttt{--calibration exp} and artifact emission for public dataset ingest.
+        \item \texttt{fusion/simulator/control/image\_folder\_demo.py}: \texttt{--calibration exp} for generic image-folder ingest.
+    \end{itemize}
+    \item \textbf{Artifact structure + hashing:} \texttt{fusion/simulator/control/artifacts.py} defines \texttt{SeamNote}, \texttt{DiagnosticModeRunArtifact}, and \texttt{compute\_input\_hash} (SHA-256 over canonical JSON inputs).
+\end{itemize}
+
+\end{document}

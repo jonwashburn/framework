@@ -1,0 +1,192 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{hyperref}
+
+% Simple page style
+\pagestyle{plain}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\begin{document}
+
+\begin{center}
+\textbf{\LARGE PATENT APPLICATION}\\[0.5cm]
+\textbf{\Large Method and System for Robust Extraction of Implosion Symmetry Modes\\from Diagnostic Imaging with Uncertainty Quantification}\\[1cm]
+
+\begin{tabular}{rl}
+\textbf{Application Type:} & Utility Patent \\
+\textbf{Filing Date:} & January 25, 2026 \\
+\textbf{Inventor:} & Jonathan Washburn \\
+\textbf{Technology Field:} & Fusion Energy / Image Processing / Plasma Diagnostics \\
+\textbf{International Class:} & G21B 1/00; G06T 7/00; G06T 7/60 \\
+\end{tabular}
+\end{center}
+
+\vspace{1cm}
+\hrule
+\vspace{0.5cm}
+
+\section*{ABSTRACT}
+
+A method and system for extracting robust symmetry mode ratios (e.g., $P_2/P_0$, $P_4/P_0$) from inertial confinement fusion (ICF) diagnostic images. The invention addresses the problem of noisy, low-contrast, or asymmetric hotspot images by implementing a multi-stage pipeline comprising: (1) radial profile extraction via ray casting with configurable edge detection; (2) automatic symmetry axis estimation by minimizing Legendre fit residuals; (3) robust Legendre mode fitting to the extracted boundary; and (4) bootstrap uncertainty quantification to provide confidence intervals for the extracted modes. The method generates standardized, calibration-ready mode ratios suitable for input into a feedback control loop or a certified symmetry ledger, bridging the gap between raw experimental data and rigorous control theory.
+
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+
+\section{BACKGROUND OF THE INVENTION}
+
+\subsection{Technical Field}
+
+This invention relates generally to image processing for nuclear fusion diagnostics, and more particularly to methods for quantifying the shape and symmetry of the compressed fuel "hotspot" in inertial confinement fusion (ICF) experiments.
+
+\subsection{Description of Related Art}
+
+In ICF, the symmetry of the imploding fuel is critical for ignition. Diagnostics such as X-ray framing cameras and neutron imagers provide 2D projections of the hotspot. To control the implosion, operators need to reduce these images to scalar metrics, typically the coefficients of a Legendre polynomial expansion of the hotspot boundary radius $R(\theta) = \sum a_n P_n(\cos \theta)$.
+
+Existing methods for extracting these modes suffer from several limitations:
+\begin{itemize}
+    \item \textbf{Axis ambiguity:} The "symmetry axis" (e.g., the hohlraum axis) may not align perfectly with the detector or the physical implosion axis due to pointing errors or diagnostic misalignment. Assuming a fixed axis leads to incorrect mode estimation (aliasing $P_2$ into $P_1$ or other modes).
+    \item \textbf{Noise sensitivity:} Simple contour finding is unstable in the presence of detector noise or low photon counts.
+    \item \textbf{Lack of uncertainty:} Standard algorithms output a single value for $P_2/P_0$ without indicating confidence, making it dangerous to use in automated control loops.
+\end{itemize}
+
+There is a need for a robust, automated method to extract symmetry modes that explicitly handles axis uncertainty and provides rigorous error bars.
+
+\section{SUMMARY OF THE INVENTION}
+
+The present invention provides a method for \textbf{Robust Mode Extraction} that transforms raw diagnostic images into calibration-ready, seam-labeled symmetry mode ratio estimates suitable for downstream control computations.
+
+The method comprises:
+\begin{enumerate}
+    \item \textbf{Profile Extraction:} Casting radial rays from a weighted center of mass to determine the hotspot boundary radius $R(\phi)$ at multiple angles.
+    \item \textbf{Auto-Axis Estimation:} Iteratively fitting Legendre polynomials to the $R(\phi)$ profile while varying the assumed symmetry axis angle. The angle that minimizes the fit residual (RMS error) is selected as the true physical axis.
+    \item \textbf{Robust Fitting:} Performing a least-squares fit of the Legendre basis functions ($P_0, P_2, P_4$) to the profile data relative to the determined axis.
+    \item \textbf{Uncertainty Quantification:} Applying a bootstrap resampling technique to the profile data to generate a distribution of mode values, yielding mean estimates and confidence intervals (e.g., standard deviation).
+\end{enumerate}
+
+The output is a set of mode ratios (e.g., $P_2/P_0$, $P_4/P_0$) accompanied by metadata including the determined axis angle, residual RMS, and uncertainty bounds. This standardized output serves as the reliable input for the "Symmetry Ledger" control system described in co-pending applications.
+
+\section{BRIEF DESCRIPTION OF THE DRAWINGS}
+
+\begin{itemize}
+    \item \textbf{FIG. 1} is a flowchart of the robust mode extraction pipeline.
+    \item \textbf{FIG. 2} illustrates the radial ray casting and boundary detection process.
+    \item \textbf{FIG. 3} shows the residual RMS error as a function of assumed axis angle, demonstrating the auto-axis selection.
+    \item \textbf{FIG. 4} displays a sample hotspot image with the fitted $P_2/P_4$ contour overlaid.
+\end{itemize}
+
+\section{DETAILED DESCRIPTION OF EMBODIMENTS}
+
+\subsection{Definitions}
+
+\begin{itemize}
+    \item \textbf{Hotspot:} The central region of high X-ray or neutron emission in an ICF implosion.
+    \item \textbf{Legendre Modes ($P_n$):} Orthogonal polynomials used to describe the shape of the hotspot boundary. $P_0$ is the average radius, $P_2$ represents elongation (prolate/oblate), $P_4$ represents squareness/diamond shape.
+    \item \textbf{Mode Ratio:} The normalized coefficient $a_n/a_0$, representing the fractional amplitude of asymmetry.
+    \item \textbf{Bootstrap Resampling:} A statistical method for estimating the distribution of a statistic by sampling with replacement from the original data.
+\end{itemize}
+
+\subsection{Method Pipeline}
+
+\subsubsection{1. Preprocessing and Centering}
+The raw image $I(x,y)$ is optionally smoothed (Gaussian blur) and background-subtracted. The center of mass $(c_x, c_y)$ is computed using an intensity-weighted average:
+\[
+c_x = \frac{\sum x I(x,y)}{\sum I(x,y)}, \quad c_y = \frac{\sum y I(x,y)}{\sum I(x,y)}
+\]
+
+\subsubsection{2. Radial Profile Extraction}
+The system casts $N$ rays (e.g., 360) from the center $(c_x, c_y)$ at angles $\phi_i$. Along each ray, the intensity profile $I(r)$ is sampled. The boundary radius $R_i$ is determined by finding the point where $I(r)$ drops below a threshold (e.g., 50\% of peak intensity) or where the gradient is maximal. This yields a set of points $(\phi_i, R_i)$.
+
+\subsubsection{3. Auto-Axis Estimation}
+The physical symmetry axis angle $\alpha$ is unknown. The system sweeps $\alpha$ through a range (e.g., $0^\circ$ to $180^\circ$). For each candidate $\alpha$, it fits the model:
+\[
+R(\theta) \approx a_0 P_0(\cos \theta) + a_2 P_2(\cos \theta) + a_4 P_4(\cos \theta)
+\]
+where $\theta = \phi - \alpha$. The fit minimizes the squared error $\sum (R_i - R(\phi_i - \alpha))^2$.
+The candidate $\alpha$ that yields the minimum residual RMS error is selected as the \textbf{Auto-Axis}. This ensures that the extracted $P_2$ and $P_4$ modes are true shape distortions, not artifacts of a tilted frame.
+In one embodiment, the sweep is performed on a fixed grid (e.g., $1^\circ$ steps over $[0^\circ,180^\circ)$) and an \textbf{axis confidence} score is reported based on the gap between the best and second-best residual values (a larger gap indicating a more identifiable axis under the chosen model).
+
+\subsubsection{4. Robust Fitting and Uncertainty}
+Using the optimal axis $\alpha^*$, the final coefficients $a_0, a_2, a_4$ are computed.
+To quantify uncertainty, the system performs \textbf{Bootstrap Resampling}:
+\begin{itemize}
+    \item Generate $B$ synthetic datasets by sampling $N$ points with replacement from the original $(\phi_i, R_i)$ set.
+    \item Optionally add Gaussian noise to $R_i$ to simulate edge detection jitter.
+    \item Perform the Legendre fit on each synthetic dataset.
+    \item Compute the mean and standard deviation of the resulting distributions for $a_2/a_0$ and $a_4/a_0$.
+\end{itemize}
+
+\subsection{Output and Seam-First Artifacts}
+
+The system outputs a data structure containing:
+\begin{itemize}
+    \item \textbf{Mode Ratios:} Mean values for $P_2/P_0$ and $P_4/P_0$.
+    \item \textbf{Uncertainty:} Standard deviations $\sigma_{P2}, \sigma_{P4}$.
+    \item \textbf{Axis:} Determined angle $\alpha^*$ and confidence metric.
+    \item \textbf{Fit Quality:} Residual RMS error.
+\end{itemize}
+This output is "calibration-ready" and can be fed directly into the Symmetry Ledger or used to generate a seam-first diagnostic artifact/certificate that records: input provenance (file hashes), extraction parameters (thresholds, edge method, grid step), fit residuals, and uncertainty summaries. In safety-critical deployments, these outputs are treated as an explicit seam unless bound to a facility-provided calibration envelope and a formal diagnostic bridge.
+
+\subsection{Seams}
+
+This method constitutes an \textbf{Empirical Seam} in the overall control architecture.
+\begin{itemize}
+    \item The definition of the "boundary" (e.g., threshold fraction relative to a chosen reference intensity such as global maximum or per-ray peak, and edge method) is a parameter choice, not a fundamental constant.
+    \item The assumption that the hotspot shape is well-described by low-order Legendre modes is a physical approximation.
+    \item The system explicitly reports the metadata (thresholds used, residuals) to ensure the seam is transparent and auditable.
+\end{itemize}
+
+\section{CLAIMS}
+
+\begin{enumerate}
+    \item \textbf{A method for extracting symmetry metrics from diagnostic images, comprising:}
+    \begin{enumerate}
+        \item receiving a diagnostic image of a fusion target;
+        \item determining a center point of the target within the image;
+        \item extracting a radial boundary profile comprising a set of radius values at a plurality of angles relative to the center point;
+        \item determining a symmetry axis angle by iteratively fitting a Legendre polynomial model to the radial boundary profile and selecting the angle that minimizes a fit residual metric; and
+        \item calculating mode coefficients for the Legendre polynomial model using the determined symmetry axis angle.
+    \end{enumerate}
+
+    \item The method of claim 1, wherein determining the symmetry axis angle comprises sweeping a candidate angle through a predetermined range and performing a least-squares fit for each candidate angle.
+
+    \item The method of claim 1, further comprising quantifying uncertainty in the mode coefficients by performing bootstrap resampling on the radial boundary profile data.
+
+    \item The method of claim 1, wherein the Legendre polynomial model includes at least the zeroth ($P_0$), second ($P_2$), and fourth ($P_4$) order modes.
+
+    \item \textbf{A system for processing fusion diagnostic data, comprising:}
+    \begin{enumerate}
+        \item a profile extractor configured to generate a set of boundary coordinates from an input image;
+        \item an auto-axis estimator configured to identify a principal symmetry axis by optimizing a shape model fit to the boundary coordinates;
+        \item a mode calculator configured to compute normalized symmetry mode ratios relative to the identified axis; and
+        \item an uncertainty engine configured to estimate confidence intervals for the mode ratios using statistical resampling.
+    \end{enumerate}
+
+    \item The system of claim 5, wherein the uncertainty engine adds simulated noise to the boundary coordinates prior to resampling.
+
+    \item \textbf{A non-transitory computer-readable medium storing instructions that, when executed by a processor, cause a system to:}
+    \begin{enumerate}
+        \item extract a radius-versus-angle profile from a diagnostic image;
+        \item fit a multi-mode Legendre polynomial to the profile to determine shape coefficients;
+        \item optimize the orientation of the polynomial coordinate system to minimize fitting error; and
+        \item output the shape coefficients and an associated uncertainty metric for use in a reactor control loop.
+    \end{enumerate}
+\end{enumerate}
+
+\section*{APPENDIX: Implementation Evidence}
+
+The core logic of this invention is implemented in the accompanying software artifacts:
+\begin{itemize}
+    \item \textbf{Python Implementation:} \texttt{fusion/simulator/control/icf\_modes.py} implements the \texttt{extract\_radius\_profile}, \texttt{auto\_axis\_fit\_legendre\_p2\_p4\_from\_profile}, and \texttt{bootstrap\_legendre\_p2\_p4\_from\_profile} functions.
+    \item \textbf{Lean integration surface (interface-level):} Lean defines the diagnostic measurement interface and traceability theorem \textit{under an explicit hypothesis} (calibration envelope / bridge), in \texttt{IndisputableMonolith/Fusion/DiagnosticsBridge.lean}. This image-processing module supplies seam-labeled inputs to that interface; it is not itself a Lean-certified diagnostic mapping.
+\end{itemize}
+
+\end{document}

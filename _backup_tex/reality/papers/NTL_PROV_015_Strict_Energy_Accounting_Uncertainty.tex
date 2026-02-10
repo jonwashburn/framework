@@ -1,0 +1,283 @@
+\documentclass[11pt]{article}
+
+% Keep packages minimal for TeX Live "basic" installs.
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{array}
+
+\geometry{margin=1in}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue
+}
+
+% ---------------------------------------------------------------------------
+% Convenience macros
+% ---------------------------------------------------------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+
+\newcommand{\PatentTitle}{Uncertainty-Bounded Energy Accounting with Matched Controls, Time Alignment, and Quality Gates for Rotating-Field Generator Evaluation}
+\newcommand{\Docket}{NTL-PROV-015}
+\newcommand{\Inventors}{[Inventor Names]}
+\newcommand{\Assignee}{[Assignee / Organization]}
+\newcommand{\FilingDate}{February 1, 2026}
+
+\begin{document}
+
+\begin{center}
+{\LARGE \textbf{\PatentTitle}}\\[0.75em]
+{\large \textbf{Docket:} \Docket}\\[0.25em]
+{\large \textbf{Inventors:} \Inventors}\\[0.25em]
+{\large \textbf{Assignee:} \Assignee}\\[0.25em]
+{\large \textbf{Date:} \FilingDate}\\[0.75em]
+\end{center}
+
+\vspace{-0.5em}
+\hrule
+\vspace{0.75em}
+
+% ===========================================================================
+% ABSTRACT (PATENT)
+% ===========================================================================
+\section*{Abstract}
+
+Disclosed are systems, methods, and non-transitory computer-readable media for strict energy accounting in rotating-field generator experiments and other high-dynamic-range electromechanical systems. In various embodiments, a system defines explicit measurement boundaries (input boundary and output boundary), collects time-synchronized voltage and current measurements at one or more points on each boundary, applies calibration and time-alignment corrections, computes energy in and energy out by integrating power over a defined window, and computes an uncertainty bound on the resulting energy balance. The system further executes matched-control protocols (A/B conditions) and quality gates that reject runs with timing drift, sensor saturation, aliasing, missing samples, or other confounds.
+
+In one embodiment, the system outputs an auditable report including an uncertainty budget, a pass/fail decision for each quality gate, and a signed manifest of configuration and data artifacts. The disclosure improves credibility and safety of generator-mode evaluation by providing enforceable, repeatable, uncertainty-bounded energy accounting suitable for internal validation, publication, and/or litigation contexts.
+
+% ===========================================================================
+% TECHNICAL FIELD
+% ===========================================================================
+\section*{Technical Field}
+
+The present disclosure relates to experimental metrology and energy accounting, and more particularly to time-synchronized power measurement, uncertainty estimation, matched controls, and quality-gated analysis workflows for evaluating rotating-field generators and resonant electromagnetic systems.
+
+% ===========================================================================
+% BACKGROUND
+% ===========================================================================
+\section*{Background}
+
+Claims about generator performance are frequently undermined by measurement ambiguity. In complex high-frequency or high-current systems, naive measurement approaches can yield incorrect results due to sensor phase delay, bandwidth limitations, harmonic currents, aliasing, ground loops, offset drift, calibration error, and inconsistent boundary definitions (e.g., measuring input at the supply while output is measured downstream of converters).
+
+Even with high-quality instruments, energy accounting depends on:
+\begin{itemize}[leftmargin=*]
+  \item explicitly defining the input and output boundaries;
+  \item measuring voltage and current on the same time base and with known phase alignment;
+  \item correcting for measurement delays and calibration constants;
+  \item propagating uncertainty and checking for confounds;
+  \item using matched controls to separate genuine effects from systematic artifacts.
+\end{itemize}
+
+Accordingly, there is a need for a strict, auditable method that computes energy balance with an uncertainty bound and enforces quality gates and matched-control protocols.
+
+% ===========================================================================
+% SUMMARY
+% ===========================================================================
+\section*{Summary}
+
+This disclosure provides an energy accounting framework with four pillars:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Boundary definition:} explicit input/output boundaries and measurement points.
+  \item \textbf{Time synchronization:} a unified time base with calibrated timing and latency.
+  \item \textbf{Uncertainty bound:} calculation of an uncertainty for the energy balance using analytic propagation and/or Monte Carlo.
+  \item \textbf{Matched controls and gates:} A/B protocols and automatic rejection of runs that fail quality conditions.
+\end{itemize}
+
+In one aspect, a method computes an energy balance:
+\[
+\Delta E = E_{\text{out}} - E_{\text{in}},
+\]
+and an uncertainty bound \(u(\Delta E)\). In one embodiment, the method reports a confidence metric such as \(\Delta E / u(\Delta E)\) and applies an acceptance criterion.
+
+% ===========================================================================
+% BRIEF DESCRIPTION OF DRAWINGS
+% ===========================================================================
+\section*{Brief Description of the Drawings}
+
+Drawings may be provided later. For purposes of this specification:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{FIG. 1} depicts measurement boundaries and representative measurement points (input boundary, output boundary).
+  \item \textbf{FIG. 2} depicts time synchronization and latency calibration for multiple sensors.
+  \item \textbf{FIG. 3} depicts an analysis pipeline: calibration $\rightarrow$ time alignment $\rightarrow$ power integration $\rightarrow$ uncertainty $\rightarrow$ quality gates $\rightarrow$ report.
+  \item \textbf{FIG. 4} depicts matched-control protocols (A/B conditions) and randomization.
+  \item \textbf{FIG. 5} depicts uncertainty propagation using covariance or Monte Carlo sampling.
+\end{itemize}
+
+% ===========================================================================
+% DEFINITIONS
+% ===========================================================================
+\section*{Definitions and Notation}
+
+Unless otherwise indicated:
+\begin{itemize}[leftmargin=*]
+  \item \(v(t)\) and \(i(t)\) denote voltage and current waveforms on a specified measurement point.
+  \item Instantaneous power is \(p(t)=v(t)i(t)\).
+  \item Energy over a window \([t_0,t_1]\) is \(E=\int_{t_0}^{t_1} p(t)\,dt\).
+  \item \(E_{\text{in}}\) and \(E_{\text{out}}\) denote energy into and out of a defined system boundary.
+  \item \(\Delta E = E_{\text{out}} - E_{\text{in}}\) is an energy balance metric.
+  \item \(u(\cdot)\) denotes an uncertainty (standard uncertainty) for a computed quantity.
+  \item A \emph{quality gate} is a test that must pass for a run to be accepted.
+  \item A \emph{matched control} is an experimental condition designed to match confounders while varying a target variable.
+\end{itemize}
+
+% ===========================================================================
+% DETAILED DESCRIPTION
+% ===========================================================================
+\section*{Detailed Description}
+
+\subsection*{1. Boundary Definition and Measurement Points}
+
+\paragraph{1.1 Input boundary.}
+In one embodiment, the input boundary is defined at a DC supply interface to a driver subsystem. In another embodiment, the input boundary is defined at an AC mains interface. The selection is non-limiting, but the boundary must be explicit.
+
+\paragraph{1.2 Output boundary.}
+In one embodiment, the output boundary is defined at a DC bus delivering power to a load. In another embodiment, the output boundary is defined at an AC export interface (inverter output). The selection is non-limiting.
+
+\paragraph{1.3 Multiple measurement points and redundancy.}
+In one embodiment, the system measures at multiple points (e.g., supply input, DC bus, load output) and checks consistency. Redundancy reduces ambiguity and can detect wiring or calibration errors.
+
+\subsection*{2. Time Synchronization and Latency Calibration}
+
+In one embodiment, all channels are sampled on a unified time base. In one embodiment, the system estimates and corrects latency \(\tau_k\) for each channel \(k\) such that aligned signals satisfy:
+\[
+v_k^{\text{aligned}}(t) = v_k(t+\tau_k).
+\]
+Latency calibration may use known injected signals, edge events, cross-correlation, or reference pulses.
+
+\subsection*{3. Power and Energy Computation}
+
+\paragraph{3.1 Instantaneous computation.}
+In one embodiment, power is computed samplewise:
+\[
+p_n = v_n i_n,
+\]
+and energy is computed by numerical integration:
+\[
+E \approx \sum_{n=n_0}^{n_1} p_n \Delta t.
+\]
+
+\paragraph{3.2 Handling AC and harmonics.}
+In one embodiment, the system uses sufficiently high sample rate and anti-alias filtering to capture harmonic content relevant to power. In one embodiment, the system computes real power using synchronized voltage and current, rather than RMS-only approximations.
+
+\paragraph{3.3 Accounting for converters.}
+In one embodiment, the system separately accounts for conversion stages (rectifiers, DC-DC converters, inverters) by measuring both sides of a stage and including losses, or by selecting boundaries that avoid ambiguity.
+
+\subsection*{4. Calibration and Correction}
+
+In one embodiment, each sensor measurement is corrected using calibration parameters (gain, offset, temperature coefficient). For example, a measured current \(i_m(t)\) may be corrected as:
+\[
+i(t) = a\, i_m(t) + b,
+\]
+where \(a\) and \(b\) are calibration coefficients. Similar corrections apply to voltage and power sensors.
+
+\subsection*{5. Uncertainty Estimation}
+
+\paragraph{5.1 Analytic propagation (non-limiting).}
+Let \(\theta\) denote a vector of calibration and timing parameters with covariance \(\Sigma_\theta\). For a computed quantity \(Q(\theta)\), one approximation is:
+\[
+u(Q)^2 \approx \nabla Q(\theta)^\top \Sigma_\theta \nabla Q(\theta).
+\]
+
+\paragraph{5.2 Monte Carlo propagation (non-limiting).}
+In one embodiment, the system samples \(\theta^{(m)}\) from an uncertainty model and recomputes \(\Delta E^{(m)}\) to estimate \(u(\Delta E)\) from the sample distribution.
+
+\paragraph{5.3 Correlation and common-mode errors.}
+In one embodiment, the system explicitly models correlations (e.g., shared clock error across channels) and includes covariance terms rather than assuming independence.
+
+\subsection*{6. Quality Gates (Automatic Run Rejection)}
+
+In one embodiment, the analysis pipeline enforces one or more quality gates, including (non-limiting):
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Sensor headroom gate:} reject runs with saturation or clipping.
+  \item \textbf{Timing gate:} reject runs if time alignment error exceeds a threshold.
+  \item \textbf{Sampling gate:} reject runs if sample rate is insufficient or if anti-alias filtering is absent.
+  \item \textbf{Missing data gate:} reject runs with missing samples or dropped packets beyond a threshold.
+  \item \textbf{Drift gate:} reject runs if offset drift exceeds a bound (e.g., based on pre/post baselines).
+  \item \textbf{Thermal gate:} reject or truncate windows if thermal runaway is detected.
+\end{itemize}
+
+\subsection*{7. Matched Controls and A/B Protocols}
+
+In one embodiment, the system executes matched controls to isolate systematic errors. Example matched controls include:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Detuned control:} identical setup with a detuned schedule or off-resonant setpoint.
+  \item \textbf{Null geometry control:} identical electronics with a geometrically neutral or blank core.
+  \item \textbf{Load-only control:} identical load and converter behavior with a simulated pickup signal.
+  \item \textbf{Cable/ground control:} identical run with altered cable routing to bound EMI confounds.
+\end{itemize}
+In one embodiment, the system randomizes A/B order and logs assignments.
+
+\subsection*{8. Reporting and Auditability}
+
+In one embodiment, the system outputs a report containing:
+\begin{itemize}[leftmargin=*]
+  \item boundary definitions and wiring diagrams (as structured metadata);
+  \item \(E_{\text{in}}, E_{\text{out}}, \Delta E\) for each run window;
+  \item an uncertainty budget and computed \(u(\Delta E)\);
+  \item quality gate outcomes and rejection reasons;
+  \item matched-control comparisons and effect-size summaries.
+\end{itemize}
+
+In one embodiment, the report is packaged with a signed manifest and configuration snapshot suitable for deterministic replay (filed separately).
+
+% ===========================================================================
+% CLAIMS (DRAFT / PROVISIONAL-STYLE)
+% ===========================================================================
+\section*{Claims (Draft)}
+
+\textbf{Note:} The following claims are an initial, non-limiting claim set intended to preserve multiple fallback positions. Final claim strategy should be reviewed by counsel.
+
+\subsection*{Independent Claims}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{(Method)} A method of performing uncertainty-bounded energy accounting for a rotating-field generator experiment, the method comprising: defining an input boundary and an output boundary; measuring time-synchronized voltage and current at one or more measurement points associated with the input boundary and the output boundary; computing input energy and output energy by integrating power over a window; computing an uncertainty bound on an energy balance metric based at least in part on calibration uncertainty and timing uncertainty; and outputting a report comprising the energy balance metric and the uncertainty bound.
+
+  \item \textbf{(System)} A system for strict energy accounting, the system comprising: one or more voltage sensors; one or more current sensors; a time synchronization subsystem; and one or more processors and memory storing instructions that, when executed, cause the one or more processors to: time-align measured voltage and current; compute energy in and energy out for a defined window; compute an uncertainty bound for an energy balance metric; apply one or more quality gates to determine whether the defined window is accepted; and generate an auditable report.
+
+  \item \textbf{(Non-transitory medium)} A non-transitory computer-readable medium storing instructions that, when executed by one or more processors, cause the one or more processors to: execute a matched-control protocol comprising at least an A condition and a B condition; randomize or counterbalance an order of the A condition and the B condition; compute an energy balance metric and an uncertainty bound for each condition; and output a comparison of the A condition and the B condition.
+\end{enumerate}
+
+\subsection*{Dependent Claims (Examples; Non-Limiting)}
+
+\begin{enumerate}[leftmargin=*]
+  \setcounter{enumi}{3}
+  \item The method of claim 1, wherein computing the uncertainty bound comprises propagating a covariance matrix of calibration parameters.
+  \item The method of claim 1, wherein computing the uncertainty bound comprises Monte Carlo sampling of calibration parameters and timing parameters.
+  \item The method of claim 1, wherein time-aligning comprises estimating a per-channel latency using a reference pulse or cross-correlation and applying a correction.
+  \item The system of claim 2, wherein applying the one or more quality gates comprises rejecting the window upon detection of sensor saturation or clipping.
+  \item The system of claim 2, wherein applying the one or more quality gates comprises rejecting the window when time alignment error exceeds a threshold.
+  \item The method of claim 1, wherein the report includes boundary definitions, wiring metadata, and measurement-point identifiers.
+  \item The non-transitory medium of claim 3, wherein the matched-control protocol comprises a detuned control condition.
+  \item The non-transitory medium of claim 3, wherein the matched-control protocol comprises a null-geometry control condition.
+  \item The system of claim 2, wherein the report includes an uncertainty budget listing contributing uncertainty components.
+  \item The method of claim 1, further comprising computing a confidence metric based on a ratio of the energy balance metric to the uncertainty bound.
+\end{enumerate}
+
+% ===========================================================================
+% FALLBACK POSITIONS / ADDITIONAL EMBODIMENTS
+% ===========================================================================
+\section*{Additional Embodiments and Fallback Positions (Non-Limiting)}
+
+\begin{itemize}[leftmargin=*]
+  \item Boundaries may be defined for DC systems, AC systems, mechanical interfaces, or combinations thereof, provided the boundary definition is explicit and the measurement points are identified.
+  \item Multiple redundant sensors may be used and compared to detect drift and wiring errors.
+  \item Quality gates may be configured per hardware platform and may be enforced automatically by a run controller.
+  \item Reports may be produced in both human-readable and machine-readable formats and may be signed and included in run bundles for later verification.
+\end{itemize}
+
+\vspace{1em}
+\hrule
+\vspace{0.75em}
+\noindent \textbf{End of Specification (Draft)}
+
+\end{document}
+

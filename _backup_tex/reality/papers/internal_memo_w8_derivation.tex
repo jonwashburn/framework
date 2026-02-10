@@ -1,0 +1,271 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, mathtools}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage{listings}
+
+\definecolor{codebg}{RGB}{248,248,248}
+\definecolor{codeframe}{RGB}{220,220,220}
+\lstset{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeframe},
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false
+}
+
+\newcommand{\phiRS}{\varphi}
+\newcommand{\wEight}{w_8}
+\newcommand{\Fin}{\mathrm{Fin}}
+
+\title{Internal Memo: Derivation and Rationale for the RS Gap Weight $\wEight$}
+\author{Recognition Science Engineering (Lean formalization)}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section*{Executive summary (one page)}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Where $\wEight$ is used.} In the Lean $\alpha$ pipeline we use a single gap term
+  \[
+    f_{\mathrm{gap}} = \wEight \ln(\phiRS),
+    \qquad
+    \alpha^{-1} = 4\pi\cdot 11 - \bigl(f_{\mathrm{gap}} + \delta_\kappa\bigr).
+  \]
+  \item \textbf{Canonical (parameter-free) definition.} The current Lean source of truth is
+  \[
+    \boxed{
+    \wEight \;:=\; \frac{348 + 210\sqrt{2} - (204 + 130\sqrt{2})\,\phiRS}{7}
+    }
+    \;\approx\; 2.49056927545\ldots
+  \]
+  (Lean: \texttt{IndisputableMonolith/Constants/GapWeight.lean}).
+  \item \textbf{How it is derived (high level).}
+  \begin{enumerate}[leftmargin=1.5em]
+    \item Take the canonical 8-sample \emph{$\phi$-pattern} $p(t)=\phiRS^t$ on $t\in\Fin 8$.
+    \item Decompose $p$ in the \emph{unitary DFT-8 basis} $c_k=\sum_t \overline{\mathrm{DFT}_{t,k}}\,p(t)$.
+    \item Form a weighted neutral-mode energy sum $\sum_{k\neq 0} |c_k|^2\,g_k(\phiRS)$, with
+    $g_k(\phiRS)=\sin^2(\pi k/8)\,\phiRS^{-k}$.
+    \item Normalize by total DFT energy (Parseval) to remove dependence on overall scaling,
+    and scale to RS ``per 8-tick cube-cell'' units. The normalization is the entire difference
+    between the intuitive ``raw energy'' calculations and the pipeline $\wEight$.
+  \end{enumerate}
+  \item \textbf{Why the team scientist got $\approx 0.970692\ldots$.}
+  That value corresponds to a \emph{different quantity}:
+  \[
+    \wEight^{\mathrm{ratio}} \;:=\; \sum_{k=1}^{7}\frac{|c_k|^2}{|c_0|^2}
+    \;\approx\;0.970692434668\ldots
+  \]
+  It is a diagnostic ``neutral-vs-DC energy ratio'' for the raw $\phi$-pattern and does \emph{not}
+  include (i) geometric weights or (ii) the projection/normalization needed to make a dimensionless
+  RS gap coefficient suitable to multiply $\ln(\phiRS)$.
+\end{itemize}
+
+\section{Context: what problem $\wEight$ solves}
+RS uses an 8-tick discrete clock (T8) as the fundamental ledger-compatible period. Independently,
+RS uses $\phiRS$ as the unique scale factor connecting discrete ledger recursion to continuous
+self-similar scaling. When you sample a $\phi$-ladder walk on an 8-tick window, the resulting
+pattern is \emph{not} purely DC; it has neutral oscillatory content. The gap term measures the
+information/strain cost of representing that neutral content when the ledger insists on 8-tick
+periodicity.
+
+In other words:
+\begin{quote}
+  \emph{The gap is the penalty for forcing a continuous self-similar $\phi$-ladder onto an 8-tick
+  discrete clock.}
+\end{quote}
+
+\section{Step 1: the canonical $\phi$-pattern on eight ticks}
+Define the canonical 8-tick sample of the $\phi$-ladder by
+\[
+  p(t) := \phiRS^t, \qquad t\in\{0,1,\dots,7\}.
+\]
+Lean: \texttt{Constants/GapWeight/Formula.lean} defines \texttt{phiPattern}.
+
+\subsection*{Why this is the right starting point (the ``why'')}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Eight ticks are not a choice.} In RS, ledger-compatible evolution forces a
+  $2^D$-period; with $D=3$ this is 8 ticks. So the minimal clock window is length 8.
+  \item \textbf{$\phiRS$ is not a choice.} RS derives $\phiRS$ as the unique fixed point of the
+  reciprocal-symmetric cost recursion (the same reason Fibonacci asymptotically approaches $\phiRS$).
+  \item \textbf{Sampling $t\mapsto \phiRS^t$ is the minimal $\phi$-ladder witness.} It is the
+  simplest ``pure scaling'' sequence. Any other $\phi$-ladder walk differs by a phase/offset or
+  by additional structure (which must be justified separately).
+\end{itemize}
+
+\section{Step 2: DFT-8 decomposition}
+Let $\omega := e^{-2\pi i/8}$. The unitary DFT-8 matrix entry is
+\[
+  \mathrm{DFT}_{t,k} := \frac{\omega^{tk}}{\sqrt{8}}.
+\]
+Define DFT coefficients by the standard unitary convention
+\[
+  c_k := \sum_{t=0}^{7} \overline{\mathrm{DFT}_{t,k}}\;p(t)
+  = \frac{1}{\sqrt{8}}\sum_{t=0}^{7} \phiRS^t \omega^{-tk}.
+\]
+Lean: \texttt{LightLanguage/Basis/DFT8.lean} defines \texttt{dft8\_entry}; the coefficient is
+\texttt{phiDFTCoeff} in \texttt{Constants/GapWeight/Formula.lean}.
+
+\subsection*{Why DFT-8 is forced (the ``why'')}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{DFT-8 is the unique unitary diagonalizer of the 8-tick shift.}
+  The 8-tick clock has a canonical ``shift by one tick'' symmetry. The DFT basis is the
+  (essentially unique) unitary basis that diagonalizes this cyclic shift. If we want a basis
+  that respects 8-tick time-translation, DFT-8 is canonical.
+  \item \textbf{DFT separates ``mean'' from ``shape''.}
+  The $k=0$ coefficient is the DC component (the mean / overall scale). Modes $k\neq 0$ are the
+  neutral, mean-free components. A gap penalty should only charge the \emph{shape} mismatch, not
+  the overall scale offset, hence we focus on $k\neq 0$.
+\end{itemize}
+
+\section{Step 3: neutral-mode energies and geometric weights}
+Define the mode energies
+\[
+  A_k := |c_k|^2,\qquad k=0,1,\dots,7.
+\]
+Define the geometric weights for $k\neq 0$ by
+\[
+  g_k(\phiRS) := \sin^2\!\Bigl(\frac{\pi k}{8}\Bigr)\,\phiRS^{-k}, \qquad g_0:=0.
+\]
+The \emph{raw weighted neutral sum} is then
+\[
+  C_{\mathrm{raw}}(\phiRS) := \sum_{k=1}^{7} A_k\,g_k(\phiRS).
+\]
+
+\subsection*{Why these weights (the ``why'')}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{$\sin^2(\pi k/8)$ is the \emph{forced} spectral weight of the 8-tick derivative/Laplacian.}
+  On the 8-tick clock, the canonical symmetry is the one-tick cyclic shift $S$.
+  The DFT-8 modes are eigenvectors of $S$ with eigenvalues $\omega^k$.
+  The unique (up to scale) local, shift-invariant quadratic ``variation'' energy on the cycle is
+  the discrete derivative / Laplacian energy, e.g.\ $\sum_t |(S-I)x(t)|^2$.
+  On mode $k$ this contributes the eigenvalue weight
+  \[
+    |\,\omega^k-1\,|^2 \;=\; 2-2\cos(2\pi k/8) \;=\; 4\sin^2(\pi k/8).
+  \]
+  Therefore the appearance of $\sin^2(\pi k/8)$ is not ad hoc: it is exactly the spectral
+  footprint of the canonical 8-tick derivative/Laplacian.
+  \item \textbf{$\phiRS^{-k}$ is the \emph{forced} transport attenuation from $\phi$-ladder rung coupling.}
+  RS already uses $\phi$ as the unique multiplicative scale step. If coupling/transport decreases
+  exponentially with rung separation (the minimal parameter-free choice), then each additional
+  separation step multiplies by $\phiRS^{-1}$, hence mode index $k$ contributes $\phiRS^{-k}$.
+  \item \textbf{Net effect:} low-$k$ modes are weighted strongly (they are the dominant, physically
+  coherent deviations); high-$k$ modes are weighted weakly (they are rapidly oscillatory and do not
+  carry long-range coherent ``gap'' structure).
+\end{itemize}
+
+\section{Step 4: the projection/normalization that makes $\wEight$ a true RS coefficient}
+The raw sum $C_{\mathrm{raw}}$ is \emph{not} an RS coefficient yet: it scales quadratically with
+the overall scale of the pattern. To produce a dimensionless, scale-invariant coefficient we:
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Normalize by total energy.} Let
+  \[
+    E_{\mathrm{tot}} := \sum_{k=0}^{7} A_k.
+  \]
+  By Parseval (unitary DFT),
+  \[
+    E_{\mathrm{tot}} = \sum_{t=0}^{7} |p(t)|^2 = \sum_{t=0}^{7} \phiRS^{2t}.
+  \]
+  This removes dependence on scaling $p\mapsto \lambda p$.
+  \item \textbf{Scale to the RS 8-tick cube-cell.}
+  RS is ledger-local on a $Q_3$ cell (8 vertices) and uses an octave clock (8 ticks).
+  Once we have a scale-invariant fraction, we must choose the \emph{measure} over which the gap
+  cost is accumulated. The canonical choice is the fundamental interface cell:
+  \[
+    \text{cell index set} = (\text{ticks})\times(\text{vertices})
+    = \Fin 8 \times \Fin 8,
+    \qquad |\Fin 8 \times \Fin 8| = 8\cdot 8 = 64.
+  \]
+  Multiplying by $64$ converts the invariant fraction into a per-cell integrated weight.
+  This is now recorded explicitly in Lean as a definition-level ``projection operator''
+  (see \texttt{IndisputableMonolith/Constants/GapWeight/Projection.lean}).
+\end{enumerate}
+
+We therefore define the \emph{normalized projection weight}
+\[
+  \boxed{
+  \wEight \;:=\; 64\;\frac{C_{\mathrm{raw}}(\phiRS)}{E_{\mathrm{tot}}(\phiRS)}.
+  }
+\]
+Numerically, for $p(t)=\phiRS^t$, this evaluates to
+\[
+  \wEight \approx 2.49056927545\ldots
+\]
+and in Lean is exposed in the closed form
+\[
+  \wEight = \frac{348 + 210\sqrt{2} - (204 + 130\sqrt{2})\,\phiRS}{7}.
+\]
+
+\subsection*{Why this normalization is necessary (the ``why'')}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{A coefficient multiplying $\ln(\phiRS)$ must be scale-invariant.}
+  Since $\ln(\phiRS)$ is a fixed bit-cost per scale step, its prefactor must not depend on how we
+  choose units for the $\phi$-pattern amplitude.
+  \item \textbf{The raw DFT sum is not invariant under $p\mapsto \lambda p$.}
+  $A_k$ scales as $\lambda^2$, so any unnormalized sum of $A_k$ is an arbitrary choice of amplitude
+  scale, i.e.\ an illicit parameter.
+  \item \textbf{Normalizing by total energy makes it parameter-free.}
+  $C_{\mathrm{raw}}/E_{\mathrm{tot}}$ is invariant under $p\mapsto \lambda p$.
+  \item \textbf{The remaining $64$ is a unit convention tied to the RS fundamental cell.}
+  It converts a dimensionless fraction into the per-8-tick-per-$Q_3$-cell coefficient that belongs
+  in the $\alpha^{-1}$ ledger accounting.
+\end{itemize}
+
+\section{Why the scientist got $\approx 0.970692\ldots$ (and why it is not $\wEight$)}
+The common ``neutral energy ratio'' is
+\[
+  \wEight^{\mathrm{ratio}} := \sum_{k=1}^{7}\frac{|c_k|^2}{|c_0|^2}.
+\]
+For the $\phi$-pattern, $\wEight^{\mathrm{ratio}}\approx 0.970692434668\ldots$
+(this appears in the paper \texttt{papers/Dic\_23\_refereed.tex}).
+
+\textbf{Key point:} $\wEight^{\mathrm{ratio}}$ answers:
+\begin{quote}
+  ``How much non-DC energy exists relative to the DC energy in one 8-sample $\phi$ window?''
+\end{quote}
+Whereas $\wEight$ answers:
+\begin{quote}
+  ``What is the \emph{normalized, geometrically weighted} projection cost of the neutral spectrum,
+  expressed in the RS 8-tick cube-cell units, suitable to multiply $\ln(\phiRS)$?''
+\end{quote}
+These are different by design. The ratio is a useful diagnostic sanity-check; it is not the
+pipeline coefficient.
+
+\section{Implementation pointers (Lean source of truth)}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Canonical value used in $\alpha$:} \texttt{IndisputableMonolith/Constants/GapWeight.lean}
+  defines \texttt{w8\_from\_eight\_tick} in closed form and \texttt{f\_gap := w8 * log(phi)}.
+  \item \textbf{DFT definitions:} \texttt{IndisputableMonolith/LightLanguage/Basis/DFT8.lean}.
+  \item \textbf{$\phi$-pattern DFT scaffolding:} \texttt{IndisputableMonolith/Constants/GapWeight/Formula.lean}
+  defines \texttt{phiPattern}, \texttt{phiDFTCoeff}, \texttt{phiDFTAmplitude}, and \texttt{geometricWeight}.
+  \item \textbf{Rigorous bounds:} \texttt{IndisputableMonolith/Numerics/Interval/W8Bounds.lean}.
+  \item \textbf{$\alpha^{-1}$ assembly:} \texttt{IndisputableMonolith/Constants/Alpha.lean} and
+  interval bounds \texttt{IndisputableMonolith/Numerics/Interval/AlphaBounds.lean}.
+\end{itemize}
+
+\section{Open item: reconciling with older ``certified'' $2.488254\ldots$}
+Some older artifacts (e.g.\ \texttt{data/certificates/w8.json}) record $2.488254397846$ as ``$w_8$''.
+The current Lean definition is \emph{parameter-free} and evaluates to $2.49056927545\ldots$.
+
+If the $2.488254\ldots$ number is intended to be canonical, then the framework must specify an
+additional, explicit projection/transport step (often described informally as ``gap-45 resonance'')
+that changes the effective weight. That step must be stated as a mathematical operator and then
+proved to yield the number; otherwise the $2.488254\ldots$ value is just an external calibration.
+
+\section*{Appendix: quick numerical sanity-check}
+For $\phiRS=(1+\sqrt5)/2$:
+\[
+  \wEight \approx 2.49056927545,\qquad
+  f_{\mathrm{gap}} = \wEight\ln(\phiRS) \approx 1.19849138648.
+\]
+
+\end{document}
+
+

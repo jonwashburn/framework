@@ -1,0 +1,96 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+
+\geometry{margin=1in}
+
+\title{\textbf{PATENT APPLICATION}}
+\author{}
+\date{}
+
+\begin{document}
+
+\begin{center}
+    \Large\textbf{PREDICTIVE NOISE CANCELLATION VIA FUTURE-BOUNDARY PROJECTION}
+\end{center}
+
+\vspace{1cm}
+
+\section*{FIELD OF THE INVENTION}
+The present invention relates to forward error correction (FEC) and signal processing in communication systems, and more specifically to methods for reconstructing lost or corrupted data by enforcing a global boundary constraint on a block of transmitted symbols.
+
+\section*{BACKGROUND OF THE INVENTION}
+In conventional communication systems, noise is treated as a random process that is independent of the signal. Error correction relies on adding redundant bits (parity) to allow the receiver to detect and correct these random errors. However, this approach is reactive: the receiver must wait for the error to occur and then use the parity bits to fix it.
+
+In high-speed optical networks, burst errors and nonlinear phase noise often exhibit correlations that standard FEC codes (like Reed-Solomon or LDPC) struggle to handle efficiently without large interleaving depths and high latency.
+
+There is a need for a "predictive" noise cancellation scheme where the structure of the transmitted signal itself imposes a strong constraint on the possible future states, allowing the receiver to "fill in the blanks" of a corrupted sequence based on a deterministic boundary condition.
+
+\section*{SUMMARY OF THE INVENTION}
+The present invention provides a method for "Future-Boundary Projection," also referred to as the "Phantom Light" mechanism. The core innovation is the encoding of data into blocks where the final state (the "future boundary") is fixed and known to the receiver.
+
+Specifically, the transmitter generates a sequence of symbols $s_0, s_1, \dots, s_{N-1}$ such that a cumulative metric (e.g., the complex sum or phase accumulation) reaches a specific target value $T$ at time $N$.
+
+At the receiver, if a burst error corrupts a subset of symbols $s_k \dots s_{k+m}$, the receiver can reconstruct the missing information by projecting backwards from the known boundary condition $T$, using the constraint that the valid sequence must have satisfied the accumulation rule. This effectively turns the "future" requirement into a constraint on the "present" error.
+
+\section*{DETAILED DESCRIPTION}
+
+\subsection*{The Boundary Constraint}
+Let a transmission block consist of $N$ symbols $v_0, \dots, v_{N-1}$. The transmitter enforces the constraint:
+\begin{equation}
+    \sum_{n=0}^{N-1} v_n = 0
+\end{equation}
+(or more generally, equals a target $T$).
+
+This constraint creates a "Phantom" potential field across the block. At any intermediate time $t < N$, the "debt" required to close the loop is:
+\begin{equation}
+    D_t = -\sum_{n=0}^{t} v_n = \sum_{n=t+1}^{N-1} v_n
+\end{equation}
+The remaining symbols must sum to $D_t$.
+
+\subsection*{Predictive Reconstruction}
+If a burst of noise corrupts symbols at indices $j$ through $k$, the receiver computes the partial sums before ($S_{pre}$) and after ($S_{post}$) the gap. The sum of the missing segment must be:
+\begin{equation}
+    S_{gap} = - (S_{pre} + S_{post})
+\end{equation}
+If the modulation alphabet is constrained (e.g., to a finite set of $\phi$-QAM points), and the gap size is small, there may be a unique or highly probable sequence of valid symbols that sums to $S_{gap}$. The receiver can thus infer the lost data without explicit parity bits for that specific segment.
+
+\subsection*{Phantom Sensing}
+In a preferred embodiment, the receiver employs a "Phantom Sensor" logic block that continuously monitors the running sum. If the "debt" $D_t$ exceeds the maximum possible sum of the remaining $N-1-t$ symbols (given the power constraints of the constellation), the receiver knows \textit{in advance} that an error has occurred upstream, even before the block is fully received. This allows for "predictive" erasure marking for the outer FEC code.
+
+\section*{CLAIMS}
+
+What is claimed is:
+
+\begin{enumerate}
+    \item A method for error correction in a communication system, comprising:
+    \begin{enumerate}
+        \item encoding a stream of data into a sequence of symbols having a predetermined block length $N$;
+        \item constraining said sequence such that a cumulative property of the symbols satisfies a fixed boundary condition at the end of the block;
+        \item transmitting said sequence over a channel;
+        \item receiving a corrupted version of said sequence; and
+        \item reconstructing corrupted symbols by solving for the values required to satisfy said fixed boundary condition given the uncorrupted symbols.
+    \end{enumerate}
+
+    \item The method of claim 1, wherein said cumulative property is the complex vector sum of the symbols, and said fixed boundary condition is zero.
+
+    \item The method of claim 1, further comprising monitoring a running accumulation of the received symbols and flagging a block as invalid if the accumulation value exceeds a bound from which convergence to the boundary condition is impossible.
+
+    \item An optical receiver comprising:
+    \begin{enumerate}
+        \item a demodulator for recovering symbol values;
+        \item a buffer for storing a block of $N$ symbols;
+        \item a boundary check logic circuit configured to calculate a residual metric from the received symbols; and
+        \item a reconstruction engine configured to replace a subset of low-confidence symbols with values that minimize said residual metric.
+    \end{enumerate}
+
+    \item The receiver of claim 4, wherein said reconstruction engine utilizes a look-up table of valid symbol combinations that sum to a required gap value.
+\end{enumerate}
+
+\end{document}

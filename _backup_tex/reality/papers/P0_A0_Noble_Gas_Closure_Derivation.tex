@@ -1,0 +1,247 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  citecolor=blue
+}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{proposition}{Proposition}
+
+\title{P0-A0 Noble Gas Closure Theorem\\(Mathematical Derivation + Validation Tables)}
+\author{Recognition Science Derivation Campaign}
+\date{2026-01-17}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This document rewrites the P0-A0 ``noble gas closure'' result as a complete mathematical derivation.
+We give explicit (piecewise) definitions of the period boundary maps $\mathrm{prev}$ and $\mathrm{next}$,
+then derive the closure facts used by the repository:
+\begin{itemize}[leftmargin=*]
+  \item Noble gases have zero distance to the next closure: $\mathrm{dist}(Z)=0$.
+  \item Noble gases satisfy the complete-shell identity: $\mathrm{valence}(Z)=\mathrm{periodLen}(Z)$.
+  \item Period lengths are recovered as differences of successive closures, yielding $[2,8,8,18,18,32]$.
+\end{itemize}
+We also reproduce the preregistered validator tables stored in
+\url{artifacts/chem_noble_gas_closure.json} (PASS 4/4 tests).
+\end{abstract}
+
+\section{Claim (P0-A0)}
+In the repository’s chemistry scaffold, \textbf{noble-gas closure} means: the atomic numbers at which a
+period ends are exactly the closure endpoints, and at such endpoints the ``distance to closure'' is zero.
+All downstream quantities (valence position, period length, etc.) are defined deterministically from the
+closure endpoints, without fitting to chemical datasets.
+
+\section{Definitions (explicit piecewise form)}
+\label{sec:defs}
+
+\subsection{Closure endpoints}
+Define the first-six noble-gas closure endpoints
+\[
+  \mathcal{N}_6 := \{2,10,18,36,54,86\},
+\]
+and an extended list including the period-7 endpoint (Oganesson)
+\[
+  \mathcal{N}_7 := \{2,10,18,36,54,86,118\}.
+\]
+The predicate \texttt{isNobleGas} in the Lean scaffold corresponds to membership in $\mathcal{N}_6$.
+
+\subsection{Previous/next closure maps}
+For $Z\in\mathbb{N}$, define the previous-closure map $\mathrm{prev}(Z)$ and next-closure map $\mathrm{next}(Z)$ by
+\[
+\mathrm{prev}(Z)=
+\begin{cases}
+0 & Z \le 2,\\
+2 & 2 < Z \le 10,\\
+10 & 10 < Z \le 18,\\
+18 & 18 < Z \le 36,\\
+36 & 36 < Z \le 54,\\
+54 & 54 < Z \le 86,\\
+86 & 86 < Z,
+\end{cases}
+\qquad
+\mathrm{next}(Z)=
+\begin{cases}
+2 & Z \le 2,\\
+10 & 2 < Z \le 10,\\
+18 & 10 < Z \le 18,\\
+36 & 18 < Z \le 36,\\
+54 & 36 < Z \le 54,\\
+86 & 54 < Z \le 86,\\
+118 & 86 < Z.
+\end{cases}
+\]
+These are exactly the closure maps implemented by \texttt{prevClosure} and \texttt{nextClosure} in the Lean file.
+
+\subsection{Derived quantities}
+\begin{definition}[Distance to next closure]
+Define the (nonnegative) distance to the next closure by
+\[
+  \mathrm{dist}(Z) := \mathrm{next}(Z) - Z.
+\]
+\end{definition}
+
+\begin{definition}[Valence electrons and period length]
+Define the valence position and period length as
+\[
+  \mathrm{valence}(Z) := Z-\mathrm{prev}(Z),
+\qquad
+  \mathrm{periodLen}(Z) := \mathrm{next}(Z)-\mathrm{prev}(Z).
+\]
+\end{definition}
+
+\begin{definition}[Noble gas predicate]
+Define
+\[
+  \mathrm{isNobleGas}(Z)\;:\!\iff\; Z\in\mathcal{N}_6.
+\]
+\end{definition}
+
+\section{Derivations}
+
+\subsection{Noble gases have zero distance to closure}
+\begin{theorem}
+If $\mathrm{isNobleGas}(Z)$ then $\mathrm{dist}(Z)=0$.
+\end{theorem}
+\begin{proof}
+Since $Z\in\mathcal{N}_6=\{2,10,18,36,54,86\}$, we do cases.
+\begin{itemize}[leftmargin=*]
+  \item If $Z=2$, then by definition $\mathrm{next}(2)=2$, hence $\mathrm{dist}(2)=\mathrm{next}(2)-2=0$.
+  \item If $Z=10$, then $2<10\le 10$, so $\mathrm{next}(10)=10$, hence $\mathrm{dist}(10)=0$.
+  \item If $Z=18$, then $10<18\le 18$, so $\mathrm{next}(18)=18$, hence $\mathrm{dist}(18)=0$.
+  \item If $Z=36$, then $18<36\le 36$, so $\mathrm{next}(36)=36$, hence $\mathrm{dist}(36)=0$.
+  \item If $Z=54$, then $36<54\le 54$, so $\mathrm{next}(54)=54$, hence $\mathrm{dist}(54)=0$.
+  \item If $Z=86$, then $54<86\le 86$, so $\mathrm{next}(86)=86$, hence $\mathrm{dist}(86)=0$.
+\end{itemize}
+This covers all cases.
+\end{proof}
+
+\subsection{Noble gases satisfy the complete-shell identity}
+\begin{theorem}
+If $\mathrm{isNobleGas}(Z)$ then $\mathrm{valence}(Z)=\mathrm{periodLen}(Z)$.
+\end{theorem}
+\begin{proof}
+Fix $Z\in\mathcal{N}_6$. By the previous theorem, $\mathrm{next}(Z)=Z$ at each closure endpoint.
+Therefore
+\[
+\mathrm{periodLen}(Z)=\mathrm{next}(Z)-\mathrm{prev}(Z)=Z-\mathrm{prev}(Z)=\mathrm{valence}(Z).
+\]
+\end{proof}
+
+\subsection{Uniqueness: only closures have zero distance (within the range)}
+\begin{proposition}
+If $1\le Z\le 118$ and $\mathrm{dist}(Z)=0$, then $Z\in \mathcal{N}_7$.
+\end{proposition}
+\begin{proof}
+$\mathrm{dist}(Z)=0$ implies $\mathrm{next}(Z)-Z=0$, hence $\mathrm{next}(Z)=Z$.
+But by the piecewise definition, $\mathrm{next}(Z)\in\{2,10,18,36,54,86,118\}$ for all $Z$.
+Therefore $Z$ must be one of these values, i.e.\ $Z\in\mathcal{N}_7$.
+\end{proof}
+
+\subsection{Period lengths from noble-gas gaps}
+Let the ordered closure list be $(n_0,n_1,n_2,n_3,n_4,n_5)=(2,10,18,36,54,86)$.
+Define gap lengths
+\[
+\Delta_0 := n_0,\qquad \Delta_k := n_k-n_{k-1}\ \ (k=1,\dots,5).
+\]
+Then
+\[
+[\Delta_0,\Delta_1,\Delta_2,\Delta_3,\Delta_4,\Delta_5] = [2,8,8,18,18,32].
+\]
+This identity is immediate by arithmetic:
+$10-2=8$, $18-10=8$, $36-18=18$, $54-36=18$, $86-54=32$.
+
+\subsection{Shell capacities sum to the noble-gas closure sequence}
+Let the (period) capacity sequence be
+\[
+  (c_0,c_1,c_2,c_3,c_4,c_5) := (2,8,8,18,18,32).
+\]
+Define cumulative closures
+\[
+  s_0 := c_0,\qquad s_k := s_{k-1}+c_k \ \ (k=1,\dots,5).
+\]
+Then the cumulative closure list is exactly the noble-gas list:
+\[
+  (s_0,s_1,s_2,s_3,s_4,s_5)=(2,10,18,36,54,86).
+\]
+Indeed:
+\[
+\begin{aligned}
+s_0 &= 2,\\
+s_1 &= 2+8=10,\\
+s_2 &= 10+8=18,\\
+s_3 &= 18+18=36,\\
+s_4 &= 36+18=54,\\
+s_5 &= 54+32=86.
+\end{aligned}
+\]
+This is the mathematical content of the Lean theorem \texttt{shell\_sum\_to\_noble}.
+
+\section{Validation (prereg script + artifact)}
+The preregistered validator \url{scripts/analysis/chem_noble_gas_closure.py}
+writes \url{artifacts/chem_noble_gas_closure.json}. The committed artifact reports \textbf{PASS (4/4 tests)}.
+
+\subsection{Test 1: $\mathrm{dist}(Z)=0$ at noble gases}
+\begin{center}
+\begin{tabular}{@{}r l r r@{}}
+\toprule
+$Z$ & Element & $\mathrm{dist}(Z)$ & Pass \\
+\midrule
+2  & He & 0 & true \\
+10 & Ne & 0 & true \\
+18 & Ar & 0 & true \\
+36 & Kr & 0 & true \\
+54 & Xe & 0 & true \\
+86 & Rn & 0 & true \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Test 2: complete-shell identity at noble gases}
+\begin{center}
+\begin{tabular}{@{}r l r r r@{}}
+\toprule
+$Z$ & Element & $\mathrm{valence}(Z)$ & $\mathrm{periodLen}(Z)$ & Pass \\
+\midrule
+2  & He & 2  & 2  & true \\
+10 & Ne & 8  & 8  & true \\
+18 & Ar & 8  & 8  & true \\
+36 & Kr & 18 & 18 & true \\
+54 & Xe & 18 & 18 & true \\
+86 & Rn & 32 & 32 & true \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Test 3: uniqueness (no false positives up to $Z=118$)}
+The validator reports no non-noble $Z\in\{1,\dots,118\}$ with $\mathrm{dist}(Z)=0$.
+
+\subsection{Test 4: period-length sequence}
+The validator computes the noble-gas gaps $[2,8,8,18,18,32]$ and confirms the match.
+
+\section{Repo cross-references}
+Lean module:
+\begin{itemize}[leftmargin=*]
+  \item \texttt{IndisputableMonolith/Chemistry/PeriodicTable.lean}
+\end{itemize}
+Prereg, script, artifact:
+\begin{itemize}[leftmargin=*]
+  \item \texttt{docs/prereg/NobleGasClosure.md}
+  \item \texttt{scripts/analysis/chem\_noble\_gas\_closure.py}
+  \item \texttt{artifacts/chem\_noble\_gas\_closure.json}
+\end{itemize}
+
+\end{document}
+

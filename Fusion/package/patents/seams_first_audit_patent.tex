@@ -1,0 +1,198 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{hyperref}
+
+% Simple page style
+\pagestyle{plain}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\begin{document}
+
+\begin{center}
+\textbf{\LARGE PATENT APPLICATION}\\[0.5cm]
+\textbf{\Large Method and System for Generating Auditable Certificates\\in Nuclear Fusion Control Systems Using a Seams-First Architecture}\\[1cm]
+
+\begin{tabular}{rl}
+\textbf{Application Type:} & Utility Patent \\
+\textbf{Filing Date:} & January 25, 2026 \\
+\textbf{Inventor:} & Jonathan Washburn \\
+\textbf{Technology Field:} & Fusion Energy / Regulatory Compliance / Formal Verification \\
+\textbf{International Class:} & G21B 1/00; G05B 23/02; H04L 9/32 \\
+\end{tabular}
+\end{center}
+
+\vspace{1cm}
+\hrule
+\vspace{0.5cm}
+
+\section*{ABSTRACT}
+
+A method and system for generating auditable, tamper-evident certificates and artifacts for nuclear fusion reactor operations. The invention introduces a ``Seams-First'' audit architecture where every control action or simulation result is accompanied by a structured, machine-readable artifact that explicitly distinguishes between mathematically certified logic (e.g., ledger/J-cost invariants, barrier scaling bounds) and empirical assumptions (e.g., sensor calibration, image-to-mode extraction). The system generates a JSON-based audit record containing a cryptographic digest of run inputs (e.g., SHA-256 over canonicalized inputs), computed outputs, references to machine-checked theorems (e.g., in Lean 4) supporting stated invariants, and structured ``Seam Notes'' that declare empirical assumptions and, when available, their calibration envelopes. In some embodiments, the artifact may be externally signed by a facility key to provide non-repudiation; the core invention remains the seams-first structure and traceability metadata.
+
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+
+\section{BACKGROUND OF THE INVENTION}
+
+\subsection{Technical Field}
+
+This invention relates generally to the verification and validation of control software for nuclear fusion reactors, and specifically to methods for generating audit trails that distinguish between formally proven correctness and empirical reliability.
+
+\subsection{Description of Related Art}
+
+Commercial fusion power plants will require regulatory certification comparable to or exceeding that of fission plants. Current control systems for experimental devices (e.g., tokamaks, ICF facilities) are often ad-hoc collections of scripts and manual procedures. While they may log data, they do not provide a rigorous \textit{proof} that a specific control action was safe or optimal according to a certified model.
+
+A key challenge is the ``Black Box'' problem: complex simulations (e.g., hydrocodes, neural networks) produce outputs without an explicit trace of the assumptions made. When a failure occurs, it is difficult to determine whether the error lay in the fundamental physics model, the numerical implementation, or the input parameters.
+
+Formal verification methods (like theorem provers) can guarantee correctness of logic, but they cannot prove physical facts about sensors. There is a need for a hybrid architecture that rigorously combines formal proofs with empirical data while clearly delineating the boundary (the ``Seam'') between them.
+
+\section{SUMMARY OF THE INVENTION}
+
+The present invention provides a \textbf{Seams-First Audit System} that generates an auditable artifact (certificate bundle and/or diagnostic run artifact) for every significant operation in the fusion control pipeline.
+
+The system comprises:
+\begin{enumerate}
+    \item \textbf{Artifact Generation:} A standardized data structure (an ``Audit Artifact'') is created for each run. It includes:
+    \begin{itemize}
+        \item \textbf{Input Hash:} a cryptographic digest (e.g., SHA-256) of canonicalized run inputs (configuration parameters and relevant input data). File hashes (e.g., of CSVs or images) may also be recorded.
+        \item \textbf{Outputs:} The computed control values or simulation results.
+        \item \textbf{Theorem References:} Pointers to specific, machine-checked theorems (e.g., in Lean 4) that guarantee properties of the computation (e.g., ``$S \le 1$'', ``$J(x) \ge 0$'').
+        \item \textbf{Seam Notes:} Structured declarations of all empirical assumptions, calibrations, and approximations used.
+    \end{itemize}
+    \item \textbf{Seam Explicitization:} The system forces developers/operators to classify every module as either ``Certified Surface'' (proven correct) or ``Seam'' (empirically validated). This classification is baked into the artifact.
+    \item \textbf{Chain of Custody (optional):} In some embodiments, artifacts may be chained via hashes and/or externally signed, creating a tamper-evident operational history. The core implementation includes per-run input hashing and explicit provenance hashes; chaining/signing is an integration option.
+\end{enumerate}
+
+This approach allows regulators to audit the system by verifying the theorem references against a trusted codebase and reviewing the Seam Notes for compliance with safety envelopes, without needing to re-verify the entire software stack.
+
+\section{BRIEF DESCRIPTION OF THE DRAWINGS}
+
+\begin{itemize}
+    \item \textbf{FIG. 1} illustrates the structure of a Certificate Bundle.
+    \item \textbf{FIG. 2} shows the data flow from raw diagnostics to an auditable certificate (optionally externally signed).
+    \item \textbf{FIG. 3} depicts the hierarchy of Certified Surface vs. Seams in the control stack.
+\end{itemize}
+
+\section{DETAILED DESCRIPTION OF EMBODIMENTS}
+
+\subsection{Definitions}
+
+\begin{itemize}
+    \item \textbf{Certificate Bundle:} A JSON document containing the complete provenance and validity arguments for a computation.
+    \item \textbf{Certified Surface:} The subset of the system logic that is formally verified (e.g., by a theorem prover) to satisfy specific invariants.
+    \item \textbf{Seam:} The interface where the Certified Surface interacts with the unverified physical world (sensors, actuators) or unverified software (legacy codes, ML models).
+    \item \textbf{Seam Note:} A structured metadata record describing a specific Seam, including its calibration parameters and validity bounds.
+\end{itemize}
+
+\subsection{Artifact Structure}
+
+A typical \texttt{Audit Artifact} contains (example shown for a seam-first diagnostic run artifact):
+
+\begin{verbatim}
+{
+  "artifact_type": "diagnostic_mode_run_v1",
+  "timestamp_utc": "2026-01-25T12:00:00+00:00",
+  "run_id": "paper_modes_abcdef123456",
+  "sample_id": "shot_42",
+  "inputs": { "... calibration, extraction params, ledger params ..." },
+  "input_hash": "a1b2c3d4...",
+  "files": { "... sha256 hashes of source files ..." },
+  "outputs": { "... raw values, ratios, ledger_value, ledger_sync ..." },
+  "declarations": [
+    { "name": "ledger_sync", "kind": "certified_surface",
+      "details": { "lean_refs": ["...computeLedgerSync", "...Jcost_nonneg"] } },
+    { "name": "calibration_mapping", "kind": "seam",
+      "details": { "type": "exp", "gain": 1.5, "formula": "r = exp(g*m)" } }
+  ],
+  "environment": { "... runtime metadata for reproducibility ..." }
+}
+\end{verbatim}
+
+In another embodiment, a \texttt{Certificate Bundle} is produced for a fusion-shot computation, containing fields such as \texttt{module\_name}, \texttt{input\_hash}, \texttt{outputs}, \texttt{passed}, and \texttt{theorem\_refs}, and may be linked to one or more seam-first diagnostic artifacts by shared input hashes and/or explicit references.
+
+\subsection{Generation Pipeline}
+
+\subsubsection{1. Input Hashing}
+Before any computation, the inputs (e.g., diagnostic ratios, weights) are serialized to canonical JSON and hashed. This ensures that the certificate is bound to a specific problem instance.
+
+\subsubsection{2. Computation & Verification}
+The core logic executes. In the preferred embodiment, this logic mirrors a formally verified specification.
+\begin{itemize}
+    \item Example: Computing the Barrier Scale $S$. The code checks if $S \in (0, 1]$. If not, the certificate is marked \texttt{passed: false}.
+    \item The certificate references the Lean theorem \texttt{rsBarrierScale\_le\_one} which proves that the formula \textit{should} produce a value in that range.
+\end{itemize}
+
+\subsubsection{3. Seam Logging}
+Any step involving empirical data injection logs a Seam Note.
+\begin{itemize}
+    \item Example: Converting a camera image to a mode ratio. The image processing algorithm is a Seam. The artifact records the algorithm version and parameters used.
+\end{itemize}
+
+\subsubsection{4. Serialization (and optional external signing)}
+The bundle is serialized. In some embodiments, the serialized bundle (or its hash) is externally signed with a facility private key. This can create a non-repudiable statement that "Facility X claims Result Y based on Inputs Z and Assumptions A." The core system operates without requiring signatures.
+
+\subsection{Regulatory Use}
+
+Regulators use the certificates to audit safety limits.
+\begin{itemize}
+    \item \textbf{Automated Check:} Verify that all \texttt{passed} flags are true and all hashes match.
+    \item \textbf{Theorem Check:} Verify that the referenced Lean theorems effectively guarantee the safety property (e.g., "Energy gain cannot exceed X under these conditions").
+    \item \textbf{Seam Review:} Focus human review effort on the Seam Notes (calibrations), knowing the math core is machine-checked.
+\end{itemize}
+
+\section{CLAIMS}
+
+\begin{enumerate}
+    \item \textbf{A method for generating auditable records in a fusion control system, comprising:}
+    \begin{enumerate}
+        \item receiving a set of input parameters for a control calculation;
+        \item computing a cryptographic hash of said input parameters;
+        \item executing the control calculation to generate an output value;
+        \item identifying at least one mathematical property of the calculation that is formally verified in a theorem prover;
+        \item identifying at least one empirical assumption or calibration used in the calculation; and
+        \item generating a digital certificate containing the input hash, the output value, a reference to the verified property, and a structured description of the empirical assumption.
+    \end{enumerate}
+
+    \item The method of claim 1, wherein the structured description of the empirical assumption is labeled as a ``Seam Note'' and includes validity bounds for the assumption.
+
+    \item The method of claim 1, further comprising validating the output value against the formally verified property and setting a pass/fail flag in the certificate based on said validation.
+
+    \item The method of claim 1, wherein the control calculation comprises computing a fusion barrier scale factor or a symmetry ledger value.
+
+    \item \textbf{A system for auditing fusion reactor software, comprising:}
+    \begin{enumerate}
+        \item a computation engine configured to execute control algorithms;
+        \item a formal verification repository containing machine-checked proofs of the algorithms' properties;
+        \item a seam registry containing metadata about sensor calibrations and empirical models; and
+        \item a certificate generator configured to produce, for each execution of the computation engine, a digital artifact containing a cryptographic hash of run inputs, execution outputs, references to proofs in the repository, and a structured description of at least one empirical assumption from the seam registry.
+    \end{enumerate}
+
+    \item The system of claim 5, wherein the certificate generator outputs a JSON-formatted bundle comprising an input hash, output metrics, and a list of theorem identifiers.
+
+    \item \textbf{A non-transitory computer-readable medium storing instructions that, when executed by a processor, cause a system to:}
+    \begin{enumerate}
+        \item perform a safety-critical calculation for a fusion device;
+        \item generate a persistent record of the calculation;
+        \item embed within the record a distinction between logic that is mathematically certified and logic that relies on empirical calibration; and
+        \item compute and store a cryptographic digest (e.g., SHA-256) that binds the record to the run inputs.
+    \end{enumerate}
+\end{enumerate}
+
+\section*{APPENDIX: Implementation Evidence}
+
+The core logic of this invention is implemented in the accompanying software artifacts:
+\begin{itemize}
+    \item \textbf{Python Implementation:} \texttt{fusion/simulator/control/artifacts.py} defines the \texttt{DiagnosticModeRunArtifact} and \texttt{SeamNote} classes. \texttt{fusion/simulator/fusion/certificate.py} implements the \texttt{CertificateBundle} generation logic.
+    \item \textbf{Formal Integration:} The certificate structure corresponds to the \texttt{CertificateBundle} definition in Lean 4 found in \texttt{IndisputableMonolith/Fusion/Executable/Interfaces.lean}.
+\end{itemize}
+
+\end{document}

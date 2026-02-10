@@ -1,0 +1,158 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=*, itemsep=4pt, topsep=6pt}
+
+\title{\textbf{Referee Report (Computation Gaps / Blockers)}\\[2mm]
+\large Paper: \textit{Paper 1 (far-field / zero-free region claim)}}
+\author{\textbf{Referee: Amir Rahnama}}
+\date{January 27, 2026}
+
+\begin{document}
+\maketitle
+
+\section*{Scope and what was checked}
+This note reports the status of \emph{reproducibility checks} for the computational steps that the manuscript uses inside its proof pipeline.
+It does \emph{not} assert the main theorem is correct or incorrect. Instead, it identifies which computation-backed proof steps are verified on my machine and which are currently \textbf{not reproducible} under the advertised audit parameters.
+
+\section*{Where in the paper these computations occur}
+The computations below correspond to the paper's ``hybrid certification'' route and are referenced in the following manuscript blocks:
+\begin{itemize}
+  \item \textbf{Section} \texttt{\textbackslash section\{Hybrid certification: rectangle + Pick + asymptotics\}} (label: \texttt{sec:hybrid}).
+  \item \textbf{Lemma} \texttt{\textbackslash begin\{lemma\}[Rectangle certification]\textbackslash label\{lem:rect-cert\}}: the certified bound
+  \[
+    \max_{(\sigma,t)\in[0.6,0.7]\times[0,20]}|\Theta_{\rm proj}(\sigma+it)| < 1
+  \]
+  is used as a finite-rectangle checkpoint in the proof pipeline.
+  \item \textbf{Appendix} \texttt{\textbackslash section\{Audit manifest (verifier commands and expected fields)\}\textbackslash label\{app:audit\}}: gives the exact regeneration commands and minimum JSON fields.
+  \item The mapping \textbf{Claim $\rightarrow$ artifact $\rightarrow$ command} is also summarized in \texttt{AUDIT\_CHECKLIST.md}.
+\end{itemize}
+
+\section*{Environment used for reproduction attempts}
+\begin{itemize}
+  \item OS: Windows 11 (reported by Python as \texttt{Windows-10-10.0.26200-SP0}).
+  \item Python: 3.9.6 (64-bit).
+  \item Packages: \texttt{python-flint==0.6.0}, \texttt{numpy==1.26.4}.
+  \item Bundle integrity: \textbf{Verifier script hash matches shipped sums}.\\
+    \texttt{scripts/verify\_attachment\_arb.py} SHA256 on my machine:\\
+    \texttt{0FEE4406C608A02C038A7508D4BF627A9C0E1C5B5C9E480C8E6D634EAA52D2E2}.\\
+    This matches the line in \texttt{SHA256SUMS.txt}.
+\end{itemize}
+
+\section*{Verified computation (PASS)}
+\subsection*{(1) Pick certificate at $\sigma_0=0.599$ (artifact regeneration matches exactly)}
+\begin{itemize}
+  \item \textbf{Artifact (shipped):} \texttt{artifacts/pick\_sigma0599\_raw\_zeta\_N16.json}
+  \item \textbf{Regeneration (my run):} produced\\ \texttt{run\_out/artifacts\_regen/pick\_sigma0599\_raw\_zeta\_N16\_REGEN.json}
+  \item \textbf{Outcome:} regenerated \texttt{delta\_cert} matches the shipped artifact \textbf{exactly}:
+  \[
+    \delta_{\rm cert} = 0.5944375202575065\quad(\text{difference }=0.0).
+  \]
+  \item \textbf{Key parameters (match shipped):} \texttt{sigma0=0.599}, \texttt{N=16}, \texttt{Ncoeff=128}, \texttt{K=512}, \texttt{rho=0.4}, \texttt{rho\_bound=0.5}.
+  \item \textbf{Command used (from audit manifest):}
+\end{itemize}
+
+\noindent\small
+\begin{verbatim}
+python scripts\verify_attachment_arb.py ^
+  --pick-certify --pick-sigma0 0.599 --pick-N 16 --pick-coeff-count 128 --pick-K 512 ^
+  --pick-rho 0.4 --pick-rho-bound 0.5 --arith-gauge raw_zeta --arith-P-cut 2000 ^
+  --prec 1024 --pick-out run_out\artifacts_regen\pick_sigma0599_raw_zeta_N16_REGEN.json
+\end{verbatim}
+\normalsize
+
+\section*{Computation gaps / blockers (NOT YET REPRODUCIBLE)}
+\subsection*{(2) Rectangle theta certification on $[0.6,0.7]\times[0,20]$ (Lemma \texttt{lem:rect-cert})}
+\textbf{Status: blocker on my Windows environment under the advertised parameters.}
+
+\begin{itemize}
+  \item \textbf{Shipped artifact claims success:}\\
+    \texttt{artifacts/theta\_certify\_sigma06\_07\_t0\_20\_outer\_zeta\_proj.json}
+    has \texttt{results.ok=True},\\ \texttt{theta\_hi=0.9999928763}, and \textbf{no failures} (\texttt{failures\_len=0}).\\
+  \item \textbf{My fresh run (same parameters, time-sliced):}\\
+    \texttt{run\_out/artifacts\_regen/theta\_certify\_sigma06\_07\_t0\_20\_outer\_zeta\_proj\_SLICE.json}
+    ended with \texttt{results.ok=False} and \textbf{10048} failures of type
+    \texttt{theta\_not\_lt\_one\_min\_width}.
+  \item \textbf{Failures are inside the intended rectangle:}
+    the failure list ranges over
+    \[
+      \sigma \in [0.69,0.70],\qquad t \in [18.40, 18.46171875],
+    \]
+    i.e.\ within $[0.6,0.7]\times[0,20]$.
+  \item \textbf{Failure meaning (as logged):}
+    boxes reached the configured minimum widths\\ (\texttt{theta\_min\_sigma\_width=1e-4},
+    \texttt{theta\_min\_t\_width=1e-3}) while the computed enclosure still had
+    \texttt{abs\_theta\_upper > 1} (example observed: \texttt{abs\_theta\_upper} about 1.76).
+    Under these settings, this is \emph{terminal} for those boxes: running longer with the
+    \emph{same} min-width/precision will not make those particular failures disappear.
+  \item \textbf{Parameters confirmed recorded in my SLICE JSON:}
+    \texttt{arith\_gauge=outer\_zeta\_proj}, rectangle \texttt{[0.6,0.7]x[0,20]}, \texttt{outer\_mode=midpoint},
+    \texttt{prec=260}, \texttt{outer\_T=50}, \texttt{outer\_n=2001}, \texttt{outer\_P\_cut=2000}.
+  \item \textbf{Therefore:} the rectangle certification step used in Lemma \texttt{lem:rect-cert} is
+    \textbf{not reproducible for me} on Windows under the paper's stated audit command/parameters,
+    despite matching the shipped verifier script hash.
+\end{itemize}
+
+\subsection*{Likely explanations (uncertain) and what must be checked}
+At present it is \textbf{uncertain} whether this is (i) a platform-dependent enclosure-width issue,
+(ii) a parameter robustness issue, or (iii) a deeper methodological/certification issue.
+To resolve, the following should be checked:
+
+\begin{itemize}
+  \item \textbf{Reference-environment rerun:} rerun the rectangle command on the original environment
+    used to ship the artifact (the bundle's \texttt{ENVIRONMENT.txt} indicates macOS + TeX Live 2025).
+    If the reference environment reproduces \texttt{ok=True} with no failures, then the issue is a
+    \textbf{cross-platform reproducibility gap}.
+  \item \textbf{Robustness to numerics:} attempt higher precision (e.g.\ increase \texttt{--prec} above 260)
+    and/or allow finer subdivision (smaller \texttt{--theta-min-sigma-width} and \texttt{--theta-min-t-width})
+    until the problematic region certifies. If this succeeds on Windows, update the audit manifest to reflect
+    the stricter parameters required for cross-platform reproducibility.
+  \item \textbf{Method-level check:} if even substantially increased precision/refinement fails on the
+    reference environment, then the lemma's claim as currently stated is likely unsupported by the verifier output,
+    and the proof path must be revised.
+\end{itemize}
+
+\section*{My idea to reproduce on a stronger machine}
+\subsection*{Rectangle run (time-sliced to avoid manual interruption)}
+\noindent\small
+\begin{verbatim}
+python scripts\verify_attachment_arb.py --theta-certify --theta-time-limit 300 ^
+  --arith-gauge outer_zeta_proj --arith-P-cut 2000 ^
+  --rect-sigma-min 0.6 --rect-sigma-max 0.7 --rect-t-min 0.0 --rect-t-max 20.0 ^
+  --outer-mode midpoint --outer-P-cut 2000 --outer-T 50.0 --outer-n 2001 ^
+  --theta-init-n-sigma 10 --theta-init-n-t 50 ^
+  --theta-min-sigma-width 0.0001 --theta-min-t-width 0.001 ^
+  --theta-max-boxes 500000 --prec 260 ^
+  --theta-out run_out\artifacts_regen\theta_certify_sigma06_07_t0_20_outer_zeta_proj_SLICE.json --progress
+\end{verbatim}
+\normalsize
+
+\subsection*{Suggested robustness experiment (higher precision)}
+\noindent\small
+\begin{verbatim}
+python scripts\verify_attachment_arb.py --theta-certify --theta-time-limit 300 ^
+  --arith-gauge outer_zeta_proj --arith-P-cut 2000 ^
+  --rect-sigma-min 0.6 --rect-sigma-max 0.7 --rect-t-min 0.0 --rect-t-max 20.0 ^
+  --outer-mode midpoint --outer-P-cut 2000 --outer-T 50.0 --outer-n 2001 ^
+  --theta-init-n-sigma 10 --theta-init-n-t 50 ^
+  --theta-min-sigma-width 0.0001 --theta-min-t-width 0.001 ^
+  --theta-max-boxes 500000 --prec 400 ^
+  --theta-out run_out\artifacts_regen\theta_certify_sigma06_07_t0_20_outer_zeta_proj_prec400_SLICE.json --progress
+\end{verbatim}
+\normalsize
+
+\section*{Bottom line}
+\begin{itemize}
+  \item The verifier script matches the shipped hash; Pick regeneration at $\sigma_0=0.599$ matches exactly.
+  \item The rectangle-based certification (Lemma \texttt{lem:rect-cert}) is \textbf{not reproducible} for me on Windows
+  under the audit parameters stated in the bundle, due to terminal min-width failures with \texttt{abs\_theta\_upper > 1}
+  inside the claimed rectangle.
+  \item Until resolved, the computation-backed proof step that relies on Lemma \texttt{lem:rect-cert} should be treated as
+  \textbf{unverified on my environment} (and as a reproducibility gap in the current delivery).
+\end{itemize}
+
+\end{document}

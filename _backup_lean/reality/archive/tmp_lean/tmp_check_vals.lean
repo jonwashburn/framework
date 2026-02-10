@@ -1,0 +1,3 @@
+import IndisputableMonolith.Numerics.Interval.GalacticBounds
+#eval! IndisputableMonolith.Numerics.phi_pow_140_interval.hi < IndisputableMonolith.Numerics.galactic_ratio_rational
+#eval! IndisputableMonolith.Numerics.galactic_ratio_rational < IndisputableMonolith.Numerics.phi_pow_145_interval.lo

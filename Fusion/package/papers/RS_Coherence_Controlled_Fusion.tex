@@ -1,0 +1,2731 @@
+\documentclass[11pt,letterpaper]{article}
+
+% ============================================================================
+% PACKAGES
+% ============================================================================
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{textcomp}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!70!black,
+  citecolor=green!50!black,
+  urlcolor=blue!70!black
+}
+
+% Better handling of long lines (avoid overfull warnings in most cases)
+\sloppy
+\tolerance=1000
+\emergencystretch=3em
+
+% ============================================================================
+% LISTINGS (Lean formalization excerpts)
+% ============================================================================
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  columns=fullflexible,
+  breaklines=true,
+  breakatwhitespace=false,
+  postbreak=\mbox{\textcolor{gray}{$\hookrightarrow$}\space},
+  frame=single,
+  rulecolor=\color{black!20},
+  keepspaces=true,
+  showstringspaces=false,
+  upquote=true,
+  xleftmargin=0.5em,
+  xrightmargin=0.5em,
+  literate=
+    {ℝ}{$\mathbb{R}$}{1}
+    {ℕ}{$\mathbb{N}$}{1}
+    {ℤ}{$\mathbb{Z}$}{1}
+    {ℂ}{$\mathbb{C}$}{1}
+    {Ω}{$\Omega$}{1}
+    {ω}{$\omega$}{1}
+    {≤}{$\le$}{1}
+    {≥}{$\ge$}{1}
+    {≠}{$\neq$}{1}
+    {→}{$\to$}{1}
+    {↔}{$\leftrightarrow$}{1}
+    {∀}{$\forall$}{1}
+    {∃}{$\exists$}{1}
+    {∧}{$\wedge$}{1}
+    {∨}{$\vee$}{1}
+    {∈}{$\in$}{1}
+    {∑}{$\sum$}{1}
+    {×}{$\times$}{1}
+    {‖}{$\Vert$}{1}
+    {⟨}{$\langle$}{1}
+    {⟩}{$\rangle$}{1}
+    {⁻¹}{$^{-1}$}{2}
+    {≃}{$\simeq$}{1}
+    {η}{$\eta$}{1}
+    {τ}{$\tau$}{1}
+    {φ}{$\varphi$}{1}
+    {θ}{$\theta$}{1}
+    {Λ}{$\Lambda$}{1}
+    {σ}{$\sigma$}{1}
+    {κ}{$\kappa$}{1}
+    {ξ}{$\xi$}{1}
+    {⦃}{\{} {1}
+    {⦄}{\}} {1}
+    {₀}{$_0$}{1}
+    {₁}{$_1$}{1}
+    {₂}{$_2$}{1}
+    {₃}{$_3$}{1}
+    {₄}{$_4$}{1}
+    {₅}{$_5$}{1}
+    {₆}{$_6$}{1}
+    {₇}{$_7$}{1}
+    {₈}{$_8$}{1}
+    {₉}{$_9$}{1}
+}
+
+% ============================================================================
+% COMMANDS
+% ============================================================================
+\newcommand{\Jcost}{J}
+\newcommand{\phiratio}{\varphi}
+\newcommand{\phiC}{C_{\phiratio}}
+\newcommand{\ledgerSync}{C_{\sigma}}
+\newcommand{\barrierScale}{S}
+
+% Short path macro: strips IndisputableMonolith prefix for display
+\newcommand{\leanref}[1]{}% Lean references moved to body text for cleaner headers
+\newcommand{\leanmod}[1]{\texttt{\scriptsize #1}}% For inline module names
+\newcommand{\modpath}[1]{\par\noindent\textit{Lean module:} \texttt{\small #1}\par}
+% Abbreviation for main namespace (avoids line overflow)
+\newcommand{\IM}{\texttt{IM}}% IM = IndisputableMonolith
+\newcommand{\IMpath}[1]{\texttt{IM/#1}}% Short path: IM/Fusion/X.lean
+
+% ============================================================================
+% TITLE
+% ============================================================================
+\title{\textbf{Coherence-Controlled Fusion:}\\
+\large Tunneling as Ledger Commitment and the $T \mapsto \barrierScale^2 T$ Efficiency Lever}
+
+\author{Jonathan Washburn\\
+Recognition Science Research\\
+\texttt{jonathan@recognitionscience.org}}
+
+\date{January 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Recognition Science (RS) treats quantum ``tunneling'' not as a particle traversing a classically forbidden region, but as a \emph{ledger commitment event} across an effective recognition barrier (a cost-gap between stable ledger states). In this framing, the classical Gamow suppression exponent is a coarse-grained proxy for the barrier cost; crucially, \emph{coherence} can reduce the effective barrier, increasing commitment probability at fixed thermal conditions.
+
+This paper formalizes an applied program for live fusion shots: define two facility-computable coherence variables---(i) $\phiratio$-coherence $\phiC$ from timing/phase alignment and interference minimization, and (ii) ledger synchronization $\ledgerSync$ from diagnostics$\to$ratios$\to$symmetry ledger---and combine them into a barrier scale
+\[
+\barrierScale = \frac{1}{1 + \phiC + \ledgerSync} \in (0,1].
+\]
+Under a standard Gamow-like proxy $\eta(T)\propto 1/\sqrt{T}$, the RS-effective exponent becomes $\eta_{\mathrm{RS}}(T)=\barrierScale\eta(T)$, yielding a direct temperature/drive-energy efficiency lever:
+\[
+T_{\mathrm{needed}} = \barrierScale^2 \, T_{\mathrm{classical}},\qquad
+T_{\mathrm{eff}}=\frac{T}{\barrierScale^2}.
+\]
+We present precise metric definitions suitable for real-time computation and certification, and a controlled run protocol: hold all non-coherence variables fixed, increase $\barrierScale$, then step down temperature/driver energy by $\barrierScale^2$ until yield degradation is observed. The goal is not to debate RS truth but to operationalize the coherence-control mechanism as a measurable efficiency improvement.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Introduction (Outline)}
+\subsection{Problem statement}
+\subsection{Core hypothesis (applied)}
+\subsection{Contributions}
+\subsection{Reading guide (how the paper is internally complete)}
+\subsection{Summary of testable predictions and falsifiers}
+
+\section{Scope and Claim Hygiene}
+This is an applied paper intended for a science/engineering team executing live fusion shots. We focus on \emph{measurement, control, and calibration} of coherence variables, and on the empirical procedure to convert coherence improvements into reduced temperature/drive requirements. We do \emph{not} provide device-construction instructions.
+
+We separate:
+\begin{itemize}
+  \item \textbf{Formal layer (Lean)}: internal logical guarantees given stated definitions/hypotheses.
+  \item \textbf{Facility layer (applied)}: how the variables are computed from timing traces and diagnostics.
+  \item \textbf{Empirical layer}: how we validate the bridge and quantify the efficiency gain.
+\end{itemize}
+
+\subsection{Non-goals and safety constraints}
+\subsection{What ``internally complete'' means here}
+\subsection{Reproducibility and audit trail expectations}
+
+\section{Notation, Units, and Conventions (Outline)}
+\subsection{RS-native units: ticks vs SI seconds}
+\subsection{Thermal temperature vs recognition temperature}
+\subsection{Ledger, cost, and ``barrier'' terminology}
+\subsection{Probability and rate conventions}
+
+\section{Background: Classical Fusion Barriers and Rate Proxies (Outline)}
+\subsection{Coulomb barrier, Gamow exponent, and tunneling probability proxy}
+\subsection{Temperature dependence of reaction rates (why $1/\sqrt{T}$ appears)}
+\subsection{Astrophysical $S$-factor and what RS does/does not change}
+\subsection{Classical control knobs (drive energy, compression, confinement time)}
+\subsection{Where ``coherence control'' fits among classical knobs}
+
+\section{Recognition Science Foundations: T0--T8 Forcing Chain (Outline)}
+\subsection{Overview: the inevitability chain (T0--T8)}
+\subsection{T0: Logic from cost minimization}
+\subsection{T1: Meta-principle (``nothing costs infinity'')}
+\subsection{T2: Discreteness forcing}
+\subsection{T3: Ledger and double-entry from $\Jcost$-symmetry}
+\subsection{T4: Recognition forcing and observables}
+\subsection{T5: Uniqueness of $\Jcost$}
+\subsection{T6: $\phiratio$ forcing from self-similarity}
+\subsection{T7: 8-tick forcing and phase quantization}
+\subsection{T8: $D=3$ forcing (linking and Clifford route)}
+\subsection{Unified chain statement and dependency graph}
+
+\section{Quantum Mechanics from RS: First-Principles Path (Outline)}
+\subsection{Ledger states and complex amplitudes}
+\subsection{8-tick phase accumulation and interference}
+\subsection{Hilbert space bridge: normalized states and inner product}
+\subsection{Observables and projectors}
+\subsection{Born rule from cost/probability structure}
+\subsection{Measurement: collapse as ledger commit}
+\subsection{Pointer states and decoherence as neutral windows}
+\subsection{Zeno effect and the 8-tick threshold}
+\subsection{Entanglement, Bell violation, and no-signaling}
+\subsection{Spin-statistics from 8-tick phase}
+\subsection{Master correspondence statement}
+
+\section{Related Work and Positioning (Outline)}
+\subsection{Standard QM interpretational landscape (Copenhagen, Everett, decoherence)}
+\subsection{Born rule derivations (Gleason, envariance, decision theory)}
+\subsection{Quantum control and coherence engineering (where RS differs)}
+\subsection{Fusion rate enhancement literature (what to compare against)}
+
+\section{RS Framing: Tunneling as Ledger Commitment}
+\subsection{Barrier as recognition cost gap (definition-level)}
+\subsection{Why ``tunneling'' is not spatial traversal in RS}
+\subsection{Mapping to classical Gamow suppression (as a coarse-grained proxy)}
+\subsection{Rate/commitment probability: what is being modeled vs measured}
+
+This section fixes the paper's semantic core. The word \emph{tunneling} is historically loaded; in
+standard quantum mechanics it is often narrated as ``a particle crosses a classically forbidden
+region.'' In Recognition Science (RS), that picture is downstream. The primitive is:
+\begin{quote}
+\textbf{A transition is a ledger commitment event} selecting a stable outcome branch, and the
+``barrier'' is an \textbf{effective recognition barrier}---a cost-gap between stable ledger states.
+\end{quote}
+
+The practical reason we adopt this framing is that it immediately turns ``make fusion easier''
+into a control problem: if the barrier is a cost-gap, then any mechanism that \emph{reduces the
+effective cost-gap} (without destabilizing the system) increases the transition rate. The rest of
+the paper is about measuring and controlling precisely those cost-reducing mechanisms.
+
+\subsection{Barrier as recognition cost gap (definition-level)}
+\textbf{Ledger states and stability.} RS models physical configurations as ledger states with a
+well-defined recognition cost. In the fusion context, we do not attempt to model the full ledger
+microstate; we only require the existence of a scalar \emph{cost} that orders states by stability.
+At $T_R = 0$ (``strict recognition minimization''), only zero-cost states are stable. At finite
+$T_R$, near-minima appear with nonzero probability.
+
+\textbf{Barrier as a cost-gap.} Consider two stable ledger basins $A$ and $B$ (e.g.\ two
+recognition-consistent nuclear configurations). Any transition $A\to B$ must pass through
+intermediate ledger configurations; the barrier is the minimal achievable \emph{cost elevation}
+above the basin floor along an admissible path. In the applied program we do not claim to know
+this barrier exactly; instead we work with a physically motivated \emph{barrier-cost proxy}
+$\eta$ such that larger $\eta$ means exponentially lower commitment probability.
+
+\subsection{Rate/commitment probability: what is being modeled vs measured}
+\textbf{What we model.} We model a transition rate proxy using an exponential suppression in an
+effective barrier cost, in direct analogy with classical barrier-penetration formulas:
+\[
+P(\text{commit }A\to B)\;\propto\;\exp(-\eta_{\text{eff}}).
+\]
+\textbf{What we measure.} In live runs we measure yield proxies, burn histories, and diagnostics.
+The connection from measured quantities to $\eta_{\text{eff}}$ is not assumed; it is established
+empirically via controlled experiments (Section ``Run Protocol'').
+
+\textbf{RS thermodynamic weighting.} RS has a native thermodynamic layer: at finite recognition
+temperature $T_R$, costs induce Gibbs weights. The Lean formalization is explicit:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Thermodynamics/RecognitionThermodynamics.lean
+structure RecognitionSystem where
+  TR : ℝ
+  TR_pos : 0 < TR
+
+noncomputable def gibbs_weight (sys : RecognitionSystem) (x : ℝ) : ℝ :=
+  exp (- Jcost x / sys.TR)
+\end{lstlisting}
+
+This is the precise meaning of the informal statement
+\[
+p(\omega)\propto \exp\!\left(-\frac{\text{cost}(\omega)}{T_R}\right).
+\]
+In other words: \emph{cost is the ordering principle}, and probability mass is concentrated near
+low-cost configurations.
+
+\textbf{Commitment as a primitive operation.} RS treats superposition as an uncommitted ledger
+entry and collapse as commitment. The measurement formalization makes the ``commit'' operation
+explicit (we will reuse the same commitment semantics for barrier transitions):
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Quantum/Measurement/WavefunctionCollapse.lean
+structure LedgerBranch (n : ℕ) where
+  outcome : Fin n
+  amplitude : Amplitude
+  weight : ℝ
+  weight_eq : weight = ‖amplitude‖^2
+
+structure UncommittedLedger (n : ℕ) where
+  branches : List (LedgerBranch n)
+  normalized : (branches.map LedgerBranch.weight).sum = 1
+
+structure CommittedLedger (n : ℕ) where
+  outcome : Fin n
+  amplitude : Amplitude
+  unit_norm : ‖amplitude‖ = 1
+
+noncomputable def commit {n : ℕ} (L : UncommittedLedger n) (i : Fin n)
+    (_h : ∃ b ∈ L.branches, b.outcome = i) : CommittedLedger n :=
+  let b := L.branches.find? (fun b => b.outcome = i)
+  match b with
+  | some branch =>
+      if hz : branch.amplitude ≠ 0 then
+        ⟨i, branch.amplitude / ‖branch.amplitude‖, norm_div_norm_eq_one branch.amplitude hz⟩
+      else
+        ⟨i, 1, by simp⟩
+  | none => ⟨i, 1, by simp⟩
+\end{lstlisting}
+
+The conceptual move for this paper is to treat ``tunneling'' transitions as the same kind of
+commitment event, but with the branch weights governed by an effective barrier cost proxy.
+
+\subsection{Why ``tunneling'' is not spatial traversal in RS}
+\textbf{Not a particle crossing a forbidden region.} The spatial picture is a convenient
+approximation when one already assumes a potential-energy landscape and a wavefunction over
+position. RS inverts that: the primitive is the ledger and its admissible commitments. A
+``forbidden'' configuration is simply one with prohibitively high recognition cost relative to
+available recognition temperature and coherence resources.
+
+\textbf{What survives the translation.} RS keeps what is operationally real:
+\begin{itemize}
+  \item exponential sensitivity of rates to an effective barrier parameter,
+  \item interference/phase sensitivity in pre-commitment dynamics,
+  \item and discrete commitment/collapse events.
+\end{itemize}
+What RS discards is the literal narrative that a localized object traverses an unphysical region.
+
+\subsection{Mapping to classical Gamow suppression (as a coarse-grained proxy)}
+\textbf{Classical baseline proxy.} In fusion and alpha decay, the classical ``tunneling'' rate is
+often summarized by a Gamow-like exponent $\eta$ derived from Coulomb suppression. In this paper,
+we treat that classical $\eta$ as a \emph{baseline barrier-cost proxy}---a coarse-grained
+stand-in for the underlying recognition barrier.
+
+\textbf{RS coherence lowers the effective barrier.} RS adds a second layer: coherence and ledger
+synchronization can reduce the effective barrier \emph{multiplicatively}. This is exactly what
+we have formalized in the fusion rate model:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/ReactionNetworkRates.lean
+structure RSCoherenceParams where
+  phiCoherence : ℝ
+  phiCoherence_nonneg : 0 ≤ phiCoherence
+  phiCoherence_le_one : phiCoherence ≤ 1
+  ledgerSync : ℝ
+  ledgerSync_nonneg : 0 ≤ ledgerSync
+  ledgerSync_le_one : ledgerSync ≤ 1
+
+def rsBarrierScale (c : RSCoherenceParams) : ℝ :=
+  1 / (1 + c.phiCoherence + c.ledgerSync)
+
+theorem rsBarrierScale_le_one (c : RSCoherenceParams) : rsBarrierScale c ≤ 1 := by
+  unfold rsBarrierScale
+  have hden : (1 : ℝ) ≤ (1 + c.phiCoherence + c.ledgerSync) := by
+    linarith [c.phiCoherence_nonneg, c.ledgerSync_nonneg]
+  have h := one_div_le_one_div_of_le (by norm_num : (0 : ℝ) < 1) hden
+  simpa using h
+
+def rsGamowExponent (c : RSCoherenceParams) (params : GamowParams)
+    (cfgA cfgB : NuclearConfig) : ℝ :=
+  rsBarrierScale c * gamowExponent params cfgA cfgB
+
+theorem rsGamowExponent_le_gamowExponent (c : RSCoherenceParams) (params : GamowParams)
+    (cfgA cfgB : NuclearConfig) :
+    rsGamowExponent c params cfgA cfgB ≤ gamowExponent params cfgA cfgB := by
+  unfold rsGamowExponent
+  have hs : rsBarrierScale c ≤ 1 := rsBarrierScale_le_one c
+  have hη : 0 ≤ gamowExponent params cfgA cfgB := gamowExponent_nonneg params cfgA cfgB
+  have := mul_le_mul_of_nonneg_right hs hη
+  simpa using this
+
+def rsTunnelingProbability (c : RSCoherenceParams) (params : GamowParams)
+    (cfgA cfgB : NuclearConfig) : ℝ :=
+  Real.exp (-rsGamowExponent c params cfgA cfgB)
+
+theorem rsTunnelingProbability_ge_classical (c : RSCoherenceParams) (params : GamowParams)
+    (cfgA cfgB : NuclearConfig) :
+    Real.exp (-gamowExponent params cfgA cfgB) ≤ rsTunnelingProbability c params cfgA cfgB := by
+  have hη : rsGamowExponent c params cfgA cfgB ≤ gamowExponent params cfgA cfgB :=
+    rsGamowExponent_le_gamowExponent c params cfgA cfgB
+  have hneg : (-gamowExponent params cfgA cfgB) ≤ (-rsGamowExponent c params cfgA cfgB) := by
+    linarith
+  have hexp : Real.exp (-gamowExponent params cfgA cfgB) ≤ Real.exp (-rsGamowExponent c params cfgA cfgB) :=
+    (Real.exp_le_exp).2 hneg
+  simpa [rsTunnelingProbability] using hexp
+\end{lstlisting}
+
+The key applied consequence is monotonic: increasing $\texttt{phiCoherence}$ or
+$\texttt{ledgerSync}$ cannot increase the barrier in this model; it can only reduce the effective
+exponent and thus increase the transition probability proxy.
+
+In the remainder of the paper we will define facility-computable surrogates for
+\texttt{phiCoherence} and \texttt{ledgerSync}, and then use controlled experiments to measure
+how much classical temperature/drive can be traded for coherence (the $T \mapsto \barrierScale^2 T$
+lever).
+
+\section{Operational Coherence Variables}
+The RS tunneling model in the previous section introduced two abstract control levers:
+\texttt{phiCoherence} and \texttt{ledgerSync}. Those quantities are \emph{not} assumed to be
+directly observable. Instead, the facility needs \emph{operational surrogates} computed from
+available logs and diagnostics, in real time, with a clean audit trail.
+
+This section defines two facility-computable scalars:
+\[
+\phiC \in [0,1],\qquad \ledgerSync \in [0,1],
+\]
+designed to satisfy five requirements:
+\begin{enumerate}
+  \item \textbf{Monotonicity in the intended direction}: ``better coherence'' and ``better
+  synchronization'' should strictly increase the corresponding scalar, all else equal.
+  \item \textbf{Boundedness and interpretability}: values lie in $[0,1]$ with clear limiting cases.
+  \item \textbf{Real-time computability}: the metric uses only signals available during a shot (or
+  in immediate post-shot reduction).
+  \item \textbf{Graceful degradation}: missing channels or partial logs should not produce nonsense;
+  the metric should fall back to conservative values.
+  \item \textbf{Auditability}: the scalar must be accompanied by intermediate components so
+  disagreements are diagnosable (jitter vs skew vs phase alignment, etc.).
+\end{enumerate}
+
+\subsection{$\phiratio$-Coherence $\phiC$ (timing + phase alignment)}
+\subsubsection{Context and RS basis}
+RS treats ``coherence'' operationally as a property of \emph{phase-consistent ledger evolution}:
+phase alignment is what makes interference constructive rather than destructive, and low jitter is
+what makes phase alignment reproducible (not a one-off accident). In the fusion control setting,
+this translates to:
+\begin{itemize}
+  \item \textbf{Temporal coherence}: events occur when they are supposed to occur (low timing jitter).
+  \item \textbf{Cross-channel coherence}: channels agree on a shared phase (high phase alignment).
+  \item \textbf{Low skew}: channel-to-channel timing offsets remain small (so phases do not shear).
+\end{itemize}
+We encode these as three components and multiply them, forcing all three to be high if $\phiC$ is
+to be high.
+
+\subsubsection{Data sources and required signals}
+The required inputs per shot are:
+\begin{itemize}
+  \item \textbf{Expected event times} (seconds): derived from the schedule table (what we asked the
+  hardware to do).
+  \item \textbf{Measured event times} (seconds): derived from timing logs (what the hardware did).
+  \item \textbf{Channel phases} (radians): per channel, measured at the relevant window (for
+  example: at/near peak compression or the burn-relevant sub-window).
+  \item \textbf{Optional channel time offsets} (seconds): per-channel timing offsets relative to
+  a reference channel (or a common trigger).
+  \item \textbf{Two scale parameters}: \texttt{jitterScale} and \texttt{skewScale} setting the
+  scale at which timing errors should significantly reduce coherence.
+\end{itemize}
+
+\subsubsection{Definition: timing-jitter term (RMS error)}
+We compute the pairwise timing error between expected and measured times, then take RMS. The
+implementation intentionally truncates to the shorter list to remain robust to partial logs.
+
+\subsubsection{Definition: phase alignment term (mean resultant length)}
+For phases $\theta_1,\dots,\theta_n$, define the mean resultant length
+\[
+R := \frac{1}{n}\sqrt{\left(\sum_{k=1}^n \cos \theta_k\right)^2+\left(\sum_{k=1}^n \sin \theta_k\right)^2}\in[0,1].
+\]
+This is a standard circular-statistics coherence measure: $R=1$ means perfect alignment, and
+$R\approx 0$ means phases are effectively random.
+
+\subsubsection{Definition: cross-channel skew term}
+We compute RMS over the optional channel offsets list. If no offsets are provided, skew defaults
+to $0$ and the skew score defaults to $1$ (i.e.\ ``no evidence of skew'' is treated as neutral).
+
+\subsubsection{Normalization, scoring, and bounds}
+We convert RMS errors to bounded scores using a quadratic penalty:
+\[
+\texttt{timingScore}=\frac{1}{1+(j_{\mathrm{rms}}/s_j)^2},\qquad
+\texttt{skewScore}=\frac{1}{1+(s_{\mathrm{rms}}/s_s)^2},
+\]
+then combine:
+\[
+\phiC := \mathrm{clamp}_{[0,1]}\big(R\cdot \texttt{timingScore}\cdot \texttt{skewScore}\big).
+\]
+The quadratic form is deliberate: it punishes large violations strongly while not overreacting to
+small measurement noise; it also matches the intended ``jitter robustness'' scaling used elsewhere
+in the project.
+
+\subsubsection{Lean formalization (executable interface)}
+The facility-facing implementation is written as an executable Lean module (Float-level), so the
+same computation can be re-run deterministically for audit:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/Executable/Interfaces.lean
+def clamp01 (x : Float) : Float :=
+  if x < 0.0 then 0.0 else if x > 1.0 then 1.0 else x
+
+def rms (xs : List Float) : Float :=
+  match xs.length with
+  | 0 => 0.0
+  | n =>
+      let meanSq := xs.foldl (fun acc x => acc + x * x) 0.0 / n.toFloat
+      Float.sqrt meanSq
+
+def timingErrors (expected measured : List Float) : List Float :=
+  match expected, measured with
+  | e :: es, m :: ms => (m - e) :: timingErrors es ms
+  | _, _ => []
+
+def meanResultantLength (phases : List Float) : Float :=
+  match phases.length with
+  | 0 => 0.0
+  | n =>
+      let cosSum := phases.foldl (fun acc θ => acc + Float.cos θ) 0.0
+      let sinSum := phases.foldl (fun acc θ => acc + Float.sin θ) 0.0
+      clamp01 (Float.sqrt (cosSum * cosSum + sinSum * sinSum) / n.toFloat)
+
+structure PhiCoherenceInput where
+  expectedTimes : List Float
+  measuredTimes : List Float
+  channelPhases : List Float
+  channelTimeOffsets : List Float := []
+  jitterScale : Float := 1e-12
+  skewScale : Float := 1e-12
+
+structure PhiCoherenceOutput where
+  jitterRMS : Float
+  skewRMS : Float
+  phaseAlignment : Float
+  phiCoherence : Float
+
+def computePhiCoherence (input : PhiCoherenceInput) : PhiCoherenceOutput :=
+  let errs := timingErrors input.expectedTimes input.measuredTimes
+  let jrms := rms errs
+  let srms := rms input.channelTimeOffsets
+  let phaseAlign := meanResultantLength input.channelPhases
+  let timingScore :=
+    if input.jitterScale > 0 then
+      1.0 / (1.0 + (jrms / input.jitterScale) * (jrms / input.jitterScale))
+    else 0.0
+  let skewScore :=
+    if input.skewScale > 0 then
+      1.0 / (1.0 + (srms / input.skewScale) * (srms / input.skewScale))
+    else 0.0
+  let phiC := clamp01 (phaseAlign * timingScore * skewScore)
+  ⟨jrms, srms, phaseAlign, phiC⟩
+\end{lstlisting}
+
+\subsubsection{Uncertainty propagation and stability under missing data}
+We do \emph{not} attempt to propagate full covariance structures in this paper. Instead, we
+require that each shot log the intermediate components \texttt{jitterRMS}, \texttt{skewRMS}, and
+\texttt{phaseAlignment} alongside $\phiC$. This makes uncertainty and failure modes explicit:
+if $\phiC$ is low, we can attribute it to (i) timing jitter, (ii) skew, or (iii) phase disorder.
+
+\subsubsection{Control objectives: what it means to ``increase $\phiC$''}
+Operationally, ``increase $\phiC$'' means:
+\begin{itemize}
+  \item reduce \texttt{jitterRMS} at fixed schedule (\emph{timing stabilization}),
+  \item reduce \texttt{skewRMS} across channels (\emph{cross-channel sync}),
+  \item increase \texttt{phaseAlignment} at the burn-relevant window (\emph{phase locking}).
+\end{itemize}
+In RS terms, this is the facility’s attempt to create an uncommitted ledger evolution with
+minimal destructive interference prior to commitment.
+
+\subsection{Ledger Synchronization $\ledgerSync$ (diagnostics $\to$ ratios $\to$ ledger)}
+\subsubsection{Context and RS basis}
+In RS, ledger structure is double-entry and conservation-like: stable evolution requires that
+imbalances are minimized or cycle-cancelled. In ICF-style fusion control, the most salient
+macroscopic manifestation of ``ledger imbalance'' is asymmetry in the implosion/burn geometry.
+We therefore define a ledger-like scalar from diagnostic mode ratios, and convert it into a
+dimensionless synchronization score $\ledgerSync \in [0,1]$.
+
+\subsubsection{Diagnostics-to-ratios calibration model}
+The facility observes raw diagnostic values (e.g.\ mode amplitudes for $P_2,P_4,\dots$) and must
+map them to \emph{dimensionless ratios} where the ideal value maps to $1$. The general bridge
+structure (with calibration versioning and uncertainty) is:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/DiagnosticsBridge.lean
+structure Calibration where
+  version : String
+  toRatio : DiagnosticMode → ℝ → ℝ
+  monotone : ∀ m x y, x ≤ y → toRatio m x ≤ toRatio m y
+  ideal_maps_to_one : ∀ m, toRatio m 0 = 1
+  uncertainty : ℝ
+  uncertainty_pos : 0 < uncertainty
+  uncertainty_small : uncertainty ≤ 0.1
+
+def measurementToRatios (cfg : BridgeConfig) (meas : DiagnosticMeasurement) :
+    DiagnosticMode → ℝ :=
+  fun m => cfg.calibration.toRatio m (meas.rawValues m)
+
+def diagnosticLedger (cfg : BridgeConfig) (meas : DiagnosticMeasurement) : ℝ :=
+  cfg.modes.foldl (fun acc m =>
+    acc + cfg.weights m * Cost.Jcost (measurementToRatios cfg meas m)
+  ) 0
+\end{lstlisting}
+
+For live operations, we use a minimal affine calibration model (ratio $= 1 + g\cdot \texttt{raw}$)
+when a full calibration map is not yet available.
+
+\subsubsection{Ledger computation (weights, ratios, $\Jcost$)}
+Given weights $w_i>0$ and ratios $r_i$, define the executable ledger value
+\[
+\texttt{ledgerValue} = \sum_i w_i \, \Jcost(r_i).
+\]
+At the executable layer, $\Jcost$ is implemented as the Float analog of
+$\Jcost(x)=(x+1/x)/2-1$ for $x>0$.
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/Executable/Interfaces.lean
+structure LedgerInput where
+  weights : List Float
+  ratios : List Float
+
+structure LedgerOutput where
+  ledgerValue : Float
+  passed : Bool
+  threshold : Float
+
+def jCostFloat (x : Float) : Float :=
+  if x > 0 then (x + 1/x) / 2 - 1 else 0
+
+def computeLedger (input : LedgerInput) (threshold : Float) : LedgerOutput :=
+  let pairs := input.weights.zip input.ratios
+  let ledgerVal := pairs.foldl (fun acc (w, r) => acc + w * jCostFloat r) 0.0
+  ⟨ledgerVal, ledgerVal ≤ threshold, threshold⟩
+\end{lstlisting}
+
+\subsubsection{Normalization to $[0,1]$ and interpretation}
+We map \texttt{ledgerValue} to a dimensionless synchronization score:
+\[
+\ledgerSync := \mathrm{clamp}_{[0,1]}\!\left(\frac{1}{1+\texttt{ledgerValue}/\Lambda}\right),
+\]
+where $\Lambda>0$ sets the scale at which ledger deviations become ``significant''. This map has
+the correct limiting behavior: \texttt{ledgerValue}$=0$ gives $\ledgerSync=1$, and very large
+\texttt{ledgerValue} drives $\ledgerSync\to 0$.
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/Executable/Interfaces.lean
+structure AffineRatioCalibration where
+  gains : List Float
+
+def applyAffineCalibration (cal : AffineRatioCalibration) (raw : List Float) : List Float :=
+  match cal.gains, raw with
+  | g :: gs, x :: xs => (1.0 + g * x) :: applyAffineCalibration ⟨gs⟩ xs
+  | _, _ => []
+
+structure LedgerSyncInput where
+  weights : List Float
+  ratios : List Float := []
+  rawValues : List Float := []
+  calibration : AffineRatioCalibration := ⟨[]⟩
+  threshold : Float := 0.1
+  ledgerScale : Float := 0.1
+
+structure LedgerSyncOutput where
+  ledgerValue : Float
+  passed : Bool
+  ledgerSync : Float
+
+def computeLedgerSync (input : LedgerSyncInput) : LedgerSyncOutput :=
+  let ratios :=
+    if input.ratios.isEmpty then
+      applyAffineCalibration input.calibration input.rawValues
+    else
+      input.ratios
+  let ledgerOut := computeLedger ⟨input.weights, ratios⟩ input.threshold
+  let Λ := input.ledgerScale
+  let sync :=
+    if Λ > 0 then clamp01 (1.0 / (1.0 + ledgerOut.ledgerValue / Λ)) else 0.0
+  ⟨ledgerOut.ledgerValue, ledgerOut.passed, sync⟩
+\end{lstlisting}
+
+\subsubsection{Uncertainty, drift, and calibration versioning}
+Unlike $\phiC$, \texttt{ledgerSync} depends heavily on diagnostic calibration. Therefore every
+shot must carry:
+\begin{itemize}
+  \item a \textbf{calibration version string} (so ratios are reproducible),
+  \item a stated \textbf{uncertainty envelope} for the calibration (fractional),
+  \item and the raw diagnostic values used to compute the ratios.
+\end{itemize}
+This turns calibration into an explicit seam rather than an implicit source of irreproducibility.
+
+\subsubsection{Control objectives: what it means to ``increase $\ledgerSync$''}
+Operationally, ``increase $\ledgerSync$'' means decreasing \texttt{ledgerValue} while staying
+within the facility’s PASS envelope. In RS terms, we are driving the macroscopic dynamics toward
+a more balanced ledger configuration, which is precisely what the barrier reduction model treats
+as synchronization.
+
+\section{Barrier Scale and Temperature Efficiency Lever}
+The previous section defined two facility-level scalars $\phiC$ and $\ledgerSync$. This section
+defines how those scalars enter the \emph{effective recognition barrier} and explains the central
+applied consequence:
+\begin{quote}
+\textbf{Coherence can be traded for temperature/drive.} Increasing coherence reduces the effective
+barrier exponent, and under a standard $\eta(T)\propto 1/\sqrt{T}$ proxy this implies a concrete
+scaling $T_{\mathrm{needed}}=\barrierScale^2 T_{\mathrm{classical}}$.
+\end{quote}
+
+The value of stating the result in this form is operational: it gives an explicit step-down rule
+for live runs. You do not need to guess how much to reduce drive energy after improving coherence;
+you can compute $\barrierScale$ shot-by-shot and apply the predicted $\barrierScale^2$ factor,
+then measure when yield begins to degrade.
+
+\subsection{Barrier scale design space}
+\subsubsection{Why choose $\barrierScale = 1/(1+\phiC+\ledgerSync)$}
+We define a \emph{barrier scale} $\barrierScale$ that multiplies a baseline classical barrier proxy
+$\eta$:
+\[
+\eta_{\mathrm{RS}} := \barrierScale \,\eta.
+\]
+Here $\barrierScale$ is \emph{not} a probability; it is a dimensionless multiplier. The model is
+constructed so that:
+\begin{itemize}
+  \item $\barrierScale=1$ means \textbf{no RS barrier reduction} (completely incoherent/unsynchronized).
+  \item Larger coherence/synchronization should \textbf{reduce} the effective barrier, i.e.\ make
+  $\barrierScale$ \textbf{smaller}.
+  \item The map should be bounded and saturating: coherence can help a lot but cannot drive the
+  barrier negative.
+\end{itemize}
+
+The simplest monotone bounded choice that is symmetric in the two levers and has the correct
+limiting behavior is:
+\[
+\barrierScale(\phiC,\ledgerSync)=\frac{1}{1+\phiC+\ledgerSync}.
+\]
+This choice is not claimed to be uniquely forced by mathematics; it is an \emph{applied model
+choice} with three pragmatic benefits:
+\begin{enumerate}
+  \item \textbf{Monotonic and bounded}: $\barrierScale\in(0,1]$ automatically, with no tuning.
+  \item \textbf{Additive contributions}: $\phiC$ and $\ledgerSync$ contribute additively inside the
+  denominator, which is identifiable experimentally by varying one while holding the other fixed.
+  \item \textbf{Direct temperature scaling}: the algebra leads to a clean $S^2$ temperature/drive
+  trade (derived below).
+\end{enumerate}
+
+\subsubsection{Alternative monotone forms and identifiability}
+Any monotone bounded map with $\barrierScale(0,0)=1$ could be used (e.g.\ $\exp(-k(\phiC+\ledgerSync))$
+or $1/(1+k_1\phiC+k_2\ledgerSync)$). Empirically, the choice is determined by which functional form
+best linearizes the relationship between measured yield and the inferred effective exponent. For
+this paper, we intentionally choose the lowest-complexity form and treat deviations as empirical
+signal (to be captured by calibration updates rather than by speculative functional inflation).
+
+\subsubsection{Bounds, pathological inputs, and clamping policies}
+At the facility interface layer, inputs are clamped to $[0,1]$ and the denominator is guarded so
+that malformed inputs cannot create negative or infinite barrier scales. This is an engineering
+safety requirement: it ensures the run-control system never receives undefined values.
+
+\subsubsection{Lean formalization (executable barrier scale and $S^2$ lever)}
+The executable implementation used for run-time computation is:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/Executable/Interfaces.lean
+structure RSCoherenceInput where
+  phiCoherence : Float
+  ledgerSync : Float
+
+structure RSBarrierScaleOutput where
+  barrierScale : Float
+
+def computeRSBarrierScale (input : RSCoherenceInput) : RSBarrierScaleOutput :=
+  let denom := 1.0 + input.phiCoherence + input.ledgerSync
+  let s := if denom > 0 then 1.0 / denom else 1.0
+  ⟨s⟩
+
+def temperatureScaleFromBarrier (barrierScale : Float) : Float :=
+  barrierScale * barrierScale
+
+def effectiveTemperatureGain (barrierScale : Float) : Float :=
+  let s2 := barrierScale * barrierScale
+  if s2 > 0 then 1.0 / s2 else 0.0
+
+structure RSShotEfficiencyOutput where
+  phiCoherence : Float
+  ledgerSync : Float
+  barrierScale : Float
+  temperatureScale : Float   -- S^2
+  effectiveTempGain : Float  -- 1/S^2
+
+def computeRSShotEfficiency (phiC : Float) (ledgerS : Float) : RSShotEfficiencyOutput :=
+  let s := (computeRSBarrierScale ⟨phiC, ledgerS⟩).barrierScale
+  let s2 := temperatureScaleFromBarrier s
+  let gain := effectiveTemperatureGain s
+  ⟨phiC, ledgerS, s, s2, gain⟩
+\end{lstlisting}
+
+\subsection{Effective exponent and probability proxy}
+\subsubsection{Baseline barrier proxy $\eta$ and RS-effective exponent}
+Let $\eta$ denote any classical barrier-cost proxy that enters reaction rates exponentially (for
+example, a Gamow-like exponent for Coulomb suppression). RS uses the \emph{same} baseline proxy
+but modifies it by a coherence-dependent multiplier:
+\[
+\eta_{\mathrm{RS}} = \barrierScale(\phiC,\ledgerSync)\,\eta.
+\]
+This is the applied statement that coherence reduces the effective recognition barrier. It is
+precisely the same mathematical structure we formalized in the fusion reaction network model,
+where $\eta$ is \texttt{gamowExponent} and $\eta_{\mathrm{RS}}$ is \texttt{rsGamowExponent}:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/ReactionNetworkRates.lean
+structure RSCoherenceParams where
+  phiCoherence : ℝ
+  phiCoherence_nonneg : 0 ≤ phiCoherence
+  phiCoherence_le_one : phiCoherence ≤ 1
+  ledgerSync : ℝ
+  ledgerSync_nonneg : 0 ≤ ledgerSync
+  ledgerSync_le_one : ledgerSync ≤ 1
+
+def rsBarrierScale (c : RSCoherenceParams) : ℝ :=
+  1 / (1 + c.phiCoherence + c.ledgerSync)
+
+def rsGamowExponent (c : RSCoherenceParams) (params : GamowParams)
+    (cfgA cfgB : NuclearConfig) : ℝ :=
+  rsBarrierScale c * gamowExponent params cfgA cfgB
+
+def rsTunnelingProbability (c : RSCoherenceParams) (params : GamowParams)
+    (cfgA cfgB : NuclearConfig) : ℝ :=
+  Real.exp (-rsGamowExponent c params cfgA cfgB)
+\end{lstlisting}
+
+\subsubsection{What the exponential means in RS}
+In RS terms, the exponential is not ``wavefunction leakage''; it is a compact way of stating that
+\emph{commitment probability concentrates on low-cost paths}. When the effective barrier cost is
+reduced, the ledger can commit with higher probability per unit opportunity (per unit time,
+per unit attempt, or per unit exposure of the relevant state manifold). The exact meaning of
+``unit attempt'' is facility-dependent; the prediction is about monotone ordering and scaling.
+
+\subsection{Temperature trade}
+\subsubsection{Why $\eta(T)\propto 1/\sqrt{T}$ is the right first-order proxy}
+In a wide class of barrier-limited processes (including Coulomb-suppressed fusion in the nonresonant
+regime), the dominant temperature dependence of the suppression exponent scales approximately like
+\[
+\eta(T) \approx \frac{K}{\sqrt{T}},
+\]
+for some effective constant $K$ (absorbing charges, reduced mass, and other slowly varying terms).
+This is not a claim that cross sections are exactly $K/\sqrt{T}$; it is a claim about the leading
+dependence of the barrier exponent entering the exponential weight.
+
+\subsubsection{Derivation of the $T\mapsto \barrierScale^2 T$ lever}
+Assume the baseline barrier proxy satisfies $\eta(T)=K/\sqrt{T}$. Then the RS-effective exponent is
+\[
+\eta_{\mathrm{RS}}(T)=\barrierScale\frac{K}{\sqrt{T}}.
+\]
+Define an \emph{effective classical temperature} $T_{\mathrm{eff}}$ that would yield the same exponent
+without RS barrier reduction:
+\[
+\eta(T_{\mathrm{eff}})=\eta_{\mathrm{RS}}(T).
+\]
+Substitute $\eta(T)=K/\sqrt{T}$:
+\[
+\frac{K}{\sqrt{T_{\mathrm{eff}}}}=\barrierScale\frac{K}{\sqrt{T}}
+\quad\Longrightarrow\quad
+\sqrt{T_{\mathrm{eff}}}=\frac{\sqrt{T}}{\barrierScale}
+\quad\Longrightarrow\quad
+T_{\mathrm{eff}}=\frac{T}{\barrierScale^2}.
+\]
+Equivalently, to match a classical run at temperature $T_{\mathrm{classical}}$ while applying RS barrier
+reduction $\barrierScale$, you can reduce temperature to:
+\[
+T_{\mathrm{needed}}=\barrierScale^2\,T_{\mathrm{classical}}.
+\]
+
+\subsubsection{Interpretation and magnitude}
+Two equivalent ways to use the formula operationally:
+\begin{itemize}
+  \item \textbf{Effective-temperature view}: at a fixed physical temperature $T$, raising coherence
+  (reducing $\barrierScale$) increases $T_{\mathrm{eff}}$ as $1/\barrierScale^2$.
+  \item \textbf{Step-down view}: after increasing coherence to achieve $\barrierScale$, reduce
+  temperature/drive by $\barrierScale^2$ and test whether yield holds.
+\end{itemize}
+Example: if $\phiC=\ledgerSync=1$, then $\barrierScale=1/3$, so
+$T_{\mathrm{needed}}=(1/9)\,T_{\mathrm{classical}}$ and $T_{\mathrm{eff}}=9T$.
+
+\subsubsection{What would falsify this scaling}
+Because this is an applied scaling law (not an identity), falsification is straightforward:
+if controlled experiments show that yield does \emph{not} remain approximately invariant under the
+predicted step-down $T\mapsto \barrierScale^2T$ when $\barrierScale$ is increased (and all other knobs
+are held fixed within uncertainty), then either (i) $\eta(T)\propto 1/\sqrt{T}$ is not the correct
+dominant proxy for the regime, (ii) the operational coherence metrics do not track the true RS
+barrier reduction, or (iii) the barrier reduction is not multiplicative in the way modeled. Each
+failure mode is actionable and leads to a specific refinement of the experimental program.
+
+\subsection{Predicted efficiency surfaces}
+\subsubsection{Holding classical knobs fixed: what must remain constant}
+For the $S^2$ scaling to be interpretable, the experiment must hold fixed (as tightly as the facility
+allows) the non-coherence variables that also affect yield: target family, geometry, fill, compression,
+and baseline drive shape. If these drift with $\barrierScale$, the observed effect will be confounded.
+
+\subsubsection{Trading $\barrierScale$ vs temperature/drive energy}
+At the most basic level, this section predicts a one-parameter family of equivalence classes:
+\[
+(T,\barrierScale)\sim(T',1)\quad\text{if}\quad T'=\frac{T}{\barrierScale^2}.
+\]
+In practice, we do not assume perfect equivalence; we use it as a \emph{control law} to choose the
+next shot’s temperature/drive step after measuring coherence improvements in the current shot.
+
+\section{Run Protocol: Turning Coherence into Measured Temperature Efficiency}
+This paper makes a sharp applied claim: once we can compute $\phiC$ and $\ledgerSync$ reliably,
+we can compute $\barrierScale$ and \emph{use it as a control variable}. The claim is not complete
+until we describe how a facility turns that variable into measured efficiency. That is the purpose
+of this section.
+
+The run protocol is designed to do two things simultaneously:
+\begin{enumerate}
+  \item \textbf{Identify causal effect}: show that increasing coherence (as measured by
+  $\phiC,\ledgerSync$) produces a predictable shift in yield/ignition behavior at fixed classical
+  conditions.
+  \item \textbf{Convert effect into efficiency}: use the predicted $S^2$ scaling to reduce
+  temperature/drive and determine the practical operating envelope.
+\end{enumerate}
+We emphasize that the protocol is \emph{scientific}: it is constructed to distinguish RS-driven
+effects from confounds. It is not a device-construction recipe.
+
+\subsection{Design principles for causal attribution}
+\subsubsection{Confound control: why randomization is mandatory}
+Fusion shots are high-variance. Many slow variables drift: alignment, calibration, hardware
+conditioning, target variability, and environment. If we simply ``turn on coherence control'' and
+observe higher yield later, we will have learned nothing. Therefore, within any run block we must
+randomize the order of conditions so that drift averages out.
+
+The minimum design is an A/B randomized block:
+\begin{itemize}
+  \item \textbf{A (baseline)}: nominal schedule/control (no coherence pumping beyond baseline).
+  \item \textbf{B (coherence-enhanced)}: modified schedule/control intended to increase
+  $\phiC$ and/or $\ledgerSync$.
+\end{itemize}
+Within a block of $2N$ shots, randomly permute the $N$ baseline and $N$ enhanced conditions.
+
+\subsubsection{Negative controls (``break the mechanism'')}
+To validate that the mechanism is actually coherence-mediated, include negative controls that
+target the coherence pathways directly:
+\begin{itemize}
+  \item \textbf{Timing shuffle}: deliberately decorrelate event timing relative to the expected
+  schedule. This should reduce $\phiC$ while leaving classical energy roughly unchanged.
+  \item \textbf{Phase detune}: deliberately reduce channel phase alignment at the burn-relevant
+  window. This should reduce $\phiC$ primarily through the phase-alignment term.
+  \item \textbf{Symmetry scramble}: introduce controlled asymmetry (or stop symmetry corrections)
+  to increase ledger value and reduce $\ledgerSync$.
+\end{itemize}
+If these controls reduce $\barrierScale$ in the \emph{wrong} direction (i.e.\ do not reduce
+coherence metrics, or do not reduce yield as predicted), the bridge from facility signals to
+coherence variables must be reconsidered.
+
+\subsubsection{Safety envelopes and abort criteria}
+Any coherence experiment must remain within safety/operability envelopes. In the RS formalism,
+that envelope is expressed as a certificate-style PASS predicate based on the symmetry ledger and
+per-mode bounds. The (Lean) certificate structure ties together the scheduler and the ledger:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/Certificate.lean
+structure Certificate (Actuator Mode : Type _) [Fintype Mode] [DecidableEq Mode]
+    (L : ℕ) where
+  scheduler : PhiScheduler Actuator L
+  ledgerCfg : LedgerConfig (Mode := Mode)
+  bounds : ModeThresholds (Mode := Mode)
+  ledgerThreshold : ℝ
+  ledgerThreshold_nonneg : 0 ≤ ledgerThreshold
+
+namespace Certificate
+variable (cert : Certificate (Actuator := Actuator) (Mode := Mode) L)
+
+def passes (ratios : ModeRatios (Mode := Mode)) : Prop :=
+  Fusion.pass cert.ledgerCfg cert.bounds cert.ledgerThreshold ratios
+\end{lstlisting}
+
+Operationally, this means: the run protocol may vary coherence controls only within a region where
+ledger-based PASS criteria remain satisfied (or where abort criteria are triggered).
+
+\subsection{Shot record schema and auditability}
+\subsubsection{Why the shot record is part of the scientific claim}
+Because $\phiC$ and $\ledgerSync$ are computed from facility logs, the scientific unit of analysis
+is the \emph{shot record}, not just the final yield. Every shot must be replayable: a third party
+should be able to recompute $\phiC$, $\ledgerSync$, and $\barrierScale$ from the recorded inputs.
+
+\subsubsection{Scheduler trace: what must be logged}
+The schedule is not just ``a planned waveform''; it is a sequence of events with timestamps,
+actuator assignments, and jitter compliance. The scheduler formalization makes explicit what must
+be recorded:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/Scheduler.lean
+structure PhiScheduler (Actuator : Type _) (L : ℕ)
+    extends PhiWindowSpec L where
+  assignment : Actuator → Finset (Fin L)
+  jitterBound : ℝ
+  jitter_nonneg : 0 ≤ jitterBound
+
+namespace PhiScheduler
+structure Update (Actuator : Type _) (L : ℕ) where
+  actuator : Actuator
+  window : Fin L
+  timestamp : ℝ
+
+def respectsAssignment (trace : List (Update Actuator L)) : Prop :=
+  ∀ e ∈ trace, (e.window ∈ (sched.assignment e.actuator))
+
+def jitterBounded (trace : List (Update Actuator L)) : Prop :=
+  ∀ u v, (u, v) ∈ trace.zipWith Prod.mk trace.tail →
+    |v.timestamp - u.timestamp| ≤ sched.jitterBound
+\end{lstlisting}
+
+In practice, the facility logs \texttt{Update} events. The paper's requirement is simple: the
+logged trace must be sufficient to validate (i) assignment compliance and (ii) jitter boundedness.
+
+\subsubsection{Diagnostics record: raw values, calibration version, ratios}
+For ledgerSync we require a diagnostic record that includes raw values and the calibration version
+used to map raw values to ratios. (The calibration is a first-class seam; it is not hidden.)
+
+\subsubsection{Metric record: intermediate components}
+For $\phiC$, we require intermediate components \texttt{jitterRMS}, \texttt{skewRMS}, and
+\texttt{phaseAlignment}. For $\ledgerSync$, we require \texttt{ledgerValue} and the parameters used
+for normalization (weights, threshold, ledgerScale).
+
+\subsubsection{Certificate bundles for reproducibility}
+The executable interface provides a simple JSON-like certificate bundle representation. This is
+how the facility exports the computation in a structured and replayable format:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/Executable/Interfaces.lean
+structure CertificateBundle where
+  moduleName : String
+  version : String := "1.0"
+  timestamp : String
+  inputHash : String
+  outputs : List (String × String)
+  passed : Bool
+  theoremRef : String
+
+def certifyPhiCoherence (input : PhiCoherenceInput) : CertificateBundle :=
+  let out := computePhiCoherence input
+  ⟨"PhiCoherence", "1.0", "2026-01-21",
+   s!"n={input.measuredTimes.length},channels={input.channelPhases.length}",
+   [("jitterRMS", toString out.jitterRMS),
+    ("skewRMS", toString out.skewRMS),
+    ("phaseAlignment", toString out.phaseAlignment),
+    ("phiCoherence", toString out.phiCoherence)],
+   out.phiCoherence ≥ 0.0,
+   "Executable metric (facility-calibrated)"⟩
+
+def certifyLedgerSync (input : LedgerSyncInput) : CertificateBundle :=
+  let out := computeLedgerSync input
+  ⟨"LedgerSync", "1.0", "2026-01-21",
+   s!"modes={input.weights.length}",
+   [("ledgerValue", toString out.ledgerValue),
+    ("passed", toString out.passed),
+    ("ledgerSync", toString out.ledgerSync)],
+   out.ledgerSync ≥ 0.0,
+   "Executable metric derived from ledger"⟩
+\end{lstlisting}
+
+\subsection{Controlled step-down experiment (the efficiency move)}
+\subsubsection{Goal and invariants}
+\textbf{Goal:} quantify how much temperature/drive energy can be reduced without yield loss, as a
+function of $\barrierScale$.
+
+\textbf{Invariants:} in a step-down block we hold fixed (as tightly as possible) the classical
+non-coherence variables that also influence yield: target family, geometry, fill, compression, and
+baseline drive shape.
+
+\subsubsection{Procedure}
+The procedure is:
+\begin{enumerate}
+  \item \textbf{Baseline characterization}: run a randomized A/B block at fixed temperature/drive
+  to estimate how much $\barrierScale$ can be improved by coherence controls alone.
+  \item \textbf{Compute $\barrierScale$}: for each shot, compute $\phiC,\ledgerSync,\barrierScale$ and
+  record them with certificate bundles.
+  \item \textbf{Apply the predicted step}: once a stable improved $\barrierScale$ is achieved,
+  reduce temperature/drive by the factor $\barrierScale^2$ (Section ``Barrier Scale'').
+  \item \textbf{Stop at degradation}: continue stepping down until yield proxy drops outside a
+  pre-registered tolerance band; record the break point.
+\end{enumerate}
+This converts the theory into an empirical efficiency curve: maximal achievable step-down as a
+function of realized $\barrierScale$.
+
+\subsection{Minimal analysis plan (explicit, robust)}
+\subsubsection{Primary endpoints}
+Choose one primary yield proxy $Y$ (facility-specific), and treat all other signals as secondary.
+The protocol is robust only if endpoints are pre-registered and not post-hoc selected.
+
+\subsubsection{Core scaling check}
+If the dominant barrier proxy behaves as $\eta(T)\approx K/\sqrt{T}$ and the RS effect is
+multiplicative, then yield should be approximately invariant under the transformation
+$T\mapsto \barrierScale^2 T$ at fixed $\barrierScale$ (within noise). Empirically, this can be
+tested by comparing (baseline) and (coherence-improved + step-down) conditions matched by the
+predicted effective temperature.
+
+\subsubsection{Robustness checks}
+Use negative controls (timing shuffle, phase detune, symmetry scramble) to confirm that the effect
+tracks the coherence variables rather than drifting classical parameters.
+
+\section{Implementation Notes and Code References}
+This section explains how to implement the paper's core ideas as an auditable facility workflow.
+The guiding principle is \textbf{separation of concerns}:
+\begin{itemize}
+  \item \textbf{Model layer (math, $\mathbb{R}$)}: the definitions and monotone theorems that
+  specify what the RS mechanism \emph{means}. This layer is where we state barrier scaling and the
+  directionality claims.
+  \item \textbf{Executable layer (facility, Float)}: deterministic computations on shot logs
+  producing $\phiC$, $\ledgerSync$, $\barrierScale$, and $\barrierScale^2$.
+  \item \textbf{Bridge layer (diagnostics \& calibration)}: how raw diagnostics become ratios and
+  then a ledger value with uncertainty/version tracking.
+  \item \textbf{Certificate layer (audit)}: how to package computations so that every shot is
+  replayable and reviewable.
+\end{itemize}
+The paper is scientifically meaningful only if the implementation makes it impossible to
+``hand-wave'' coherence: the computation must be explicit, logged, and re-runable.
+
+\subsection{Core RS primitive: the unique cost functional}
+Everything downstream is built on the unique symmetric convex cost:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Cost.lean
+namespace IndisputableMonolith
+namespace Cost
+
+noncomputable def Jcost (x : ℝ) : ℝ := (x + x⁻¹) / 2 - 1
+
+lemma Jcost_unit0 : Jcost 1 = 0 := by
+  simp [Jcost]
+\end{lstlisting}
+
+This is the reason the implementation uses \texttt{Jcost} everywhere: it is the canonical
+recognition cost (T5 uniqueness), so it is the correct object to use for ledgers, asymmetry costs,
+and barrier-cost proxies.
+
+\subsection{Symmetry ledger and PASS predicate (what ``safe to run'' means)}
+The certificate layer used in the run protocol ultimately reduces to two checks:
+\begin{enumerate}
+  \item a global bound on the \textbf{ledger value} (sum of weighted per-mode costs),
+  \item and per-mode upper bounds on ratios (\textbf{withinThresholds}).
+\end{enumerate}
+These are defined at the math layer as:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/SymmetryLedger.lean
+structure LedgerConfig where
+  weights : Mode → ℝ
+  weights_nonneg : ∀ m, 0 ≤ weights m
+
+structure ModeRatios where
+  ratio : Mode → ℝ
+  ratio_pos : ∀ m, 0 < ratio m
+
+def ledger (cfg : LedgerConfig (Mode := Mode)) (r : ModeRatios (Mode := Mode)) : ℝ :=
+  ∑ m, cfg.weights m * Cost.Jcost (r.ratio m)
+
+structure ModeThresholds where
+  upper : Mode → ℝ
+  upper_nonneg : ∀ m, 0 ≤ upper m
+
+def withinThresholds (bounds : ModeThresholds (Mode := Mode))
+    (r : ModeRatios (Mode := Mode)) : Prop :=
+  ∀ m, r.ratio m ≤ bounds.upper m
+
+def pass (cfg : LedgerConfig (Mode := Mode))
+    (bounds : ModeThresholds (Mode := Mode)) (Λ : ℝ)
+    (r : ModeRatios (Mode := Mode)) : Prop :=
+  ledger cfg r ≤ Λ ∧ withinThresholds bounds r
+\end{lstlisting}
+
+This is the formal meaning of ``PASS'' in the fusion-control stack. In practice, the facility
+computes the Float-level ledger value (Section ``Operational Coherence Variables'') for speed, but
+the semantics are the same: the run is considered within envelope if the ledger is below a declared
+threshold and each mode ratio remains within a per-mode tolerance.
+
+\subsection{Diagnostics bridge (how raw measurements become ratios)}
+The diagnostics bridge exists because experimental systems do not directly output dimensionless
+ratios. Instead, they output raw mode amplitudes or deviations. The bridge formalization makes the
+calibration seam explicit and versioned, so the analysis cannot silently change later:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/DiagnosticsBridge.lean
+structure Calibration where
+  version : String
+  toRatio : DiagnosticMode → ℝ → ℝ
+  monotone : ∀ m x y, x ≤ y → toRatio m x ≤ toRatio m y
+  ideal_maps_to_one : ∀ m, toRatio m 0 = 1
+  uncertainty : ℝ
+  uncertainty_pos : 0 < uncertainty
+  uncertainty_small : uncertainty ≤ 0.1
+
+def diagnosticLedger (cfg : BridgeConfig) (meas : DiagnosticMeasurement) : ℝ :=
+  cfg.modes.foldl (fun acc m =>
+    acc + cfg.weights m * Cost.Jcost (measurementToRatios cfg meas m)
+  ) 0
+\end{lstlisting}
+
+Operational implication: every run analysis must include the calibration version and its stated
+uncertainty, otherwise $\ledgerSync$ is not interpretable.
+
+\subsection{Executable metrics and certificate bundles (what ships to the facility)}
+The facility does not need $\mathbb{R}$-level proofs in real time; it needs deterministic metrics
+computed from logs. The executable layer defines stable I/O structures and computations. The key
+artifact is a \textbf{certificate bundle} that makes the computation auditable:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/Executable/Interfaces.lean
+structure CertificateBundle where
+  moduleName : String
+  version : String := "1.0"
+  timestamp : String
+  inputHash : String
+  outputs : List (String × String)
+  passed : Bool
+  theoremRef : String
+\end{lstlisting}
+
+Each shot should emit certificate bundles for:
+\begin{itemize}
+  \item $\phiC$ (including \texttt{jitterRMS}, \texttt{skewRMS}, \texttt{phaseAlignment}),
+  \item $\ledgerSync$ (including \texttt{ledgerValue}, weights/threshold parameters),
+  \item $\barrierScale$ and $\barrierScale^2$ (temperature step-down factor).
+\end{itemize}
+
+\subsection{Certification artifacts (what must be logged and why)}
+\subsubsection{Required fields}
+At minimum, the certificate artifacts must contain:
+\begin{itemize}
+  \item \textbf{Input hash}: a deterministic hash of the raw inputs used to compute the metric.
+  \item \textbf{Outputs}: not only the scalar but also intermediate components (to localize failures).
+  \item \textbf{Versioning identifiers}: schedule hash, calibration version, and software version.
+  \item \textbf{PASS/FAIL}: whether the shot is within declared envelopes (ledger threshold and
+  per-mode bounds).
+\end{itemize}
+
+\subsubsection{Versioning: schedule hash + calibration version}
+The same nominal run can produce different computed coherence if the facility changes a calibration,
+a timing extraction rule, or a schedule table. Therefore, (i) the schedule table (or its hash), and
+(ii) the calibration version string are mandatory.
+
+\subsubsection{Deterministic replay and audit}
+The point of using executable Lean definitions is reproducible replay: given the logged inputs,
+every metric can be recomputed exactly, eliminating disputes about post-processing.
+
+\subsubsection{Auditability and failure modes}
+This architecture localizes failure:
+\begin{itemize}
+  \item If yield drops but $\phiC$ is high, inspect \texttt{phaseAlignment} vs jitter/skew to see
+  whether the ``high'' coherence is coming from timing rather than phase.
+  \item If $\ledgerSync$ drifts, the calibration version and uncertainty are explicit so the drift
+  can be attributed to physics vs calibration changes.
+  \item If a shot violates safety envelopes, the PASS predicate decomposes into a ledger bound and
+  per-mode bounds, allowing immediate diagnosis of which mode triggered abort.
+\end{itemize}
+
+\section{Limitations and Calibration Seams}
+This paper is intentionally explicit about what is \emph{structurally forced} by the RS framework
+versus what is an \emph{empirical seam} that must be calibrated at a particular facility. The
+difference matters operationally: forced structure determines what we should \emph{control} and what
+monotone relationships must hold; seams determine what we must \emph{measure, fit, and validate}.
+
+\subsection{Forced structure vs calibrated seams}
+\subsubsection{What is forced (directionality)}
+RS forces the directionality claim:
+\begin{quote}
+Increasing coherence and synchronization reduces the effective recognition barrier cost, and thus
+weakly increases commitment probability at fixed classical conditions.
+\end{quote}
+This paper encodes that directionality by construction (multiplicative barrier reduction) and uses
+formal monotonicity statements at the model layer (Section ``RS Framing'' and ``Barrier Scale'').
+Operationally: if our computed $\phiC$ and $\ledgerSync$ increase, the effective barrier exponent
+should not increase.
+
+\subsubsection{What is not forced (functional form and mapping)}
+Two parts are \textbf{not} forced by mathematics:
+\begin{enumerate}
+  \item The exact \emph{functional form} of $\barrierScale(\phiC,\ledgerSync)$.
+  \item The \emph{mapping from facility signals} (timing logs, diagnostic raw values) to the
+  operational scalars $\phiC$ and $\ledgerSync$.
+\end{enumerate}
+These are seams. They must be established by calibration and validation experiments (including
+negative controls) and may be revised as the facility learns.
+
+\subsection{Facility seams (measurement and calibration)}
+\subsubsection{Seam A: extracting phases and timestamps}
+The $\phiC$ computation requires phase angles and measured timestamps. The paper does not assume a
+unique method for phase extraction (Hilbert transform, PLL phase readout, heterodyne, etc.); it
+only requires that the method be consistent, logged, and stable under replay.
+
+\subsubsection{Seam B: scale parameters (jitterScale, skewScale)}
+The mapping from RMS timing errors to the bounded score is controlled by scale parameters. Those
+parameters are explicit in the executable interface, meaning they are part of the calibration
+surface:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/Executable/Interfaces.lean
+structure PhiCoherenceInput where
+  expectedTimes : List Float
+  measuredTimes : List Float
+  channelPhases : List Float
+  channelTimeOffsets : List Float := []
+  jitterScale : Float := 1e-12
+  skewScale : Float := 1e-12
+\end{lstlisting}
+
+Interpretation: the facility must choose a scale (or a schedule-dependent scale) such that the
+resulting $\phiC$ tracks meaningful changes rather than noise or instrument quantization.
+
+\subsubsection{Seam C: diagnostics-to-ratios calibration}
+Ledger synchronization depends on mapping diagnostic raw values to dimensionless ratios with the
+ideal mapping to $1$. This is an explicit calibration object with versioning and uncertainty:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/DiagnosticsBridge.lean
+structure Calibration where
+  version : String
+  toRatio : DiagnosticMode → ℝ → ℝ
+  monotone : ∀ m x y, x ≤ y → toRatio m x ≤ toRatio m y
+  ideal_maps_to_one : ∀ m, toRatio m 0 = 1
+  uncertainty : ℝ
+  uncertainty_pos : 0 < uncertainty
+  uncertainty_small : uncertainty ≤ 0.1
+\end{lstlisting}
+
+Limitation: if calibration drifts or the uncertainty envelope is wrong, $\ledgerSync$ becomes
+misleading. This is why calibration versions and raw values are mandatory in the shot record.
+
+\subsubsection{Seam D: ledger weights and normalization scale}
+The ledger value is a weighted sum of per-mode costs; the weights (and the scale used to map
+ledger value to $\ledgerSync$) are facility choices. They should be pre-registered for a given run
+campaign, then revised only through explicit version increments.
+
+\subsection{Model seams (physics approximations)}
+\subsubsection{Seam E: choice of $\barrierScale$ functional form}
+We chose $\barrierScale = 1/(1+\phiC+\ledgerSync)$ because it is monotone, bounded, and leads to a
+clean $S^2$ temperature/drive lever. This is not unique. If data strongly suggests a different
+functional form (e.g.\ different relative weights of $\phiC$ vs $\ledgerSync$), the model should be
+updated and the update versioned.
+
+\subsubsection{Seam F: multiplicative exponent assumption}
+The model assumes coherence reduces the effective barrier \emph{multiplicatively}:
+\[
+\eta_{\mathrm{RS}}=\barrierScale\,\eta.
+\]
+If experiments show the effect is additive in the exponent, saturating in a different way, or
+dependent on additional hidden variables, then the model must expand. This is not a failure of RS
+as an architecture; it is refinement of the applied proxy.
+
+\subsubsection{Seam G: regime validity of $\eta(T)\propto 1/\sqrt{T}$}
+The $T\mapsto \barrierScale^2 T$ lever depends on a standard approximation $\eta(T)\approx K/\sqrt{T}$.
+If the facility operates in a regime dominated by resonances, transport limits, hydrodynamic
+instabilities, or non-thermal distributions, that approximation may not capture the dominant
+temperature dependence. In that case, the correct lever is still ``coherence reduces barrier cost''
+but the temperature scaling exponent will differ and must be fitted.
+
+\subsection{Formal seam capsules in Lean (how we represent ``unknowns'')}
+To keep the formal stack honest, RS implementation uses two explicit patterns for seams:
+\begin{enumerate}
+  \item \textbf{Hypothesis capsules}: properties stated as \texttt{Prop} with explicit parameters.
+  \item \textbf{Calibration envelope hypotheses}: structures that must be populated by empirical
+  bounds before traceability claims can be derived.
+\end{enumerate}
+
+\subsubsection{Hypothesis capsules (control theory assumptions)}
+The fusion control formalization intentionally isolates assumptions that are not yet derived:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/Formal.lean
+def phi_interference_bound_hypothesis
+  {Actuator : Type _} {L : ℕ}
+  (S : InterferenceSetting (Actuator := Actuator) L)
+  (baseline : Baseline) : Prop :=
+  ∃ κ : ℝ, 0 < κ ∧ κ < 1
+
+def jitter_robust_feasibility_hypothesis
+  {Actuator : Type _} {L : ℕ}
+  (S : PhiScheduler Actuator L) : Prop :=
+  ∀ trace : List (PhiScheduler.Update Actuator L),
+    S.respectsAssignment trace → S.jitterBounded trace → ∃ exec : S.Execution, exec.trace = trace
+\end{lstlisting}
+
+Interpretation: these are \emph{explicitly named seams}. A facility can treat them as assumptions
+to be validated experimentally (for a given hardware stack), or as targets for deeper derivations.
+
+\subsubsection{Calibration envelope hypothesis (traceability from diagnostics to observables)}
+The bridge from ``ledger computed from ratios'' to ``observable asymmetry in measurements'' is
+encoded as an explicit envelope hypothesis:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/DiagnosticsBridge.lean
+structure TraceabilityHypothesis (cfg : BridgeConfig) where
+  lower_bound : ℝ
+  lower_bound_pos : 0 < lower_bound
+  upper_bound : ℝ
+  upper_bound_pos : 0 < upper_bound
+  offset : ℝ
+  offset_nonneg : 0 ≤ offset
+
+theorem traceability (cfg : BridgeConfig) (hyp : TraceabilityHypothesis cfg)
+    (meas1 meas2 : DiagnosticMeasurement)
+    (hLedgerDecrease : diagnosticLedger cfg meas2 ≤ diagnosticLedger cfg meas1) :
+    observableAsymmetry meas2 cfg.modes ≤
+    observableAsymmetry meas1 cfg.modes + hyp.offset / hyp.lower_bound := by
+  sorry
+\end{lstlisting}
+
+The presence of the \texttt{TraceabilityHypothesis} structure is the key point: it is the formal
+location where calibration bounds enter the proof stack. The \texttt{sorry} indicates that the full
+calibration envelope formalization is not yet completed in the repository and must be treated as
+an explicit seam (either proven later or replaced with empirically certified bounds).
+
+\subsection{How seams close (what to do when predictions fail)}
+If the predicted scaling fails (e.g.\ step-down by $\barrierScale^2$ causes yield loss earlier than
+expected), this does not automatically invalidate RS; it identifies which seam must be refined:
+\begin{itemize}
+  \item \textbf{If negative controls do not change $\phiC$ or yield}: phase/timing extraction is wrong.
+  \item \textbf{If $\phiC,\ledgerSync$ move but yield does not}: barrierScale functional form or multiplicative assumption is wrong.
+  \item \textbf{If the directionality reverses}: the metrics are not tracking the RS coherence variables.
+  \item \textbf{If the directionality holds but scaling exponent differs}: the regime violates $\eta(T)\propto 1/\sqrt{T}$; fit the correct exponent.
+\end{itemize}
+This is the core reason the paper insists on versioned calibration objects and deterministic replay:
+it allows scientific iteration without ambiguity about what changed.
+
+\section{Discussion and Future Work}
+This paper is written in a deliberately operational way: it defines coherence variables, defines a
+barrier scale, and defines a step-down rule. That structure makes it possible to state what counts
+as a scientific breakthrough, what should be attempted next, and how the program evolves if early
+results do not match the simplest scaling model.
+
+\subsection{What a ``breakthrough'' looks like in data}
+In this work, a breakthrough is not a single high-yield shot. It is a \emph{repeatable causal
+relationship} between:
+\[
+\text{coherence variables }(\phiC,\ledgerSync)\;\;\Rightarrow\;\;\barrierScale\;\;\Rightarrow\;\;\text{yield/ignition behavior}.
+\]
+Concretely, a breakthrough looks like all of the following holding simultaneously:
+\begin{enumerate}
+  \item \textbf{Metric controllability}: the facility can reliably increase $\phiC$ and/or
+  $\ledgerSync$ on command (beyond baseline drift), and negative controls reliably decrease them.
+  \item \textbf{Directionality}: shots with larger $\phiC$ and $\ledgerSync$ do not require \emph{more}
+  classical drive to achieve the same yield proxy, after controlling for confounds.
+  \item \textbf{Step-down validity}: applying $T\mapsto \barrierScale^2 T$ preserves yield to within a
+  pre-registered tolerance band until a clear break point.
+\end{enumerate}
+
+The reason we require all three is that each eliminates a different failure mode:
+metric controllability eliminates the ``we did not actually change coherence'' loophole;
+directionality eliminates post-hoc story-telling; and step-down validity is the operational
+efficiency gain.
+
+\subsection{Implications for lower-temperature operation and energy budget}
+The $S^2$ lever has a direct meaning for energy budgets. If a classical operating point requires a
+driver energy or temperature parameter $T_{\mathrm{classical}}$, and the facility can stably reach
+barrier scale $\barrierScale$, then the first-order prediction is:
+\[
+T_{\mathrm{needed}}=\barrierScale^2\,T_{\mathrm{classical}}.
+\]
+In energy terms, this is the simplest imaginable kind of improvement: it is a multiplicative
+reduction in the dominant barrier-driven requirement. The practical benefit is twofold:
+\begin{itemize}
+  \item \textbf{Lower peak demands}: reduced driver peak power and reduced sensitivity to hardware
+  limits (timing, jitter, staging).
+  \item \textbf{Greater robustness}: the same physical temperature behaves as if it were hotter by
+  $1/\barrierScale^2$, increasing margin.
+\end{itemize}
+In RS terms, the facility is spending engineering effort on producing a cleaner, more synchronized
+pre-commitment ledger evolution, rather than spending that effort solely on heating.
+
+\subsection{Connection to nuclear decay (alpha decay) as an independent testbed}
+Fusion experiments are expensive and high-dimensional. An ideal science program includes
+independent lower-cost testbeds that probe the \emph{same mechanism}: barrier-mediated commitment
+with exponential sensitivity.
+
+Alpha decay provides such a testbed because it is a barrier-limited transition with a classical
+Gamow factor proxy and an exponential rate law. The RS modification is formally parallel to the
+fusion modification: coherence reduces an effective barrier factor. The Lean formalization makes
+this explicit:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Nuclear/AlphaDecay.lean
+structure RSCoherenceParams where
+  phiCoherence : ℝ
+  phiCoherence_nonneg : 0 ≤ phiCoherence
+  phiCoherence_le_one : phiCoherence ≤ 1
+  ledgerSync : ℝ
+  ledgerSync_nonneg : 0 ≤ ledgerSync
+  ledgerSync_le_one : ledgerSync ≤ 1
+
+def rsBarrierScale (c : RSCoherenceParams) : ℝ :=
+  1 / (1 + c.phiCoherence + c.ledgerSync)
+
+def gamowFactorClassical (Z_daughter Q : ℝ) : ℝ :=
+  if Q > 0 then Z_daughter * Real.sqrt (1 / Q) else 0
+
+def gamowFactor (c : RSCoherenceParams) (Z_daughter Q : ℝ) : ℝ :=
+  rsBarrierScale c * gamowFactorClassical Z_daughter Q
+
+def decayConstant (c : RSCoherenceParams) (Z_daughter Q preformation : ℝ) : ℝ :=
+  if Q > 0 then preformation * Real.exp (-2 * gamowFactor c Z_daughter Q) else 0
+\end{lstlisting}
+
+This testbed suggests a concrete future-work path: design experiments that modulate the proposed
+coherence variables in a controlled nuclear setting and measure whether the effective barrier proxy
+behaves monotonically. The main advantage is that the mechanism is easier to isolate from
+hydrodynamics and confinement.
+
+\subsection{Control modes: coherence pumping, burn-window gating, closed-loop barrier control}
+From the RS perspective, there are three natural control modes:
+\begin{enumerate}
+  \item \textbf{Coherence pumping}: a pre-burn segment whose goal is to maximize $\phiC$ and/or
+  $\ledgerSync$ prior to the burn-relevant window.
+  \item \textbf{Burn-window gating}: allocate the tightest jitter bounds and best phase alignment
+  specifically to the short time interval when burn sensitivity is maximal.
+  \item \textbf{Closed-loop barrier control}: treat $\barrierScale$ as a control variable; adapt
+  scheduling and symmetry corrections shot-by-shot to maximize coherence subject to PASS envelopes.
+\end{enumerate}
+
+The symmetry-control stack already includes a formal contraction-style narrative: if the symmetry
+proxy satisfies a contraction inequality at successive times, it decays geometrically to a bounded
+region. This provides a template for future ``certified improvement'' results:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/SymmetryProxy.lean
+structure ContractionCert where
+  eta : ℝ
+  eta_pos : 0 < eta
+  eta_lt_one : eta < 1
+  xi : ℝ
+  xi_nonneg : 0 ≤ xi
+
+def satisfiesContraction (cfg : LedgerConfig (Mode := Mode))
+    (r : TimeDependentRatios Mode)
+    (cert : ContractionCert)
+    (t_prev t_next : ℝ) : Prop :=
+  symmetryProxy cfg r t_next ≤ (1 - cert.eta) * symmetryProxy cfg r t_prev + cert.xi
+
+theorem proxy_bounded_under_contraction
+    (cfg : LedgerConfig (Mode := Mode))
+    (r : TimeDependentRatios Mode)
+    (cert : ContractionCert)
+    (t_seq : ℕ → ℝ)
+    (h_contract : ∀ k, satisfiesContraction cfg r cert (t_seq k) (t_seq (k + 1))) :
+    ∀ k, symmetryProxy cfg r (t_seq k) ≤
+      (1 - cert.eta) ^ k * symmetryProxy cfg r (t_seq 0) +
+      cert.xi / cert.eta := by
+  -- proof in file
+  sorry
+\end{lstlisting}
+
+Future work is to extend the same pattern to barrier-scale control: identify sufficient
+certificate-level conditions under which $\barrierScale$ improves monotonically across repeated
+shots (within a fixed hardware envelope).
+
+\subsection{Failure analysis: what it means if $\barrierScale$ increases but yield does not}
+If $\barrierScale$ improves but yield does not, the outcome is still scientifically valuable: it
+identifies which seam is wrong. The main cases are:
+\begin{itemize}
+  \item \textbf{Metric mismatch}: $\phiC$ or $\ledgerSync$ is not tracking the relevant physical
+  coherence; revise the measurement pipeline (phase extraction, calibration).
+  \item \textbf{Regime mismatch}: yield is limited by non-barrier factors (transport,
+  hydrodynamic instability, confinement losses). In that case barrier reduction may be real but not
+  dominant.
+  \item \textbf{Model mismatch}: the barrier reduction may not be multiplicative or may depend on
+  additional state variables not captured by $(\phiC,\ledgerSync)$.
+\end{itemize}
+In RS terms: we have reduced the recognition barrier, but the system is failing for reasons that
+are not barrier-limited. The remedy is to change what is being controlled, not to abandon the
+coherence concept.
+
+\subsection{Roadmap: from metrics to closed-loop controllers to certified runs}
+The roadmap is:
+\begin{enumerate}
+  \item \textbf{Metric hardening}: validate $\phiC$ and $\ledgerSync$ with negative controls and
+  drift audits; freeze versions for a campaign.
+  \item \textbf{Barrier-scale calibration}: fit the best $\barrierScale(\phiC,\ledgerSync)$ form and
+  confirm directionality.
+  \item \textbf{Efficiency mapping}: generate the empirical step-down curve (max safe step-down vs
+  realized $\barrierScale$).
+  \item \textbf{Closed-loop control}: optimize schedules and symmetry corrections to maximize
+  $\barrierScale$ subject to PASS constraints.
+  \item \textbf{Certification tightening}: progressively replace seams (\texttt{TraceabilityHypothesis},
+  control assumptions) with facility-certified bounds and, where possible, full proofs.
+\end{enumerate}
+
+The central philosophy is the same throughout: keep the seams explicit, versioned, and testable;
+do not let them become hidden assumptions.
+
+\section{Conclusion}
+This paper’s goal was not to re-argue the foundations of Recognition Science, but to take a single
+RS-native reinterpretation---\textbf{tunneling as ledger commitment across an effective recognition
+barrier}---and push it all the way into an applied fusion control program.
+
+The conclusion can therefore be stated in three layers: (i) a conceptual thesis, (ii) an operational
+claim that can be validated in live runs, and (iii) a verification/certification path that keeps the
+inevitable empirical seams explicit.
+
+\subsection{Summary of the coherence-control thesis}
+\textbf{Conceptual thesis.} In RS, the barrier is not primarily a spatial wall; it is a \emph{cost-gap}
+between stable ledger states, and a transition is a \emph{commitment event}. The practical corollary
+is that \emph{coherence} is not cosmetic: coherence changes the effective barrier cost, and thus
+changes transition rates at fixed classical conditions.
+
+\textbf{Operational thesis.} The facility should treat coherence as a controlled variable. In this
+paper we defined two operational scalars:
+\[
+\phiC\in[0,1]\quad\text{(timing/phase coherence)},\qquad
+\ledgerSync\in[0,1]\quad\text{(symmetry/ledger synchronization)}.
+\]
+We then defined a barrier scale $\barrierScale(\phiC,\ledgerSync)\in(0,1]$ and used it to define an
+RS-effective barrier exponent $\eta_{\mathrm{RS}}=\barrierScale\,\eta$.
+
+\textbf{Efficiency lever.} Under a standard barrier proxy $\eta(T)\propto 1/\sqrt{T}$, the coherence
+effect becomes a directly usable lever:
+\[
+T_{\mathrm{needed}}=\barrierScale^2\,T_{\mathrm{classical}},\qquad
+T_{\mathrm{eff}}=\frac{T}{\barrierScale^2}.
+\]
+This is the applied science claim: \emph{if} coherence reduces the effective barrier cost
+multiplicatively in the exponent, then coherence improvements can be converted into a measured
+temperature/drive reduction via the $\barrierScale^2$ step-down rule.
+
+\textbf{Canonical executable summary (Lean).} The facility-facing computation pipeline is
+deterministic and auditable. The following excerpt is the minimal executable kernel that turns
+computed coherence variables into the efficiency lever:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/Executable/Interfaces.lean
+structure RSCoherenceInput where
+  phiCoherence : Float
+  ledgerSync : Float
+
+def computeRSBarrierScale (input : RSCoherenceInput) : Float :=
+  let denom := 1.0 + input.phiCoherence + input.ledgerSync
+  if denom > 0 then 1.0 / denom else 1.0
+
+def temperatureScaleFromBarrier (S : Float) : Float := S * S
+def effectiveTemperatureGain (S : Float) : Float :=
+  let S2 := S * S
+  if S2 > 0 then 1.0 / S2 else 0.0
+\end{lstlisting}
+
+Everything else in the paper (logging, certificates, negative controls, calibration versioning)
+exists to ensure that when this kernel is used in live runs, its inputs are meaningful and its
+outputs are scientifically interpretable.
+
+\subsection{Immediate next experiments}
+The next experiments should be chosen to close the minimal number of seams while maximizing
+information:
+\begin{enumerate}
+  \item \textbf{Metric controllability test}: demonstrate that the facility can deliberately
+  increase and decrease $\phiC$ and $\ledgerSync$ using designed interventions (and that negative
+  controls move them in the expected direction).
+  \item \textbf{Directionality test}: at fixed classical drive, show that larger
+  $(\phiC,\ledgerSync)$ does not require higher drive to achieve the same yield proxy (after
+  randomized blocking).
+  \item \textbf{First step-down}: once a stable improved $\barrierScale$ is achieved, apply the
+  predicted reduction $T\mapsto \barrierScale^2 T$ and test whether yield remains within a
+  pre-registered tolerance band.
+\end{enumerate}
+If these succeed, the program immediately graduates from ``interesting correlation'' to a
+repeatable efficiency improvement mechanism.
+
+\subsection{Longer-term verification and certification path}
+The long-term plan is to replace implicit assumptions with explicit, versioned artifacts:
+\begin{itemize}
+  \item \textbf{Calibration hardening}: freeze calibration versions and uncertainty envelopes; audit
+  drift and re-derive ratios/ledger values with deterministic replay.
+  \item \textbf{Model refinement}: if the simple $\barrierScale$ functional form or multiplicative
+  exponent assumption is inaccurate, update it in a controlled, versioned way (treat it as a seam,
+  not a hidden change).
+  \item \textbf{Independent testbeds}: validate the same barrier-reduction mechanism in lower-cost
+  contexts (e.g.\ alpha decay barrier proxies) to reduce dependence on high-variance fusion shots.
+  \item \textbf{Certified operations}: progressively tighten PASS envelopes and integrate
+  certificate artifacts so that coherence improvements are achieved within formally specified
+  safety constraints.
+\end{itemize}
+
+The core discipline is simple: \emph{RS gives a direction and a control target; experiments tell us
+the correct calibration.} By keeping seams explicit, the program remains scientific even when early
+models are refined.
+
+\appendix
+\section{Lean Traceability Map}
+This appendix is a literal map between the scientific objects used in the paper and their Lean
+formalizations in the repository. Its purpose is operational: if a team member wants to know
+``what exactly do we mean by X?'', they can find the defining Lean object and replay the associated
+computation or theorem.
+
+\textbf{Rule for this appendix:} we avoid external links; we identify modules by repository paths
+and include minimal excerpts of the defining code.
+
+\subsection{T0--T8 forcing chain: module-by-module mapping}
+The RS-first-principles story (logic, existence, discreteness, ledger, recognition, unique cost,
+$\varphi$, 8-tick, and $D=3$) is consolidated into a single ``spine'' module:
+\begin{itemize}
+  \item \IMpath{Foundation/UnifiedForcingChain.lean}
+\end{itemize}
+\noindent (Throughout this appendix, \IM{} abbreviates \texttt{IndisputableMonolith}.)
+
+That file imports each forcing step module and packages them into named statements \texttt{t0\_holds},
+\texttt{t1\_holds}, \ldots. For example:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Foundation/UnifiedForcingChain.lean
+import IndisputableMonolith.Foundation.LawOfExistence
+import IndisputableMonolith.Foundation.LogicFromCost
+import IndisputableMonolith.Foundation.DiscretenessForcing
+import IndisputableMonolith.Foundation.LedgerForcing
+import IndisputableMonolith.Foundation.PhiForcing
+import IndisputableMonolith.Foundation.DimensionForcing
+import IndisputableMonolith.Foundation.RecognitionForcing
+import IndisputableMonolith.Cost
+
+structure T0_Logic_Forced : Prop where
+  consistency_cheap : ∃ c : LogicFromCost.ConsistentConfig, LogicFromCost.consistent_cost c = 0
+  contradiction_expensive : ∀ c : LogicFromCost.ContradictionConfig,
+    LogicFromCost.contradiction_cost c > 0 ∨ LogicFromCost.IsLogicalContradiction c
+
+theorem t0_holds : T0_Logic_Forced := { ... }
+\end{lstlisting}
+
+For quick navigation, the forcing steps correspond to the following primary modules:
+\begin{itemize}
+  \item \textbf{T0}: \IMpath{Foundation/LogicFromCost.lean}
+  \item \textbf{T1}: \IMpath{Foundation/LawOfExistence.lean}
+  \item \textbf{T2}: \IMpath{Foundation/DiscretenessForcing.lean}
+  \item \textbf{T3}: \IMpath{Foundation/LedgerForcing.lean}
+  \item \textbf{T4}: \IMpath{Foundation/RecognitionForcing.lean}
+  \item \textbf{T5}: \IMpath{Cost.lean}
+  \item \textbf{T6}: \IMpath{Foundation/PhiForcing.lean}
+  \item \textbf{T7}: \IMpath{Foundation/EightTick.lean}
+  \item \textbf{T8}: \IMpath{Foundation/DimensionForcing.lean}
+\end{itemize}
+
+\subsection{QM bridge: Hilbert space, observables, measurement, and correspondence}
+The quantum emergence stack used by the paper (phases/interference, Born rule weights, collapse as
+ledger commitment) is formalized in:
+\begin{itemize}
+  \item \IMpath{Quantum/} (directory)
+\end{itemize}
+
+The directory-level index is documented in \IMpath{Quantum/README.lean}:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Quantum/README.lean
+import IndisputableMonolith.Quantum.Correspondence
+
+-- Module Structure
+--   Quantum/HilbertSpace.lean
+--   Quantum/Observables.lean
+--   Quantum/LedgerBridge.lean
+--   Quantum/Measurement.lean
+--   Quantum/Correspondence.lean
+\end{lstlisting}
+
+The minimal foundational objects are:
+\begin{itemize}
+  \item \textbf{Hilbert space carrier}: \texttt{RSHilbertSpace} and \texttt{NormalizedState}
+  \item \textbf{Observable algebra}: \texttt{Observable}, \texttt{Projector}, \texttt{Hamiltonian}
+  \item \textbf{Ledger $\leftrightarrow$ Hilbert bridge}: \texttt{LedgerToHilbert}, \texttt{RHatCorrespondence}
+  \item \textbf{Measurement semantics}: ledger commitment as collapse
+  \item \textbf{Correspondence capsule}: explicit hypothesis surface for RS $\simeq$ QM
+\end{itemize}
+
+Example (Hilbert carrier):
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Quantum/HilbertSpace.lean
+class RSHilbertSpace (H : Type*) extends
+  SeminormedAddCommGroup H,
+  InnerProductSpace ℂ H,
+  CompleteSpace H,
+  TopologicalSpace.SeparableSpace H
+
+structure NormalizedState (H : Type*) [RSHilbertSpace H] where
+  vec : H
+  norm_one : ‖vec‖ = 1
+\end{lstlisting}
+
+\subsection{Fusion barrier scaling and operational metrics}
+This paper’s applied mechanism lives at the boundary between:
+\begin{itemize}
+  \item a \textbf{model layer} (real-number definitions and monotone theorems), and
+  \item an \textbf{executable layer} (Float computations from facility logs).
+\end{itemize}
+
+\subsubsection{Model layer (barrier scale and monotonicity)}
+The RS barrier scaling used throughout the paper is formalized in:
+\begin{itemize}
+  \item \IMpath{Fusion/ReactionNetworkRates.lean}
+\end{itemize}
+The key objects are \texttt{RSCoherenceParams}, \texttt{rsBarrierScale}, the RS-adjusted exponent, and
+the monotone theorem that RS coherence cannot reduce tunneling probability:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/ReactionNetworkRates.lean
+structure RSCoherenceParams where
+  phiCoherence : ℝ
+  phiCoherence_nonneg : 0 ≤ phiCoherence
+  phiCoherence_le_one : phiCoherence ≤ 1
+  ledgerSync : ℝ
+  ledgerSync_nonneg : 0 ≤ ledgerSync
+  ledgerSync_le_one : ledgerSync ≤ 1
+
+def rsBarrierScale (c : RSCoherenceParams) : ℝ :=
+  1 / (1 + c.phiCoherence + c.ledgerSync)
+
+def rsTunnelingProbability (c : RSCoherenceParams) (params : GamowParams)
+    (cfgA cfgB : NuclearConfig) : ℝ :=
+  Real.exp (-rsGamowExponent c params cfgA cfgB)
+
+theorem rsTunnelingProbability_ge_classical (c : RSCoherenceParams) (params : GamowParams)
+    (cfgA cfgB : NuclearConfig) :
+    Real.exp (-gamowExponent params cfgA cfgB) ≤ rsTunnelingProbability c params cfgA cfgB := by
+  -- proof in file
+  ...
+\end{lstlisting}
+
+\subsubsection{Executable layer (facility computation of $\phiC$ and $\ledgerSync$)}
+The facility-computable metrics and certificate bundles are defined in:
+\begin{itemize}
+  \item \IMpath{Fusion/Executable/Interfaces.lean}
+\end{itemize}
+This is where the paper’s operational definitions live:
+\texttt{computePhiCoherence}, \texttt{computeLedgerSync}, \texttt{computeRSBarrierScale},
+\texttt{computeRSShotEfficiency}, and the \texttt{CertificateBundle} schema used for audit/replay.
+
+\subsubsection{Diagnostics bridge and traceability envelope}
+The mapping from raw diagnostics to ratios and ledger values is formalized in:
+\begin{itemize}
+  \item \IMpath{Fusion/DiagnosticsBridge.lean}
+\end{itemize}
+This module also contains the explicit \texttt{TraceabilityHypothesis} capsule that represents
+calibration-envelope assumptions used to connect ledger changes to observable asymmetry changes.
+
+\subsubsection{Run protocol stack: scheduler, ledger, certificate}
+The run protocol and safety envelope rely on:
+\begin{itemize}
+  \item \IMpath{Fusion/Scheduler.lean} (scheduler traces, jitter boundedness)
+  \item \IMpath{Fusion/SymmetryLedger.lean} (ledger value, PASS predicate)
+  \item \IMpath{Fusion/Certificate.lean} (bundling scheduler + ledger constraints)
+\end{itemize}
+
+The central idea is that the paper’s ``coherence improvement'' experiments must operate inside a
+certificate-defined envelope: whatever we vary to raise $\phiC$ and $\ledgerSync$ must still satisfy
+\texttt{pass} constraints derived from the symmetry ledger.
+
+\section{Operational Metric Definitions (Executable)}
+This appendix collects the \emph{facility-facing} (Float-level) definitions of the coherence and
+efficiency metrics used throughout the paper. The purpose is deterministic replay: given the raw
+shot logs and the chosen calibration parameters, a third party can recompute exactly the same
+\(\phiC\), \(\ledgerSync\), and \(\barrierScale\) values.
+
+\textbf{Important distinction:} these are \emph{executable} definitions, not the real-number model
+layer. They are designed for robust operation on imperfect data streams, which means they include
+clamping, truncation to shorter lists, and explicit default parameters.
+
+\subsection{\texorpdfstring{$\phiC$}{phiC}: timing errors, skew, phase alignment, normalization}
+\subsubsection{Definition summary}
+Inputs:
+\begin{itemize}
+  \item expected event times (seconds),
+  \item measured event times (seconds),
+  \item channel phases (radians),
+  \item optional channel time offsets (seconds),
+  \item two scale parameters (\texttt{jitterScale}, \texttt{skewScale}).
+\end{itemize}
+Outputs:
+\begin{itemize}
+  \item \texttt{jitterRMS}, \texttt{skewRMS} (diagnostic components),
+  \item \texttt{phaseAlignment} (mean resultant length in \([0,1]\)),
+  \item \(\phiC\in[0,1]\) (combined coherence scalar).
+\end{itemize}
+
+\subsubsection{Robustness conventions}
+\begin{itemize}
+  \item \textbf{Truncation}: timing errors are computed elementwise and truncate to the shorter
+  list so missing log entries do not crash the computation.
+  \item \textbf{Empty inputs}: empty lists yield conservative outputs (e.g.\ phaseAlignment \(=0\)).
+  \item \textbf{Clamping}: \(\phiC\) is clamped to \([0,1]\).
+\end{itemize}
+
+\subsubsection{Lean executable definition}
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/Executable/Interfaces.lean
+def clamp01 (x : Float) : Float :=
+  if x < 0.0 then 0.0 else if x > 1.0 then 1.0 else x
+
+def rms (xs : List Float) : Float :=
+  match xs.length with
+  | 0 => 0.0
+  | n =>
+      let meanSq := xs.foldl (fun acc x => acc + x * x) 0.0 / n.toFloat
+      Float.sqrt meanSq
+
+def timingErrors (expected measured : List Float) : List Float :=
+  match expected, measured with
+  | e :: es, m :: ms => (m - e) :: timingErrors es ms
+  | _, _ => []
+
+def meanResultantLength (phases : List Float) : Float :=
+  match phases.length with
+  | 0 => 0.0
+  | n =>
+      let cosSum := phases.foldl (fun acc θ => acc + Float.cos θ) 0.0
+      let sinSum := phases.foldl (fun acc θ => acc + Float.sin θ) 0.0
+      clamp01 (Float.sqrt (cosSum * cosSum + sinSum * sinSum) / n.toFloat)
+
+structure PhiCoherenceInput where
+  expectedTimes : List Float
+  measuredTimes : List Float
+  channelPhases : List Float
+  channelTimeOffsets : List Float := []
+  jitterScale : Float := 1e-12
+  skewScale : Float := 1e-12
+
+structure PhiCoherenceOutput where
+  jitterRMS : Float
+  skewRMS : Float
+  phaseAlignment : Float
+  phiCoherence : Float
+
+def computePhiCoherence (input : PhiCoherenceInput) : PhiCoherenceOutput :=
+  let errs := timingErrors input.expectedTimes input.measuredTimes
+  let jrms := rms errs
+  let srms := rms input.channelTimeOffsets
+  let phaseAlign := meanResultantLength input.channelPhases
+  let timingScore :=
+    if input.jitterScale > 0 then
+      1.0 / (1.0 + (jrms / input.jitterScale) * (jrms / input.jitterScale))
+    else 0.0
+  let skewScore :=
+    if input.skewScale > 0 then
+      1.0 / (1.0 + (srms / input.skewScale) * (srms / input.skewScale))
+    else 0.0
+  let phiC := clamp01 (phaseAlign * timingScore * skewScore)
+  ⟨jrms, srms, phaseAlign, phiC⟩
+\end{lstlisting}
+
+\subsection{\texorpdfstring{$\ledgerSync$}{ledgerSync}: ratios, ledger computation, normalization}
+\subsubsection{Definition summary}
+\(\ledgerSync\) is designed to quantify how close the system is to a symmetry-ideal ledger state
+(near unity ratios) as a scalar in \([0,1]\). The implementation supports two input modes:
+\begin{itemize}
+  \item ratios provided directly (\texttt{ratios}),
+  \item or raw diagnostic values provided with a minimal affine calibration (\texttt{rawValues} +
+  \texttt{calibration}).
+\end{itemize}
+The ledger itself is a weighted sum of per-mode \(\Jcost\) values.
+
+\subsubsection{Robustness conventions}
+\begin{itemize}
+  \item \textbf{Truncation}: weights/ratios are zipped; mismatched lengths truncate to the shorter list.
+  \item \textbf{Positivity handling}: \texttt{jCostFloat} returns \(0\) when a ratio is non-positive
+  (defensive, not a physical claim).
+  \item \textbf{Normalization}: \(\ledgerSync\) is a monotone decreasing function of ledgerValue and
+  is clamped to \([0,1]\).
+\end{itemize}
+
+\subsubsection{Lean executable definition}
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/Executable/Interfaces.lean
+structure LedgerInput where
+  weights : List Float
+  ratios : List Float
+
+structure LedgerOutput where
+  ledgerValue : Float
+  passed : Bool
+  threshold : Float
+
+def jCostFloat (x : Float) : Float :=
+  if x > 0 then (x + 1/x) / 2 - 1 else 0
+
+def computeLedger (input : LedgerInput) (threshold : Float) : LedgerOutput :=
+  let pairs := input.weights.zip input.ratios
+  let ledgerVal := pairs.foldl (fun acc (w, r) => acc + w * jCostFloat r) 0.0
+  ⟨ledgerVal, ledgerVal ≤ threshold, threshold⟩
+
+structure AffineRatioCalibration where
+  gains : List Float
+
+def applyAffineCalibration (cal : AffineRatioCalibration) (raw : List Float) : List Float :=
+  match cal.gains, raw with
+  | g :: gs, x :: xs => (1.0 + g * x) :: applyAffineCalibration ⟨gs⟩ xs
+  | _, _ => []
+
+structure LedgerSyncInput where
+  weights : List Float
+  ratios : List Float := []
+  rawValues : List Float := []
+  calibration : AffineRatioCalibration := ⟨[]⟩
+  threshold : Float := 0.1
+  ledgerScale : Float := 0.1
+
+structure LedgerSyncOutput where
+  ledgerValue : Float
+  passed : Bool
+  ledgerSync : Float
+
+def computeLedgerSync (input : LedgerSyncInput) : LedgerSyncOutput :=
+  let ratios :=
+    if input.ratios.isEmpty then
+      applyAffineCalibration input.calibration input.rawValues
+    else
+      input.ratios
+  let ledgerOut := computeLedger ⟨input.weights, ratios⟩ input.threshold
+  let Λ := input.ledgerScale
+  let sync :=
+    if Λ > 0 then clamp01 (1.0 / (1.0 + ledgerOut.ledgerValue / Λ)) else 0.0
+  ⟨ledgerOut.ledgerValue, ledgerOut.passed, sync⟩
+\end{lstlisting}
+
+\subsection{\texorpdfstring{$\barrierScale$}{barrierScale}, \texorpdfstring{$\barrierScale^2$}{barrierScale^2}, and effective-temperature gain}
+\subsubsection{Definition summary}
+Given the two facility scalars \((\phiC,\ledgerSync)\), the executable stack computes:
+\begin{itemize}
+  \item \(\barrierScale = 1/(1+\phiC+\ledgerSync)\) (with a safety guard if the denominator is non-positive),
+  \item \(\barrierScale^2\) (the predicted temperature/drive step-down factor),
+  \item \(1/\barrierScale^2\) (effective-temperature gain).
+\end{itemize}
+
+\subsubsection{Lean executable definition}
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/Executable/Interfaces.lean
+structure RSCoherenceInput where
+  phiCoherence : Float
+  ledgerSync : Float
+
+structure RSBarrierScaleOutput where
+  barrierScale : Float
+
+def computeRSBarrierScale (input : RSCoherenceInput) : RSBarrierScaleOutput :=
+  let denom := 1.0 + input.phiCoherence + input.ledgerSync
+  let s := if denom > 0 then 1.0 / denom else 1.0
+  ⟨s⟩
+
+def temperatureScaleFromBarrier (barrierScale : Float) : Float :=
+  barrierScale * barrierScale
+
+def effectiveTemperatureGain (barrierScale : Float) : Float :=
+  let s2 := barrierScale * barrierScale
+  if s2 > 0 then 1.0 / s2 else 0.0
+
+structure RSShotEfficiencyOutput where
+  phiCoherence : Float
+  ledgerSync : Float
+  barrierScale : Float
+  temperatureScale : Float
+  effectiveTempGain : Float
+
+def computeRSShotEfficiency (phiC : Float) (ledgerS : Float) : RSShotEfficiencyOutput :=
+  let s := (computeRSBarrierScale ⟨phiC, ledgerS⟩).barrierScale
+  let s2 := temperatureScaleFromBarrier s
+  let gain := effectiveTemperatureGain s
+  ⟨phiC, ledgerS, s, s2, gain⟩
+\end{lstlisting}
+
+\section{Calibration and Diagnostics Bridge}
+This appendix describes the \emph{measurement seam} that connects the paper’s abstract symmetry and
+ledger notions to real facility diagnostics. In RS terms, the ledger is the canonical accounting
+structure; in experimental terms, the facility sees images, spectra, and mode decompositions with
+calibration drift, bias, and uncertainty.
+
+The bridge has one job: turn raw diagnostic signals into a ratio vector \(r\) with a well-defined
+meaning (ideal \(\mapsto 1\)), so that ledger-based PASS predicates and ledger-derived
+\(\ledgerSync\) scores are scientifically interpretable and replayable.
+
+\subsection{Raw diagnostics \texorpdfstring{$\to$}{->} ratios: calibration models}
+\subsubsection{Diagnostic modes}
+In symmetric ICF-style settings, the most common diagnostic representation is a decomposition into
+spherical harmonic modes (often written \(P_0,P_2,P_4,\dots\)). The bridge therefore starts by
+formalizing a diagnostic mode and a standard mode set:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/DiagnosticsBridge.lean
+structure DiagnosticMode where
+  degree : ℕ
+  is_even : degree % 2 = 0
+
+def standardModes : List DiagnosticMode := [
+  ⟨0, rfl⟩, ⟨2, rfl⟩, ⟨4, rfl⟩, ⟨6, rfl⟩
+]
+\end{lstlisting}
+
+Operationally, this is a declaration of what “modes we track” means. A facility may choose a
+different set (e.g.\ include higher modes) but must version that choice.
+
+\subsubsection{Calibration object (versioned, monotone, ideal \(\mapsto 1\))}
+The central calibration object is a mapping from raw diagnostic values to dimensionless ratios:
+\[
+\text{ratio}(m) = \texttt{toRatio}(m,\text{raw}(m)),
+\quad\text{with}\quad \texttt{toRatio}(m,0)=1.
+\]
+The key required property is monotonicity: larger raw deviations should not map to smaller ratios
+without being explicitly justified and documented.
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/DiagnosticsBridge.lean
+structure Calibration where
+  version : String
+  toRatio : DiagnosticMode → ℝ → ℝ
+  monotone : ∀ m x y, x ≤ y → toRatio m x ≤ toRatio m y
+  ideal_maps_to_one : ∀ m, toRatio m 0 = 1
+  uncertainty : ℝ
+  uncertainty_pos : 0 < uncertainty
+  uncertainty_small : uncertainty ≤ 0.1
+\end{lstlisting}
+
+This is the formal statement that calibration is \emph{not} a hidden spreadsheet: it is a
+first-class, versioned object with a declared uncertainty envelope.
+
+\subsubsection{Raw diagnostic measurement record}
+The diagnostic record required for replay includes the raw values (as a function of mode), a
+timestamp, and a shot identifier:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/DiagnosticsBridge.lean
+structure DiagnosticMeasurement where
+  rawValues : DiagnosticMode → ℝ
+  timestamp : ℝ
+  shotId : String
+\end{lstlisting}
+
+\subsection{Uncertainty envelopes and drift}
+\subsubsection{Observable asymmetry proxy}
+Before mapping into ratios and a ledger, the bridge defines an \emph{observable asymmetry proxy}
+directly from raw values. This is the “ground-level” quantity an experimentalist can compute
+without any RS interpretation:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/DiagnosticsBridge.lean
+def observableAsymmetry (meas : DiagnosticMeasurement) (modes : List DiagnosticMode) : ℝ :=
+  modes.foldl (fun acc m => acc + (meas.rawValues m)^2) 0
+
+theorem observableAsymmetry_nonneg (meas : DiagnosticMeasurement) (modes : List DiagnosticMode) :
+    0 ≤ observableAsymmetry meas modes := by
+  ...
+\end{lstlisting}
+
+This proxy is not the ledger; it is the measurement-side anchor. The traceability goal of the
+bridge is to bound how ledger changes imply changes in this observable proxy, within calibration
+uncertainty.
+
+\subsubsection{Drift and uncertainty as explicit seams}
+The calibration object contains a declared \texttt{uncertainty} bound. In the formal stack, drift
+and uncertainty appear in two places:
+\begin{itemize}
+  \item the calibration’s stated uncertainty envelope (a bound on mapping error),
+  \item the traceability offset term (the “slack” by which observable comparisons are allowed to
+  shift even when the ledger decreases).
+\end{itemize}
+Operational rule: if calibration is updated, its version string must change, and the uncertainty
+envelope must be re-stated; otherwise longitudinal analysis becomes uninterpretable.
+
+\subsection{Versioning and traceability}
+\subsubsection{Bridge configuration and ledger computation}
+The bridge configuration packages calibration, mode selection, weights, and coupling:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/DiagnosticsBridge.lean
+structure BridgeConfig where
+  calibration : Calibration
+  modes : List DiagnosticMode
+  weights : DiagnosticMode → ℝ
+  weights_pos : ∀ m, 0 < weights m
+  coupling : ℝ
+  coupling_pos : 0 < coupling
+
+def measurementToRatios (cfg : BridgeConfig) (meas : DiagnosticMeasurement) :
+    DiagnosticMode → ℝ :=
+  fun m => cfg.calibration.toRatio m (meas.rawValues m)
+
+def diagnosticLedger (cfg : BridgeConfig) (meas : DiagnosticMeasurement) : ℝ :=
+  cfg.modes.foldl (fun acc m =>
+    acc + cfg.weights m * Cost.Jcost (measurementToRatios cfg meas m)
+  ) 0
+\end{lstlisting}
+
+This is the canonical Real-level definition of “ledger computed from diagnostics.” The executable
+interface used in live operations is a Float approximation of this object; the semantics are the
+same, and the differences are part of the calibration seam.
+
+\subsubsection{Traceability envelope hypothesis}
+To connect ledger changes to observable asymmetry changes, the bridge introduces an explicit
+envelope hypothesis:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/DiagnosticsBridge.lean
+structure TraceabilityHypothesis (cfg : BridgeConfig) where
+  lower_bound : ℝ
+  lower_bound_pos : 0 < lower_bound
+  upper_bound : ℝ
+  upper_bound_pos : 0 < upper_bound
+  offset : ℝ
+  offset_nonneg : 0 ≤ offset
+
+theorem traceability (cfg : BridgeConfig) (hyp : TraceabilityHypothesis cfg)
+    (meas1 meas2 : DiagnosticMeasurement)
+    (hLedgerDecrease : diagnosticLedger cfg meas2 ≤ diagnosticLedger cfg meas1) :
+    observableAsymmetry meas2 cfg.modes ≤
+    observableAsymmetry meas1 cfg.modes + hyp.offset / hyp.lower_bound := by
+  sorry
+\end{lstlisting}
+
+Interpretation: traceability is \emph{not} assumed for free. It is granted when the facility can
+populate \texttt{TraceabilityHypothesis} with empirically justified bounds (and ideally prove the
+theorem without \texttt{sorry} by formalizing the envelope in full).
+
+\subsubsection{Diagnostic certificate (metadata + replay anchors)}
+Finally, the bridge defines a diagnostic certificate record that carries the key metadata for audit:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/DiagnosticsBridge.lean
+structure DiagnosticCertificate where
+  passed : Bool
+  ledgerValue : ℝ
+  observableValue : ℝ
+  calibrationVersion : String
+  shotId : String
+  timestamp : ℝ
+  ledger_below_threshold : ledgerValue ≤ 0.1 → passed = true
+
+def generateCertificate (cfg : BridgeConfig) (meas : DiagnosticMeasurement)
+    (threshold : ℝ) : DiagnosticCertificate where
+  passed := diagnosticLedger cfg meas ≤ threshold
+  ledgerValue := diagnosticLedger cfg meas
+  observableValue := observableAsymmetry meas cfg.modes
+  calibrationVersion := cfg.calibration.version
+  shotId := meas.shotId
+  timestamp := meas.timestamp
+  ledger_below_threshold := by
+    intro h
+    sorry
+\end{lstlisting}
+
+Operationally, this is the formal “receipt” that ties an observed diagnostic measurement to a
+ledger value and a PASS/FAIL decision under a declared threshold \emph{with an explicit calibration
+version}. This is precisely the artifact needed to prevent silent recalibration from changing past
+conclusions.
+
+\section{Run Protocol Checklist}
+This appendix is a practical checklist for executing the paper’s program in a facility. It is
+organized so that a run lead can verify (i) the shot record is replayable, (ii) controls and
+randomization prevent confounds, and (iii) acceptance/abort criteria are explicit.
+
+The checklist is written to match the formal objects used elsewhere in the paper:
+\begin{itemize}
+  \item \textbf{Scheduler trace}: \texttt{PhiScheduler.Update} events; predicates
+  \texttt{respectsAssignment}, \texttt{jitterBounded}.
+  \item \textbf{Safety envelope}: the symmetry-ledger PASS predicate \texttt{pass}.
+  \item \textbf{Metrics}: executables \texttt{computePhiCoherence},
+  \texttt{computeLedgerSync}, \texttt{computeRSBarrierScale}.
+\end{itemize}
+
+\subsection{Required logs per shot}
+\subsubsection{Shot identity and version anchors (mandatory)}
+\begin{itemize}
+  \item \textbf{Shot ID} (unique stable identifier).
+  \item \textbf{Timestamp} (wall clock and/or facility time base).
+  \item \textbf{Software version(s)} for metric computation and preprocessing.
+  \item \textbf{Schedule hash} (exact schedule table used to generate expected times).
+  \item \textbf{Calibration version string} for every diagnostic calibration used.
+\end{itemize}
+Without these anchors, “replay” is impossible and longitudinal comparisons are uninterpretable.
+
+\subsubsection{Scheduler trace logs (what the scheduler predicates need)}
+Log the actuator/window/timestamp update events sufficient to evaluate:
+\begin{itemize}
+  \item assignment compliance (\texttt{respectsAssignment}),
+  \item jitter boundedness (\texttt{jitterBounded}).
+\end{itemize}
+The Lean objects the checklist is meant to satisfy are:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/Scheduler.lean
+structure PhiScheduler (Actuator : Type _) (L : ℕ)
+    extends PhiWindowSpec L where
+  assignment : Actuator → Finset (Fin L)
+  jitterBound : ℝ
+  jitter_nonneg : 0 ≤ jitterBound
+
+namespace PhiScheduler
+structure Update (Actuator : Type _) (L : ℕ) where
+  actuator : Actuator
+  window : Fin L
+  timestamp : ℝ
+
+def respectsAssignment (trace : List (Update Actuator L)) : Prop :=
+  ∀ e ∈ trace, sched.allowed e.actuator e.window
+
+def jitterBounded (trace : List (Update Actuator L)) : Prop :=
+  ∀ ⦃u v : Update Actuator L⦄,
+    (u, v) ∈ trace.zipWith Prod.mk trace.tail →
+      |v.timestamp - u.timestamp| ≤ sched.jitterBound
+\end{lstlisting}
+
+Operationally: record the update stream; record the declared jitter bound; record the actuator
+assignment table.
+
+\subsubsection{Timing and phase logs (what $\phiC$ needs)}
+For $\phiC$ computation and audit, log:
+\begin{itemize}
+  \item expected event times list,
+  \item measured event times list,
+  \item channel phase vector at the burn-relevant window,
+  \item optional channel time offsets,
+  \item chosen \texttt{jitterScale} and \texttt{skewScale}.
+\end{itemize}
+Additionally, log the intermediate outputs \texttt{jitterRMS}, \texttt{skewRMS}, and
+\texttt{phaseAlignment}.
+
+\subsubsection{Diagnostics logs (what $\ledgerSync$ and traceability need)}
+For ledgerSync and traceability:
+\begin{itemize}
+  \item raw diagnostic mode values (per mode),
+  \item the calibration map version(s) used to convert raw values to ratios,
+  \item the computed ratio vector (or enough information to recompute it),
+  \item the weight vector and the threshold(s) used in the ledger computation.
+\end{itemize}
+If \texttt{TraceabilityHypothesis} bounds are being claimed, log the bound parameters and their
+justification documents as part of the campaign record.
+
+\subsubsection{Certificate bundles (replay receipts)}
+Emit certificate bundles for:
+\begin{itemize}
+  \item $\phiC$ (with intermediate components),
+  \item $\ledgerSync$ (with \texttt{ledgerValue} and PASS/FAIL),
+  \item $\barrierScale$ and $\barrierScale^2$ (step-down factor),
+  \item any campaign-specific safety certificate (ledger PASS predicate).
+\end{itemize}
+
+\subsection{Control suite and randomization}
+\subsubsection{Minimum A/B randomized block design}
+For a block of \(2N\) shots:
+\begin{itemize}
+  \item \(N\) baseline shots (A),
+  \item \(N\) coherence-enhanced shots (B),
+  \item randomize order within the block.
+\end{itemize}
+Record the randomization seed and the realized sequence (so the analysis can be replayed).
+
+\subsubsection{Negative controls (mechanism-breaking interventions)}
+Include at least one negative control per campaign:
+\begin{itemize}
+  \item \textbf{Timing shuffle}: intentionally decorrelate event timing relative to expected times.
+  \item \textbf{Phase detune}: intentionally degrade phase alignment while keeping classical energy similar.
+  \item \textbf{Symmetry scramble}: intentionally increase asymmetry to raise ledger value and reduce $\ledgerSync$.
+\end{itemize}
+These controls validate that the coherence metrics are tracking the intended mechanisms.
+
+\subsubsection{Hold-constant list (anti-confound invariants)}
+Within a step-down series, hold constant (as tightly as possible):
+target family, geometry, fill, compression settings, and baseline drive shape.
+Record any deviations explicitly.
+
+\subsection{Acceptance thresholds and stopping rules}
+\subsubsection{Safety envelope: ledger PASS predicate}
+Before running coherence-enhancement or step-down, freeze:
+\begin{itemize}
+  \item ledger weights,
+  \item per-mode bounds,
+  \item ledger threshold \(\Lambda\).
+\end{itemize}
+The formal PASS predicate the experiment must satisfy is:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/SymmetryLedger.lean
+def pass (cfg : LedgerConfig (Mode := Mode))
+    (bounds : ModeThresholds (Mode := Mode)) (Λ : ℝ)
+    (r : ModeRatios (Mode := Mode)) : Prop :=
+  ledger cfg r ≤ Λ ∧ withinThresholds bounds r
+\end{lstlisting}
+
+Operationally: if PASS fails, the shot is outside the declared symmetry envelope and the
+coherence-efficiency claims should not be evaluated on it without explicit exception handling.
+
+\subsubsection{Primary endpoint and tolerance band (pre-register)}
+Choose one primary yield proxy \(Y\) and a tolerance rule that defines “no degradation” under
+step-down. Pre-register this before running the step-down series to avoid post-hoc endpoint
+selection.
+
+\subsubsection{Step-down stopping rule}
+Stop stepping down when either:
+\begin{itemize}
+  \item yield proxy falls outside the pre-registered tolerance band, or
+  \item PASS envelope fails (safety/operability violation), or
+  \item diagnostics drift exceeds calibration uncertainty envelope (measurement seam violation).
+\end{itemize}
+
+\subsubsection{Post-block audit (required)}
+After each randomized block:
+\begin{itemize}
+  \item replay metrics from logged inputs and verify they match stored outputs,
+  \item verify randomization integrity (no systematic drift alignment),
+  \item verify calibration versions did not change mid-block without being recorded.
+\end{itemize}
+
+\section{Statistical Methods}
+Fusion shots are high-variance and drift-prone. A coherence-control claim is only meaningful if the
+analysis plan prevents three classical failure modes:
+\begin{enumerate}
+  \item \textbf{Selection bias}: we report only the best-looking subset (post-hoc endpoint choice).
+  \item \textbf{Drift confounding}: slow hardware/target drift is mistaken for a coherence effect.
+  \item \textbf{Multiple testing}: enough exploratory slices guarantee ``significance'' by chance.
+\end{enumerate}
+This appendix defines an explicit statistical plan that is compatible with RS-first-principles
+thinking: \emph{inference is recognition}, and recognition weights are cost-weighted.
+
+\subsection{RS basis: inference as cost-weighted recognition}
+The paper’s metric layer produces a shot record \((Y_k, T_k, \phiC_k, \ledgerSync_k, \barrierScale_k)\).
+The purpose of statistics is to infer whether the observed yield proxy \(Y\) behaves as a function
+of the RS-effective barrier proxy (through \(\barrierScale\)) rather than as a function of drift.
+
+RS provides a native formal language for ``probability = cost-weighting.'' At finite recognition
+temperature, weights are Gibbs weights and comparisons are naturally expressed via KL divergence.
+The Lean formalization in \IMpath{Thermodynamics/RecognitionThermodynamics.lean} is:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Thermodynamics/RecognitionThermodynamics.lean
+structure RecognitionSystem where
+  TR : ℝ
+  TR_pos : 0 < TR
+
+noncomputable def gibbs_weight (sys : RecognitionSystem) (x : ℝ) : ℝ :=
+  exp (- Jcost x / sys.TR)
+
+noncomputable def partition_function {Ω : Type*} [Fintype Ω]
+    (sys : RecognitionSystem) (X : Ω → ℝ) : ℝ :=
+  ∑ ω, gibbs_weight sys (X ω)
+
+noncomputable def gibbs_measure {Ω : Type*} [Fintype Ω]
+    (sys : RecognitionSystem) (X : Ω → ℝ) (ω : Ω) : ℝ :=
+  gibbs_weight sys (X ω) / partition_function sys X
+
+noncomputable def kl_divergence {Ω : Type*} [Fintype Ω] (q p : Ω → ℝ) : ℝ :=
+  ∑ ω, if q ω > 0 ∧ p ω > 0 then q ω * log (q ω / p ω) else 0
+
+theorem kl_divergence_nonneg {Ω : Type*} [Fintype Ω]
+    (q p : Ω → ℝ) (hq : ∀ ω, 0 ≤ q ω) (hp : ∀ ω, 0 < p ω)
+    (hq_sum : ∑ ω, q ω = 1) (hp_sum : ∑ ω, p ω = 1) :
+    0 ≤ kl_divergence q p := by
+  -- proof in file
+  ...
+\end{lstlisting}
+
+Interpretation for applied work: the statistical goal is to select (or compare) empirical models in
+a way that corresponds to minimizing a divergence / cost gap, while respecting that the facility is
+not sampling i.i.d.\ draws but executing a controlled intervention process.
+
+\subsection{Power analysis and effect-size targets}
+\subsubsection{Primary estimand (what we are trying to detect)}
+The step-down program implies a sharp estimand. Let \(Y\) be a primary yield proxy, and define a
+log-scale outcome \(Z := \log(Y+\epsilon)\) with a small \(\epsilon>0\) if needed for zeros. The
+canonical step-down claim is that a coherence-improved shot at \(T_{\mathrm{needed}}\) should match a
+baseline shot at \(T_{\mathrm{classical}}\) when:
+\[
+T_{\mathrm{needed}}=\barrierScale^2 T_{\mathrm{classical}}.
+\]
+Define matched pairs (or matched blocks) where one condition is baseline and one is step-down with
+the predicted mapping. The primary estimand is:
+\[
+\Delta := \mathbb{E}[Z_{\text{step-down}} - Z_{\text{baseline}}].
+\]
+Under the simplest RS scaling model, \(\Delta \approx 0\) until the break point.
+
+\subsubsection{Effect-size target}
+Choose a minimum practically important difference \(\delta\) on the log scale:
+\[
+|\Delta| \ge \delta \quad\text{is practically meaningful.}
+\]
+The choice of \(\delta\) must be made pre-run and should be tied to engineering thresholds (e.g.\ a
+percentage yield drop that is unacceptable).
+
+\subsubsection{Variance model and blocking}
+Use randomized blocks to control drift. Let \(\sigma_{\text{within}}\) be the within-block standard
+deviation of \(Z\). Estimate \(\sigma_{\text{within}}\) from pilot blocks before executing deep
+step-down.
+
+\subsubsection{Closed-form sample size (paired design)}
+For a paired difference design with two-sided type-I error \(\alpha\) and power \(1-\beta\), a
+standard approximation is:
+\[
+N \approx \left(\frac{z_{1-\alpha/2}+z_{1-\beta}}{\delta/\sigma_d}\right)^2,
+\]
+where \(\sigma_d\) is the standard deviation of paired differences.
+Because shot distributions are often heavy-tailed, we recommend a pilot block to estimate
+\(\sigma_d\) and then a simulation-based power check (bootstrap/permutation within blocks).
+
+\subsubsection{Secondary estimands}
+Secondary analyses can include:
+\begin{itemize}
+  \item a regression of \(Z\) on \(1/\sqrt{T/\barrierScale^2}\) (effective-temperature representation),
+  \item ignition success as a binary endpoint,
+  \item slope of yield degradation vs step-down factor (break-point curve).
+\end{itemize}
+These must be declared as secondary to avoid multiplicity pitfalls.
+
+\subsection{Sequential designs and false-discovery control}
+\subsubsection{Why sequential designs are appropriate}
+Step-down experiments are naturally sequential: each new temperature/drive level depends on the
+last achieved \(\barrierScale\). Therefore the analysis plan should allow early stopping for
+\textbf{success} (clear invariance under step-down) or \textbf{failure} (early yield degradation or
+safety envelope failure) without inflating false positives.
+
+\subsubsection{Group-sequential monitoring (alpha spending)}
+For each step-down stage \(j\), evaluate the pre-registered primary estimand \(\Delta_j\) within the
+current randomized block. Use a conservative alpha-spending rule (e.g.\ O'Brien--Fleming-style) to
+permit multiple interim looks while maintaining overall type-I error. Pre-register:
+\begin{itemize}
+  \item the number of interim looks,
+  \item the alpha-spending schedule,
+  \item the stopping boundaries for success/futility.
+\end{itemize}
+
+\subsubsection{Exploration \(\to\) exploitation as a decision-temperature schedule (RS view)}
+The statistical process itself is an exploration/exploitation problem: early runs explore parameter
+space and validate metrics; later runs exploit the best schedule/control. The RS/decision layer
+formalizes exactly this tradeoff via a Gibbs distribution over options:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Decision/DecisionThermodynamics.lean
+@[ext] structure DecisionTemperature where
+  T : ℝ
+  nonneg : 0 ≤ T
+
+noncomputable def decision_gibbs_weight (T : DecisionTemperature) (cost : ℝ) : ℝ :=
+  if T.T > 0 then exp (- cost / T.T) else if cost = 0 then 1 else 0
+
+noncomputable def decision_partition {Ω : Type*} [Fintype Ω]
+    (T : DecisionTemperature) (costs : Ω → ℝ) : ℝ :=
+  ∑ ω, decision_gibbs_weight T (costs ω)
+
+noncomputable def decision_probability {Ω : Type*} [Fintype Ω] [Nonempty Ω]
+    (T : DecisionTemperature) (costs : Ω → ℝ) (ω : Ω) : ℝ :=
+  decision_gibbs_weight T (costs ω) / decision_partition T costs
+\end{lstlisting}
+
+Interpretation: the ``analysis policy'' should explicitly schedule exploration (more diverse
+conditions, higher entropy) before exploitation (tight focus near the best-performing coherence
+configuration), rather than mixing them implicitly and losing interpretability.
+
+\subsubsection{False-discovery control}
+Multiple testing arises from:
+\begin{itemize}
+  \item multiple yield proxies,
+  \item multiple candidate barrier-scale functional forms,
+  \item multiple negative controls,
+  \item multiple step-down stages.
+\end{itemize}
+Mitigation strategy:
+\begin{enumerate}
+  \item declare one primary endpoint and one primary analysis,
+  \item treat all others as exploratory and control FDR (Benjamini--Hochberg) or familywise error
+  (Bonferroni/Holm) depending on scientific risk tolerance,
+  \item require that any “exploratory discovery” be confirmed in a fresh randomized block.
+\end{enumerate}
+
+\subsection{Robustness checks and negative controls}
+\subsubsection{Negative controls (mechanism checks)}
+Run the negative controls defined in the Run Protocol (timing shuffle, phase detune, symmetry
+scramble). The statistical expectation is directional:
+\begin{itemize}
+  \item negative controls reduce \(\phiC\) and/or \(\ledgerSync\),
+  \item yield should not improve under those interventions at fixed classical drive,
+  \item observed changes should align with the component metrics (jitter vs phase vs ledger value).
+\end{itemize}
+
+\subsubsection{Permutation tests within randomized blocks}
+Because the noise distribution may be non-Gaussian, prefer permutation tests within each randomized
+block for the primary estimand \(\Delta\), using the block’s randomization as the reference
+distribution.
+
+\subsubsection{Drift diagnostics}
+Include time-index covariates and calibration-version indicators in secondary regression checks.
+If calibration version changes mid-block, treat it as a protocol violation unless explicitly
+pre-registered.
+
+\subsubsection{Sensitivity to measurement uncertainty}
+For \(\ledgerSync\), treat calibration uncertainty as an explicit perturbation and perform a
+sensitivity analysis: recompute ledger values under worst-case envelope perturbations and confirm
+that the primary conclusions are stable (or quantify instability).
+
+\section{Certificate Bundle Examples}
+This appendix provides concrete certificate bundle specimens for the three facility-facing outputs
+that matter most for this paper:
+\begin{enumerate}
+  \item \(\phiC\): timing/phase coherence certificate,
+  \item \(\ledgerSync\): symmetry ledger synchronization certificate,
+  \item RS shot efficiency scalars: \(\barrierScale\), \(\barrierScale^2\), and \(1/\barrierScale^2\).
+\end{enumerate}
+
+\textbf{Design intent.} A certificate bundle is a replayable ``receipt'' for one computation. It is
+meant to be exported as JSON (or any equivalent serialization) and then checked in audit pipelines.
+The bundle includes:
+\begin{itemize}
+  \item a module name and version,
+  \item a timestamp,
+  \item an input hash (enough to reproduce the computation),
+  \item key-value output pairs (as strings for system interoperability),
+  \item a PASS/FAIL bit,
+  \item and a theorem reference string (used as an internal traceability tag).
+\end{itemize}
+
+\subsection{Lean formalization: certificate bundle schema and issuers}
+The executable schema and issuing functions are defined in:\\
+\IMpath{Fusion/Executable/Interfaces.lean}.
+
+\noindent The relevant excerpt is:
+
+\begin{lstlisting}
+-- Lean excerpt: IndisputableMonolith/Fusion/Executable/Interfaces.lean
+structure CertificateBundle where
+  moduleName : String
+  version : String := "1.0"
+  timestamp : String
+  inputHash : String
+  outputs : List (String × String)
+  passed : Bool
+  theoremRef : String
+
+def certifyRSBarrierScale (input : RSCoherenceInput) : CertificateBundle :=
+  let output := computeRSBarrierScale input
+  ⟨"RSBarrierScale",
+   "1.0",
+   "2026-01-21",
+   s!"phiCoherence={input.phiCoherence},ledgerSync={input.ledgerSync}",
+   [("barrierScale", toString output.barrierScale)],
+   output.barrierScale > 0.0,
+   "Fusion.ReactionNetworkRates.rsBarrierScale_pos (model-layer)"⟩
+
+def certifyPhiCoherence (input : PhiCoherenceInput) : CertificateBundle :=
+  let out := computePhiCoherence input
+  ⟨"PhiCoherence",
+   "1.0",
+   "2026-01-21",
+   s!"n={input.measuredTimes.length},channels={input.channelPhases.length}",
+   [("jitterRMS", toString out.jitterRMS),
+    ("skewRMS", toString out.skewRMS),
+    ("phaseAlignment", toString out.phaseAlignment),
+    ("phiCoherence", toString out.phiCoherence)],
+   out.phiCoherence ≥ 0.0,
+   "Executable metric (facility-calibrated)"⟩
+
+def certifyLedgerSync (input : LedgerSyncInput) : CertificateBundle :=
+  let out := computeLedgerSync input
+  ⟨"LedgerSync",
+   "1.0",
+   "2026-01-21",
+   s!"modes={input.weights.length}",
+   [("ledgerValue", toString out.ledgerValue),
+    ("passed", toString out.passed),
+    ("ledgerSync", toString out.ledgerSync)],
+   out.ledgerSync ≥ 0.0,
+   "Executable metric derived from ledger"⟩
+\end{lstlisting}
+
+The rest of this appendix provides example inputs and example serialized bundles.
+
+\subsection{Example: \texorpdfstring{$\phiC$}{phiC} certificate}
+\subsubsection{Example input (perfect timing + perfect phase alignment)}
+Choose a minimal example with perfect agreement between expected and measured times, and phases
+perfectly aligned at \(0\) radians:
+\begin{lstlisting}
+-- Lean example input (illustrative)
+def examplePhiInput : PhiCoherenceInput :=
+  { expectedTimes := [0.0, 1.0]
+    measuredTimes := [0.0, 1.0]
+    channelPhases := [0.0, 0.0]
+    channelTimeOffsets := [0.0, 0.0]
+    jitterScale := 1e-12
+    skewScale := 1e-12 }
+\end{lstlisting}
+
+Under this input, the intended behavior is:
+\(\texttt{jitterRMS}=0\), \(\texttt{skewRMS}=0\), \(\texttt{phaseAlignment}=1\), and \(\phiC=1\).
+
+\subsubsection{Example certificate bundle (JSON-like rendering)}
+An example serialized bundle (field names match the Lean structure) is:
+\begin{lstlisting}
+{
+  "moduleName": "PhiCoherence",
+  "version": "1.0",
+  "timestamp": "2026-01-21",
+  "inputHash": "n=2,channels=2",
+  "outputs": {
+    "jitterRMS": "0.0",
+    "skewRMS": "0.0",
+    "phaseAlignment": "1.0",
+    "phiCoherence": "1.0"
+  },
+  "passed": true,
+  "theoremRef": "Executable metric (facility-calibrated)"
+}
+\end{lstlisting}
+
+\subsection{Example: \texorpdfstring{$\ledgerSync$}{ledgerSync} certificate}
+\subsubsection{Example input (unity ratios)}
+Choose two modes with unit weights and unity ratios. This should produce \(\texttt{ledgerValue}=0\),
+PASS under any nonnegative threshold, and \(\ledgerSync=1\):
+\begin{lstlisting}
+-- Lean example input (illustrative)
+def exampleLedgerSyncInput : LedgerSyncInput :=
+  { weights := [1.0, 1.0]
+    ratios := [1.0, 1.0]
+    threshold := 0.1
+    ledgerScale := 0.1 }
+\end{lstlisting}
+
+\subsubsection{Example certificate bundle (JSON-like rendering)}
+\begin{lstlisting}
+{
+  "moduleName": "LedgerSync",
+  "version": "1.0",
+  "timestamp": "2026-01-21",
+  "inputHash": "modes=2",
+  "outputs": {
+    "ledgerValue": "0.0",
+    "passed": "true",
+    "ledgerSync": "1.0"
+  },
+  "passed": true,
+  "theoremRef": "Executable metric derived from ledger"
+}
+\end{lstlisting}
+
+\subsection{Example: RS shot efficiency report line items}
+This paper uses a small set of RS shot efficiency scalars derived from \((\phiC,\ledgerSync)\):
+\[
+\barrierScale,\quad \barrierScale^2,\quad \frac{1}{\barrierScale^2}.
+\]
+These are produced by the executable function \texttt{computeRSShotEfficiency} (Appendix
+``Operational Metric Definitions'').
+
+\subsubsection{Example computation and expected values}
+Take the (idealized) coherence pair \(\phiC=1\), \(\ledgerSync=1\). Then
+\(\barrierScale=1/(1+1+1)=1/3\), \(\barrierScale^2=1/9\), and \(1/\barrierScale^2=9\).
+
+\subsubsection{Example report line items (JSON-like rendering)}
+This is not currently emitted as a dedicated \texttt{CertificateBundle} in the executable layer,
+but the recommended report items for the shot record are:
+\begin{lstlisting}
+{
+  "phiCoherence":  "1.0",
+  "ledgerSync":    "1.0",
+  "barrierScale":  "0.3333333",
+  "temperatureScale": "0.1111111",
+  "effectiveTempGain": "9.0"
+}
+\end{lstlisting}
+
+If desired, a facility can wrap these line items into a \texttt{CertificateBundle} with
+\texttt{moduleName = "RSShotEfficiency"} and an \texttt{inputHash} that records the inputs and
+calibration versions used to compute \(\phiC\) and \(\ledgerSync\).
+
+\end{document}
+

@@ -1,0 +1,153 @@
+\documentclass[11pt]{amsart}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue]{hyperref}
+\usepackage{amsfonts,amsmath,amsthm,amssymb}
+\usepackage[margin=1.2in]{geometry}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{definition}{Definition}[section]
+\newtheorem{example}{Example}[section]
+\newtheorem{remark}{Remark}[section]
+
+\title{Response to Recognition Geometry Comments}
+\author{Jonathan Washburn}
+\date{December 11, 2025}
+
+\begin{document}
+\maketitle
+
+\section{Administrative Points}
+
+\subsection{Lean Code Placement}
+\textbf{Comment}: Move all Lean code to an appendix.
+
+\textbf{Response}: Agreed. The appendix will be organized as:
+\begin{itemize}
+    \item[A.] Core definitions
+    \item[B.] Quotient construction
+    \item[C.] Composition and refinement
+    \item[D.] Finite resolution theorems
+    \item[E.] RS Bridge
+\end{itemize}
+
+\subsection{References for Section 2}
+\textbf{Comment}: Section 2 needs references.
+
+\textbf{Response}: Suggested citations by subsection:
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Topic} & \textbf{Reference} \\
+\hline
+Configuration spaces & Penrose \cite{Penrose} \\
+Topological structure & Munkres \cite{Munkres} \\
+Smooth manifolds & Lee \cite{Lee} \\
+Measurement theory & Busch et al.\ \cite{Busch} \\
+Categorical perspective & Mac Lane \cite{MacLane} \\
+Relational interpretation & Rovelli \cite{RQM} \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Additional Examples}
+\textbf{Comment}: Example 2.1 is important. More examples welcome.
+
+\textbf{Response}: Three additional examples recommended:
+
+\begin{example}[Discrete Lattice]
+$\mathcal{C} = \mathbb{Z}^3$, $\mathcal{E} = \{0,1\}$, $R(x,y,z) = (x+y+z) \mod 2$. 
+Quotient has 2 points. Shows RG applies without continuity.
+\end{example}
+
+\begin{example}[Quantum Spin]
+$\mathcal{C} = S^2$ (Bloch sphere), $\mathcal{E} = \{\pm 1\}$. The $z$-spin recognizer partitions into hemispheres. Adding $R_x, R_y$ refines but never recovers full $S^2$---illustrating finite resolution.
+\end{example}
+
+\begin{example}[RS Instantiation]
+$\mathcal{C} = \mathcal{L}$ (ledger), $\mathcal{E} = \mathbb{R}^3$. Position recognizer: $R_{\text{pos}}(\ell) = (x,y,z)$. Physical space \emph{is} $\mathcal{L}/\!\sim_{R}$.
+\end{example}
+
+\subsection{RG3 as Definition}
+\textbf{Comment}: Indistinguishability is a definition, not an axiom.
+
+\textbf{Response}: Correct. The relation $c_1 \sim_R c_2 \Leftrightarrow R(c_1) = R(c_2)$ inherits equivalence properties from equality. The Lean code treats it as \texttt{def}, not \texttt{axiom}. Paper should list RG0--2, RG4--7 as axioms; RG3 as definition.
+
+%----------------------------------------------------------------------
+\section{Conceptual Questions}
+%----------------------------------------------------------------------
+
+\subsection{Total vs.\ Partial Recognizers}
+\textbf{Comment}: Should recognizers be total? Physical detectors have range limits.
+
+\textbf{Response}: Keep total recognizers for the foundational paper. The key points:
+
+\begin{itemize}
+    \item \textbf{Partial recognizers}: $R : \text{dom}(R) \subseteq \mathcal{C} \to \mathcal{E}$. Quotient restricted to domain. Straightforward extension.
+    
+    \item \textbf{Stochastic recognizers}: $R : \mathcal{C} \to \mathcal{P}(\mathcal{E})$. Connects to POVMs. More radical---requires distributional equivalence.
+    
+    \item \textbf{RS context}: The 8-tick cycle ensures RS recognizers are always total. Finite resolution (RG4) handles detector limits.
+\end{itemize}
+
+Add a remark noting these extensions for future work.
+
+\subsection{Formalizing $\Sigma$}
+\textbf{Comment}: The structure $\Sigma$ is not formalized. Without this, the Recognition Triple remains metaphorical.
+
+\textbf{Response}: Valid concern. Here is a precise formalization:
+
+\begin{definition}[Recognition Structure]
+A \emph{Recognition Structure} on $(\mathcal{C}, \mathcal{E})$ is a tuple $\Sigma = (\mathcal{N}, R)$ where:
+\begin{enumerate}
+    \item $\mathcal{N} : \mathcal{C} \to \mathcal{P}(\mathcal{P}(\mathcal{C}))$ is a locality structure (RG1)
+    \item $R : \mathcal{C} \to \mathcal{E}$ is a recognizer satisfying finite resolution (RG4)
+\end{enumerate}
+\end{definition}
+
+\begin{definition}[Recognition Triple]
+A \emph{Recognition Triple} is $(\mathcal{C}, \mathcal{E}, \Sigma)$ where $\mathcal{C}$ is nonempty (RG0), $|\mathcal{E}| \geq 2$, and $\Sigma$ is a recognition structure.
+\end{definition}
+
+The Lean formalization already captures this:
+\begin{verbatim}
+structure RecognitionGeometry (C E : Type*) where
+  locality : LocalConfigSpace C
+  recognizer : Recognizer C E
+  finite_resolution : HasFiniteResolution locality recognizer
+\end{verbatim}
+
+The general case (families of recognizers) is recovered via composition (RG6).
+
+\textbf{Recommendation}: Add Section 2.5 with this definition.
+
+%----------------------------------------------------------------------
+\section{Summary of Changes}
+%----------------------------------------------------------------------
+
+\begin{enumerate}
+    \item Move Lean code to Appendix A--E
+    \item Add citations per table above
+    \item Include 3 additional examples (discrete, quantum, RS)
+    \item Confirm RG3 labeled as Definition
+    \item Add remark on partial/stochastic extensions
+    \item Add Section 2.5 formalizing $\Sigma$
+\end{enumerate}
+
+%----------------------------------------------------------------------
+\begin{thebibliography}{99}
+
+\bibitem{Munkres} Munkres, J. \textit{Topology}. Prentice Hall, 2000.
+
+\bibitem{Lee} Lee, J.M. \textit{Introduction to Smooth Manifolds}. Springer, 2013.
+
+\bibitem{Penrose} Penrose, R. \textit{The Road to Reality}. Jonathan Cape, 2004.
+
+\bibitem{Busch} Busch, P. et al. \textit{Quantum Measurement}. Springer, 2016.
+
+\bibitem{MacLane} Mac Lane, S. \textit{Categories for the Working Mathematician}. Springer, 1998.
+
+\bibitem{RQM} Rovelli, C. Relational Quantum Mechanics. \textit{Int.\ J.\ Theor.\ Phys.}\ 35, 1996.
+
+\end{thebibliography}
+
+\end{document}

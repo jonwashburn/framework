@@ -1,0 +1,549 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{array}
+
+% Simple page style
+\pagestyle{plain}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\begin{document}
+
+\begin{center}
+\textbf{\LARGE PATENT APPLICATION}\\[0.5cm]
+\textbf{\Large Method and System for Graph-Theoretic Optimization\\of Fusion Fuel Combinations Using Stability Distance Metric}\\[1cm]
+
+\begin{tabular}{rl}
+\textbf{Application Type:} & Utility Patent \\
+\textbf{Filing Date:} & January 18, 2026 \\
+\textbf{Inventor:} & Jonathan Washburn \\
+\textbf{Technology Field:} & Fusion Energy / Nuclear Engineering / Computational Physics \\
+\textbf{International Class:} & G21B 1/00; G06F 17/10; G16C 20/00 \\
+\end{tabular}
+\end{center}
+
+\vspace{1cm}
+\hrule
+\vspace{0.5cm}
+
+\section*{ABSTRACT}
+
+A method and system for selecting fusion fuel combinations using a graph-theoretic approach based on a ``Stability Distance'' metric derived from nuclear magic numbers. The invention models candidate fusion pathways as a weighted directed graph (or directed hypergraph) where nodes represent nuclear configurations and edges represent fusion-like composition steps weighted by a stability-distance improvement score. The Stability Distance metric, defined as the sum of distances to nearest magic numbers for both protons and neutrons, enables systematic ranking and filtering of candidate pathways toward magic or doubly-magic endpoints. Any claim that Stability Distance predicts physical energy yield, cross-section, or facility performance is treated as an explicit empirical seam unless separately calibrated and validated.
+
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+
+\section{BACKGROUND OF THE INVENTION}
+
+\subsection{Technical Field}
+
+This invention relates generally to nuclear fusion fuel optimization, and more particularly to computational methods for selecting fusion fuel mixtures that maximize energy yield by targeting nuclear configurations with favorable stability properties.
+
+\subsection{Description of Related Art}
+
+\subsubsection{The Fuel Selection Problem}
+
+Nuclear fusion requires combining light nuclei to form heavier nuclei, releasing energy in the process. The choice of fuel mixture critically affects:
+\begin{itemize}
+    \item \textbf{Ignition threshold:} The temperature and density required to initiate sustained fusion
+    \item \textbf{Energy gain:} The ratio of fusion energy output to input energy ($Q$-factor)
+    \item \textbf{Neutron production:} Affecting reactor shielding and materials requirements
+    \item \textbf{Reaction rate:} Determining power density and reactor size
+\end{itemize}
+
+Current fusion research primarily focuses on deuterium-tritium (D-T) fuel due to its low ignition threshold, but this choice is based largely on empirical observation rather than systematic optimization.
+
+\subsubsection{Nuclear Magic Numbers}
+
+Nuclear physics has long recognized that nuclei with certain ``magic'' numbers of protons or neutrons exhibit unusual stability:
+\begin{equation}
+    \mathcal{M} = \{2, 8, 20, 28, 50, 82, 126\}
+\end{equation}
+
+Nuclei with magic numbers have:
+\begin{itemize}
+    \item Higher binding energy per nucleon
+    \item Greater resistance to nuclear decay
+    \item Anomalously high natural abundance
+\end{itemize}
+
+``Doubly-magic'' nuclei, with both $Z \in \mathcal{M}$ and $N \in \mathcal{M}$, are exceptionally stable. Examples include:
+\begin{itemize}
+    \item $^{4}$He (Helium-4): $Z = 2$, $N = 2$
+    \item $^{16}$O (Oxygen-16): $Z = 8$, $N = 8$
+    \item $^{40}$Ca (Calcium-40): $Z = 20$, $N = 20$
+    \item $^{208}$Pb (Lead-208): $Z = 82$, $N = 126$
+\end{itemize}
+
+\subsubsection{Limitations of Prior Art}
+
+Prior approaches to fusion fuel optimization include:
+
+\begin{enumerate}
+    \item \textbf{Binding energy maximization:} Selecting reactions that maximize energy release based on mass defect. This approach ignores reaction kinetics and nuclear structure effects.
+    
+    \item \textbf{Cross-section optimization:} Choosing fuels with high fusion cross-sections at achievable temperatures. This ignores the energy yield per reaction.
+    
+    \item \textbf{Empirical screening:} Testing candidate fuel mixtures experimentally. This is expensive and limited to a small search space.
+    
+    \item \textbf{Semi-empirical mass formula (SEMF):} Using the Bethe-Weizs\"{a}cker formula to estimate binding energies. This requires fitting parameters and does not naturally incorporate magic number effects.
+\end{enumerate}
+
+None of these approaches provides a systematic framework for exploring the full space of fusion pathways or leveraging the predictive power of nuclear magic numbers.
+
+\subsection{Objects of the Invention}
+
+It is therefore an object of this invention to provide a systematic method for optimizing fusion fuel selection.
+
+It is a further object to incorporate nuclear magic number effects into fuel optimization.
+
+It is a further object to represent fusion pathways as a computationally tractable graph structure.
+
+It is a further object to define a ``Stability Distance'' metric that predicts high-yield reactions.
+
+It is a further object to provide formally verified properties of the Stability Distance metric (e.g., doubly-magic implies zero distance and monotonicity of the Magic-Favorable predicate) within the declared abstract fusion-composition model.
+
+\section{SUMMARY OF THE INVENTION}
+
+The present invention provides a graph-theoretic framework for fusion fuel optimization based on a novel Stability Distance metric.
+
+\subsection{The Stability Distance Metric}
+
+\begin{definition}[Distance to Magic]
+For a natural number $x$, define the distance to the nearest magic number:
+\begin{equation}
+    d(x) = \min_{m \in \mathcal{M}} |x - m|
+\end{equation}
+where $\mathcal{M} = \{2, 8, 20, 28, 50, 82, 126\}$.
+\end{definition}
+
+\begin{definition}[Stability Distance]
+For a nucleus with $Z$ protons and $N$ neutrons, the Stability Distance is:
+\begin{equation}
+    S(Z, N) = d(Z) + d(N)
+\end{equation}
+\end{definition}
+
+The Stability Distance has the following properties:
+\begin{itemize}
+    \item $S(Z, N) \geq 0$ for all configurations
+    \item $S(Z, N) = 0$ if and only if $(Z, N)$ is doubly-magic
+    \item Lower $S$ correlates with higher nuclear stability
+\end{itemize}
+
+\subsection{The Fusion Reaction Network}
+
+\begin{definition}[Fusion Network]
+A Fusion Network is a weighted directed graph $G = (V, E, w)$ where:
+\begin{itemize}
+    \item $V$: Set of nuclear configurations $(Z, N)$
+    \item $E$: Set of fusion reactions connecting configurations
+    \item $w: E \to \mathbb{R}$: Weight function based on stability improvement
+\end{itemize}
+\end{definition}
+
+For an edge representing a binary fusion-like composition step
+\((Z_1,N_1) + (Z_2,N_2) \to (Z_1+Z_2, N_1+N_2)\), define the stability-improvement weight:
+\begin{equation}
+    w(e) = \bigl[S(Z_1,N_1) + S(Z_2,N_2)\bigr] - S(Z_1+Z_2, N_1+N_2).
+\end{equation}
+
+Non-negative weight indicates the product is no farther from magic numbers than the summed reactant distances (a monotonicity condition formally proved for the abstract composition model).
+
+\subsection{Key Results}
+
+\begin{theorem}[Magic-Favorable Identification]
+A fusion-like composition edge is ``Magic-Favorable'' if $w(e) \ge 0$ under the Stability Distance model. This predicate is used to filter or prioritize pathways toward magic or doubly-magic configurations. Any correlation between this predicate and physical yield or cross-section is an empirical seam.
+\end{theorem}
+
+\begin{theorem}[Doubly-Magic Attractor]
+In the Stability Distance model, doubly-magic configurations satisfy \(S(Z,N)=0\) and are (trivially) minimal for the Stability Distance order. Under the abstract fusion-composition model and the Magic-Favorable predicate, Stability Distance does not increase along a Magic-Favorable step. Stronger statements about physical termination (e.g., “iron peak” or energy release) are treated as empirical seams.
+\end{theorem}
+
+\begin{theorem}[Superiority over Binding Energy]
+In some embodiments, the Stability Distance metric is used as an additional heuristic feature alongside conventional physics models (e.g., Q-values, cross-sections, and transport constraints). Any claim of “superiority” over a binding-energy model is an empirical evaluation seam and is not asserted as a universal theorem.
+\end{theorem}
+
+\section{DETAILED DESCRIPTION OF THE INVENTION}
+
+\subsection{Mathematical Foundation}
+
+\subsubsection{Magic Number Set}
+
+The magic numbers arise from shell closures in the nuclear shell model. We define:
+\begin{equation}
+    \mathcal{M} = \{2, 8, 20, 28, 50, 82, 126\}
+\end{equation}
+
+These values correspond to filled nuclear shells:
+\begin{center}
+\begin{tabular}{|c|l|}
+\hline
+\textbf{Magic Number} & \textbf{Shell Configuration} \\
+\hline
+2 & $1s_{1/2}$ complete \\
+8 & $1p$ shell complete \\
+20 & $2s_{1/2}$, $1d$ shells complete \\
+28 & $1f_{7/2}$ subshell complete \\
+50 & Major shell closure \\
+82 & Major shell closure \\
+126 & Major shell closure \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsubsection{Distance Function Properties}
+
+The distance function $d: \mathbb{N} \to \mathbb{N}$ satisfies:
+
+\begin{lemma}[Distance Bounds]
+For any $x \in \mathbb{N}$:
+\begin{equation}
+    0 \leq d(x) \leq 22
+\end{equation}
+The maximum is achieved at $x = 105$ (midpoint between 82 and 126, with alternative maxima near other gaps).
+\end{lemma}
+
+\begin{lemma}[Distance Computation]
+For practical computation, $d(x)$ can be computed in $O(|\mathcal{M}|) = O(7) = O(1)$ time by checking distance to each magic number.
+\end{lemma}
+
+\subsubsection{Stability Distance Properties}
+
+\begin{theorem}[Stability Distance Characterization]
+The Stability Distance $S(Z, N) = d(Z) + d(N)$ satisfies:
+\begin{enumerate}
+    \item $S(Z, N) = 0 \Leftrightarrow (Z, N) \in \mathcal{M} \times \mathcal{M}$ (doubly-magic)
+    \item $S(Z, N) \leq d(Z)$ when $N \in \mathcal{M}$ (magic-N)
+    \item $S(Z, N) \leq d(N)$ when $Z \in \mathcal{M}$ (magic-Z)
+    \item $S(Z, N) \leq 44$ for all physically relevant nuclei
+\end{enumerate}
+\end{theorem}
+
+\subsection{Fusion Network Construction}
+
+\subsubsection{Node Definition}
+
+Each node in the Fusion Network represents a nuclear configuration:
+\begin{equation}
+    v = (Z, N, A) \quad \text{where } A = Z + N
+\end{equation}
+
+We include only configurations satisfying physical constraints:
+\begin{itemize}
+    \item $Z \geq 1$ (at least one proton)
+    \item $N \geq 0$ (neutron count non-negative)
+    \item $0.7 \leq N/Z \leq 1.5$ approximately (stability valley constraint)
+\end{itemize}
+
+\subsubsection{Edge Definition}
+
+Edges represent fusion reactions. For a reaction:
+\begin{equation}
+    (Z_1, N_1) + (Z_2, N_2) \to (Z_1 + Z_2, N_1 + N_2)
+\end{equation}
+
+We create an edge $e$ with:
+\begin{align}
+    \text{source}(e) &= \{(Z_1, N_1), (Z_2, N_2)\} \\
+    \text{target}(e) &= (Z_1 + Z_2, N_1 + N_2)
+\end{align}
+
+For the directed graph representation, we use a hypergraph formulation or linearize by considering composite source nodes.
+
+\subsubsection{Weight Function}
+
+The edge weight captures stability improvement:
+\begin{equation}
+    w(e) = S_{\text{source}} - S_{\text{target}} = [d(Z_1) + d(N_1) + d(Z_2) + d(N_2)] - [d(Z_1 + Z_2) + d(N_1 + N_2)]
+\end{equation}
+
+\begin{definition}[Magic-Favorable Reaction]
+A reaction is \textbf{Magic-Favorable} if $w(e) > 0$, meaning the product has lower Stability Distance than the reactants.
+\end{definition}
+
+\subsection{Algorithm for Fuel Optimization}
+
+\subsubsection{Input Specification}
+
+The optimization algorithm takes as input:
+\begin{enumerate}
+    \item Initial fuel inventory: Set of available nuclear species
+    \item Target energy yield: Minimum $Q$-value requirement
+    \item Constraint set: Maximum temperatures, neutron budgets, etc.
+\end{enumerate}
+
+\subsubsection{Graph Construction Phase}
+
+\begin{enumerate}
+    \item Enumerate all nuclear configurations reachable from initial inventory
+    \item For each pair of configurations, create fusion edge if reaction is physically allowed
+    \item Compute Stability Distance for all nodes
+    \item Compute edge weights as stability improvement
+\end{enumerate}
+
+\subsubsection{Optimization Phase}
+
+\begin{enumerate}
+    \item \textbf{Filter:} Remove edges with $w(e) \leq 0$ (non-Magic-Favorable)
+    \item \textbf{Search:} Find paths from initial configurations toward doubly-magic products
+    \item \textbf{Rank:} Order paths by total weight (cumulative stability improvement)
+    \item \textbf{Select:} Choose fuel mixture corresponding to highest-ranked path
+\end{enumerate}
+
+\subsubsection{Output}
+
+The algorithm outputs:
+\begin{itemize}
+    \item Optimal fuel mixture composition
+    \item Predicted reaction pathway
+    \item Estimated energy yield based on stability improvement
+    \item Comparison to baseline (D-T or other standard fuels)
+\end{itemize}
+
+\subsection{Proof of Superiority over Binding Energy Models}
+
+\subsubsection{Shell Correction Term}
+
+The semi-empirical mass formula (SEMF) gives binding energy as:
+\begin{equation}
+    B(Z, N) = a_V A - a_S A^{2/3} - a_C \frac{Z^2}{A^{1/3}} - a_A \frac{(N-Z)^2}{A} + \delta(A, Z)
+\end{equation}
+
+This formula does not include shell effects. An improved model adds:
+\begin{equation}
+    B_{\text{shell}}(Z, N) = B(Z, N) + \Delta_{\text{shell}}(Z, N)
+\end{equation}
+
+where $\Delta_{\text{shell}}$ is the shell correction.
+
+\subsubsection{Stability Distance as Shell Proxy (Empirical Seam)}
+
+In some embodiments, a calibration model treats Stability Distance as a proxy feature for shell effects. This section describes one such empirical modeling assumption; it is not asserted as a universal theorem of nuclear physics.
+
+\begin{theorem}[Shell-Correction Model (Empirical Seam)]
+In one embodiment, a calibrated shell-correction proxy assumes $\Delta_{\text{shell}}$ is negatively correlated with Stability Distance:
+\begin{equation}
+    \Delta_{\text{shell}}(Z, N) \approx -\kappa \cdot S(Z, N)
+\end{equation}
+where $\kappa > 0$ is a coupling constant. Thus:
+\begin{itemize}
+    \item Doubly-magic nuclei ($S = 0$) have maximum shell enhancement
+    \item High $S$ nuclei have negative shell corrections
+\end{itemize}
+\end{theorem}
+
+\subsubsection{Cases Where Stability Distance Outperforms SEMF}
+
+\begin{theorem}[Ranking Proxy (Empirical Seam)]
+Assume an empirical shell-correction proxy of the form \(\Delta_{\text{shell}}(Z,N) \approx -\kappa S(Z,N)\) with \(\kappa>0\), and define an empirical ranking proxy
+\[
+Q_{\text{proxy}} := Q_{\text{SEMF}} + \kappa\cdot w(e).
+\]
+Then for two candidate reactions \(R_1,R_2\) with \(Q_{\text{SEMF}}(R_1)\approx Q_{\text{SEMF}}(R_2)\) and \(w(R_1)>w(R_2)\), the proxy ranks \(R_1\) above \(R_2\): \(Q_{\text{proxy}}(R_1) > Q_{\text{proxy}}(R_2)\).
+\end{theorem}
+
+\begin{proof}
+Immediate from the definition of \(Q_{\text{proxy}}\) and \(\kappa>0\). This is a ranking proxy for use in search/optimization; it does not assert facility-independent physics about true yield.
+\end{proof}
+
+\subsection{Doubly-Magic Attractor Property (Model-Layer)}
+
+In the Stability Distance model, \(S(Z,N)\) is a nonnegative integer and doubly-magic configurations satisfy \(S(Z,N)=0\). Under a strict-improvement policy (requiring \(w(e)>0\) rather than merely \(w(e)\ge 0\)), any repeated application of such steps yields a strictly decreasing sequence of nonnegative integers and therefore cannot continue indefinitely; the process terminates when no further strict-improvement edge exists. Any stronger claim about physical termination mechanisms (e.g., “iron peak”, endothermicity, or astrophysical pathways) is treated as an empirical seam.
+
+\subsection{Computational Implementation}
+
+\subsubsection{Data Structures}
+
+\begin{itemize}
+    \item \textbf{Magic number lookup:} Sorted array for $O(\log 7) = O(1)$ distance computation
+    \item \textbf{Graph representation:} Adjacency list with edge weights
+    \item \textbf{Priority queue:} For Dijkstra-style path optimization
+\end{itemize}
+
+\subsubsection{Complexity Analysis}
+
+For a network with $|V|$ nuclear configurations and $|E|$ possible reactions:
+\begin{itemize}
+    \item Graph construction: $O(|V|^2)$ for pairwise reaction enumeration
+    \item Weight computation: $O(|E|)$ with $O(1)$ per edge
+    \item Path optimization: $O(|E| + |V| \log |V|)$ using Dijkstra's algorithm
+\end{itemize}
+
+Runtime depends on the chosen graph construction bounds and constraints; practical embodiments limit the candidate node/edge set to a facility-relevant subset (e.g., alpha-capture ladders, constrained addends, or curated reaction sets) to keep search tractable.
+
+\subsection{Validation Against Known Fusion Pathways}
+
+\subsubsection{Stellar Nucleosynthesis}
+
+In some embodiments, the Stability Distance metric and graph search are evaluated against known stellar nucleosynthesis pathways. Any claim of predictive accuracy in this section is an empirical evaluation seam and is not asserted as a facility-independent theorem.
+
+\begin{center}
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Process} & \textbf{Path Terminus} & \textbf{S = 0?} \\
+\hline
+pp-chain & $^4$He (Z=2, N=2) & Yes (doubly-magic) \\
+Triple-alpha & $^{12}$C $\to$ $^{16}$O (Z=8, N=8) & Yes (doubly-magic) \\
+Alpha ladder & $^{40}$Ca (Z=20, N=20) & Yes (doubly-magic) \\
+Silicon burning & $^{56}$Ni $\to$ $^{56}$Fe & Near iron peak \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsubsection{r-Process Waiting Points}
+
+The r-process (rapid neutron capture) exhibits ``waiting points'' where nucleosynthesis pauses. These occur at magic neutron numbers:
+\begin{itemize}
+    \item $N = 50$: Waiting point nuclei with $A \approx 80$
+    \item $N = 82$: Waiting point nuclei with $A \approx 130$
+    \item $N = 126$: Waiting point nuclei with $A \approx 195$
+\end{itemize}
+
+In some embodiments, Stability Distance is used as a heuristic feature to flag candidate waiting-point regions (local minima of \(S\) along selected chains). Any claim of predictive correctness is an empirical seam and depends on the dataset/model used for validation.
+
+\subsection{Formal Verification (Lean-Certified Core)}
+
+The certified core of this invention (the Stability Distance metric and basic monotonicity/minimum properties in the abstract fusion-composition model) is formally verified in Lean 4. Empirical evaluation claims (e.g., yield prediction, SEMF superiority, astrophysical termination) are explicitly treated as seams.
+
+Key verified theorems and definitions include:
+\begin{enumerate}
+    \item \texttt{NuclearBridge.stabilityDistance\_zero\_of\_doublyMagic}: doubly-magic \(\Rightarrow S=0\)
+    \item \texttt{ReactionNetwork.magicFavorable\_decreases\_distance}: the Magic-Favorable predicate implies the product distance is bounded by the summed reactant distances
+    \item \texttt{ReactionNetwork.doublyMagic\_is\_minimum}: doubly-magic configurations are minimal for Stability Distance (trivially, since \(S=0\))
+    \item \texttt{NuclearBridge.alpha\_capture\_C12\_favorable} and \texttt{NuclearBridge.alpha\_capture\_C12\_doublyMagic}: example magic-favorable step to doubly-magic O-16
+    \item \texttt{NuclearBridge.alpha\_capture\_Ar36\_favorable} and \texttt{NuclearBridge.alpha\_capture\_Ar36\_doublyMagic}: example magic-favorable step to doubly-magic Ca-40
+\end{enumerate}
+
+Proof artifacts are available in:\\
+\texttt{IndisputableMonolith/Fusion/ReactionNetwork.lean}\\
+\texttt{IndisputableMonolith/Fusion/NuclearBridge.lean}\\
+\texttt{IndisputableMonolith/Fusion/Executable/Interfaces.lean} (executable interface for stability distance)
+
+\subsection{Implementation Evidence (Simulator)}
+An auditable reference implementation of the Stability Distance metric and a Dijkstra-style pathway search over a declared graph model is provided in:
+\begin{itemize}
+  \item \texttt{fusion/simulator/nuclear/magic\_numbers.py}: \texttt{distance\_to\_magic}, \texttt{stability\_distance}, and the magic-number set
+  \item \texttt{fusion/simulator/nuclear/fuel\_graph\_optimizer.py}: graph construction (\texttt{build\_graph}) and shortest-path search (\texttt{dijkstra\_shortest\_path}) with Stability Distance edge cost
+  \item \texttt{fusion/simulator/selfcheck.py}: includes \texttt{\_verify\_fuel\_graph\_optimizer} for runtime integrity checks
+\end{itemize}
+Graph construction choices (e.g., allowed addends or curated reaction sets) and any mapping to physical yield remain explicit seams.
+
+\section{CLAIMS}
+
+\begin{enumerate}[label=\textbf{\arabic*.}]
+    \item A method for selecting fusion fuel combinations, comprising:
+    \begin{enumerate}[label=(\alph*)]
+        \item computing, for each candidate nuclear configuration $(Z, N)$, a Stability Distance $S(Z, N) = d(Z) + d(N)$ where $d(x)$ is the distance to the nearest nuclear magic number in the set $\{2, 8, 20, 28, 50, 82, 126\}$;
+        \item constructing a fusion reaction network as a weighted directed graph with nuclear configurations as nodes and fusion reactions as edges;
+        \item assigning edge weights based on stability improvement $w(e) = S_{\text{reactants}} - S_{\text{product}}$;
+        \item identifying Magic-Favorable reactions having positive edge weight;
+        \item selecting fuel combinations that maximize cumulative positive weight along reaction pathways.
+    \end{enumerate}
+    
+    \item The method of claim 1, wherein the fusion reaction network is a directed hypergraph with edges representing multi-reactant fusion reactions.
+    
+    \item The method of claim 1, wherein selecting fuel combinations comprises finding shortest paths to doubly-magic products using graph search algorithms.
+    
+    \item The method of claim 3, wherein the graph search algorithm is Dijkstra's algorithm with edge weights negated to convert maximization to shortest-path finding.
+    
+    \item The method of claim 1, wherein the method further comprises:
+    \begin{enumerate}[label=(\alph*)]
+        \item filtering the reaction network to remove edges with non-positive weight;
+        \item identifying sink nodes corresponding to doubly-magic configurations;
+        \item ranking pathways by total weight from initial fuel to sink nodes.
+    \end{enumerate}
+    
+    \item The method of claim 1, wherein the Stability Distance is used as a proxy for shell correction terms not captured by the semi-empirical mass formula.
+    
+    \item The method of claim 1, applied to inertial confinement fusion (ICF) fuel pellet design.
+    
+    \item The method of claim 1, applied to magnetic confinement fusion fuel mixture optimization.
+    
+    \item A system for fusion fuel optimization, comprising:
+    \begin{enumerate}[label=(\alph*)]
+        \item a processor configured to execute instructions;
+        \item a memory storing a database of nuclear configurations with precomputed Stability Distances;
+        \item a graph engine module configured to construct and search fusion reaction networks;
+        \item an output interface providing optimal fuel mixture recommendations.
+    \end{enumerate}
+    
+    \item The system of claim 9, wherein the graph engine module implements the method of claim 1.
+    
+    \item The system of claim 9, wherein the memory further stores cross-section data for reactions to filter physically achievable pathways.
+    
+    \item A computer-readable medium containing instructions that, when executed by a processor, cause the processor to:
+    \begin{enumerate}[label=(\alph*)]
+        \item receive specification of available nuclear fuel species;
+        \item compute Stability Distances for all reachable configurations;
+        \item construct a weighted fusion reaction network;
+        \item identify optimal fuel combinations by maximizing cumulative stability improvement;
+        \item output the recommended fuel mixture and predicted reaction pathway.
+    \end{enumerate}
+    
+    \item The medium of claim 12, wherein the instructions further cause the processor to validate results against known stellar nucleosynthesis pathways.
+    
+    \item A method for ranking candidate fusion reactions, comprising:
+    \begin{enumerate}[label=(\alph*)]
+        \item computing the Stability Distance $S$ for reactant and product configurations;
+        \item computing the stability improvement $\Delta S = S_{\text{reactants}} - S_{\text{product}}$;
+        \item ranking or filtering candidate reactions by $\Delta S$ as a stability-distance heuristic feature, optionally in combination with other physics models (e.g., Q-values and cross-sections) as an empirical seam.
+    \end{enumerate}
+    
+    \item The method of claim 14, wherein the prediction accounts for shell correction effects not captured by the semi-empirical mass formula.
+    
+    \item A method for identifying high-yield fusion pathways in stellar nucleosynthesis modeling, comprising:
+    \begin{enumerate}[label=(\alph*)]
+        \item constructing a fusion reaction network for elements up to iron ($Z \leq 26$);
+        \item computing Stability Distance for all configurations;
+        \item identifying Magic-Favorable reaction chains;
+        \item predicting r-process waiting points at magic neutron number configurations.
+    \end{enumerate}
+    
+    \item The method of claim 16, wherein waiting points are predicted at $N \in \{50, 82, 126\}$.
+    
+    \item A data structure for fusion reaction optimization, comprising:
+    \begin{enumerate}[label=(\alph*)]
+        \item a node table storing nuclear configurations $(Z, N, A)$ with precomputed Stability Distances $S(Z, N)$;
+        \item an edge table storing fusion reactions with computed weights $w = S_{\text{in}} - S_{\text{out}}$;
+        \item index structures enabling efficient lookup of Magic-Favorable reactions.
+    \end{enumerate}
+    
+    \item The data structure of claim 18, implemented as a graph database with adjacency list representation.
+    
+    \item A method for designing advanced fusion fuels, comprising:
+    \begin{enumerate}[label=(\alph*)]
+        \item identifying doubly-magic target products with $S = 0$;
+        \item enumerating all reaction pathways from available fuel to target products;
+        \item selecting pathways with maximum cumulative Magic-Favorable weight;
+        \item synthesizing fuel mixtures corresponding to selected pathway initiators.
+    \end{enumerate}
+\end{enumerate}
+
+\section{ABSTRACT OF THE DISCLOSURE}
+
+A method and system for selecting fusion fuel combinations using a graph-theoretic approach based on a ``Stability Distance'' metric derived from nuclear magic numbers. The Stability Distance, defined as the sum of distances to nearest magic numbers for protons and neutrons, is used as a stability-distance heuristic feature for ranking and filtering candidate pathways toward magic or doubly-magic endpoints in a declared graph model. The invention models candidate composition steps as a weighted directed graph (or directed hypergraph) where weights are computed from Stability Distance. The certified core of the metric definitions and basic monotonicity/minimum properties is formally verified in Lean 4; any claim of yield prediction or superiority over other nuclear models is treated as an explicit empirical seam unless separately calibrated and validated.
+
+\vspace{1cm}
+\hrule
+\vspace{0.5cm}
+
+\begin{center}
+\textbf{INVENTOR'S DECLARATION}
+\end{center}
+
+I, Jonathan Washburn, declare that I am the original inventor of the subject matter disclosed herein, that the disclosure is accurate to the best of my knowledge, and that I have not omitted any material information that would affect patentability.
+
+\vspace{1cm}
+\noindent\textbf{Signature:} \underline{\hspace{6cm}} \\[0.3cm]
+\noindent\textbf{Date:} January 18, 2026 \\[0.3cm]
+\noindent\textbf{Inventor:} Jonathan Washburn
+
+\end{document}

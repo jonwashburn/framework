@@ -1,0 +1,175 @@
+@META
+TAG:NAME; Universal Light Language; abbrev=ULL; version=1.0; date=2025-11-14
+TAG:SCOPE; description="Machine-ingestible spec for ULL tokens, operators, motifs, meaning, ethics, and pipelines."; anchor_files=[AI/light_language/universal_language.py,AI/light_language/lnal.py,light_language/lnal.py,synthetic/grammar.json,synthetic/motifs.json,light_language/STRATEGY_PLAN.md]
+TAG:STATUS; spec_stage=complete; coverage="operational stack + Lean semantics + ethics"; next_steps=[external_replication,refine_lean_proofs,expand_real_data_motifs]
+
+@WINDOWS
+STRUCT;EightBeatWindow; fields=[samples]; length=8; semantics="fundamental 8-tick window for all ULL transforms"; invariants=[mean_zero_after_neutrality]
+FUNC;align_to_eight_beat; py=AI.light_language.universal_language.align_to_eight_beat; signature="signal[float] -> windows[n,8]"; semantics="truncate 1-D stream to multiple of 8 and reshape"; status=implemented
+FUNC;enforce_eight_neutrality; py=AI.light_language.universal_language.enforce_eight_neutrality; signature="windows[n,8] -> windows[n,8]"; semantics="project each window onto mean-free subspace"; status=implemented
+FUNC;project_to_structured_set; py=AI.light_language.universal_language.project_to_structured_set; signature="signal[float] -> (neutral_flat[8n],Z[n])"; semantics="split stream into neutral measure ledger and Z event ledger"; status=implemented
+
+@TOKENS
+STRUCT;WToken; fields=[nu_phi,ell,sigma,tau,k_perp,phi_e,basis]; py=AI.light_language.universal_language.WToken; semantics="semantic atom with normalized complex DFT_8 basis and phi-tier integer coordinates"; invariants=[0<=tau<8,ell>=0,norm(basis)=1]; status=implemented
+PROPERTY;WTokenBasisNormalized; statement="WToken.basis is l2-normalized on creation."; source=WToken.__post_init__; status=implemented
+
+@CPM_DISCOVERY
+CLASS;CPM_Discovery; py=AI.light_language.universal_language.CPM_Discovery; params=[gain_threshold,coercive_bound]; semantics="coercive projection method for discovering a minimal WToken dictionary from neutral eight-beat windows"; status=implemented
+PIPELINE;CPM_DiscoverTokens; steps=[
+  align_to_eight_beat,
+  enforce_eight_neutrality,
+  stack_neutral_windows,
+  centered_SVD,
+  greedy_token_addition_under_J_cost,
+  backward_prune_under_coercive_bound
+]; output=WToken_list; status=implemented
+
+@ANALYZE_SYNTHESIZE
+FUNC;analyze; py=AI.light_language.universal_language.analyze; signature="(signal,tokens) -> (Z,A)"; semantics="project signal into Z ledger and per-window token activation matrix A"; status=implemented
+FUNC;synthesize; py=AI.light_language.universal_language.synthesize; signature="(Z,A,tokens) -> signal"; semantics="reconstruct stream from Z ledger and token activations"; status=implemented
+
+@CALIBRATION
+FUNC;calibrate_period; py=AI.light_language.universal_language.calibrate_period; signature="signal -> {estimated_period,expected_period,match_quality,is_eight_beat}"; semantics="autocorrelation based period estimator and eight-beat compatibility test"; status=implemented
+
+@LNAL_EXECUTION
+STRUCT;LedgerState; fields=[neutral_windows,Z,M,open_lock]; py=AI.light_language.lnal.LedgerState; semantics="shared ledger state for all LNAL operators on eight-beat windows"; invariants=[neutrality_per_window,M_nonnegative,len(Z)=len(M)=window_count]; status=implemented
+CLASS;LinearOperator; py=AI.light_language.lnal.LinearOperator; semantics="row-vector operator whose matrix preserves neutrality and is coercive (singular values >=1)"; status=implemented
+OPCODE;LISTEN; py=AI.light_language.lnal.listen; inputs=[signal]; outputs=[LedgerState]; pre=[]; post=[neutrality_per_window,Z_ledger_defined,M_nonnegative,open_lock=false]; semantics="project raw stream into neutral windows and ledgers (Z,M)"; status=implemented
+OPCODE;LOCK; py=AI.light_language.lnal.lock; inputs=[LedgerState,indices]; outputs=[LedgerState']; pre=[open_lock=false]; post=[open_lock=true,M_non_decrease]; semantics="apply LOCK_OPERATOR on selected windows; tighten structure without reducing measure"; status=implemented
+OPCODE;BALANCE; py=AI.light_language.lnal.balance; inputs=[LedgerState,indices]; outputs=[LedgerState']; pre=[open_lock=true]; post=[open_lock=false,M_non_decrease]; semantics="apply BALANCE_OPERATOR on selected windows while closing the lock"; status=implemented
+OPCODE;FOLD; py=AI.light_language.lnal.fold; inputs=[LedgerState,indices]; outputs=[LedgerState']; pre=[]; post=[open_lock_unchanged,M_non_decrease]; semantics="apply FOLD_OPERATOR (mirror and gather) on selected windows"; status=implemented
+OPCODE;BRAID; py=AI.light_language.lnal.braid; inputs=[LedgerState,triad]; outputs=[LedgerState']; pre=[open_lock=false,Z_triad_sum_zero,M_triad_positive,orientation_non_degenerate,orientation_sign_preserved]; post=[M_non_decrease,Z_triad_sum_zero]; semantics="apply BRAID_OPERATOR on an ordered triad of windows via Kronecker structured coupling"; status=implemented
+OPCODE;inverse_lock; py=AI.light_language.lnal.inverse_lock; semantics="analytic inverse of LOCK for calibration and tests"; status=implemented
+OPCODE;inverse_balance; py=AI.light_language.lnal.inverse_balance; semantics="analytic inverse of BALANCE"; status=implemented
+OPCODE;inverse_fold; py=AI.light_language.lnal.inverse_fold; semantics="analytic inverse of FOLD"; status=implemented
+OPCODE;inverse_braid; py=AI.light_language.lnal.inverse_braid; semantics="analytic inverse of BRAID on a legal triad"; status=implemented
+
+@LNAL_MOTIFS
+STRUCT;MotifToken; fields=[token_id,basis_real,basis_imag,phi?]; source_files=[synthetic/grammar.json,synthetic/motifs.json]; semantics="fixed complex basis vectors attached to context and final tokens in synthetic motifs"; status=data
+STRUCT;Motif; fields=[id,family,operators,context_tokens,final_tokens,signature?,length?,score?,phi_residual?]; source_files=[synthetic/grammar.json,synthetic/motifs.json]; semantics="LNAL operator sequences with bound basis snapshots used for motif mining and grammar discovery"; status=data
+FUNC;resolve_token_basis; py=light_language.lnal.resolve_token_basis; semantics="normalize and rehydrate token basis from supported JSON formats"; status=implemented
+FUNC;operator_feature_vector; py=light_language.lnal.operator_feature_vector; semantics="map operator sequences to compact categorical frequency and transition features"; status=implemented
+FUNC;motif_feature_vector; py=light_language.lnal.motif_feature_vector; semantics="bind final and context basis profiles, operator features, and family hash into a single feature vector"; status=implemented
+FUNC;motif_signature; py=light_language.lnal.motif_signature; semantics="hash quantized motif feature vector and metadata into a 32-byte digest"; status=implemented
+FUNC;phi_residual; py=light_language.lnal.phi_residual; semantics="compute normalized deviation of motif phi values or basis amplitude ratio from golden ratio"; status=implemented
+
+@MEANING
+STRUCT;Meaning; modules=[IndisputableMonolith.LightLanguage.Meaning.Core]; semantics="denotational equivalence class of canonical LNAL sequences modulo RS-invariant reduction"; status=proved
+FUNC;canonicalMeaning; modules=[IndisputableMonolith.LightLanguage.Meaning.Core]; signature="Signal -> Meaning"; semantics="LISTEN→ANALYZE→NORMALIZE pipeline composed with LNAL reduction to canonical sequence"; status=proved
+THEOREM;meaning_well_defined; source=IndisputableMonolith.LightLanguage.Meaning.Core; semantics="canonicalMeaning is invariant under RS-irrelevant differences in signals and execution sequences"; status=proved
+THEOREM;meaning_universal; source=IndisputableMonolith.LightLanguage.Meaning.Universality; semantics="any zero-parameter, MDL-minimal, meaning-preserving encoder factors uniquely through canonicalMeaning"; status=proved
+STRUCT;Motif; modules=[IndisputableMonolith.LightLanguage.Meaning.MotifAlgebra]; semantics="predicate on canonical sequences with seq/rep/par combinators"; status=proved
+THEOREM;motif_expressiveness; source=IndisputableMonolith.LightLanguage.Meaning.MotifAlgebra; semantics="every Meaning is captured by an explicit Motif (expressiveness)"; status=proved
+STRUCT;Prog; modules=[IndisputableMonolith.LightLanguage.Meaning.LNALFactorization]; semantics="normal-form LNAL program acting on Meaning via induced endomorphism"; status=proved
+THEOREM;prog_congruence; source=IndisputableMonolith.LightLanguage.Meaning.LNALFactorization; semantics="program equivalence iff programs induce the same Meaning endomorphism"; status=proved
+
+@ETHICS
+STRUCT;Virtue; modules=[IndisputableMonolith.Ethics.Virtues.Generators]; semantics="legality-preserving transformation on lists of MoralState with reciprocity, cadence, and gauge invariants"; status=proved
+LIST;virtue_generators; modules=[IndisputableMonolith.Ethics.Virtues.Generators]; semantics="14 RS-forced virtues (Love,Justice,Forgiveness,Wisdom,Courage,Temperance,Prudence,Compassion,Gratitude,Patience,Humility,Hope,Sacrifice,Creativity) forming a generating set"; status=implemented
+STRUCT;CanonicalVirtueInstances; modules=[IndisputableMonolith.Ethics.Virtues.CanonicalInstances]; semantics="canonical witness data (energy budgets, scheduler contexts, cooperation states, risk assessments, etc.) for all virtues"; status=implemented
+THEOREM;virtue_completeness; source=IndisputableMonolith.Ethics.Virtues.Generators; semantics="any admissible ethical transformation decomposes into the 14 virtue_generators (DREAM completeness)"; status=proved
+THEOREM;virtue_minimality; source=IndisputableMonolith.Ethics.Virtues.Generators; semantics="virtue basis is minimal; no generator is redundant (coefficients uniquely recoverable)"; status=proved
+STRUCT;VirtueMotifConstraint; modules=[IndisputableMonolith.LightLanguage.Meaning.EthicsBridge]; semantics="link between Virtue and required ULL motif patterns on Meaning"; status=implemented
+FUNC;respectsConstraints; modules=[IndisputableMonolith.LightLanguage.Meaning.EthicsBridge]; semantics="Meaning satisfies all motif constraints forced by a SoulCharacter virtue signature under legality-preserving programs"; status=proved
+
+@API
+ENDPOINT;/health; method=GET; handler=AI.light_language.server.health; inputs=[]; outputs={status:str}; semantics="liveness probe for ULL server"; status=implemented
+ENDPOINT;/calibrate; method=POST; handler=AI.light_language.server.api_calibrate; inputs=CalibrateRequest{signal:List[float],expected_period?:int}; outputs={estimated_period:int|None,expected_period:int,match_quality:float,is_eight_beat:bool}; semantics="wrap calibrate_period() over JSON input to test eight-beat compatibility"; status=implemented
+ENDPOINT;/discover; method=POST; handler=AI.light_language.server.api_discover; inputs=DiscoverRequest{streams:Dict[str,List[float]],max_tokens?:int}; outputs={tokens:List[WTokenDict],count:int}; semantics="run CPM_Discovery on client-provided streams and return discovered WTokens"; status=implemented
+ENDPOINT;/analyze; method=POST; handler=AI.light_language.server.api_analyze; inputs=AnalyzeRequest{signal:List[float],tokens:List[TokenDict]}; outputs={Z:List[float],A:List[List[float]]}; semantics="apply analyze() to decompose signal into Z-ledger and token activations"; status=implemented
+ENDPOINT;/synthesize; method=POST; handler=AI.light_language.server.api_synthesize; inputs=SynthesizeRequest{Z:List[float],A:List[List[float]],tokens:List[TokenDict]}; outputs={signal:List[float]}; semantics="apply synthesize() to reconstruct a real-valued signal from Z-ledger and token activations"; status=implemented
+ENDPOINT;/metrics/grammar; method=GET; handler=AI.light_language.server.metrics_grammar; inputs=[]; outputs={summary:JSON,coverage:JSON,dictionary_growth:CSV_rows[],run_stability:CSV_rows[],generated_at:str,source_files:List[str]}; semantics="serve grammar and dictionary metrics derived from recognition_suite reports"; status=implemented
+ENDPOINT;/metrics/phi; method=GET; handler=AI.light_language.server.metrics_phi; inputs=[]; outputs={report:JSON,generated_at:str,source_file:str}; semantics="serve φ-lattice analysis, preferring phi_quant.json and falling back to phi_analysis.json"; status=implemented
+ENDPOINT;/metrics/persistence; method=GET; handler=AI.light_language.server.metrics_persistence; inputs=[]; outputs={report:JSON,generated_at:str,source_file:str}; semantics="serve cross-modal persistence report (retrieval statistics)"; status=implemented
+ENDPOINT;/metrics/persistence_drift; method=GET; handler=AI.light_language.server.metrics_persistence_drift; inputs=[]; outputs={summary:JSON,samples:CSV_rows[],generated_at:str,source_files:List[str]}; semantics="serve persistence drift summary and samples across seeds"; status=implemented
+ENDPOINT;/metrics/motifs; method=GET; handler=AI.light_language.server.metrics_motifs; inputs=[]; outputs={motifs:Dict[move,stats],runs:List[JSON],generated_at:str,source_file:str|None}; semantics="aggregate per-move coverage statistics over recognition_suite runs into motif-like coverage metrics"; status=implemented
+
+@PIPELINES
+PIPELINE;RecognitionSuite; entry=light_language.recognition_suite (AI repo); steps=[generate_move_bases,style_variants,CPM_Discovery,grammar_mining,coverage_metrics]; outputs=[synthetic/tokens.json,synthetic/reports/coverage.json,synthetic/reports/dictionary_growth.csv,synthetic/reports/run_stability.csv,synthetic/reports/summary.json,synthetic/reports/grammar.json,synthetic/reports/grammar_summary.json]; semantics="end-to-end synthetic recognition tests yielding ULL dictionary and grammar with coverage/stability reports"; status=operational
+PIPELINE;DimSweep; entry=light_language.dim_sweep (AI repo); steps=[reuse_recognition_stimuli,run_CPM_per_dimension,score_MDL,aggregate_summary]; outputs=[synthetic/reports/sweep.csv,synthetic/reports/sweep_summary.json]; semantics="validate eight-phase optimality by MDL cost across multiple dimensions under capacity parity"; status=operational
+PIPELINE;PersistenceSuite; entry=tools/persistence_suite.py; steps=[encode_concepts_into_modalities,discover_tokens_per_modality,align_latent_space,compute_cross_modal_retrieval]; outputs=[synthetic/reports/persistence.json]; semantics="measure cross-modal retrieval accuracy for EM/EEG/KIN encoders across seeds"; status=operational
+PIPELINE;PersistenceDrift; entry=tools/persistence_drift_plot.py; steps=[run_PersistenceSuite_for_seeds,compute_summary_stats,emit_csv_and_plot]; outputs=[synthetic/reports/persistence_drift.csv,synthetic/reports/persistence_drift_summary.json,synthetic/reports/plots/persistence_drift.png]; semantics="quantify retrieval drift vs seed and visualize trends"; status=operational
+PIPELINE;PhiAnalysis; entry=tools/phi_analysis.py; steps=[load_tokens,compute_phi_quant_report,write_json_and_assignments,plot_histogram]; outputs=[synthetic/reports/phi_analysis.json,synthetic/reports/phi_assignments.csv,synthetic/reports/plots/phi_residual_hist.png]; semantics="produce φ-lattice alignment metrics and residual histograms from the current dictionary"; status=operational
+PIPELINE;MotifExpandAndAnalyze; entry=[tools/expand_motifs.py,tools/analyze_motif_structure.py,tools/validate_motifs.py,tools/diagnose_motif_structure.py]; steps=[mine_motifs_from_grammar,compute_embeddings_and_clusters,emit_hierarchy_and_summary,run_validation_gates,compute_diagnostics]; outputs=[synthetic/motifs.json,synthetic/reports/motifs_summary.json,synthetic/reports/motif_hierarchy.json,synthetic/reports/motif_clusters.json,synthetic/reports/motif_validation.json,synthetic/reports/motif_diagnostics.json]; semantics="mine, cluster, and validate ULL motifs, including φ_residual and diversity gates"; status=operational
+PIPELINE;MeaningStressAndExpansion; entry=[tools/meaning_stress_test.py,tools/expand_dictionary.py]; steps=[load_real_ingest_streams,compute_J_cost_and_support_per_stream,identify_expansion_candidates,run_CPM_on_candidates,deduplicate_and_merge_tokens]; outputs=[synthetic/reports/meaning_stress.json,synthetic/tokens_expanded.json]; semantics="stress-test dictionary coverage on real_ingest streams and expand the dictionary where J-cost or support is inadequate"; status=operational
+PIPELINE;DashboardSync; entry=tools/dashboard_sync.py; steps=[copy_JSON_reports_to_dashboards_metrics,copy_plots_to_dashboards_assets,emit_snapshot_manifest]; outputs=[dashboards/metrics/*.json,dashboards/assets/*.png]; semantics="synchronize ULL synthetic metrics and plots into dashboard-friendly directories"; status=operational
+
+@METRICS
+METRIC;phi_lattice; source=synthetic/reports/phi_quant.json|synthetic/reports/phi_analysis.json; tests=[tests/test_phi_analysis.py,tests/test_regression_metrics.py]; semantics="bootstrap p-value and residual statistics for φ-lattice fit over pairwise token distances"; acceptance=[p_value<0.01,residual_mean<=0.06]; status=operational
+METRIC;persistence_cross_modal; source=synthetic/reports/persistence.json|synthetic/reports/persistence_drift_summary.json; tests=[tests/test_persistence_metrics.py,tests/test_regression_metrics.py]; semantics="cross-modal retrieval minima and drift statistics across seeds for EM/EEG/KIN encoders"; acceptance=[retrieval_min>=0.75,retrieval_mean>=0.85,drift_std<=0.12,drift_range<=0.30]; status=operational
+METRIC;grammar_coverage; source=synthetic/reports/grammar_summary.json; tests=[tests/test_regression_metrics.py]; semantics="LNAL grammar sequence count, length distribution, and invariant pass-rate"; acceptance=[sequence_count>=100,pass_rate=1.0]; status=operational
+METRIC;motif_diversity; source=synthetic/reports/motifs_summary.json|synthetic/reports/motif_diagnostics.json; tests=[tests/test_regression_metrics.py]; semantics="motif count, distance bands, and cross-family margins derived from motif feature vectors"; acceptance=[motif_count>=50,median_distance>0.1,nonzero_bins>=2,max_cluster_fraction<0.4]; status=planned
+
+@DOCS
+DOC;STATUS; file=STATUS.md; role=system_status; semantics="canonical summary of ULL metrics, acceptance criteria, API endpoints, and reproduction pipeline"; linkage=[@METRICS,@API,@PIPELINES,@REPORTS]; status=authoritative
+DOC;EXECUTIVE_SUMMARY; file=EXECUTIVE_SUMMARY.md; role=executive_summary; semantics="high-level assessment of ULL completeness, key metrics, and recommendations"; linkage=[STATUS,SUCCESS_REPORT,CERTIFICATION_COMPLETE]; status=authoritative
+DOC;SUCCESS_REPORT; file=SUCCESS_REPORT.md; role=success_report; semantics="narrative of achievements, scientific validation, and impact of ULL"; linkage=[STATUS,TECHNICAL_DEEP_DIVE,ASSESSMENT]; status=authoritative
+DOC;ASSESSMENT; file=ASSESSMENT.md; role=technical_assessment; semantics="component-by-component analysis of ULL implementation, acceptance scorecard, and anti-collapse design"; linkage=[TECHNICAL_DEEP_DIVE,STATUS,LL_FUNCTIONAL_SPEC]; status=authoritative
+DOC;CERTIFICATION_COMPLETE; file=CERTIFICATION_COMPLETE.md; role=certification_report; semantics="formal certification statement that all 13 acceptance criteria and 42 tests pass, with evidence and confidence assessment"; linkage=[STATUS,SUCCESS_REPORT,GETTING_RESULTS]; status=authoritative
+DOC;FINDINGS_SUMMARY; file=FINDINGS_SUMMARY.md; role=findings_summary; semantics="concise summary of assessment findings, critical issues (historical) and their resolution"; linkage=[ASSESSMENT,SUCCESS_REPORT,EXECUTIVE_SUMMARY]; status=historical
+DOC;GETTING_RESULTS; file=GETTING_RESULTS.md; role=reproduction_guide; semantics="step-by-step commands for running the full synthetic pipeline, generating reports, and verifying metrics/tests"; linkage=[@PIPELINES,@METRICS,tests/test_regression_metrics.py]; status=authoritative
+DOC;INDEX; file=INDEX.md; role=doc_index; semantics="navigation index over all ULL documentation, with reading paths by role and topic"; linkage=[STATUS,SUCCESS_REPORT,ASSESSMENT,TECHNICAL_DEEP_DIVE,GETTING_RESULTS,LL_FUNCTIONAL_SPEC,STRATEGY_PLAN]; status=authoritative
+DOC;LL_FUNCTIONAL_SPEC; file=AI/LL_FUNCTIONAL_SPEC.txt; role=functional_spec; semantics="master functional specification for ULL data models, operators, metrics, reports, and pipelines"; linkage=[@TOKENS,@LNAL_EXECUTION,@METRICS,@PIPELINES]; status=authoritative
+DOC;STRATEGY_PLAN; file=light_language/STRATEGY_PLAN.md; role=strategy; semantics="first-principles objectives, acceptance criteria, threats, and milestone mapping for ULL"; linkage=[docs/milestones.md,LL_FUNCTIONAL_SPEC,STATUS]; status=authoritative
+DOC;MILESTONES; file=docs/milestones.md; role=milestone_tracker; semantics="mapping from LL_FUNCTIONAL_SPEC milestones to concrete scripts, outputs, and acceptance checks"; linkage=[recognition_suite,dim_sweep,persistence_suite,phi_analysis]; status=historical
+DOC;FIRST_PRINCIPLES_SEMANTICS; file=AI/docs/FIRST_PRINCIPLES_SEMANTICS.md; role=theory_bridge; semantics="derivation of motif-level semantic signatures from RS axioms, DFT basis structure, LNAL invariants, and diagnostics"; linkage=[AI/light_language/universal_language.py,AI/light_language/lnal.py,semantic_signature_future]; status=design_complete
+
+@DISTRIBUTION
+PACKAGE;share_light_language.light_language; file=share_light_language/AI/light_language/__init__.py; exports=[PHI,K_GATE,E_COH,WToken,CPM_Discovery,align_to_eight_beat,enforce_eight_neutrality,project_to_structured_set,analyze,synthesize,calibrate_period,save_tokens,load_tokens]; semantics="public distribution surface for ULL core primitives, re-exporting a compact CPM-based implementation"; status=packaged
+MODULE;share_universal_language; file=share_light_language/AI/light_language/universal_language.py; semantics="packaged version of ULL core with persistence helpers (save_tokens/load_tokens) and the same invariants (neutrality, MDL-based CPM, two-ledger decomposition)."; status=packaged
+MODULE;share_phi_quant; file=share_light_language/AI/light_language/phi_quant.py; semantics="packaged φ-lattice analysis utilities built on text_features and share_universal_language.WToken; emits phi_quant.json for distribution."; status=packaged
+MODULE;share_text_features; file=share_light_language/AI/light_language/text_features.py; semantics="packaged eight-phase distance and similarity utilities (circular_min_distance, phase_alignment_similarity, distance_band_histogram) used by share_phi_quant and motif diagnostics."; status=packaged
+MODULE;share_recognition_suite; file=share_light_language/AI/light_language/recognition_suite.py; semantics="lightweight recognition move generator exposing MOVE_NAMES and base signals for synthetic tests in the packaged build."; status=packaged
+MODULE;share_server; file=share_light_language/AI/light_language/server.py; semantics="minimal FastAPI surface (health, calibrate, discover, analyze, synthesize) for the share_light_language package; omits metrics endpoints to keep the distribution lean."; status=packaged
+
+METRIC;dimension_sweep; source=synthetic/reports/sweep_summary.json; tests=[]; semantics="validation that eight-phase representation (n=8) minimizes MDL cost compared to neighboring dimensions"; acceptance=[cost_n8<cost_n7,cost_n8<cost_n9]; status=operational
+
+@REPORTS
+REPORT;tokens; path=synthetic/tokens.json; producer=light_language.recognition_suite; semantics="canonical WToken dictionary discovered by CPM over synthetic recognition tests"; status=primary
+REPORT;grammar; path=synthetic/reports/grammar.json; producer=light_language.recognition_suite; semantics="full LNAL grammar sequences mined under invariant-preserving templates"; status=bulk
+REPORT;grammar_summary; path=synthetic/reports/grammar_summary.json; producer=light_language.recognition_suite|tools/synthetic_report_summary.py; semantics="compressed grammar statistics (sequence counts, length distribution, op frequencies, template clusters)"; status=primary
+REPORT;phi_quant; path=synthetic/reports/phi_quant.json; producer=light_language.phi_quant; semantics="baseline φ distance quantization report (pair_count, shift, residual_stats, bootstrap)"; status=primary
+REPORT;phi_analysis; path=synthetic/reports/phi_analysis.json; producer=tools/phi_analysis.py; semantics="weighted φ analysis wrapping phi_quant with CLI parameters preserved"; status=primary
+REPORT;persistence; path=synthetic/reports/persistence.json; producer=tools/persistence_suite.py; semantics="per-seed cross-modal retrieval metrics for EM/EEG/KIN concepts"; status=primary
+REPORT;persistence_drift_summary; path=synthetic/reports/persistence_drift_summary.json; producer=tools/persistence_drift_plot.py; semantics="summary statistics (mean,std,range) over retrieval vs seed"; status=primary
+REPORT;motifs; path=synthetic/motifs.json; producer=tools/expand_motifs.py; semantics="mined motif list with signatures, scores, phi_residual, coverage, stability, energy"; status=primary
+REPORT;motifs_summary; path=synthetic/reports/motifs_summary.json; producer=tools/analyze_motif_structure.py; semantics="global φ_residual, coverage gain, stability and energy summaries over all motifs"; status=primary
+REPORT;motif_hierarchy; path=synthetic/reports/motif_hierarchy.json; producer=tools/analyze_motif_structure.py; semantics="per-length motif statistics with first-move distributions"; status=primary
+REPORT;motif_clusters; path=synthetic/reports/motif_clusters.json; producer=tools/analyze_motif_structure.py; semantics="motif clustering diagnostics (cluster sizes, fractions, inertia, distance bands)"; status=primary
+REPORT;motif_validation; path=synthetic/reports/motif_validation.json; producer=tools/validate_motifs.py; semantics="gate-by-gate PASS/FAIL report for motif φ_residual, coverage_gain, distance_bands, cluster_balance, move_diversity"; status=primary
+REPORT;motif_diagnostics; path=synthetic/reports/motif_diagnostics.json; producer=tools/diagnose_motif_structure.py; semantics="family-wise and global motif feature distance statistics and φ_residual aggregates"; status=primary
+REPORT;meaning_stress; path=synthetic/reports/meaning_stress.json; producer=tools/meaning_stress_test.py; semantics="J-cost and support coverage for real_ingest streams plus expansion_candidates list"; status=primary
+REPORT;dictionary_growth; path=synthetic/reports/dictionary_growth.csv; producer=light_language.recognition_suite; semantics="token-count vs coverage slope for stability assessment"; status=auxiliary
+REPORT;persistence_drift_csv; path=synthetic/reports/persistence_drift.csv; producer=tools/persistence_drift_plot.py; semantics="per-seed retrieval values used to compute drift_summary"; status=auxiliary
+REPORT;summary; path=synthetic/reports/summary.json; producer=tools/synthetic_report_summary.py; semantics="aggregated acceptance-metric snapshot (tokens, grammar, φ, persistence, drift, motifs)"; status=summary
+
+@CLI
+CLI;phi_analysis; module=tools/phi_analysis.py; entry=cli; args=[--tokens-path,--out-json,--assignments-csv,--histogram-png]; outputs=[synthetic/reports/phi_analysis.json,synthetic/reports/phi_assignments.csv,synthetic/reports/plots/phi_residual_hist.png]; semantics="compute φ-lattice quantization report from WToken dictionary and emit JSON/CSV/PNG artifacts"; status=implemented
+CLI;persistence_drift; module=tools/persistence_drift_plot.py; entry=cli; args=[--num-concepts,--seeds,--csv-out,--summary-out,--png-out]; outputs=[synthetic/reports/persistence_drift.csv,synthetic/reports/persistence_drift_summary.json,synthetic/reports/plots/persistence_drift.png]; semantics="sweep persistence suite across seeds and summarize retrieval drift"; status=implemented
+CLI;meaning_stress_test; module=tools/meaning_stress_test.py; entry=main; args=[--input,--output,--tokens,--verbose]; outputs=[synthetic/reports/meaning_stress.json]; semantics="evaluate J-cost and support of WToken dictionary on real_ingest streams and identify expansion candidates"; status=implemented
+CLI;expand_dictionary; module=tools/expand_dictionary.py; entry=main; args=[--stress-report,--input,--tokens,--output,--max-new-tokens,--gain-threshold,--coercive-bound,--verbose]; outputs=[synthetic/tokens_expanded.json]; semantics="run CPM discovery on degenerate/zero-support streams to expand WToken dictionary"; status=implemented
+CLI;expand_motifs; module=tools/expand_motifs.py; entry=main; args=[--grammar,--output,--max-length,--beam-width,--allow-missing-final,--dedup-resolution]; outputs=[synthetic/motifs.json]; semantics="mine high-scoring motifs from grammar using motif_signature/phi_residual features under beam and dedup constraints"; status=implemented
+CLI;analyze_motif_structure; module=tools/analyze_motif_structure.py; entry=cli; args=[--motifs,--summary-out,--hierarchy-out,--clusters-out]; outputs=[synthetic/reports/motifs_summary.json,synthetic/reports/motif_hierarchy.json,synthetic/reports/motif_clusters.json]; semantics="construct motif embeddings, cluster, and summarize φ_residual, coverage, stability, and energy"; status=implemented
+CLI;diagnose_motif_structure; module=tools/diagnose_motif_structure.py; entry=main; args=[--motifs,--output,--bins]; outputs=[synthetic/reports/motif_diagnostics.json]; semantics="compute motif feature distance statistics (histograms, percentiles, within/cross family medians) and φ aggregates"; status=implemented
+CLI;dashboard_sync; module=tools/dashboard_sync.py; entry=main; args=[--source,--extra-source,--metrics-dir,--assets-dir]; outputs=[dashboards/metrics/*.json,dashboards/assets/*.png]; semantics="copy selected synthetic reports and plots into dashboard-friendly directories and emit sync manifest on stdout"; status=implemented
+
+@TESTS
+TEST;lnal_invariants; file=tests/test_lnal.py; covers=[LISTEN_neutrality,LOCK_coercivity_and_parity,BALANCE_lock_protocol,FOLD_reversibility,BRAID_legality_and_orientation]; semantics="property-based tests for LNAL operator invariants (neutrality, measure non-decrease, Z-balance, orientation sign)"; status=implemented
+TEST;regression_phi_persistence; file=tests/test_regression_metrics.py; covers=[phi_lattice_metric,persistence_metric]; semantics="regression thresholds for φ p-value/residual and persistence minima/drift std/range based on synthetic reports"; status=implemented
+TEST;phi_analysis; file=tests/test_phi_analysis.py; covers=[phi_lattice_metric]; semantics="ensures φ bootstrap p-value remains below 0.01 for current token dictionary"; status=implemented
+TEST;persistence_metrics; file=tests/test_persistence_metrics.py; covers=[persistence_cross_modal_metric]; semantics="asserts retrieval minima ≥0.8 and drift std/range bounds from persistence_drift_summary"; status=implemented
+TEST;mathematical_foundations; file=tests/test_mathematical_foundations.py; covers=[neutrality_preservation,coercivity,braid_triad_legality,listen_projection,token_normalization,z_conservation,full_pipeline_invariants]; semantics="computational verification harness for RS/ULL proof obligations (SORRY #1–#6,#8) in finite-precision regime"; status=implemented
+TEST;concept_composer; file=tests/test_concept_composer.py; covers=[nearest_motif_retrieval,blend_modes_consistency,decomposition_fidelity,similarity_stability]; semantics="ensures concept composition over ℂ⁸ basis maintains high fidelity and stable similarity statistics under noise"; status=implemented
+TEST;share_phi_analysis; file=share_light_language/tests/test_phi_analysis.py; covers=[phi_lattice_metric_distribution]; semantics="distribution-mirror tests asserting φ bootstrap p-value < 0.01 on phi_quant.json in the packaged share_light_language build."; status=implemented
+TEST;share_persistence_metrics; file=share_light_language/tests/test_persistence_metrics.py; covers=[persistence_cross_modal_metric_distribution]; semantics="distribution-mirror tests asserting retrieval minima ≥0.8 and drift std/range bounds on persistence.json and persistence_drift_summary.json in the packaged build."; status=implemented
+TEST;share_regression_metrics; file=share_light_language/tests/test_regression_metrics.py; covers=[phi_lattice_metric_distribution,persistence_metric_distribution]; semantics="ordered smoke-regression tests for φ and persistence metrics to ensure thresholds remain satisfied in the share_light_language distribution."; status=implemented
+
+@PLAN
+SOURCE;strategy; file=light_language/STRATEGY_PLAN.md; summary="documents first-principles objectives, acceptance criteria, and threats for ULL (dictionary, grammar, eight-phase sweep, persistence, phi-analysis)."; status=linked
+NEXT_STEPS; list=[
+  "External replication and independent validation of the full RS/ULL stack.",
+  "Refine remaining Lean proof placeholders and extend φ-arithmetic lemmas.",
+  "Expand motif catalog and stress-tests on real-world data beyond the current synthetic/seed sets."
+]
+
+

@@ -1,0 +1,508 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm}
+
+\title{Stable Direction Dictionaries for Strongly Positive $(p,p)$-Forms via Regularized Simplex Fits}
+\author{
+Jonathan Washburn\\
+Recognition Science\\
+Recognition Physics Institute\\
+\texttt{jon@recognitionphysics.org}\\
+Austin, Texas, USA
+}
+\date{}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+\newtheorem{example}{Example}
+
+\DeclareMathOperator{\argmin}{argmin}
+\DeclareMathOperator{\dist}{dist}
+
+% Lightweight Recognition Geometry notation (consistent with tex/recognition-geometry.tex)
+\newcommand{\config}{\mathcal{C}}
+\newcommand{\events}{\mathcal{E}}
+\newcommand{\recog}{\mathcal{R}}
+\newcommand{\indist}{\sim_{\recog}}
+\newcommand{\quotientspace}{\config_{\recog}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Let $(X,\omega)$ be a compact K\"ahler manifold of complex dimension $n$, and let $K_p(x)$ denote the cone of strongly positive $(p,p)$-covectors at $x\in X$. A recurring obstruction in mesh-based constructions is the absence of a stable way to \emph{recognize} and label directions in a cone-valued form field $\beta(x)\in K_p(x)$: Carath\'eodory decompositions are highly non-unique and vary discontinuously, preventing coherent direction labeling across adjacent cells.
+
+We introduce a dictionary-based recognizer. Fix an $\varepsilon$-net $\{P_1,\dots,P_M\}$ in the calibrated (complex) Grassmannian of $(n-p)$-planes, and let $\xi_i(x)$ be the associated normalized ray generators satisfying $\langle \xi_i(x),\psi_x\rangle=1$ where $\psi=\omega^{n-p}/(n-p)!$ is the K\"ahler calibration. For each normalized target $b(x)$ we define a recognition state $w(x)\in\Delta_M$ by a strongly convex regularized least-squares fit on the simplex. We prove existence, uniqueness, and a Lipschitz bound
+\[
+\|w(b)-w(b')\|\le \bigl(\|A\|_{\mathrm{op}}/\lambda\bigr)\,\|b-b'\|
+\]
+for the weight map, where $A:\mathbb{R}^M\to V$ is the dictionary synthesis operator $Aw=\sum_i w_i\xi_i$ and $\lambda>0$ is the regularization strength. This yields stable, globally labeled coefficients that vary at the same scale as $b(x)$.
+
+To connect with literal finite-resolution recognition, we consider derived finite event maps such as the winner-take-all label $\arg\max_i w_i$ and show (via a margin lemma) that these discrete labels are robust under perturbations away from ties. Finally, we show how pointwise weights induce coherent per-cell mass budgets $M_{Q,i}$ on a mesh, isolating direction-label stability as a quantitative choice of dictionary resolution $\varepsilon$ and regularization $\lambda$, independent of later holomorphic or geometric-measure steps.
+\end{abstract}
+
+\section{Recognition primitives}
+We record the recognition primitives used in this paper (state space, measurement map, quotient, and robustness modulus $r(s)$). The purpose is to make explicit what structure is assumed and what structure is produced.
+
+\begin{definition}[State space / configuration space]
+A \emph{state space} is a pair $(\config,d_{\config})$ where $\config$ is a set and $d_{\config}$ is a metric on $\config$. Elements $c\in\config$ are called \emph{states} (or \emph{configurations}).
+\end{definition}
+
+\begin{definition}[Measurement map / recognizer]
+Let $(\config,d_{\config})$ be a state space and let $\events$ be a set (the \emph{event space}). A \emph{measurement map} (or \emph{recognizer}) is a function
+\[
+\recog:\config\to \events.
+\]
+\end{definition}
+
+\begin{definition}[Indistinguishability and quotient]
+Given $\recog:\config\to\events$, define an equivalence relation on $\config$ by
+\[
+c_1 \indist c_2 \quad\Longleftrightarrow\quad \recog(c_1)=\recog(c_2).
+\]
+The \emph{recognition quotient} is the quotient set $\quotientspace:=\config/\indist$.
+\end{definition}
+
+\begin{definition}[Robustness modulus $r(s)$]
+Assume $(\events,d_{\events})$ is a metric space. The \emph{robustness modulus} of $\recog$ is the function $r:[0,\infty)\to[0,\infty]$ defined by
+\[
+r(s)\ :=\ \sup\Bigl\{ d_{\events}\bigl(\recog(c),\recog(c')\bigr)\ :\ d_{\config}(c,c')\le s\Bigr\}.
+\]
+\end{definition}
+
+\begin{remark}[Lipschitz recognizers]
+If $\recog:(\config,d_{\config})\to(\events,d_{\events})$ is $L$-Lipschitz, then $r(s)\le Ls$ for all $s\ge 0$.
+\end{remark}
+
+\subsection*{Assumptions and non-assumptions (no smuggled observables)}
+\begin{itemize}
+\item \textbf{Given structure (assumptions).}
+  \begin{itemize}
+  \item A compact K\"ahler manifold $(X,\omega)$ and the induced norms on forms.
+  \item The calibration functional $\alpha\mapsto \langle \alpha,\psi_x\rangle$ used to normalize $K_p(x)$ to $\Sigma_p(x)$.
+  \item A finite dictionary $\{\xi_i(x)\}_{i=1}^M\subset\Sigma_p(x)$ (a finite-resolution hypothesis).
+  \item A regularization strength $\lambda>0$.
+  \end{itemize}
+\item \textbf{Not assumed (anti-smuggling constraints).}
+  \begin{itemize}
+  \item No canonical or continuous Carath\'eodory/extremal-ray decomposition is assumed.
+  \item No globally uniform ``true direction labels'' are assumed; labels are produced as dictionary indices.
+  \item No circular definition of observables: events/labels are defined by an explicit map $\recog$, not by presupposing the quotient classes we intend to construct.
+  \end{itemize}
+\end{itemize}
+
+\subsection*{Self-similarity and the golden ratio (optional scale lemma)}
+In zero-parameter self-similar scale updates, one often encounters the fixed-point equation $x=1+1/x$. We record the elementary consequence for reference.
+
+\begin{lemma}[Self-similarity fixed point forces $\varphi$]
+The equation $x = 1 + \frac{1}{x}$ has exactly one positive solution, namely $\varphi=(1+\sqrt{5})/2$.
+\end{lemma}
+
+\begin{proof}
+Rearranging gives $x^2=x+1$, i.e.\ $x^2-x-1=0$. The quadratic formula yields the two roots $x=(1\pm \sqrt{5})/2$, and exactly one is positive.
+\end{proof}
+
+\section{Introduction}
+
+Strongly positive $(p,p)$-forms on a K\"ahler manifold behave like ``nonnegative densities with direction,'' in the sense that they live in a closed convex cone whose extreme rays correspond to simple algebraic directions. In many constructions one wants to discretize a strongly positive form field $\beta(x)$ on a mesh and propagate direction-dependent budgets from cell to cell. The immediate obstacle is not existence of decompositions but \emph{recognition}: a pointwise decomposition of $\beta(x)$ into extremal rays is not canonical. Even when decompositions exist, they are highly non-unique and can jump discontinuously as $x$ varies. This makes direction labels unstable: adjacent mesh cells may use incompatible ``names'' for nearly the same direction.
+
+Recognition Geometry suggests a measurement-first reframing: \emph{without a recognizer, there is no stable labeling}. In our setting, at each $x$ the \emph{configuration space} is the normalized cone slice $\config_x:=\Sigma_p(x)$, and we choose a finite dictionary $\{\xi_i(x)\}_{i=1}^M\subset \Sigma_p(x)$ as an explicit finite-resolution hypothesis. We then define a \emph{recognizer} $\recog_\lambda$ that maps a configuration $b\in\config_x$ to a recognition state $w=\recog_\lambda(b)\in\Delta_M$ by a strongly convex simplex fit. Strong convexity forces uniqueness, and a monotonicity argument yields a clean Lipschitz robustness bound with an explicit constant.
+
+To align literally with a finite-resolution event axiom, we also consider derived \emph{finite} event maps, such as the winner-take-all label $\arg\max_i w_i$. These induce an indistinguishability relation $b\indist b'$ on $\config_x$ and hence a recognition quotient $\config_x/\indist$ whose classes are ``direction-label resolution cells.'' The stability results in this paper quantify how large a perturbation in $b$ is required to change the recognition state (and, away from ties, the discrete label).
+
+The resulting mechanism has two independent stability knobs: dictionary resolution $\varepsilon$ (approximation quality) and regularization $\lambda$ (robustness of the recognizer).
+
+\section{Strong positivity and the normalized slice}
+
+Let $(X,\omega)$ be a compact K\"ahler manifold of complex dimension $n$. Fix $p\in\{0,1,\dots,n\}$. At each $x\in X$, let
+\[
+V_x := \Lambda^{p,p}_{\mathbb{R}} T_x^*X
+\]
+denote the real vector space of real $(p,p)$-covectors at $x$.
+
+\begin{definition}[Strongly positive cone]
+A covector $\alpha\in V_x$ is \emph{strongly positive} if it is a finite sum of forms of the type
+\[
+\Bigl(\frac{i}{2}\Bigr)^p \,\eta_1\wedge \overline{\eta_1}\wedge \cdots \wedge \eta_p\wedge \overline{\eta_p},
+\]
+where $\eta_1,\dots,\eta_p\in \Lambda^{1,0}T_x^*X$. The set of strongly positive covectors is a closed convex cone, denoted $K_p(x)\subset V_x$.
+\end{definition}
+
+Define the K\"ahler calibration of degree $(n-p,n-p)$ by
+\[
+\psi := \frac{\omega^{n-p}}{(n-p)!}\in \Lambda^{n-p,n-p}_{\mathbb{R}}T^*X.
+\]
+Let $\mathrm{vol}_\omega := \omega^n/n!$.
+
+\begin{definition}[Pairing with $\psi$]
+For $\alpha\in \Lambda^{p,p}_{\mathbb{R}}T_x^*X$ and $\eta\in \Lambda^{n-p,n-p}_{\mathbb{R}}T_x^*X$, define the scalar $\langle \alpha,\eta\rangle$ by
+\[
+\alpha\wedge \eta \;=\; \langle \alpha,\eta\rangle \,\mathrm{vol}_\omega(x).
+\]
+In particular, $\langle \alpha,\psi_x\rangle$ is the $\psi$-trace of $\alpha$.
+\end{definition}
+
+\begin{lemma}[Positivity of the $\psi$-trace]
+For every $x\in X$ and every $\alpha\in K_p(x)$ one has $\langle \alpha,\psi_x\rangle\ge 0$. Moreover, if $\alpha\in K_p(x)$ and $\langle \alpha,\psi_x\rangle=0$, then $\alpha=0$.
+\end{lemma}
+
+\begin{proof}
+In unitary coordinates at $x$ with $\omega=\frac{i}{2}\sum_{j=1}^n dz_j\wedge d\overline{z_j}$, each elementary strongly positive term
+\[
+\Bigl(\frac{i}{2}\Bigr)^p \,\eta_1\wedge \overline{\eta_1}\wedge \cdots \wedge \eta_p\wedge \overline{\eta_p}
+\]
+has nonnegative wedge with $\omega^{n-p}$, hence nonnegative pairing with $\psi_x$. Summing preserves nonnegativity, giving $\langle \alpha,\psi_x\rangle\ge 0$.
+
+If $\langle \alpha,\psi_x\rangle=0$ for $\alpha\in K_p(x)$, then every elementary term in a positive decomposition must also have zero pairing with $\psi_x$. In unitary coordinates, the wedge of a nonzero elementary term with $\omega^{n-p}$ is strictly positive, so each term must be zero, hence $\alpha=0$.
+\end{proof}
+
+\begin{definition}[Normalized slice]
+Define the normalized slice
+\[
+\Sigma_p(x) := \bigl\{ v\in K_p(x) : \langle v,\psi_x\rangle = 1 \bigr\}.
+\]
+\end{definition}
+
+The set $\Sigma_p(x)$ is the natural compact base of the cone $K_p(x)$ once we fix $\psi_x$ as a strictly positive functional on $K_p(x)\setminus\{0\}$.
+
+\begin{remark}[Configuration space viewpoint]
+For fixed $x$, the normalized slice $\Sigma_p(x)$ is the space of normalized strongly positive directions. In later applications one often decomposes a form field $\beta(x)\in K_p(x)$ as $\beta(x)=\rho(x)\,b(x)$ where $\rho(x)=\langle \beta(x),\psi_x\rangle\ge 0$ is the total density and $b(x)\in \Sigma_p(x)$ is a normalized direction. The recognition problem addressed in this paper is to turn $b(x)$ into stable labels and weights.
+\end{remark}
+
+\section{Calibrated rays and normalized ray generators}
+
+For K\"ahler calibrations, calibrated $(2n-2p)$-planes are precisely complex $(n-p)$-planes. Let $G_{n-p}^{\mathbb{C}}(T_xX)$ denote the Grassmannian of complex $(n-p)$-dimensional subspaces of $T_xX$.
+
+\begin{definition}[Normalized ray generator associated to a complex plane]
+Fix $x\in X$ and $P\in G_{n-p}^{\mathbb{C}}(T_xX)$. Choose a unitary frame $e_1,\dots,e_n$ of $T_x^{1,0}X$ such that $P^{1,0}=\mathrm{span}\{e_{p+1},\dots,e_n\}$, and let $\zeta^1,\dots,\zeta^n$ be the dual coframe. Define
+\[
+\xi_P(x) := \Bigl(\frac{i}{2}\Bigr)^p \,\zeta^1\wedge \overline{\zeta^1}\wedge \cdots \wedge \zeta^p\wedge \overline{\zeta^p}\ \in \Lambda^{p,p}_{\mathbb{R}}T_x^*X.
+\]
+\end{definition}
+
+\begin{lemma}[Well-definedness and normalization]
+The covector $\xi_P(x)$ is independent of the choice of unitary frame adapted to $P$. Moreover, $\xi_P(x)\in \Sigma_p(x)$, i.e.\ $\xi_P(x)$ is strongly positive and satisfies $\langle \xi_P(x),\psi_x\rangle=1$.
+\end{lemma}
+
+\begin{proof}
+If two unitary frames are adapted to the same splitting $T_x^{1,0}X \cong \mathbb{C}^p\oplus \mathbb{C}^{n-p}$, they differ by an element of $U(p)\times U(n-p)$. The form
+\[
+\Bigl(\frac{i}{2}\Bigr)^p \,\zeta^1\wedge \overline{\zeta^1}\wedge \cdots \wedge \zeta^p\wedge \overline{\zeta^p}
+\]
+is invariant under $U(p)$, hence well-defined.
+
+Strong positivity is immediate from the construction. In unitary coordinates with $\omega=\frac{i}{2}\sum_j dz_j\wedge d\overline{z_j}$ and $P=\mathrm{span}\{\partial/\partial z_{p+1},\dots,\partial/\partial z_n\}$, one has
+\[
+\xi_P(x)\wedge \frac{\omega^{n-p}}{(n-p)!} \;=\; \frac{\omega^n}{n!},
+\]
+so $\langle \xi_P(x),\psi_x\rangle=1$.
+\end{proof}
+
+Let
+\[
+S_p(x) := \{\xi_P(x): P\in G_{n-p}^{\mathbb{C}}(T_xX)\}\subset \Sigma_p(x).
+\]
+The set $S_p(x)$ is compact because the Grassmannian is compact and $P\mapsto \xi_P(x)$ is continuous.
+
+\begin{proposition}[Convex generation of the normalized slice]
+For each $x\in X$, the normalized slice $\Sigma_p(x)$ is the convex hull of $S_p(x)$:
+\[
+\Sigma_p(x) = \mathrm{conv}\, S_p(x).
+\]
+Equivalently, the cone $K_p(x)$ is the convex cone generated by $S_p(x)$.
+\end{proposition}
+
+\begin{proof}
+Every $\xi_P(x)$ lies in $\Sigma_p(x)$, and $\Sigma_p(x)$ is convex, so $\mathrm{conv}\,S_p(x)\subseteq \Sigma_p(x)$.
+
+For the reverse inclusion, take $v\in \Sigma_p(x)$. By strong positivity, $v$ is a finite sum of elementary strongly positive forms. After scaling each summand by its $\psi$-trace and then renormalizing, we write
+\[
+v = \sum_{j=1}^N a_j \, v_j,\qquad a_j\ge 0,\quad \sum_{j=1}^N a_j=1,
+\]
+where each $v_j$ is a normalized elementary strongly positive form with $\langle v_j,\psi_x\rangle=1$. Any such normalized elementary form is equal to $\xi_P(x)$ for some complex $(n-p)$-plane $P$ (its nullspace in $T_x^{1,0}X$ determines $P$), hence $v_j\in S_p(x)$. Therefore $v\in \mathrm{conv}\,S_p(x)$.
+\end{proof}
+
+\section{Regularized simplex recognizers}
+
+This section is pointwise and finite-dimensional, and establishes existence, uniqueness, and Lipschitz stability for the dictionary recognizer. Fix a real inner-product space $(V,\langle\cdot,\cdot\rangle_V)$; in applications $V=V_x$ with the norm induced by the K\"ahler metric.
+
+Fix dictionary vectors $\xi_1,\dots,\xi_M\in V$. Define the synthesis operator
+\[
+A:\mathbb{R}^M\to V,\qquad Aw := \sum_{i=1}^M w_i \xi_i.
+\]
+Let $\|\cdot\|$ denote the Euclidean norm on $\mathbb{R}^M$ and the induced operator norm $\|A\|_{\mathrm{op}}$.
+
+Define the simplex
+\[
+\Delta_M := \Bigl\{ w\in\mathbb{R}^M : w_i\ge 0\ \text{for all $i$ and}\ \sum_{i=1}^M w_i=1\Bigr\}.
+\]
+
+\begin{definition}[Regularized simplex recognizer and $J$-step]
+Fix $\lambda>0$. For a target $b\in V$, define the objective
+\[
+J_b(w) := \frac12\|Aw-b\|_V^2 + \frac{\lambda}{2}\|w\|^2,\qquad w\in \Delta_M,
+\]
+and define the weight map
+\[
+w(b) := \argmin_{w\in \Delta_M} J_b(w).
+\]
+\noindent
+We also write $\recog_\lambda(b):=w(b)$ and interpret $\recog_\lambda:V\to\Delta_M$ as a \emph{recognizer} whose output $w(b)$ is an internal recognition state in the simplex. We refer to $w(b)$ as the (unique) \emph{$J$-step} selected by the recognition cost $J_b$.
+\end{definition}
+
+\begin{theorem}[Recognition closure lemma (RCL): uniqueness of the $J$-step]
+For every $b\in V$ and every $\lambda>0$, the minimization problem defining $w(b)$ has a unique solution in $\Delta_M$.
+\end{theorem}
+
+\begin{proof}
+The simplex $\Delta_M$ is nonempty, compact, and convex. The map $w\mapsto \frac12\|Aw-b\|_V^2$ is convex, and $w\mapsto \frac{\lambda}{2}\|w\|^2$ is $\lambda$-strongly convex. Hence $J_b$ is $\lambda$-strongly convex on $\mathbb{R}^M$, so it has at most one minimizer on any convex set. By continuity on a compact set, a minimizer exists, and by strong convexity it is unique.
+\end{proof}
+
+A convenient characterization is via a variational inequality.
+
+\begin{lemma}[Variational inequality]
+A point $w_\star\in \Delta_M$ equals $w(b)$ if and only if
+\[
+\bigl\langle A^*(Aw_\star-b) + \lambda w_\star,\ z-w_\star \bigr\rangle \ge 0
+\quad\text{for all } z\in \Delta_M,
+\]
+where $A^*:V\to\mathbb{R}^M$ is the adjoint of $A$ and $\langle\cdot,\cdot\rangle$ is the Euclidean inner product on $\mathbb{R}^M$.
+\end{lemma}
+
+\begin{proof}
+This is the standard first-order optimality condition for minimizing a differentiable convex function over a closed convex set. The gradient is $\nabla J_b(w)=A^*(Aw-b)+\lambda w$.
+\end{proof}
+
+\begin{theorem}[Lipschitz stability in the target]
+For every $\lambda>0$ and all $b,b'\in V$,
+\[
+\|w(b)-w(b')\|\le \frac{\|A\|_{\mathrm{op}}}{\lambda}\,\|b-b'\|_V.
+\]
+\end{theorem}
+
+\begin{proof}
+Let $w:=w(b)$ and $w':=w(b')$. Apply the variational inequality with $z=w'$:
+\[
+\bigl\langle A^*(Aw-b)+\lambda w,\ w'-w\bigr\rangle \ge 0.
+\]
+Apply it again with $(b',w')$ and $z=w$:
+\[
+\bigl\langle A^*(Aw'-b')+\lambda w',\ w-w'\bigr\rangle \ge 0,
+\]
+which is equivalent to
+\[
+\bigl\langle A^*(Aw'-b')+\lambda w',\ w'-w\bigr\rangle \le 0.
+\]
+Adding the two inequalities gives
+\[
+\bigl\langle A^*A(w-w')+\lambda (w-w')-A^*(b-b'),\ w'-w \bigr\rangle \ge 0.
+\]
+Let $d:=w-w'$. Then $w'-w=-d$, and we obtain
+\[
+-\|Ad\|_V^2 - \lambda \|d\|^2 + \langle A^*(b-b'), d\rangle \ge 0.
+\]
+Dropping the nonpositive term $-\|Ad\|_V^2$ yields
+\[
+\lambda \|d\|^2 \le \langle A^*(b-b'), d\rangle \le \|A^*(b-b')\|\,\|d\|.
+\]
+If $d=0$ there is nothing to prove. Otherwise divide by $\lambda\|d\|$ to get
+\[
+\|d\| \le \frac{\|A^*(b-b')\|}{\lambda}\le \frac{\|A^*\|_{\mathrm{op}}}{\lambda}\,\|b-b'\|_V.
+\]
+Since $\|A^*\|_{\mathrm{op}}=\|A\|_{\mathrm{op}}$, the claim follows.
+\end{proof}
+
+\begin{corollary}[Robustness modulus for $\recog_\lambda$]
+Equip $V$ with the metric induced by $\|\cdot\|_V$ and equip $\Delta_M\subset\mathbb{R}^M$ with the Euclidean norm. Then the robustness modulus $r(s)$ of $\recog_\lambda:V\to\Delta_M$ satisfies
+\[
+r(s)\ \le\ \frac{\|A\|_{\mathrm{op}}}{\lambda}\,s\qquad\text{for all } s\ge 0.
+\]
+\end{corollary}
+
+\begin{proof}
+This is immediate from the Lipschitz theorem and the definition of $r(s)$.
+\end{proof}
+
+\subsection*{Finite-resolution events and recognition quotients}
+The simplex state $w(b)\in\Delta_M$ varies continuously with $b$ (indeed, Lipschitz), but $\Delta_M$ is not finite. If one wants a literal finite event space, one can post-process $w(b)$ by a finite rule.
+
+\begin{definition}[Winner-take-all event map]
+Let $\events:=\{1,\dots,M\}$. Define the event map $E_\lambda:V\to\events$ by
+\[
+E_\lambda(b) := \min\Bigl\{ i : w_i(b)=\max_{1\le j\le M} w_j(b)\Bigr\}.
+\]
+Thus $E_\lambda(b)$ is a deterministic tie-broken version of $\arg\max_i w_i(b)$.
+\end{definition}
+\noindent
+As above, $E_\lambda$ induces an indistinguishability relation $b\indist b'$ on any $\config\subseteq V$ (e.g.\ $\config=\Sigma_p(x)$) by the rule $E_\lambda(b)=E_\lambda(b')$, and hence a recognition quotient $\config/\indist$.
+
+\begin{lemma}[Margin implies stable discrete recognition]
+Let $b\in V$ and let $i_\star:=E_\lambda(b)$. Suppose there exists $\delta>0$ such that
+\[
+w_{i_\star}(b)\ \ge\ w_j(b) + 2\delta\qquad\text{for all } j\neq i_\star.
+\]
+Then for every $b'\in V$ with $\|b-b'\|_V \le (\lambda\,\delta)/\|A\|_{\mathrm{op}}$, one has $E_\lambda(b')=i_\star$.
+\end{lemma}
+
+\begin{proof}
+By the Lipschitz theorem, $\|w(b)-w(b')\|\le (\|A\|_{\mathrm{op}}/\lambda)\|b-b'\|_V\le \delta$. In particular, for each coordinate one has $|w_j(b)-w_j(b')|\le \|w(b)-w(b')\|\le\delta$. Hence for all $j\neq i_\star$,
+\[
+w_{i_\star}(b') \ge w_{i_\star}(b)-\delta \ge w_j(b)+\delta \ge w_j(b').
+\]
+So $i_\star$ remains the unique maximizer, and the tie-broken $\arg\max$ is unchanged: $E_\lambda(b')=i_\star$.
+\end{proof}
+
+\begin{remark}[Quantized simplex events]
+An alternative finite-resolution bridge is to quantize the simplex output itself. For example, fix a finite set $W\subset\Delta_M$ (a $\tau$-net in the Euclidean norm) and define a quantizer $Q:\Delta_M\to W$ by selecting a nearest element of $W$ (with deterministic tie-breaking). Then $Q\circ \recog_\lambda:V\to W$ is a finite event-valued recognizer, and the Lipschitz bound controls how rapidly the internal state can move relative to the quantization scale. As with winner-take-all, discrete stability is governed by separation from the quantizer's decision boundaries.
+\end{remark}
+
+\begin{remark}[Interpretation of the constant]
+The parameter $\lambda$ is a stability knob. Larger $\lambda$ improves Lipschitz stability but biases weights toward smaller Euclidean norm (more ``spread'' in many common geometries). Smaller $\lambda$ reduces bias but amplifies sensitivity. The operator norm $\|A\|_{\mathrm{op}}$ measures how large a change in the synthesized form $Aw$ can be produced by a unit change in weights.
+\end{remark}
+
+\begin{remark}[Fieldwise versions]
+In geometric applications $V$ and the dictionary vary with $x$. After choosing local trivializations, the pointwise Lipschitz estimate combines with standard stability estimates for compositions to yield fieldwise regularity statements on charts; we omit these routine details.
+\end{remark}
+
+\section{Approximation error versus dictionary resolution}
+
+The Lipschitz theorem controls \emph{stability} of weights given a fixed dictionary. Separately, one also wants the dictionary itself to approximate the continuous set of calibrated ray generators.
+
+We first record a basic convex-hull approximation lemma.
+
+\begin{lemma}[Convex-hull approximation from an $\varepsilon$-net]
+Let $(V,\|\cdot\|_V)$ be a normed vector space and let $S\subset V$ be compact. Suppose $\Xi=\{\xi_1,\dots,\xi_M\}\subset S$ is an $\varepsilon$-net for $S$, meaning that for every $s\in S$ there exists $\xi_i\in\Xi$ with $\|s-\xi_i\|_V\le \varepsilon$. Then for every $b\in \mathrm{conv}\,S$,
+\[
+\dist\bigl(b,\ \mathrm{conv}\,\Xi\bigr)\le \varepsilon.
+\]
+\end{lemma}
+
+\begin{proof}
+Write $b=\sum_{j=1}^N a_j s_j$ with $s_j\in S$, $a_j\ge 0$, and $\sum_j a_j=1$. For each $j$, choose $\xi_{i(j)}\in\Xi$ with $\|s_j-\xi_{i(j)}\|_V\le \varepsilon$. Define $b':=\sum_j a_j \xi_{i(j)}\in \mathrm{conv}\,\Xi$. Then
+\[
+\|b-b'\|_V \le \sum_{j=1}^N a_j \|s_j-\xi_{i(j)}\|_V \le \sum_{j=1}^N a_j \varepsilon = \varepsilon.
+\]
+Hence $\dist(b,\mathrm{conv}\,\Xi)\le \varepsilon$.
+\end{proof}
+
+Now specialize to the K\"ahler setting at a point $x$. Recall $S_p(x)=\{\xi_P(x)\}$ and $\Sigma_p(x)=\mathrm{conv}\,S_p(x)$.
+
+\begin{corollary}[Pointwise approximation on $\Sigma_p(x)$]
+Fix $x\in X$. If $\Xi(x)=\{\xi_1(x),\dots,\xi_M(x)\}\subset S_p(x)$ is an $\varepsilon$-net for $S_p(x)$ (in the norm on $V_x$), then every $b\in \Sigma_p(x)$ satisfies
+\[
+\dist\bigl(b,\ \mathrm{conv}\,\Xi(x)\bigr)\le \varepsilon.
+\]
+\end{corollary}
+
+\begin{remark}[From plane-nets to $\xi$-nets]
+On the compact Grassmannian $G_{n-p}^{\mathbb{C}}(T_xX)$, the map $P\mapsto \xi_P(x)$ is smooth, hence Lipschitz with some constant $C=C(n,p)$ once one fixes the standard Grassmann metric induced by $\omega_x$. Therefore an $\varepsilon$-net in plane-angle distance induces a $C\varepsilon$-net in $\|\cdot\|_{V_x}$-distance among ray generators. The constant $C$ is uniform when $(X,\omega)$ has bounded geometry on the region of interest.
+\end{remark}
+
+\begin{remark}[Choosing $\varepsilon$ relative to a mesh size $h$]
+In mesh-based constructions on cells of diameter $h$, one often needs dictionary approximation errors that are negligible compared to $h$-scale variations of the target field. A typical quantitative regime is to choose a resolution $\varepsilon_h$ satisfying $\varepsilon_h=o(h)$ as $h\to 0$. This ensures that dictionary-induced approximation errors do not dominate the geometric errors that scale linearly with the mesh diameter.
+\end{remark}
+
+\section{From pointwise weights to per-cell budgets on a mesh}
+
+Let $\beta\in \Omega^{p,p}(X)$ be a continuous strongly positive form field, meaning $\beta(x)\in K_p(x)$ for all $x$. Define the nonnegative density
+\[
+\rho(x) := \langle \beta(x), \psi_x\rangle.
+\]
+By the earlier lemma, $\rho(x)=0$ implies $\beta(x)=0$.
+
+On the set where $\rho(x)>0$, define the normalized field
+\[
+b(x) := \frac{\beta(x)}{\rho(x)}\in \Sigma_p(x).
+\]
+Fix a dictionary field $\{\xi_i(x)\}_{i=1}^M$ with $\xi_i(x)\in \Sigma_p(x)$ and a regularization parameter $\lambda>0$. Define weights
+\[
+w(x) := w_x(b(x))\in \Delta_M.
+\]
+The associated dictionary reconstruction is the $(p,p)$-form
+\[
+\beta_{\mathrm{dict}}(x) := \rho(x)\sum_{i=1}^M w_i(x)\,\xi_i(x).
+\]
+By construction $\beta_{\mathrm{dict}}(x)$ uses globally labeled directions indexed by $i$.
+
+Now let $U\subset X$ be a chart in which we place a cubical mesh of side length $h>0$. For a mesh cell (cube) $Q\subset U$, define the per-cell mass budget assigned to label $i$ by
+\[
+M_{Q,i} := \int_Q w_i(x)\,\rho(x)\, dV_\omega(x),
+\]
+where $dV_\omega$ is the Riemannian volume measure of the K\"ahler metric.
+
+\begin{lemma}[Basic identities]
+For every cell $Q$,
+\[
+\sum_{i=1}^M M_{Q,i} = \int_Q \rho(x)\, dV_\omega(x).
+\]
+\end{lemma}
+
+\begin{proof}
+Since $w(x)\in \Delta_M$, one has $\sum_i w_i(x)=1$ pointwise, hence
+\[
+\sum_{i=1}^M M_{Q,i} = \int_Q \Bigl(\sum_{i=1}^M w_i(x)\Bigr)\rho(x)\,dV_\omega(x) = \int_Q \rho(x)\,dV_\omega(x).
+\]
+\end{proof}
+
+\begin{proposition}[Slow variation of budgets across adjacent cells]
+Assume $w_i\rho$ is Lipschitz on $U$ with Lipschitz constant $L_i$ (in the chart metric), and assume mesh cubes have side length $h$. If $Q$ and $Q'$ are adjacent cubes (sharing a codimension-one face), then
+\[
+|M_{Q,i}-M_{Q',i}|\;\le\; C(n)\, L_i\, h\, \mathrm{Vol}_\omega(Q),
+\]
+where $\mathrm{Vol}_\omega(Q)=\int_Q dV_\omega$ and $C(n)$ depends only on the real dimension $2n$.
+\end{proposition}
+
+\begin{proof}
+Let $f_i(x):=w_i(x)\rho(x)$. For adjacent cubes $Q,Q'$ of the same size, the difference of integrals of a Lipschitz function is controlled by the oscillation of $f_i$ on $Q\cup Q'$. One convenient estimate is
+\[
+\bigl|\int_Q f_i\,dV_\omega - \int_{Q'} f_i\,dV_\omega\bigr|
+\le \int_{Q\cup Q'} |f_i(x)-f_i(x_0)|\,dV_\omega(x)
+\]
+for a suitably chosen reference point $x_0$ between the cubes. Since every point in $Q\cup Q'$ lies within $O(h)$ of $x_0$, Lipschitz continuity gives $|f_i(x)-f_i(x_0)|\le C(n)L_i h$ throughout $Q\cup Q'$, hence
+\[
+|M_{Q,i}-M_{Q',i}|
+\le C(n)L_i h\,\mathrm{Vol}_\omega(Q\cup Q')
+\le 2C(n)L_i h\,\mathrm{Vol}_\omega(Q).
+\]
+Absorb the factor $2$ into $C(n)$.
+\end{proof}
+
+\begin{remark}[Relative form of the estimate]
+Since $\mathrm{Vol}_\omega(Q)\sim h^{2n}$, the bound above is $O(h^{2n+1})$ in absolute terms, which is $O(h)$ relative to the typical cell mass scale. This is the precise sense in which budgets vary slowly across neighbors when the underlying field is Lipschitz.
+\end{remark}
+
+\section{Interface assumptions for later stages}
+
+This paper is designed to output only two types of information for downstream geometric constructions.
+
+First, it outputs a fixed finite label set $\{1,\dots,M\}$ (the dictionary indices) together with a stable recognizer output $w(x)\in\Delta_M$ producing globally labeled coefficients. If one wants a literal finite-resolution recognizer, one may also pass forward the derived event map $E_\lambda(x):=E_\lambda(b(x))\in\{1,\dots,M\}$; the margin lemma above quantifies when this discrete output is robust.
+
+Second, it outputs mesh-level budgets $M_{Q,i}$ whose neighbor-to-neighbor variation can be controlled quantitatively in terms of regularity of the underlying form field and the choice of $\lambda$ and dictionary resolution.
+
+No holomorphic input is needed for these steps. In particular, one can treat the entire discussion above as a purely pointwise and mesh-level mechanism for turning a cone-valued field into stable labeled scalar densities.
+
+\section{Examples and variants}
+
+\begin{example}[The case $p=1$: positive semidefinite Hermitian matrices]
+At a point $x$, a real $(1,1)$-form corresponds (in unitary coordinates) to a Hermitian matrix. Strong positivity is positive semidefiniteness. The normalized slice $\Sigma_1(x)$ is the set of positive semidefinite matrices with fixed trace against $\omega^{n-1}$. The calibrated rays are rank-one projectors, and a dictionary is a finite family of such projectors. The regularized simplex fit is then a stable way to express a positive semidefinite matrix as a convex combination of nearby rank-one directions with globally fixed labels.
+\end{example}
+
+\begin{remark}[Alternative regularizers]
+The quadratic regularizer $\frac{\lambda}{2}\|w\|^2$ is chosen for two reasons: it makes the objective strongly convex and it produces a clean monotonicity argument giving the explicit Lipschitz constant. Other regularizers can be used, for example an entropic term $\sum_i w_i\log w_i$ to enforce strictly positive weights in the simplex interior. Such choices typically yield smoother dependence on $b$ but change the stability constant and the structure of optimality conditions.
+\end{remark}
+
+\begin{remark}[Implementation-level stability]
+The optimization problem is a strongly convex quadratic program over the simplex. Strong convexity implies not only a unique solution but also good numerical conditioning as $\lambda$ increases. In applications where $M$ is moderate, projected gradient methods or active-set methods are standard. The theoretical Lipschitz bound is useful even if one never computes $w$ exactly: it quantifies how much weight noise can be induced by target noise.
+\end{remark}
+
+\section*{Conclusion}
+
+By fixing a finite dictionary of normalized calibrated ray generators and selecting weights through a strongly convex simplex fit, we obtain a unique, stable, and Lipschitz \emph{recognizer} for strongly positive $(p,p)$-forms. The recognition state $w(b)$ provides globally labeled coefficients, and derived finite event maps (such as $E_\lambda=\arg\max$ with deterministic tie-breaking) produce literal finite-resolution direction labels with explicit robustness margins. The induced labeled budgets on a mesh inherit slow-variation properties from the regularity of the underlying form field, with constants controlled by dictionary size/resolution and the regularization parameter $\lambda$. This isolates the recognition/labeling problem from subsequent geometric or holomorphic realization steps and provides a modular input for larger constructions.
+
+\end{document}
+

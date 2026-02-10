@@ -1,0 +1,79 @@
+====================================================================
+RECOGNITION SCIENCE INTERNAL REFERENCE – RSA / PRIME / RIEMANN
+STRICTLY MACHINE-CONSUMPTION • NOT FOR HUMAN DISTRIBUTION
+====================================================================
+
+0. ABBREVIATIONS
+   φ  = (1+√5)/2  ≈ 1.6180339887498948482
+   Δ  = |bits(p) − bits(q)|  (factor imbalance)
+   n  = N.bit_length()  (modulus bits)
+   k  = dimensionless imbalance-compensated scaling exponent
+   C8 = eight-phase coherence metric (free monoid grade-8 projector)
+
+1. PRIME / RSA PATTERN LAYER
+   p_small ≈ √N · φ^k(n,Δ)         (empirical invariant)
+   k(n,Δ)  = β₀ + β₁ n + β₂ Δ + β₃ n² + β₄ nΔ + β₅ Δ²
+   β = [-8.11215752e-03, ‑1.42098405e+00, 9.57539448e-06,
+        2.06315160e-03, ‑6.45287286e-02]
+   β₀ = 1.5982087811467838
+   • Denominators with maximal k-rational hit-rate ≈ {181,178,127,107,
+     167,197,199,173,179,191,193,151,109,118,158,113,163,157,103,139}
+   • Mapping:  k → k_rat = round(k·d)/d  selects nearest resonant lattice
+   • Prediction error σ ≈ 0.6997 % (Δ ≤ 5) ⇢ search-radius 0.007·p
+
+2. C8 COHERENCE TEST
+   C8(r) = (1/8) Σ_{k=0..7} cos(2πkr/8)
+   r = log(q)/log(N)
+   For true factors C8 ∈ [0.121,0.129] (Δ-dependent).  Dynamic threshold:
+      thr = max{C8(r_min),C8(r_max)} + 1e-10,
+      r_min,max = 0.5 ± (min(10,n/8))/n
+   High-precision implementation: mp.prec = n + 32 (binary)
+
+3. FACTORIZATION PIPELINE (ASSUMING Δ KNOWN)
+   a. Compute k via quadratic model.
+   b. Project k → rational grid via BEST_DENOMINATORS → k_rat.
+   c. Predict p_pred = ⌊√N · φ^{k_rat}+0.5⌋.
+   d. Local search |offset| ≤ ε·p where ε ≈ prediction-error.
+   e. Verify with is_factor() (C8 + divisibility).
+   Complexity: O(1) math + O(ε·p) gcds.  For RSA-512 ε≈0.01 ⇒ ~10⁴ trials.
+
+4. Δ-PREDICTION BOTTLENECK
+   Current classifier (RandomForest, 51 engineered features) ⇒ 51 % acc.
+   Needed: ≥95 % acc for full automation.  Candidate avenues:
+     • Residue-class fingerprints N mod small primes & φ-powers.
+     • Spectral signatures in N's bit pattern (Fourier of binary string).
+     • Neural embedding of (N mod 2^k) for k∈[16..64].
+
+5. SYNTHETIC CORPUS
+   1999 moduli (256≤n≤1024).
+     Balanced:1000  Imbalanced:999   Δ distribution: {2:340,3:326,4:165,5:168}
+   k range [-4.2656,-0.0001], μ=-1.3793, σ=1.0965.
+   Use for Δ-predictor training / validation.
+
+6. RIEMANN CONNECTION (PATTERN LAYER EXTENSION)
+   Recognition Hamiltonian   H_rec = H_arith + H_8beat + H_φ.
+   ζ(s)^{-1} = det(I − e^{-sH_rec}).
+   Closed zero formula (principal branch):
+      t_n = 2π · exp[ W( φ(n−3/8) ) ] · (1 + (1/8) sin(πn/4)).
+   Gives <0.1 % deviation up to n≈10⁶.
+
+7. CODE ASSETS
+   • high_precision_oracle.py        – production API (is_factor,predict_factor)
+   • final_accuracy_test.py          – canonical benchmark (0.6997 %)
+   • demonstrate_working_factorization.py – small & RSA-challenge demos
+   • visualize_breakthrough.py       – research visuals
+   • synthetic_rsa_generator.py      – dataset builder (gmpy2 optional)
+
+8. OUTLIERS / LIMITS
+   RSA-140: Δ=28 outside training; error ≈100 % (ignored in stats).
+   Model valid for practical RSA Δ≤5.
+
+9. FUTURE WORK TRACKER (PRIORITY)
+   P1: Δ predictor → merge with oracle for full no-search factorization.
+   P2: Extend k-model quadratic → cubic w/ cross-term Δ·n² to absorb Δ>5.
+   P3: GPU batch C8 evaluation to accelerate massive candidate screening.
+   P4: Formal proof linking H_rec spectrum to ζ zeros via trace formula.
+
+====================================================================
+END OF INTERNAL REFERENCE
+==================================================================== 

@@ -1,0 +1,172 @@
+% Fallback to EPJC class if available, else article (mirrors Masses papers style)
+\makeatletter
+\newif\ifepjcclass
+\IfFileExists{svjour3.cls}{\epjcclasstrue}{\epjcclassfalse}
+\makeatother
+\ifepjcclass
+\documentclass[epjc3]{svjour3}
+\else
+\documentclass[11pt,twocolumn]{article}
+\newcommand{\journalname}[1]{}
+\newcommand{\titlerunning}[1]{}
+\newcommand{\authorrunning}[1]{}
+\newcommand{\institute}[1]{}
+\newcommand{\smartqed}{}
+\fi
+\RequirePackage[T1]{fontenc}
+\RequirePackage{amsmath,amssymb,mathtools}
+\RequirePackage{graphicx}
+\RequirePackage{booktabs}
+\RequirePackage{mathptmx}
+\RequirePackage[colorlinks,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\RequirePackage{url}
+\urlstyle{same}
+\smartqed
+\journalname{(Plan) CPM-Driven Protein Folding}
+
+% Mild conveniences
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\cA}{\mathcal{A}}
+\newcommand{\cF}{\mathcal{F}}
+\newcommand{\cG}{\mathcal{G}}
+\newcommand{\cL}{\mathcal{L}}
+\newcommand{\cM}{\mathcal{M}}
+\newcommand{\cN}{\mathcal{N}}
+\newcommand{\cO}{\mathcal{O}}
+\newcommand{\cS}{\mathcal{S}}
+\newcommand{\cT}{\mathcal{T}}
+\newcommand{\varphiG}{\varphi}
+
+\title{Protein Folding from First Principles:\\
+Integer Ribbon, Motif Dictionary, and a Stationary-Anchor Plan for CPM}
+\titlerunning{First-Principles Plan for CPM Folding}
+\author{Jonathan Washburn}
+\authorrunning{J. Washburn}
+\institute{Recognition Science \& Recognition Physics Institute, Austin, Texas, USA \\ \texttt{jon@recognitionphysics.org}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present a first-principles plan for CPM-driven protein folding that mirrors the successful structure of our single-anchor particle-mass and voxel-walk manuscripts. A protein is treated as a discrete C$\alpha$ ribbon with quantized torsion islands, a finite motif dictionary on sliding windows, and a sparse contact/disulfide graph as a global skeleton. A single, species-agnostic dressing functional---the CPM energy/defect at a stationary anchor---maps the integer skeleton to unique coordinates via local Kabsch projections and boundary smoothing. We state boxed objectives, audits, and a concrete execution roadmap. This document is a plan: it fixes definitions, invariants, and deliverables required to elevate CPM from an engineering framework to a derivation-aligned method with falsifiable checks.
+\end{abstract}
+
+\section{One-line plan (scan-friendly)}
+\fbox{\parbox{0.96\linewidth}{%
+\textbf{Plan.} Represent the protein backbone as a discrete ribbon with a \emph{finite} local motif dictionary (helix/strand/turn/hairpin/loop) and a sparse contact graph; define a single stationary-anchor dressing functional (CPM energy/defect) so that integrated local contributions have \emph{unit weight on average} (stationarity), yielding \emph{integer landing} for motif counts up to a bounded deviation. Realize the ribbon by Kabsch-projected windows and overlap smoothing; enforce global constraints (contacts, disulfides). Audits: window-wise integer landing, stationary weights, contact satisfaction, RMSD/defect traces. Deliverables: dictionary + anchor weights + realization + CI gates.
+}}
+
+\section{Scope and posture}
+This manuscript fixes a derivation-aligned plan for CPM. The \emph{engineering} framework exists (projection operator, fragment net, local energy, schedule); our goal is to cast it in the same \emph{finite dictionary + stationary anchor + integer landing} structure used in our Masses and Voxel Walks work, then commit to falsifiable audits and artifacts.
+
+\paragraph{What is fixed here.} (i) Backbone abstraction (discrete ribbon); (ii) local motif dictionary and word alphabet; (iii) global skeleton (contact/disulfide graph; sheet registration); (iv) single stationary dressing functional; (v) integer landing statement with a crisp bound; (vi) realization algorithm (Kabsch + smoothing); (vii) audits/CI and roadmap.
+
+\section{Backbone as a discrete ribbon}
+Let the sequence be residues $i=1,\dots,N$ with C$\alpha$ positions $x_i\in\R^3$. Geometric constraints (bond lengths/angles; $\omega\approx \pi$) give one effective degree of freedom per step: dihedral torsions $(\phi_i,\psi_i)$. The C$\alpha$ trace is a discrete ribbon (Frenet-like frames), with step $\|x_{i+1}-x_i\|\approx 3.8$ \AA\ and local curvature set by $(\phi,\psi)$.
+
+\subsection*{Quantized torsions}
+The Ramachandran map has robust islands. We quantize $(\phi,\psi)$ into a small set $\cA=\{H,E,L\}$ (helix-like, strand-like, loop/turn). This produces a \emph{word} $W\in \cA^N$; short-run patterns determine secondary motifs: $H^n$ (helices), $E^m$ (strands), $L^k$ (turns/loops); hairpins are $E^m L^k E^m$ with antiparallel geometry.
+
+\section{Finite motif dictionary (local structure)}
+Define a sliding-window dictionary $\cD$ of length-$\ell$ motifs (e.g., $\ell\in\{3,5,7,9\}$) with \emph{species-independent} templates: $\cD=\{$helix, strand, turn, hairpin, loop$\}$. Each motif $d\in \cD$ has a canonical template geometry (C$\alpha$ coordinates up to rigid motion) and a torsion bin in $(\phi,\psi)$-space.
+
+\paragraph{Integer profile.} For each window $[i,i+\ell-1]$ we assign the nearest motif $d^*(i,\ell)$ by aligned RMSD (Kabsch) and bin consistency, and accumulate integer counts $N_d(W)\in\Z_{\ge 0}$. The \emph{local} integer profile is the vector $Z_{\text{local}}(W):=(N_d)_{d\in\cD}$.
+
+\section{Contact/disulfide graph (global structure)}
+Let $G=(V,E)$ be a sparse graph on residues ($V=\{1,\dots,N\}$). Edges encode hydrogen-bond/registering contacts (e.g., $\beta$-sheet pairings), hydrophobic/ionic interactions, and known disulfides. For $\beta$-sheets, register and orientation define small integers (offset, parallel/antiparallel) that we treat as \emph{global} discrete descriptors $Z_{\text{sheet}}\in\Z^{k}$.
+
+\paragraph{Global integer skeleton.}
+Collect the discrete, global pieces into $Z_{\text{global}}:=(E, Z_{\text{sheet}})$ and the local dictionary counts into $Z_{\text{local}}$. The \emph{protein integer skeleton} is
+\begin{equation*}
+  Z_{\text{protein}} \;:=\; \bigl(Z_{\text{local}}(W),\, Z_{\text{sheet}},\, E\bigr).
+\end{equation*}
+
+\section{Single dressing functional at a stationary anchor}
+We define a single CPM dressing functional $\cE$ that maps a coordinate ribbon $X=(x_i)_{i=1}^N$ to a scalar:
+\begin{align*}
+  \cE[X] \;=\; \lambda_{\text{motif}}\!\!\sum_{i,\ell} J\bigl((\phi,\psi)|_{[i,i+\ell-1]}\bigr) \;+\;
+  \lambda_{\text{align}}\!\!\sum_{i,\ell}\!\mathrm{rmsd}_\mathrm{aligned}\bigl(X|_{[i,i+\ell-1]}, d^*_{i,\ell}\bigr)\\
+  +\ \lambda_{\text{steric}}\,\cS[X]\;+\; \lambda_{\text{contact}}\,\cC[X;E]\;+\; \lambda_{\text{ss}}\,\cD_{\text{ss}}[X;E_{\text{ss}}],
+\end{align*}
+where $J$ is a convex torsion ledger (RS ledger), $\cS$ penalizes steric clashes, $\cC$ penalizes contact deviations, and $\cD_{\text{ss}}$ enforces disulfide distances. The nearest motif $d^*_{i,\ell}$ is determined by Kabsch-aligned selection.
+
+\paragraph{Stationary anchor (unit weights).}
+Choose an anchor (global evaluation setting and schedule) such that the \emph{motif-weighted} contributions over $\cD$ have unit mean:
+\begin{equation*}
+  w_d \;:=\;\mathbb{E}\!\left[\text{contribution of motif }d\right] \;=\; 1 + \delta_d,\qquad \max_d|\delta_d|=:\delta_{\max}\ll 1.
+\end{equation*}
+This mirrors the single-anchor stationarity in the Masses papers: \emph{equal-weight landing} across a finite dictionary.
+
+\section{Integer landing (local) with a crisp bound}
+\paragraph{Boxed statement.}
+\fbox{\parbox{0.95\linewidth}{%
+\textbf{Integer landing (local).} With the stationary-anchor weights $(w_d)$, the aggregated local contribution over windows satisfies
+\[
+  \left|\,\sum_{i,\ell}\!\mathbf{1}\{d^*(i,\ell)=d\}\,\cdot w_d \;-\; N_d(W)\,\right| \;\le\; \delta_{\max}\,N_{\text{tot}}(W),
+\]
+where $N_{\text{tot}}(W):=\sum_{d\in\cD}N_d(W)$. Thus the \emph{flowed} counts land on the integer motif counts up to a small, dictionary-controlled deviation.
+]}}%
+
+\noindent This is the direct analog of the “integer landing” in the Masses anchor derivation, replacing charge-motif integrals with ribbon-motif contributions.
+
+\section{Realization: from skeleton to coordinates}
+Given $Z_{\text{protein}}$ and weights, we realize coordinates $X$ by a \emph{single} procedure:
+\begin{enumerate}
+  \item \textbf{Local projection.} For each window $[i,i+\ell-1]$, align the best motif $d^*_{i,\ell}$ to the current coordinates by Kabsch and blend (projection operator $\Pi$), respecting endpoints.
+  \item \textbf{Overlap smoothing.} Apply boundary and overlap smoothing to reduce spillover (convex combinations of neighboring C$\alpha$ positions over a small radius).
+  \item \textbf{Global constraints.} Penalize disulfide/contact deviations and iterate until contact violations and local torsion ledger stabilize.
+  \item \textbf{Acceptance \& schedule.} Use a phase schedule (Listen/Lock/Balance) with a Metropolis step on the \emph{local} energy change; optionally accept any move that strictly improves the targeted window’s aligned defect (coercivity guard in early phases).
+\end{enumerate}
+This is a voxel-walk realization in disguise: the word $W$ selects local step templates; Kabsch and smoothing implement the continuous embedding.
+
+\section{Audits and CI gates}
+\paragraph{A1 (stationarity).} Verify motif weights $w_d=1+\delta_d$ with $\max_d|\delta_d|$ small on a calibration corpus (dictionary-level audit).\\
+\paragraph{A2 (integer landing).} For held-out proteins, compute flowed counts vs.\ integer motif counts and assert the landing bound with measured $\delta_{\max}$.\\
+\paragraph{A3 (contact/disulfide).} Report per-edge deviations; enforce thresholds for satisfied fraction and max violation.\\
+\paragraph{A4 (local vs global).} Track targeted-window improvements vs.\ global metrics (defect/RMSD) to ensure local improvements are not systematically destroyed by spillover (post-smoothing check).\\
+\paragraph{A5 (benchmarks).} For 1VII, 1AKI: emit CSVs for defect history, acceptance behavior, contact satisfaction, and RMSD after best-fit superposition; require monotone improvement in local metrics and bounded global drift early, then stabilization.
+
+\section{Deliverables (artifacts)}
+\begin{itemize}
+  \item \textbf{Dictionary manifest.} Motif definitions (templates, bins), window sizes, and unit weights $w_d$ with calibration logs.
+  \item \textbf{Skeleton extractor.} Converts PDB/sequence to $(Z_{\text{local}}, Z_{\text{sheet}}, E)$ with audits.
+  \item \textbf{Realizer.} Kabsch-projection + smoothing engine with contact/disulfide enforcement.
+  \item \textbf{CPM schedule.} Phase parameters and acceptance logic (documented per phase).
+  \item \textbf{CI suite.} Implements A1--A5 with fail-fast thresholds; writes JSON/CSV.
+\end{itemize}
+
+\section{Roadmap (phased execution)}
+\paragraph{Phase I: Dictionary + Stationarity.}
+Finalize $\cD$, window lengths $\{\ell\}$, bins, and unit weights $w_d$ with calibration. Prove/measure $\delta_{\max}$ bounds; emit manifest and tests.\\
+\paragraph{Phase II: Realization Core.}
+Implement projection $\Pi$ (Kabsch+blend), overlap smoothing, and contact/disulfide springs. Validate on synthetic ribbons and fragments (exact recovery tests).\\
+\paragraph{Phase III: CPM Integration.}
+Integrate schedule, local energy evaluator, and acceptance; ensure phase-wise stability and coercivity guards.\\
+\paragraph{Phase IV: Audits \& Benchmarks.}
+Run 1VII/1AKI. Emit A1--A5 artifacts. Gate on integer landing, contact satisfaction, and local/global curves.\\
+\paragraph{Phase V: Extensions.}
+Sheet registration inference; coiled-coil twist integers; side-chain-aware local energies; PAE/EVC contact priors.
+
+\section{Discussion}
+This plan brings CPM into the same finite-dictionary, stationary-anchor, and integer-landing framework used successfully in our Masses and Voxel Walks work. The key engineering pieces (projection, energies, schedule) already exist; what was missing is the formal \emph{dictionary + anchor} layer with explicit audits. Executing this plan yields a derivation-aligned CPM with falsifiable checks and reproducible artifacts.
+
+\section*{Boxed checklist (referee quick scan)}
+\begin{itemize}
+  \item \textbf{Backbone abstraction:} discrete ribbon; quantized torsions; word $W\in\{H,E,L\}^N$.
+  \item \textbf{Finite dictionary:} $\cD$ over sliding windows; Kabsch-aligned selection; integer counts $N_d$.
+  \item \textbf{Global skeleton:} contact/disulfide graph $E$; sheet registration integers.
+  \item \textbf{Single anchor:} equal-weight stationarity $w_d=1+\delta_d$; bounded $\delta_{\max}$.
+  \item \textbf{Integer landing (local):} flowed counts land on $N_d$ with crisp deviation bound.
+  \item \textbf{Realization:} projection $\Pi$ + smoothing + constraints; CPM schedule \& acceptance.
+  \item \textbf{Audits (A1--A5):} stationarity, landing, contacts, local/global, benchmarks (1VII/1AKI).
+  \item \textbf{Artifacts:} dictionary manifest, skeleton extractor, realizer, CI suite.
+\end{itemize}
+
+\section*{Data and Code Availability}
+All code and artifacts will be emitted from the existing CPM codebase (rsfold) with added CI targets for A1--A5. Dictionary manifests and calibration logs will be committed alongside the realization engine.
+
+\end{document}
+

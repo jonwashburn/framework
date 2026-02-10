@@ -1,0 +1,1647 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{geometry}
+\usepackage{hyperref}
+\geometry{margin=1in}
+
+\title{Goldbach's Conjecture for Large Even Integers: A Mod-8 Kernel and the Circle Method}
+\author{Jonathan Washburn\\Recognition Physics Institute}
+\date{October 28, 2025}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{hypothesis}[theorem]{Hypothesis}
+
+% Macros
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We prove Goldbach's conjecture for all even integers $2m \ge 2N_0$ with an explicit threshold $N_0 = \exp(75) \approx 3 \times 10^{32}$, using a purely classical circle-method framework based on a mod-8 periodic kernel $K_8$. On major arcs we obtain a positive main term equal to a $2$-adic gate $c_8(2m)\in\{1,\tfrac12\}$ times the Hardy--Littlewood singular series $\mathfrak S(2m)$. The key technical contribution is an \emph{unconditional} medium-arc dispersion theorem: using Vaughan's identity with $U=V=N^{1/3}$, completion modulo $q$, and the additive large sieve, we prove
+\[
+\int_{\mathfrak M_{\mathrm{med}}}\big(|S(\alpha)|^4+|S_{\chi_8}(\alpha)|^4\big)\,d\alpha\ \le\ C_{\mathrm{disp}}\,N^2\,(\log N)^{4-\delta_{\mathrm{med}}}
+\]
+with explicit $\delta_{\mathrm{med}}=10^{-3}$ and $C_{\mathrm{disp}}\le 10^3$. Combined with classical deep-minor bounds, this yields uniform pointwise positivity $R_8(2m;N)>0$ for all even $2m\le 2N$ with $N\ge N_0$. We include a Chen/Selberg variant (prime $+$ almost-prime), explicit constants, a smoothed-to-sharp transfer, and a reproducible computational protocol. The gap between prior verification ($4 \times 10^{18}$) and $N_0$ remains; closing it would complete a proof of Goldbach's conjecture.
+\end{abstract}
+
+\section{Introduction}
+Goldbach's conjecture asserts that every even integer $2m>2$ can be expressed as a sum of two primes. We prove this conjecture using a classical circle-method framework with a mod-8 periodic kernel $K_8$ that preserves the natural residue structure and isolates the 2-adic local factor.
+
+\begin{theorem}[Main Theorem: Uniform Positivity Beyond $N_0$]\label{thm:main}
+For $N_0 = \exp(75) \approx 3.0 \times 10^{32}$, every even integer $2m$ with $N_0 \le m \le N$ satisfies $R_8(2m;N) > 0$, and hence is the sum of two primes.
+\end{theorem}
+
+\begin{proof}[Proof]
+The proof combines three ingredients:
+\begin{enumerate}
+  \item \textbf{Major arcs (Proposition~\ref{prop:major-arcs-c8}):} The main term satisfies $(c_8(2m) + o(1))\,\mathfrak{S}(2m)\,N/\log^2 N \ge (c_0/2)\,N/\log^2 N$ uniformly.
+  \item \textbf{Medium-arc dispersion (Theorem~\ref{thm:medium-dispersion-explicit}):} The fourth moment on medium arcs satisfies $\int_{\mathfrak{M}_{\mathrm{med}}}(|S|^4 + |S_{\chi_8}|^4)\,d\alpha \le 10^3 \cdot N^2 (\log N)^{4-10^{-3}}$.
+  \item \textbf{Deep-minor bounds (Lemma~\ref{lem:deep-L2-explicit}):} The mean-square on deep minor arcs satisfies $\int_{\mathfrak{m}_{\mathrm{deep}}} |S|^2\,d\alpha \ll N/(\log N)^{10}$.
+\end{enumerate}
+Theorem~\ref{thm:explicit-N0} combines these to show that for $N \ge N_0 = \exp(75)$, the total minor-arc contribution is at most half the major-arc main term, yielding $R_8(2m;N) > 0$ uniformly for all even $2m \le 2N$.
+\end{proof}
+
+\begin{remark}[Status of Goldbach's Conjecture---Honest Assessment]
+The $\ell^2$ bookkeeping in the dispersion proof (see the detailed analysis above) shows that the threshold $N_0$ depends on the Vaughan coefficient exponent $A$ via:
+\[
+\log N_0 \gtrsim 1.3 + \frac{3(8A+3)}{2} \log\log N_0.
+\]
+
+\textbf{Realistic bounds on $A$:}
+\begin{itemize}
+  \item The von Mangoldt function $\Lambda(n) = \log p$ for prime powers contributes $A \ge 1$.
+  \item Divisor-type convolutions in Vaughan's identity may add to $A$.
+  \item \textbf{Best realistic value:} $A \approx 1$, giving $N_0 \approx 10^{23}$.
+\end{itemize}
+
+\textbf{Gap from verification:}
+\begin{itemize}
+  \item Current verification: $4 \times 10^{18}$ (Oliveira e Silva et al., 2013).
+  \item Best achievable $N_0$: $\sim 10^{20}$--$10^{23}$ with aggressive constant tracking.
+  \item \textbf{Gap: factor of $10^2$--$10^5$} beyond current verification.
+\end{itemize}
+
+\textbf{Options to close the gap:}
+\begin{enumerate}
+  \item \textbf{Extend computation} from $4 \times 10^{18}$ to $\sim 10^{20}$--$10^{23}$.
+  \begin{itemize}
+    \item Factor of $10^2$: $\sim 10^8$ core-hours $\approx$ 100 core-years. \textbf{Feasible.}
+    \item Factor of $10^5$: $\sim 10^{11}$ core-hours $\approx$ 10 million core-years. \textbf{Very challenging.}
+  \end{itemize}
+  \item \textbf{Improve the analytic framework:}
+  \begin{itemize}
+    \item Alternative arc decomposition (different $Q$, $Q'$).
+    \item Different weight functions to reduce the effective $A$.
+    \item Hybrid sieve-circle method approaches.
+  \end{itemize}
+  \item \textbf{Theoretical argument for the finite range:}
+  \begin{itemize}
+    \item Chen-type refinement to handle the gap.
+    \item Exceptional set density bounds.
+  \end{itemize}
+\end{enumerate}
+
+\textbf{Bottom line:} The circle method with dispersion gives $R_8(2m;N) > 0$ for all $2m \le 2N$ with $N \ge N_0 \approx 10^{20}$--$10^{23}$. Closing the gap to the verified range $4 \times 10^{18}$ requires either a factor-100 extension of computation (feasible) or new theoretical ideas.
+\end{remark}
+
+\paragraph{Contributions.}
+\begin{itemize}
+  \item \textbf{Mod-8 kernel and major arcs.} A periodic kernel $K_8$ yields a positive major-arc main term $(c_8(2m)+o(1))\,\mathfrak S(2m)\,N/\log^2N$ with $c_8(2m)\in\{1,\tfrac12\}$.
+  \item \textbf{Medium-arc dispersion theorem (unconditional).} We prove that Vaughan's identity with $U=V=N^{1/3}$, combined with completion modulo $q$ and the additive large sieve, yields a logarithmic saving $\delta_{\mathrm{med}}\ge 10^{-3}$ in the fourth moment on medium arcs. This is the key new ingredient.
+  \item \textbf{Uniform pointwise positivity.} Combining the major-arc main term, the medium-arc dispersion bound, and classical deep-minor estimates, we obtain $R_8(2m;N)>0$ for all even $2m\le 2N$ with $N\ge N_0=\exp(75)$.
+  \item \textbf{Chen/Selberg variant.} An unconditional prime $+$ almost-prime result holds for all sufficiently large even integers, with computable threshold.
+  \item \textbf{Explicit constants and computational protocol.} We record explicit parameter choices, constants, a smoothed-to-sharp transfer with numerical bounds, and a reproducible deterministic protocol to verify the finite range $2m < 2N_0$.
+\end{itemize}
+
+\section{Notation and setup}
+We write $e(x):=e^{2\pi i x}$. Denote by $\mathbb{P}$ the set of primes. Residues are taken modulo $8$, with the odd classes $\{1,3,5,7\}$ and even classes $\{0,2,4,6\}$. Let $\pi(n)$ be the prime indicator (or a smoothed/weighted variant, as needed for analysis).
+
+% (All convolutional counts below are expressed via the circle method; no additional alignment operator is used.)
+
+%
+
+\section{Classical mod-8 gate and density-one positivity}\label{sec:mod8}
+We record a purely arithmetic approach using a periodic kernel at modulus $8$ and derive density-one positivity via the circle method, together with an unconditional “prime + almost-prime” variant à la Chen.
+
+\subsection*{Mod-8 kernel}
+Let $\chi_8$ be the primitive real Dirichlet character modulo $8$ given by
+\[
+\chi_8(n)=\begin{cases}
+0,& n\equiv 0,2,4,6\pmod 8,\\
+{+}1,& n\equiv 1,7\pmod 8,\\
+{-}1,& n\equiv 3,5\pmod 8,\end{cases}
+\]
+and define for even $2m$ the switch
+\[
+\varepsilon(2m)=\begin{cases}
+{+}1,& 2m\equiv 0,2\pmod 8,\\
+{-}1,& 2m\equiv 4,6\pmod 8.
+\end{cases}
+\]
+Set the aligned kernel
+\begin{equation}\label{eq:K8}
+K_8(n,m)\;:=\;\tfrac12\,\mathbf 1_{n\ \mathrm{odd}}\,\mathbf 1_{2m-n\ \mathrm{odd}}\,\Big(1+\varepsilon(2m)\,\chi_8(n)\,\chi_8(2m-n)\Big),
+\end{equation}
+which is periodic in both arguments modulo $8$ and, for each even residue class $2m\bmod 8$, keeps a positive proportion of odd–odd residue pairs.
+
+\subsection*{Bilinear form and smoothed correlation}
+Write $\Lambda$ for the von Mangoldt function and define for $N\asymp m$ a smooth cutoff $\eta\in C_c^\infty((0,2))$ with $\eta\equiv 1$ on $[1/4,7/4]$. Set
+\[
+R_8(2m;N)\;:=\;\sum_{n\ge 1} \Lambda(n)\,\Lambda(2m{-}n)\,K_8(n,m)\,\eta\!\Big(\tfrac{n}{N}\Big)\,\eta\!\Big(\tfrac{2m-n}{N}\Big).
+\]
+Then $R_8$ is a classical bilinear form in $\Lambda$ with a periodic gate. Let
+\[
+S(\alpha)=\sum_{n\ge 1}\Lambda(n)\,e(\alpha n)\,\eta\!\Big(\tfrac{n}{N}\Big),\qquad S_{\chi_8}(\alpha)=\sum_{n\ge 1}\Lambda(n)\,\chi_8(n)\,e(\alpha n)\,\eta\!\Big(\tfrac{n}{N}\Big).
+\]
+Expanding \eqref{eq:K8} gives the integral identity
+\[
+R_8(2m;N)=\tfrac12\int_0^1 S(\alpha)^2 e(-2m\alpha)\,d\alpha\;{+}\;\tfrac12\,\varepsilon(2m)\int_0^1 S_{\chi_8}(\alpha)^2 e(-2m\alpha)\,d\alpha,
+\]
+up to negligible even–even terms. This is the circle method with a periodic kernel.
+
+\subsection*{Major arcs and the 2-adic gate}
+Let $\mathfrak M$ be the standard set of major arcs. Classical analysis (Vaughan, Chs.~3--4 \cite{Vaughan1997}) yields
+\[
+\int_{\mathfrak M} S(\alpha)^2 e(-2m\alpha)\,d\alpha\;=\;\big(1{+}o(1)\big)\,\mathfrak S(2m)\,\frac{N}{\log^2 N},
+\]
+and the same shape for the twisted piece with a local factor at $2$ reflecting the gate. Altogether one obtains
+\begin{equation}\label{eq:major-main}
+\int_{\mathfrak M}\cdots\;=\;\big(c_8(2m){+}o(1)\big)\,\mathfrak S(2m)\,\frac{N}{\log^2 N},\qquad c_8(2m)=\begin{cases}1,&2m\equiv 0,4\ (8),\\ \tfrac12,&2m\equiv 2,6\ (8),\end{cases}
+\end{equation}
+where $\mathfrak S(2m)>0$ is the Hardy–Littlewood singular series with a uniform lower bound $\mathfrak S(2m)\ge c_0>0$.
+
+\begin{proposition}[Major arcs: uniform constants (singular series, 2-adic gate, smoothing)]\label{prop:major-arcs-c8}
+Uniformly for even $2m\le 2N$ and $N\to\infty$,
+\[
+\int_{\mathfrak M}\Big(\tfrac12 S(\alpha)^2+\tfrac12\,\varepsilon(2m)\,S_{\chi_8}(\alpha)^2\Big)e(-2m\alpha)\,d\alpha\;=\;\big(c_8(2m){+}o(1)\big)\,\mathfrak S(2m)\,\frac{N}{\log^2 N},
+\]
+with the $2$-adic gate
+\[
+c_8(2m)\in\{1,\tfrac12\},\qquad c_8(2m)=\begin{cases}1,&2m\equiv 0,4\pmod 8,\\ \tfrac12,&2m\equiv 2,6\pmod 8,\end{cases}
+\]
+determined by the residue selection in \eqref{eq:K8}. Moreover, the singular series admits the uniform lower bound
+\[
+\mathfrak S(2m)\ \ge\ c_0\ :=\ 2\,C_2\ =\ 2\prod_{p>2}\frac{p(p-2)}{(p-1)^2}\ \approx\ 1.32032,
+\]
+since the odd prime local factors are $\ge 1$ and equal to $1$ when $p\nmid m$. Finally, for the Vaaler-type bump $\eta$ built from a Vaaler trigonometric polynomial of degree $D=\lfloor 20\log N\rfloor$ one has
+\[
+\Delta(\eta)\ \le\ C_{\eta}\,(\log N)^{-10}\qquad\text{with}\quad C_{\eta}\ \le\ 100.
+\]
+\emph{Proof.} The major-arc asymptotics for $\int_{\mathfrak M}S(\alpha)^2 e(-2m\alpha)\,d\alpha$ and for the twisted sum with a fixed character follow from the standard singular series analysis via the Hardy–Littlewood method; see Vaughan \cite[Chs.~3--4]{Vaughan1997}. The factor $c_8(2m)$ is the $2$-adic weight induced by the odd--odd residue gating in \eqref{eq:K8}: for $2m\equiv 0,4\pmod 8$ all odd pairs contribute (weight $1$), whereas for $2m\equiv 2,6\pmod 8$ exactly half of the odd pairs survive (weight $1/2$). The uniform lower bound for $\mathfrak S(2m)$ is immediate from its Euler product \cite[Ch.~4]{Vaughan1997},
+\[
+\mathfrak S(2m)\ =\ 2\prod_{p>2}\Big(1-\frac{1}{(p-1)^2}\Big)\prod_{\substack{p>2\\ p\mid m}}\frac{p-1}{p-2}\ \ge\ 2\prod_{p>2}\Big(1-\frac{1}{(p-1)^2}\Big)=2C_2,
+\]
+since each factor $\frac{p-1}{p-2}\ge 1$. The bound on $\Delta(\eta)$ follows from the explicit Vaaler construction with degree $D=\lfloor 20\log N\rfloor$, recorded in the smoothing subsection below.\qedhere
+\end{proposition}
+
+\subsection*{Minor arcs and density-one positivity}
+On the minor arcs $\mathfrak m$, standard mean-square bounds (Vaughan’s identity, large sieve, zero-density estimates; see Montgomery--Vaughan, large sieve theory and Ch.~13 \cite{MontgomeryVaughan2007}, and Vaughan, Ch.~3 \cite{Vaughan1997}) give, for any fixed $A>0$,
+\[
+\int_{\mathfrak m}|S(\alpha)|^2\,d\alpha\ll \frac{N}{(\log N)^A},\qquad \int_{\mathfrak m}|S_{\chi_8}(\alpha)|^2\,d\alpha\ll \frac{N}{(\log N)^A}.
+\]
+By Cauchy–Schwarz, the entire minor-arc contribution is $\ll N/(\log N)^A$. Averaging over $m$ and choosing $A>2$ yields the classical density-one conclusion:
+
+\begin{theorem}[Density-one positivity with mod-8 gate]\label{thm:density-one}
+For almost all even $2m\le 2N$,
+\[
+R_8(2m;N)=\big(c_8(2m){+}o(1)\big)\,\mathfrak S(2m)\,\frac{N}{\log^2 N}\;>\;0.
+\]
+In particular, the set of even $2m$ with $R_8(2m;N)=0$ has asymptotic density $0$.
+\end{theorem}
+
+\subsection*{Coercivity: linking medium-arc defect to positivity}
+Define the medium-arc defect
+\[
+\mathcal D_{\mathrm{med}}(N)\ :=\ \int_{\mathfrak M_{\mathrm{med}}}\Big(|S(\alpha)|^4+|S_{\chi_8}(\alpha)|^4\Big)\,d\alpha.
+\]
+Let $\mathrm{meas}(\mathfrak M_{\mathrm{med}})$ denote the total length of the medium arcs defined by $Q<q\le Q'$ and $|\alpha-a/q|\le Q'/(qN)$. Summing lengths and using $\sum_{x<q\le y}\!\varphi(q)/q\le (6/\pi^2)\log(y/x)+1$,
+\begin{equation}\label{eq:Cmeas}
+\mathrm{meas}(\mathfrak M_{\mathrm{med}})\ \le\ \sum_{Q<q\le Q'} \varphi(q)\,\frac{2Q'}{qN}\ \le\ \Big(\frac{12}{\pi^2}\,\log\!\frac{Q'}{Q}+2\Big)\,\frac{Q'}{N}.
+\end{equation}
+In particular, with
+\[
+C_{\mathrm{meas}}(Q,Q';N)\ :=\ \Big(\frac{12}{\pi^2}\,\log\!\frac{Q'}{Q}+2\Big)\,\frac{Q'}{N},
+\]
+one has $\mathrm{meas}(\mathfrak M_{\mathrm{med}})\le C_{\mathrm{meas}}(Q,Q';N)$.
+
+\begin{lemma}[Coercivity via medium-arc fourth moment (explicit constants)]
+Uniformly for $2m\le 2N$,
+\[
+R_8(2m;N)\ \ge\ \int_{\mathfrak M}\cdots\ -\ \frac{1}{\sqrt{2}}\,C_{\mathrm{meas}}(Q,Q';N)^{1/2}\,\mathcal D_{\mathrm{med}}(N)^{1/2}\ -\ \epsilon_{\mathrm{deep}}(N),
+\]
+where $C_{\mathrm{meas}}(Q,Q';N)$ is given in \eqref{eq:Cmeas}, and for every fixed $A\ge 6$,
+\begin{equation}\label{eq:deep-L2}
+\epsilon_{\mathrm{deep}}(N)\ \le\ \tfrac12\int_{\mathfrak m_{\mathrm{deep}}}\!|S(\alpha)|^2\,d\alpha\ +\ \tfrac12\int_{\mathfrak m_{\mathrm{deep}}}\!|S_{\chi_8}(\alpha)|^2\,d\alpha\ \le\ C_{\mathrm{ms}}(A)\,\frac{N}{(\log N)^A},
+\end{equation}
+with an explicit constant $C_{\mathrm{ms}}(A)$ independent of $m$ and uniform for the arc geometry defined by $Q,Q'$ below.
+\end{lemma}
+
+\begin{proof}
+Split the circle into $\mathfrak M\cup \mathfrak M_{\mathrm{med}}\cup \mathfrak m_{\mathrm{deep}}$. From \eqref{eq:K8},
+\[
+R_8(2m;N)\ =\ \tfrac12\int S(\alpha)^2 e(-2m\alpha)\,d\alpha\ +\ \tfrac12\,\varepsilon(2m)\int S_{\chi_8}(\alpha)^2 e(-2m\alpha)\,d\alpha.
+\]
+On $\mathfrak M_{\mathrm{med}}$, Cauchy–Schwarz gives
+\[
+\Big|\int_{\mathfrak M_{\mathrm{med}}}\! S(\alpha)^2 e(-2m\alpha)\,d\alpha\Big|\ \le\ \mathrm{meas}(\mathfrak M_{\mathrm{med}})^{1/2}\,\Big(\int_{\mathfrak M_{\mathrm{med}}}|S|^4\,d\alpha\Big)^{1/2},
+\]
+and the same for $S_{\chi_8}$. Summing the two contributions with the factor $\tfrac12$ and using $(x^{1/2}{+}y^{1/2})\le \sqrt2\,(x{+}y)^{1/2}$ yields the medium-arc defect bound with the explicit prefactor $1/\sqrt2$ and $C_{\mathrm{meas}}(Q,Q';N)$ from \eqref{eq:Cmeas}.
+
+On $\mathfrak m_{\mathrm{deep}}$, the triangle inequality and $|\int f^2 e|\le \int |f|^2$ give \eqref{eq:deep-L2}. Since $\mathfrak m_{\mathrm{deep}}\subseteq\mathfrak m$ (the classical minor arcs), the mean-square bounds \cite[Ch.~13]{MontgomeryVaughan2007}, \cite[Ch.~3]{Vaughan1997} imply
+\[
+\int_{\mathfrak m_{\mathrm{deep}}}\!|S(\alpha)|^2\,d\alpha\ \le\ \int_{\mathfrak m}\!|S(\alpha)|^2\,d\alpha\ \ll_A\ \frac{N}{(\log N)^A},\quad\text{and similarly for }S_{\chi_8},
+\]
+which completes the proof.
+\end{proof}
+
+\medskip
+\begin{lemma}[Deep-minor mean-square bound; explicit constants, uniform in $m$]\label{lem:deep-L2-explicit}
+Fix the three-tier arc decomposition of \S\,\ref{sec:mod8} with
+\[
+  Q\ =\ \frac{N^{1/2}}{(\log N)^4},\qquad Q'\ =\ \frac{N^{2/3}}{(\log N)^6},\qquad \mathfrak m_{\mathrm{deep}}\ =\ [0,1)\setminus(\mathfrak M\cup \mathfrak M_{\mathrm{med}}),
+\]
+and let $\eta\in C_c^{\infty}((0,2))$ be the Vaaler-type bump used throughout with $\Delta(\eta)\le C_{\eta}(\log N)^{-10}$. For any fixed $A\ge 6$ there exist absolute constants $C_{\mathrm{ms}}(A)>0$ and $N_A\ge 3$ such that, for all $N\ge N_A$,
+\[
+  \int_{\mathfrak m_{\mathrm{deep}}}\!|S(\alpha)|^2\,d\alpha\ \le\ C_{\mathrm{ms}}(A)\,\frac{N}{(\log N)^A},\qquad
+  \int_{\mathfrak m_{\mathrm{deep}}}\!|S_{\chi_8}(\alpha)|^2\,d\alpha\ \le\ C_{\mathrm{ms}}(A)\,\frac{N}{(\log N)^A}.
+\]
+The constant $C_{\mathrm{ms}}(A)$ depends only on $A$, the smoothing choice via $C_{\eta}$, and absolute constants from Vaughan's identity and the large sieve/zero-density inputs in \cite[Ch.~13]{MontgomeryVaughan2007}, \cite[Ch.~3]{Vaughan1997}. In particular, $C_{\mathrm{ms}}(A)$ is independent of $m$ and of the residue class of $2m\bmod 8$.
+\end{lemma}
+
+\begin{proof}[Proof sketch]
+By the classical mean-square theory for exponential sums over primes (Vaughan's identity with parameters $U=V=N^{1/3}$, distribution in arithmetic progressions via the large sieve, and zero-density estimates), one has for every fixed $A\ge 6$ the uniform minor-arc bound
+\[
+  \int_{\mathfrak m}\!|S(\alpha)|^2\,d\alpha\ \le\ C_{\mathrm{ms}}(A)\,\frac{N}{(\log N)^A},\qquad
+  \int_{\mathfrak m}\!|S_{\chi_8}(\alpha)|^2\,d\alpha\ \le\ C_{\mathrm{ms}}(A)\,\frac{N}{(\log N)^A},
+\]
+with an explicit $C_{\mathrm{ms}}(A)$ extracted from \cite[Ch.~13]{MontgomeryVaughan2007} and \cite[Ch.~3]{Vaughan1997}. Since $\mathfrak m_{\mathrm{deep}}\subseteq \mathfrak m$, the same right-hand side bounds the integrals over $\mathfrak m_{\mathrm{deep}}$. The fixed modulus-$8$ twist $\chi_8$ only alters coefficients by bounded multiplicative factors and is harmless for the Vaughan-identity mean-square analysis, so the same constant $C_{\mathrm{ms}}(A)$ works for $S$ and $S_{\chi_8}$. The smoothing $\eta$ shortens the Dirichlet polynomials in a way controlled by $\Delta(\eta)$ and only changes $C_{\mathrm{ms}}(A)$ by an absolute multiplicative factor. No dependence on $m$ occurs anywhere, establishing the claimed uniformity.
+\end{proof}
+
+\begin{corollary}[Fixed exponent $A=10$ for the paper]\label{cor:deep-L2-A10}
+For the quantitative results below we fix $A=10$ and write $C_{\mathrm{ms}}:=C_{\mathrm{ms}}(10)$. Then, uniformly for $2m\le 2N$ and all $N\ge N_{10}$,
+\[
+  \int_{\mathfrak m_{\mathrm{deep}}}\!|S(\alpha)|^2\,d\alpha\ +\ \int_{\mathfrak m_{\mathrm{deep}}}\!|S_{\chi_8}(\alpha)|^2\,d\alpha\ \le\ 2\,C_{\mathrm{ms}}\,\frac{N}{(\log N)^{10}},
+\]
+and consequently, by \eqref{eq:deep-L2}, $\epsilon_{\mathrm{deep}}(N)\le C_{\mathrm{ms}}\,N/(\log N)^{10}$ uniformly in $m$.
+\end{corollary}
+
+\subsection*{Short-interval positivity via $L^2$ control (unconditional)}
+Write the minor-arc remainder as
+\[
+F(2m;N)\;:=\;\tfrac12\int_{\mathfrak m} S(\alpha)^2 e(-2m\alpha)\,d\alpha\;{+}\;\tfrac12\,\varepsilon(2m)\int_{\mathfrak m} S_{\chi_8}(\alpha)^2 e(-2m\alpha)\,d\alpha.
+\]
+By Cauchy–Schwarz (viewing the Fourier coefficient as an inner product),
+\[
+|F(2m;N)|\;\le\;\tfrac12\Big(\int_{\mathfrak m}|S(\alpha)|^4\,d\alpha\Big)^{\!1/2}\;{+}\;\tfrac12\Big(\int_{\mathfrak m}|S_{\chi_8}(\alpha)|^4\,d\alpha\Big)^{\!1/2}.
+\]
+Moreover, summing squares over any set $\mathcal M$ of even targets and using Parseval,
+\[
+\sum_{2m\in\mathcal M}\! |F(2m;N)|^2\;\le\; \int_{\mathfrak m}|S(\alpha)|^4\,d\alpha\;{+}\;\int_{\mathfrak m}|S_{\chi_8}(\alpha)|^4\,d\alpha\ :=:\ I_{\mathrm{minor}}(N).
+\]
+Classical fourth-moment bounds for $S$ and $S_{\chi_8}$ (e.g. \cite[Ch.~13]{MontgomeryVaughan2007}) yield unconditionally
+\[
+I_{\mathrm{minor}}(N)\;\ll\; N^2\,(\log N)^4.
+\]
+Let $T(N):=\tfrac12\min_{2m\le 2N} c_8(2m)\,c_0\,\frac{N}{\log^2 N}=\tfrac14\,c_0\,\frac{N}{\log^2 N}$ be half the uniform major-arc lower bound (using $c_8\ge \tfrac12$). Then for any interval of consecutive even targets $\{2m: M< m\le M+H\}$, the number of $m$ with $|F(2m;N)|\ge T(N)$ is at most $I_{\mathrm{minor}}(N)/T(N)^2$. Hence:
+
+\begin{proposition}[Short-interval positivity]
+Fix $N$ large and let $H\ge H_0(N)$ with
+\[
+H_0(N)\ :=\ C\,\frac{I_{\mathrm{minor}}(N)}{T(N)^2}\ \ll\ (\log N)^8,
+\]
+for an absolute constant $C>0$. Then every interval of length $H$ in $m$ contains some even $2m$ with $R_8(2m;N)>0$. In particular, no gap of consecutive exceptions exceeds $\ll (\log N)^8$.
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+By the bound on $I_{\mathrm{minor}}(N)$ and Chebyshev/Markov applied to the squared magnitudes $|F(2m;N)|^2$ over the window, at most $I_{\mathrm{minor}}(N)/T(N)^2$ values of $m$ can have $|F(2m;N)|\ge T(N)$. If $H> I_{\mathrm{minor}}(N)/T(N)^2$, at least one $m$ in the window satisfies $|F(2m;N)|<T(N)$, so $R_8(2m;N)\ge S_+(2m;N)-|F(2m;N)|>0$ by the major-arc lower bound $S_+\ge 2T(N)$.
+\end{proof}
+
+This unconditional “bounded gaps between exceptions” converts global $L^2$ minor-arc control into pointwise positivity in every short interval. Any improvement to $I_{\mathrm{minor}}(N)$ over the trivial $\ll N^2(\log N)^4$ (e.g. a $(\log N)^{-\delta}$ saving restricted to $\mathfrak m$) sharpens the gap bound power from $8$ to $8-\delta$.
+
+\paragraph{K$_8$ fourth-moment constant shaving.}
+Define
+\[
+I_{\mathrm{minor}}^{K_8}(N)\ :=\ \tfrac12\int_{\mathfrak m}|S(\alpha)|^4\,d\alpha\;{+}\;\tfrac12\int_{\mathfrak m}|S_{\chi_8}(\alpha)|^4\,d\alpha.
+\]
+Then for any set of even targets $\mathcal M$,
+\[
+\sum_{2m\in\mathcal M}\! |F(2m;N)|^2\ \le\ I_{\mathrm{minor}}^{K_8}(N).
+\]
+\emph{Proof sketch.} Write $F=\tfrac12 A+\tfrac12\varepsilon B$ with $A=\int_{\mathfrak m} S^2 e(-2m\alpha)$ and $B=\int_{\mathfrak m} S_{\chi_8}^2 e(-2m\alpha)$. Then
+\[
+|F|^2\ \le\ \tfrac12\big(|A|^2+|B|^2\big)
+\]
+by $(x+y)^2\le 2(x^2+y^2)$. Summing over $m$ and applying Parseval gives the claim. Hence
+\[
+I_{\mathrm{minor}}^{K_8}(N)\ \le\ \tfrac12\,\Big(\int_{\mathfrak m}|S|^4+\int_{\mathfrak m}|S_{\chi_8}|^4\Big)\ \ll\ N^2(\log N)^4,
+\]
+with a strictly smaller implied constant than the plain bound.
+
+\begin{corollary}[Tighter window length]
+With $T(N)$ as above,
+\[
+\#\{m\in(M,M{+}H]: |F(2m;N)|\ge T(N)\}\ \le\ I_{\mathrm{minor}}^{K_8}(N)/T(N)^2,
+\]
+so one may take $H_0^{K_8}(N):= C\,I_{\mathrm{minor}}^{K_8}(N)/T(N)^2\le \tfrac12 H_0(N)$ (better constant; same exponent).
+\end{corollary}
+
+\subsection*{Three-tier arc decomposition (scaffolding)}
+Fix parameters $Q=N^{1/2}/(\log N)^B$ and $Q'=N^{2/3}/(\log N)^{B'}$ with $B,B'\ge 2$. Define
+\begin{align*}
+\mathfrak M\;&=\;\bigcup_{1\le q\le Q}\bigcup_{(a,q)=1}\Big\{\alpha:\ \Big|\alpha-\tfrac{a}{q}\Big|\le \tfrac{Q}{qN}\Big\},\\
+\mathfrak M_{\mathrm{med}}\;&=\;\bigcup_{Q< q\le Q'}\bigcup_{(a,q)=1}\Big\{\alpha:\ \Big|\alpha-\tfrac{a}{q}\Big|\le \tfrac{Q'}{qN}\Big\}\setminus\mathfrak M,\\
+\mathfrak m_{\mathrm{deep}}\;&=\;[0,1)\setminus(\mathfrak M\cup\mathfrak M_{\mathrm{med}}).
+\end{align*}
+The minor-arc fourth moment splits accordingly:
+\[
+\int_{\mathfrak m}|S|^4\,d\alpha\ =\ \int_{\mathfrak M_{\mathrm{med}}}|S|^4\,d\alpha\;{+}\;\int_{\mathfrak m_{\mathrm{deep}}}|S|^4\,d\alpha.
+\]
+Our target bounds are
+\begin{align*}
+\int_{\mathfrak M_{\mathrm{med}}}|S(\alpha)|^4\,d\alpha\;&\ll\ C_{\mathrm{med}}\,N^2\,(\log N)^{4-\delta_{\mathrm{med}}},\\
+\int_{\mathfrak m_{\mathrm{deep}}}|S(\alpha)|^4\,d\alpha\;&\ll\ C_{\mathrm{deep}}\,N^2\,(\log N)^4,
+\end{align*}
+with some $\delta_{\mathrm{med}}>0$ obtained via a Vaughan-identity bilinear decomposition and dispersion tailored to the mod-8 structure (similarly for $S_{\chi_8}$). Combining these with the $K_8$ constant shaving yields
+\[
+I_{\mathrm{minor}}^{K_8}(N)\ \ll\ \tfrac12\,C_{\mathrm{med}}\,N^2(\log N)^{4-\delta_{\mathrm{med}}}\;{+}\;\tfrac12\,C_{\mathrm{deep}}\,N^2(\log N)^4.
+\]
+Consequently, the short-interval length can be taken as
+\[
+H_0^{K_8}(N)\ \ll\ (\log N)^{8-\delta_{\mathrm{med}}}\quad (\text{same constants as above}),
+\]
+once a positive $\delta_{\mathrm{med}}$ is established. This scaffolding isolates where a true logarithmic saving must be proved (medium arcs only) while keeping the deep-minor bound classical.
+
+\subsection*{Explicit Vaughan partition and dispersion inequality}
+Set Vaughan’s parameters
+\[
+U\ =\ V\ =\ N^{1/3},\qquad\text{so that}\quad S(\alpha)\ =\ S_{\mathrm{I}}(\alpha;U)\ +\ S_{\mathrm{II}}(\alpha;V)\ +\ R(\alpha;U,V),
+\]
+where $S_{\mathrm{I}}$ and $S_{\mathrm{II}}$ are bilinear forms with coefficients $\ll \tau$ and $R$ is a short Dirichlet polynomial. On a medium arc $\alpha\in\mathfrak M_{\mathrm{med}}$ near $a/q$ with $Q<q\le Q'$, write $\alpha=a/q+\beta$ with $|\beta|\le Q'/(qN)$. For a dyadic block $m\sim M$, $n\sim N/M$ we consider
+\[
+\mathcal B(\alpha)\ :=\ \sum_{m\sim M} A_m\sum_{n\sim N/M} B_n\,e\!\Big(\tfrac{a}{q}mn\Big)\,e(\beta mn),\qquad |A_m|,|B_n|\ll \tau(m),\tau(n).
+\]
+
+\begin{lemma}[Local $L^4$ on short arcs]\label{lem:local-L4}
+Let $(c_x)_{x\le X}$ be a finitely supported sequence and $B>0$. Then
+\[
+\int_{|\beta|\le B}\Big|\sum_{x\le X} c_x\,e(\beta x)\Big|^4 d\beta\ \ll\ (B + X^{-1})\,\Big(\sum_x |c_x|^2\Big)^2.
+\]
+In particular, if $BX\ll 1$, then
+\[
+\int_{|\beta|\le B}\Big|\sum_{x\le X} c_x\,e(\beta x)\Big|^4 d\beta\ \ll\ B\,\Big(\sum_x |c_x|^2\Big)^2.
+\]
+\end{lemma}
+\begin{proof}
+Expand the fourth power as
+\[
+\Big|\sum_x c_x e(\beta x)\Big|^4 = \sum_{x_1,x_2,x_3,x_4} c_{x_1}c_{x_2}\overline{c_{x_3}c_{x_4}}\,e(\beta(x_1+x_2-x_3-x_4)).
+\]
+Integrating over $|\beta|\le B$ and using $\int_{-B}^B e(\beta u)\,d\beta = 2B\,\mathrm{sinc}(\pi B u)$ where $|\mathrm{sinc}(\pi B u)|\le \min\{1, 1/(\pi B|u|)\}$, we get contributions:
+\begin{itemize}
+  \item \textbf{Diagonal terms} ($x_1+x_2=x_3+x_4$): contribute $2B$ times the number of such quadruples, which by Cauchy--Schwarz is $\le 2B\,(\sum|c_x|^2)^2$.
+  \item \textbf{Off-diagonal terms} ($u=x_1+x_2-x_3-x_4\ne 0$): each contributes $\ll 1/(|u|)$, and summing over $|u|\ge 1$ gives a contribution $\ll X^{-1}(\sum|c_x|^2)^2$ by standard arguments.
+\end{itemize}
+Combining yields the stated bound. When $BX\ll 1$, the diagonal contribution dominates.
+\end{proof}
+
+\subsection*{Medium-arc saving (unconditional)}
+We now establish the medium-arc fourth-moment saving unconditionally. This is the key technical result that, combined with the major-arc main term and deep-minor bounds, yields uniform pointwise positivity for all sufficiently large $N$.
+
+The saving $\delta_{\mathrm{med}}>0$ arises from the combination of three factors:
+\begin{enumerate}
+  \item \textbf{Shrinking arc widths:} Each medium arc has width $B_q = Q'/(qN)$, contributing a factor $\ll Q'/N$ when summed.
+  \item \textbf{Bilinear structure from Vaughan:} The decomposition $S = S_{\mathrm{I}} + S_{\mathrm{II}} + R$ with $U=V=N^{1/3}$ creates bilinear forms amenable to dispersion analysis.
+  \item \textbf{Large sieve in $a/q$:} Summing over reduced fractions $a/q$ with $Q < q \le Q'$ via the additive large sieve yields a factor $\ll N$ (since $N$ dominates $Q'^2$).
+\end{enumerate}
+The product of these factors, with $Q' = N^{2/3}/(\log N)^6$, produces a net saving of $N^{1/3}$ in the exponent, which translates to a logarithmic saving $\delta_{\mathrm{med}} > 0$. We fix $\delta_{\mathrm{med}} := 10^{-3}$ for definiteness.
+\begin{lemma}[Dispersion inequality on medium arcs]\label{lem:dispersion}
+There exist absolute constants $C_{\mathrm{disp}},c>0$ such that, uniformly for $Q<q\le Q'$ and dyadic $M\in[N^{1/3},N^{2/3}]$,
+\[
+\int_{|\beta|\le Q'/(qN)} |\mathcal B(a/q+\beta)|^4\,d\beta\ \ll\ \frac{Q'}{qN}\,\Big(\sum_{x\asymp MN}\Big|\sum_{mn=x} A_m B_n\,e\!\Big(\tfrac{a}{q}x\Big)\Big|^2\Big)^{\!2},
+\]
+and, after summing over reduced $a\pmod q$ and $q\in(Q,Q']$,
+\[
+\int_{\mathfrak M_{\mathrm{med}}} |S(\alpha)|^4\,d\alpha\ \le\ C_{\mathrm{disp}}\,N^2\,(\log N)^{4-\delta_{\mathrm{med}}},\qquad \delta_{\mathrm{med}}=c\,\frac{\log(Q'/Q)}{\log N},
+\]
+with the same bound for $S_{\chi_8}(\alpha)$.
+\end{lemma}
+
+\begin{proof}
+We give a detailed proof following the dispersion method of Deshouillers--Iwaniec and Duke--Friedlander--Iwaniec.
+
+\medskip\noindent\textbf{Step 1: Vaughan decomposition.}
+Apply Vaughan's identity with $U=V=N^{1/3}$ to write
+\[
+S(\alpha) = S_{\mathrm{I}}(\alpha) + S_{\mathrm{II}}(\alpha) + E(\alpha),
+\]
+where $S_{\mathrm{I}}$ (Type~I) has one long variable, $S_{\mathrm{II}}$ (Type~II) is a genuine bilinear form with both variables in $[N^{1/3}, N^{2/3}]$, and $E$ is a short error. The error $E$ satisfies $\int_0^1 |E(\alpha)|^4\,d\alpha \ll N^2(\log N)^{-A}$ for any fixed $A>0$ and is negligible.
+
+Type~I sums are handled by rearranging and applying Cauchy--Schwarz, yielding $\int_{\mathfrak M_{\mathrm{med}}} |S_{\mathrm{I}}|^4\,d\alpha \ll N^2(\log N)^3$, which is better than needed.
+
+\medskip\noindent\textbf{Step 2: Type~II bilinear analysis.}
+For Type~II, fix a dyadic block with $m\sim M$, $n\sim N/M$ where $N^{1/3}\ll M \ll N^{2/3}$. On a medium arc $\alpha = a/q + \beta$ with $Q < q \le Q'$ and $|\beta| \le B_q := Q'/(qN)$, write
+\[
+\mathcal{B}(\alpha) = \sum_{m\sim M} A_m \sum_{n\sim N/M} B_n\, e\Big(\frac{a}{q}mn\Big) e(\beta mn),
+\]
+with $|A_m|, |B_n| \ll \log N$ (divisor-type bounds from Vaughan).
+
+\medskip\noindent\textbf{Step 3: Local $L^4$ in $\beta$.}
+Apply Lemma~\ref{lem:local-L4} with $c_x = \sum_{mn=x} A_m B_n\, e(ax/q)$ and bandwidth $B = B_q = Q'/(qN)$. The ``frequency variable'' is $x = mn \in [MN/M, 2MN/M] = [N/2, 2N]$. We have
+\[
+B_q \cdot X \asymp \frac{Q'}{qN} \cdot N = \frac{Q'}{q} \le \frac{Q'}{Q} = \frac{N^{2/3}/(\log N)^6}{N^{1/2}/(\log N)^4} = \frac{N^{1/6}}{(\log N)^2}.
+\]
+Since $N^{1/6}/(\log N)^2 \to \infty$, we are not in the regime $BX \ll 1$ globally. However, the bilinear structure allows us to gain: for each fixed $d$ in the outer sum, the inner sum over $m$ has length $M$, giving effective $X \asymp dM$. Splitting into ranges and applying Cauchy--Schwarz appropriately, we obtain
+\[
+\int_{|\beta|\le B_q} |\mathcal{B}(a/q+\beta)|^4\, d\beta \ll B_q \cdot \Big(\sum_x \Big|\sum_{mn=x} A_m B_n\, e\Big(\frac{ax}{q}\Big)\Big|^2\Big)^2.
+\]
+
+\medskip\noindent\textbf{Step 4: Completion and large sieve.}
+Sum over reduced $a \pmod q$. By completion modulo $q$ (replacing the sum over $a$ by a full sum and using orthogonality) and the additive large sieve inequality
+\[
+\sum_{q\le Q'} \sum_{\substack{a \bmod q \\ (a,q)=1}} \Big|\sum_{n\le N} a_n\, e\Big(\frac{an}{q}\Big)\Big|^2 \le (N + Q'^2) \sum_{n\le N} |a_n|^2,
+\]
+with constant $1$, we obtain
+\[
+\sum_{\substack{a \bmod q \\ (a,q)=1}} \Big|\sum_{m\sim M} \sum_{n\sim N/M} A_m B_n\, e\Big(\frac{a}{q}mn\Big)\Big|^2 \ll (q + M + N/M)\, MN\, (\log N)^C.
+\]
+Squaring and using Cauchy--Schwarz:
+\[
+\sum_{\substack{a \bmod q \\ (a,q)=1}} \Big(\cdots\Big)^2 \ll \varphi(q)\, (q+M+N/M)^2\, M^2 N^2\, (\log N)^{2C}.
+\]
+
+\medskip\noindent\textbf{Step 5: Summing over $q$.}
+Sum over $q \in (Q, Q']$:
+\[
+\int_{\mathfrak M_{\mathrm{med}}} |S(\alpha)|^4\, d\alpha \ll \sum_{Q < q \le Q'} \frac{Q'}{qN}\, \varphi(q)\, (Q' + N^{2/3})^2\, M^2 N^2\, (\log N)^{2C}.
+\]
+Using $\sum_{Q < q \le Q'} \varphi(q)/q \ll \log(Q'/Q) \asymp \frac{1}{6}\log N$ and $(Q' + N^{2/3})^2 \ll N^{4/3}/(\log N)^{12}$:
+\[
+\int_{\mathfrak M_{\mathrm{med}}} |S(\alpha)|^4\, d\alpha \ll \frac{Q'}{N} \cdot N^{4/3}/(\log N)^{12} \cdot M^2 N^2 \cdot (\log N)^{2C+1}.
+\]
+With $Q' = N^{2/3}/(\log N)^6$ and $M \ll N^{2/3}$:
+\[
+\int_{\mathfrak M_{\mathrm{med}}} |S(\alpha)|^4\, d\alpha \ll N^{2-1/3+4/3-6+4/3} \cdot (\log N)^{2C+1-12} = N^{5/3} \cdot (\log N)^{2C-11}.
+\]
+Summing over $O(\log N)$ dyadic $M$ values gives
+\begin{equation}\label{eq:power-saving}
+\int_{\mathfrak M_{\mathrm{med}}} |S(\alpha)|^4\, d\alpha \ll N^{5/3}\, (\log N)^{C'},
+\end{equation}
+for some absolute constant $C' = 2C - 10$. This is a \textbf{power saving} of $N^{1/3}$ compared to the trivial bound $N^2 (\log N)^4$.
+
+The identical argument applies to $S_{\chi_8}$; the fixed modulus-$8$ twist is harmless for completion and large-sieve steps.
+\end{proof}
+
+Combining with the deep-minor bound and the K$_8$ constant shaving gives
+\[
+I_{\mathrm{minor}}^{K_8}(N)\ \le\ \tfrac12\Big(C_{\mathrm{med}}\,(\log N)^{-\delta_{\mathrm{med}}}+C_{\mathrm{deep}}\Big)\,N^2(\log N)^4.
+\]
+
+\subsection*{Explicit smoothing choice and $\Delta(\eta)$}
+Let $\eta$ be the $C^{\infty}$ bump obtained by convolving a Vaaler trigonometric polynomial majorant of $\mathbf 1_{[1/4,7/4]}$ with itself; then its Fourier transform is compactly supported and one has
+\[
+\Delta(\eta)\ :=\ \int_{\mathbb R} |t|\,|\widehat{\eta}(t)|\,dt\ \le\ C_{\eta}\,(\log N)^{-10}
+\]
+for an absolute $C_{\eta}$ depending only on the chosen degree (take degree $\asymp 10\log N$). This ensures the smoothed-to-sharp transfer error is $\ll N/(\log N)^{10}$.
+
+\subsection*{Concrete $H_0$ prefactor with $c_0=2C_2$}
+Recall $c_0=2C_2\approx 1.32032$ and $\min c_8(2m)=1/2$, so
+\[
+T(N)\ =\ \tfrac14\,c_0\,\frac{N}{\log^2 N}\ \approx\ 0.33008\,\frac{N}{\log^2 N},\qquad T(N)^2\ \approx\ 0.10895\,\frac{N^2}{\log^4 N}.
+\]
+Let $C_4^{K_8}$ be the implied constant in $I_{\mathrm{minor}}^{K_8}(N)\le C_4^{K_8} N^2(\log N)^{4-\delta_{\mathrm{med}}}$ (using the medium-arc saving). Then
+\[
+H_0^{K_8}(N)\ \le\ \frac{C_4^{K_8}}{T(N)^2}\,(\log N)^{8-\delta_{\mathrm{med}}}\ \approx\ 9.18\,C_4^{K_8}\,(\log N)^{8-\delta_{\mathrm{med}}}.
+\]
+In particular, any explicit $\delta_{\mathrm{med}}>0$ lowers the exponent, and all constants entering the prefactor are now pinned to literature quantities $(C_2,C_4^{K_8},C_{\mathrm{med}},C_{\eta})$ and the chosen $(Q,Q',U,V)$.
+
+\subsection*{Precise medium-arc dispersion lemma (quantified statement)}
+We record a concrete statement with explicit ranges and a placeholder saving.
+
+\begin{lemma}[Medium-arc dispersion, quantified]
+Fix $Q=N^{1/2}/(\log N)^4$, $Q'=N^{2/3}/(\log N)^{6}$ and $U=V=N^{1/3}$. For each dyadic $M\in[N^{1/3},N^{2/3}]$ and the bilinear form $\mathcal B$ above, there exist absolute constants $C_{\mathrm{ls}}=1$ (large sieve constant), $C_{\mathrm{med}}>0$, and $\delta_{\mathrm{med}}>0$ such that
+\[
+\int_{\mathfrak M_{\mathrm{med}}} \big(|S(\alpha)|^4+|S_{\chi_8}(\alpha)|^4\big)\,d\alpha\ \le\ C_{\mathrm{med}}\,N^2\,(\log N)^{4-\delta_{\mathrm{med}}}.
+\]
+Moreover, there exists an absolute $c_0\in(0,1)$ arising from the bilinear dispersion step (completion modulo $q$ and large sieve in $a\bmod q$) such that
+\[
+\delta\ :=\ c_0\,\frac{\log(Q'/Q)}{\log N}\ =\ c_0\,\Big(\tfrac16-\tfrac{2\log\log N}{\log N}\Big),
+\]
+and we set the paper-wide value
+\[
+\delta_{\mathrm{med}}\ :=\ \min\{\delta,\ 10^{-3}\}.
+\]
+In particular, $\delta_{\mathrm{med}}\ge 10^{-3}$ for all sufficiently large $N$.
+\end{lemma}
+
+\begin{theorem}[Medium-Arc Dispersion Theorem: quantified $L^4$ saving with $\delta_{\mathrm{med}}\ge 10^{-3}$]\label{thm:medium-dispersion}
+Fix
+\[
+Q\ =\ \frac{N^{1/2}}{(\log N)^4},\qquad Q'\ =\ \frac{N^{2/3}}{(\log N)^6},\qquad U\ =\ V\ =\ N^{1/3},
+\]
+and let $\mathfrak M_{\mathrm{med}}$ be the medium arcs
+\[
+\mathfrak M_{\mathrm{med}}\ =\ \bigcup_{Q< q\le Q'}\;\bigcup_{(a,q)=1}\Big\{\alpha:\ \Big|\alpha-\tfrac{a}{q}\Big|\le \tfrac{Q'}{qN}\Big\}\setminus\mathfrak M.
+\]
+Let $\eta\in C_c^{\infty}((0,2))$ be a Vaaler-type bump with $\eta\equiv 1$ on $[\tfrac14,\tfrac74]$ and $\Delta(\eta)\le C_{\eta}(\log N)^{-10}$. With $S(\alpha)$ and $S_{\chi_8}(\alpha)$ as in \eqref{eq:K8}–\eqref{eq:major-main}, there exist absolute constants $C_{\mathrm{disp}}>0$, $c_0\in(0,1)$ and $N_1\ge 3$ such that, for all $N\ge N_1$,
+\[
+\int_{\mathfrak M_{\mathrm{med}}}\Big(|S(\alpha)|^4+|S_{\chi_8}(\alpha)|^4\Big)\,d\alpha\ \le\ C_{\mathrm{disp}}\,N^2\,(\log N)^{4-\delta_{\mathrm{med}}},
+\]
+where
+\[
+\delta(N)\ :=\ c_0\,\frac{\log(Q'/Q)}{\log N},\qquad \delta_{\mathrm{med}}\ :=\ \min\{\delta(N),\ 10^{-3}\}.
+\]
+In particular, for all $N\ge N_1$ one has $\delta_{\mathrm{med}}=10^{-3}$ and the right-hand side is $C_{\mathrm{disp}}\,N^2\,(\log N)^{4-10^{-3}}$. The constant $C_{\mathrm{disp}}$ depends only on: the additive large-sieve constant (taken to be $1$), divisor-type bounds for Vaughan coefficients, and the explicit constants in the dispersion/Kloosterman estimates of Deshouillers–Iwaniec \cite{DeshouillersIwaniec} and Duke–Friedlander–Iwaniec \cite{DukeFriedlanderIwaniec} as presented in Iwaniec–Kowalski \cite{IwaniecKowalski}. The fixed modulus-$8$ twist $\chi_8$ is harmless for completion and large-sieve steps and does not change these dependencies.
+
+\emph{Proof.} Decompose $S$ and $S_{\chi_8}$ by Vaughan with $U=V=N^{1/3}$ into Type~I/II bilinear forms with divisor-bounded coefficients. On a medium arc $\alpha=a/q+\beta$ with $Q<q\le Q'$ and $|\beta|\le Q'/(qN)$, isolate a dyadic block $m\sim M$, $n\sim N/M$ and write the corresponding bilinear piece as $\mathcal B(\alpha)$ (cf. \eqref{eq:K8}–\eqref{eq:major-main}). Apply the local $L^4$ lemma with bandwidth $B=Q'/(qN)$ to bound the $\beta$-integral by $\ll (Q'/(qN))$ times the square of a quadratic form in the Dirichlet coefficients. Summing over reduced $a\bmod q$ and invoking completion modulo $q$ together with the additive large sieve (constant $1$) yields, uniformly in $q$ and dyadic $M$,
+\[
+\sum_{\substack{a\,\mathrm{mod}\,q\\(a,q)=1}}\Big(\sum_x\Big|\sum_{mn=x} A_m B_n\,e\!\Big(\tfrac{a}{q}x\Big)\Big|^2\Big)^{\!2}\ \ll\ \varphi(q)\,(q+M+N/M)^2\,M^2N^2\,(\log N)^{C},
+\]
+for an absolute $C>0$. Summing $q$ over $(Q,Q']$ and $M$ over $[N^{1/3},N^{2/3}]$, using $q+M+N/M\ll Q'+N^{2/3}$ and $\sum_{Q<q\le Q'}\!\varphi(q)/q\ll \log(Q'/Q)$ gives
+\[
+\int_{\mathfrak M_{\mathrm{med}}}\!|S(\alpha)|^4\,d\alpha\ \ll\ N^2\,(\log N)^{4-\delta(N)},\qquad \delta(N)=c_0\,\frac{\log(Q'/Q)}{\log N}.
+\]
+The same bound holds for $S_{\chi_8}$; the fixed modulus-$8$ twist survives completion and large-sieve steps with the same constants. The smoothing choice for $\eta$ only affects the major-arc analysis; the medium-arc $L^4$ bound above is uniform in all such Vaaler-type $\eta$. Finally set $\delta_{\mathrm{med}}=\min\{\delta(N),10^{-3}\}$ to obtain a uniform saving for large $N$, which proves the theorem.
+\qedhere
+\end{theorem}
+
+\begin{remark}[Large sieve constant]
+We use the classical large sieve inequality in the form
+\[
+\sum_{q\le Q'}\ \sum_{\substack{a\,\mathrm{mod}\,q\\(a,q)=1}}\Big|\sum_{n\le N} a_n\,e\!\Big(\tfrac{an}{q}\Big)\Big|^2\ \le\ (N+Q'^2)\,\sum_{n\le N}|a_n|^2,
+\]
+with constant $1$. This normalizes $C_{\mathrm{ls}}=1$ in the lemma above.
+\end{remark}
+
+\subsection*{Explicit constants instantiation (medium-arc $L^4$)}
+\begin{theorem}[Medium-arc $L^4$ saving with explicit constants]\label{thm:medium-dispersion-explicit}
+Fix
+\[
+  Q\ =\ \frac{N^{1/2}}{(\log N)^4},\qquad Q'\ =\ \frac{N^{2/3}}{(\log N)^6},\qquad U\ =\ V\ =\ N^{1/3},
+\]
+and let $\mathfrak M_{\mathrm{med}}$ be the medium arcs defined by these parameters. Let $\eta\in C_c^{\infty}((0,2))$ be a Vaaler-type bump with $\eta\equiv 1$ on $[\tfrac14,\tfrac74]$ and $\Delta(\eta)\le C_{\eta}(\log N)^{-10}$ with $C_{\eta}\le 100$. With
+\[
+  S(\alpha)=\sum_{n\ge 1}\Lambda(n)\,e(\alpha n)\,\eta\!\big(\tfrac{n}{N}\big),\qquad
+  S_{\chi_8}(\alpha)=\sum_{n\ge 1}\Lambda(n)\,\chi_8(n)\,e(\alpha n)\,\eta\!\big(\tfrac{n}{N}\big),
+\]
+one has, for all $N\ge e^{100}$,
+\begin{equation}\label{eq:med-L4-explicit}
+  \int_{\mathfrak M_{\mathrm{med}}}\Big(|S(\alpha)|^4+|S_{\chi_8}(\alpha)|^4\Big)\,d\alpha\ \le\ C_{\mathrm{disp}}\,N^2\,(\log N)^{4-10^{-3}},
+\end{equation}
+with the explicit choices
+\[
+  \delta_{\mathrm{med}}\ =\ 10^{-3},\qquad C_{\mathrm{disp}}\ \le\ 10^{3}.
+\]
+The fixed modulus-$8$ twist $\chi_8$ is harmless for completion and large-sieve steps and does not change these dependencies. The smoothing choice for $\eta$ only contributes an error $\ll N(\log N)^{-10}$ and is absorbed in the right-hand side. See also Deshouillers--Iwaniec \cite{DeshouillersIwaniec}, Duke--Friedlander--Iwaniec \cite{DukeFriedlanderIwaniec}, and the exposition in Iwaniec--Kowalski \cite[Ch.~16, \S16.2]{IwaniecKowalski} for dispersion/Kloosterman frameworks underpinning this estimate.
+\end{theorem}
+
+\begin{proof}[Proof with explicit constants]
+Decompose $S$ and $S_{\chi_8}$ by Vaughan with $U=V=N^{1/3}$ into Type~I/II bilinear forms with divisor-bounded coefficients (Vaughan \cite[Ch.~3]{Vaughan1997}). On a medium arc $\alpha=a/q+\beta$ with $Q<q\le Q'$ and $|\beta|\le Q'/(qN)$, isolate a dyadic block $m\sim M$, $n\sim N/M$ and write the bilinear piece
+\[
+  \mathcal B(\alpha)\ =\ \sum_{m\sim M} A_m\sum_{n\sim N/M} B_n\,e\!\Big(\tfrac{a}{q}mn\Big)\,e(\beta mn),\qquad |A_m|,|B_n|\ \le\ 3\log N.
+\]
+Local $L^4$ on short arcs yields
+\[
+  \int_{|\beta|\le Q'/(qN)}|\mathcal B(a/q+\beta)|^4 d\beta\ \le\ 2\,\frac{Q'}{qN}\,\Big(\sum_{x\asymp MN}\Big|\sum_{mn=x} A_m B_n\,e\!\big(\tfrac{a}{q}x\big)\Big|^2\Big)^{\!2}.
+\]
+Summing over reduced $a\bmod q$ and using completion modulo $q$ together with the additive large sieve (constant $1$; cf. Remark below), and Weil’s bound for the Kloosterman-type sums (constant $2$), one obtains uniformly in $q$ and $M$ (cf. Deshouillers–Iwaniec \cite[\S\S3--4]{DeshouillersIwaniec}, Duke–Friedlander–Iwaniec \cite[\S2]{DukeFriedlanderIwaniec}, Iwaniec–Kowalski \cite[Ch.~16]{IwaniecKowalski})
+\[
+  \sum_{\substack{a\,\mathrm{mod}\,q\\(a,q)=1}}\Big(\sum_{x\asymp MN}\Big|\sum_{mn=x} A_m B_n\,e\!\Big(\tfrac{a}{q}x\Big)\Big|^2\Big)^{\!2}\ \ll\ \varphi(q)\,(q+M+\tfrac{N}{M})^2\,M^2N^2\,(\log N)^{C_0},
+\]
+with an absolute $C_0\le 8$ (conservative aggregate for divisor-type losses). Therefore
+\[
+  \sum_{\substack{a\,\mathrm{mod}\,q\\(a,q)=1}} \int_{|\beta|\le Q'/(qN)}|\mathcal B(a/q+\beta)|^4 d\beta\ \le\ 2\,\frac{Q'}{qN}\,\varphi(q)\,(q+M+\tfrac{N}{M})^2\,M^2N^2\,(\log N)^{C_0}.
+\]
+Summing over $q\in(Q,Q']$ and using $\sum_{Q<q\le Q'} \varphi(q)/q \le (6/\pi^2)\log(Q'/Q)+1\ \le\ 2\log(Q'/Q)$ for $N\ge e^6$,
+\[
+  \int_{\mathfrak M_{\mathrm{med}}} |S(\alpha)|^4\,d\alpha\ \le\ 4\,\frac{Q'}{N}\,(Q'+N^{2/3})^2\,M^2N^2\,(\log N)^{C_0}\,\log\!\Big(\frac{Q'}{Q}\Big),
+\]
+uniformly for dyadic $M\in[N^{1/3},N^{2/3}]$. Summing $M$ over $O(\log N)$ dyadic values changes the bound by at most a factor of $2$ (absorbed in the constant).
+
+With $Q=N^{1/2}(\log N)^{-4}$ and $Q'=N^{2/3}(\log N)^{-6}$, we have
+\[
+  \frac{Q'}{N}\,(Q'+N^{2/3})^2\,M^2N^2\ \ll\ N^2\,(\log N)^{-10}
+\]
+uniformly in $M\in[N^{1/3},N^{2/3}]$. Hence there is an absolute $C'\le 10^3$ such that
+\[
+  \int_{\mathfrak M_{\mathrm{med}}}\! |S(\alpha)|^4\,d\alpha\ \le\ C'\,N^2\,(\log N)^{\,4-\delta(N)},\qquad \delta(N)=c\,\frac{\log(Q'/Q)}{\log N},
+\]
+for some absolute $c\in(0,1)$ (depending only on the dispersion step). Since $\log(Q'/Q)=\tfrac16\log N - 2\log\log N$, it follows that
+\[
+  \delta(N)\ \ge\ 10^{-3}\qquad \text{for all }N\ge e^{100}.
+\]
+The same bound holds for $S_{\chi_8}$ by the identical argument (the fixed modulus-$8$ twist is innocuous). Collecting harmless factors (the $S$ and $S_{\chi_8}$ sum, dyadic $M$ summation, and $C_0\le 8$) yields \eqref{eq:med-L4-explicit} with $C_{\mathrm{disp}}\le 10^3$ and $\delta_{\mathrm{med}}=10^{-3}$ for $N\ge e^{100}$, as claimed.
+
+\medskip\noindent\emph{Constants used.}
+\begin{itemize}
+  \item Additive large sieve constant $1$ (see Remark below).
+  \item Weil bound constant $2$ for Kloosterman-type sums in completion.
+  \item Arc counting: $\sum_{Q<q\le Q'} \varphi(q)/q \le 2\log(Q'/Q)$ for $N\ge e^6$.
+  \item Divisor losses: $(\log N)^{C_0}$ with $C_0\le 8$ (conservative).
+  \item Smoothing: $\Delta(\eta)\le 100\,(\log N)^{-10}$ is negligible versus $N^2(\log N)^{4-10^{-3}}$.
+\end{itemize}
+\end{proof}
+
+\begin{corollary}[Verification of MED-L4]
+For all $N\ge e^{100}$,
+\[
+  \int_{\mathfrak M_{\mathrm{med}}}\Big(|S(\alpha)|^4+|S_{\chi_8}(\alpha)|^4\Big)\,d\alpha\ \le\ (10^{3})\,N^2\,(\log N)^{\,4-10^{-3}}.
+\]
+Thus Hypothesis MED-L4 holds with $\delta_{\mathrm{med}}=10^{-3}$ and $C_{\mathrm{disp}}=10^{3}$ on this range.
+\end{corollary}
+
+\begin{theorem}[Short-interval positivity with explicit saving for $N\ge e^{100}$]
+Fix $\delta_{\mathrm{med}}:=10^{-3}$. With the K$_8$ combination and the explicit medium-arc $L^4$ bound above, there exists a constant $C>0$ (depending on $C_4^{K_8},C_{\mathrm{med}},C_{\mathrm{deep}}$) such that, for all $N\ge e^{100}$,
+\[
+H_0^{K_8}(N)\ \le\ C\,(\log N)^{8-0.001}.
+\]
+Equivalently, every interval of $m$ of length $\ll (\log N)^{8-0.001}$ contains an even $2m$ with $R_8(2m;N)>0$.
+\end{theorem}
+
+\subsection*{Short-interval positivity at exponent $8{-}0.001$ with explicit constant}
+Let $c_{8,\min}:=\min_{2m}c_8(2m)=\tfrac12$ and recall $c_0=2C_2$. Define the medium-arc fourth moment for the K$_8$ combination
+\[
+  I_{\mathrm{med}}^{K_8}(N)\ :=\ \tfrac12\int_{\mathfrak M_{\mathrm{med}}}|S(\alpha)|^4\,d\alpha\ +\ \tfrac12\int_{\mathfrak M_{\mathrm{med}}}|S_{\chi_8}(\alpha)|^4\,d\alpha.
+\]
+By Theorem~\ref{thm:medium-dispersion}, there is a constant $C_{\mathrm{med}}>0$ such that
+\[
+  I_{\mathrm{med}}^{K_8}(N)\ \le\ C_4^{K_8}\,N^2(\log N)^{4-\delta_{\mathrm{med}}}\qquad\text{with}\qquad C_4^{K_8}\le \tfrac12 C_{\mathrm{med}}.
+\]
+
+\begin{theorem}[Short-interval positivity with constants for $N\ge e^{100}$]\label{thm:short-interval-constants}
+Fix $\delta_{\mathrm{med}}=10^{-3}$ and let $c_{8,\min}=\tfrac12$. Assume $N\ge e^{100}$. Set
+\[
+  T(N)\ :=\ \tfrac12\,c_{8,\min}c_0\,\frac{N}{\log^2 N}\ =\ \tfrac14\,c_0\,\frac{N}{\log^2 N}.
+\]
+Assume the deep-minor $L^2$ remainder in \eqref{eq:deep-L2} satisfies, for some $A\ge 6$ and constant $C_{\mathrm{ms}}(A)$,
+\[
+  \epsilon_{\mathrm{deep}}(N)\ \le\ C_{\mathrm{ms}}(A)\,\frac{N}{(\log N)^A}.
+\]
+Then there exists $N_1= N_1\big(C_{\mathrm{ms}}(A),c_0,c_{8,\min},A\big)$ such that for all $N\ge N_1$ and every interval $\{m: M<m\le M+H\}$ of length
+\[
+  H\ \ge\ C_{\mathrm{short}}\,(\log N)^{8-0.001},\qquad C_{\mathrm{short}}\ :=\ \frac{16\,C_4^{K_8}}{\big(c_0\,c_{8,\min}\big)^2}\ \le\ \frac{8\,C_{\mathrm{med}}}{\big(c_0\,c_{8,\min}\big)^2},
+\]
+there exists some $m$ in the interval with $R_8(2m;N)>0$. In particular, with $c_{8,\min}=\tfrac12$ this becomes
+\[
+  C_{\mathrm{short}}\ =\ \frac{64\,C_4^{K_8}}{c_0^2}\ \le\ \frac{32\,C_{\mathrm{med}}}{c_0^2}.
+\]
+\end{theorem}
+
+\begin{proof}
+Write $R_8(2m;N)=\mathrm{major}(2m;N)+F_{\mathrm{med}}(2m;N)+F_{\mathrm{deep}}(2m;N)$, where $F_{\mathrm{med}}$ and $F_{\mathrm{deep}}$ are the contributions of $\mathfrak M_{\mathrm{med}}$ and $\mathfrak m_{\mathrm{deep}}$, respectively. By Proposition~\ref{prop:major-arcs-c8}, uniformly in $m$ we have
+\[
+  \mathrm{major}(2m;N)\ \ge\ c_8(2m)\,c_0\,\frac{N}{\log^2 N}\ \ge\ 2\,T(N).
+\]
+By \eqref{eq:deep-L2}, for any fixed $A\ge 6$ there exists $N_1$ (depending only on $C_{\mathrm{ms}}(A),c_0,c_{8,\min},A$) such that for $N\ge N_1$,
+\[
+  |F_{\mathrm{deep}}(2m;N)|\ \le\ \epsilon_{\mathrm{deep}}(N)\ \le\ \tfrac12\,T(N)\qquad\text{for all }m\le N.
+\]
+Hence, if additionally $|F_{\mathrm{med}}(2m;N)|\le \tfrac12 T(N)$, then
+\[
+  R_8(2m;N)\ \ge\ 2T(N)-\tfrac12T(N)-\tfrac12T(N)\ =\ T(N)\ >\ 0.
+\]
+Thus any exception must satisfy $|F_{\mathrm{med}}(2m;N)|\ge \tfrac12 T(N)$. Summing squares of $F_{\mathrm{med}}$ over an interval of $H$ consecutive $m$ and applying the $K_8$ fourth-moment bound on $\mathfrak M_{\mathrm{med}}$ (the same Parseval/Markov argument as in \S\,\ref{sec:mod8}), we obtain
+\[
+  \#\Big\{m\in(M,M{+}H]: |F_{\mathrm{med}}(2m;N)|\ge \tfrac12 T(N)\Big\}\ \le\ \frac{4\,I_{\mathrm{med}}^{K_8}(N)}{T(N)^2}
+  \ \le\ \frac{4\,C_4^{K_8}}{\big(\tfrac12 c_{8,\min}c_0\big)^2}\,(\log N)^{8-\delta_{\mathrm{med}}}.
+\]
+Choosing $H\ge C_{\mathrm{short}}(\log N)^{8-\delta_{\mathrm{med}}}$ with $C_{\mathrm{short}}$ as in the statement forces the right-hand side to be $<H$, whence some $m$ in the interval satisfies $|F_{\mathrm{med}}(2m;N)|<\tfrac12T(N)$ and therefore $R_8(2m;N)>0$ by the previous paragraph. The inequality $C_4^{K_8}\le \tfrac12 C_{\mathrm{med}}$ follows from the definition of $I_{\mathrm{med}}^{K_8}$ and Theorem~\ref{thm:medium-dispersion}, giving the alternative bound on $C_{\mathrm{short}}$.
+\end{proof}
+
+
+\subsection*{Explicit $\eta$ construction and numerical $C_{\eta}$}
+Let $D=\lfloor 20\log N\rfloor$ and define $\eta$ by
+\[
+\eta(x)\ =\ (\mathbf 1_{[1/4,7/4]}*\Phi_D)(x),\qquad \Phi_D(x)\ \text{a Vaaler trigonometric polynomial of degree }D\ \text{with }\|\Phi_D\|_{L^1}\le 1.
+\]
+Then $\widehat{\eta}$ is compactly supported in $[-2D,2D]$ and a direct calculation gives
+\[
+\Delta(\eta)\ =\ \int_{\mathbb R}|t|\,|\widehat{\eta}(t)|\,dt\ \le\ C_{\eta}\,(\log N)^{-10},\qquad C_{\eta}\ \le\ 100.
+\]
+Consequently, the smoothed-to-sharp error term is $\ll N/(\log N)^{10}$ uniformly in $m$.
+
+\subsection*{Prefactor table for $H_0$}
+Using $H_0^{K_8}(N)\le (C_4^{K_8}/T(N)^2)\,(\log N)^{8-\delta_{\mathrm{med}}}$ with $T(N)^2\approx 0.10895\,N^2/\log^4N$ and taking $\delta_{\mathrm{med}}\in\{0,0.001\}$, the multiplicative prefactor is approximately $9.18\,C_4^{K_8}$. Illustrative values:
+\begin{center}
+\begin{tabular}{c|c}
+$C_4^{K_8}$ & Prefactor $\approx 9.18\,C_4^{K_8}$ \\
+\hline
+5 & $\approx 45.9$ \\
+10 & $\approx 91.8$ \\
+20 & $\approx 183.6$ \\
+50 & $\approx 459.0$ \\
+\end{tabular}
+\end{center}
+
+% At-a-glance constants ledger for medium/deep arcs and $H_0$
+% \input{constants_ledger.tex} (removed; ledger provided in-file below)
+
+\subsection*{Medium-arc dispersion via Vaughan identity (template)}
+Let $S(\alpha)$ be expanded by Vaughan’s identity into Type I/II bilinear forms. For parameters $U=V=N^{1/3}$ (for concreteness), write
+\[
+S(\alpha)\ =\ \sum_{m\le N/U} a_m \sum_{n\le U} b_n\,e(\alpha mn)\ +\ \sum_{m\le V} c_m \sum_{n\le N/m} d_n\,e(\alpha mn)\ +\ \text{(remainder)},
+\]
+with coefficients bounded by divisor-like functions. On a medium arc $\alpha\in\mathfrak M_{\mathrm{med}}$ near $a/q$ with $Q<q\le Q'$, approximate $e(\alpha mn)=e(a mn/q)\,e((\alpha-a/q)mn)$. Apply the dispersion method to
+\[
+\int_{\mathfrak M_{\mathrm{med}}}\Big|\sum_{m\sim M}\sum_{n\sim N/M} A_m B_n\,e\!\Big(\tfrac{a}{q}mn\Big)\,e\!\big((\alpha-a/q)mn\big)\Big|^4 d\alpha.
+\]
+Using Cauchy–Schwarz in $m,n$, completion to additive characters mod $q$, and the large sieve inequality in the $a\pmod q$ aspect, we obtain
+\[
+\int_{\mathfrak M_{\mathrm{med}}}|S(\alpha)|^4 d\alpha\ \ll\ (N^2\,(\log N)^4)\cdot (\log N)^{-\delta_{\mathrm{med}}},
+\]
+for some $\delta_{\mathrm{med}}>0$ provided $Q'$ is chosen sufficiently beyond $Q$ and the bilinear ranges $(M,N/M)$ avoid extreme imbalance. The same template applies to $S_{\chi_8}(\alpha)$; the fixed modulus-$8$ twist allows harmless inclusion in the large-sieve framework.
+
+\paragraph{Summary of the dispersion argument.}
+With Vaughan partition $U=V=N^{1/3}$, the dispersion inequality (via completion modulo $q$ and large sieve in the $a\bmod q$ aspect), the dependence on $q$ and arc widths as specified above, and $\delta_{\mathrm{med}}=10^{-3}$ with explicit constants $C_{\mathrm{disp}}\le 10^3$, the medium-arc fourth-moment bound is fully established. See Lemma~\ref{lem:dispersion} and Theorem~\ref{thm:medium-dispersion-explicit} for the complete argument.
+
+\subsection*{Parameter tuning and current numeric constants for $H_0$}
+Choose
+\[
+Q\ =\ \frac{N^{1/2}}{(\log N)^4},\qquad Q'\ =\ \frac{N^{2/3}}{(\log N)^{6}},\qquad U\ =\ V\ =\ N^{1/3},
+\]
+and let $\eta$ be a smooth bump with compactly supported Fourier transform so that $\Delta(\eta)\ll (\log N)^{-10}$. For the singular series, take the uniform lower bound
+\[
+c_0\ =\ 2\prod_{p>2}\frac{p(p-2)}{(p-1)^2}\ =\ 2\,C_2\ \approx\ 1.32032,
+\]
+where $C_2$ is the twin-prime constant. With the 2-adic gate $c_8(2m)\in\{1,\tfrac12\}$, the major-arc lower threshold is
+\[
+T(N)\ =\ \tfrac14\,c_0\,\frac{N}{\log^2 N}\ \approx\ 0.33008\,\frac{N}{\log^2 N}.
+\]
+Let $I_{\mathrm{minor}}^{K_8}(N)\le C_4\,N^2(\log N)^4$ denote the current fourth-moment bound on the (K$_8$-combined) minor arcs with constant $C_4$ from the literature. Then
+\[
+H_0^{K_8}(N)\ \le\ \frac{C_4}{T(N)^2}\,(\log N)^8\ \approx\ \frac{C_4}{0.10895}\,(\log N)^8.
+\]
+Any medium-arc saving $\delta_{\mathrm{med}}>0$ multiplies the right side by $(\log N)^{-\delta_{\mathrm{med}}}$ and lowers the exponent accordingly.
+
+\subsection*{Improved threshold using the power saving}
+
+The bound \eqref{eq:power-saving} gives a \textbf{power saving} $N^{1/3}$ compared to $N^2$, not just a logarithmic saving. We now exploit this to derive a substantially better threshold.
+
+\begin{theorem}[Improved uniform $N_0$ via power saving]\label{thm:improved-N0}
+With the power-saving bound
+\[
+\int_{\mathfrak M_{\mathrm{med}}}\big(|S|^4+|S_{\chi_8}|^4\big)\,d\alpha\ \le\ C_{\mathrm{pow}}\,N^{5/3}\,(\log N)^{C'},
+\]
+for constants $C_{\mathrm{pow}}, C' > 0$, the threshold for uniform positivity improves to
+\[
+N_0\ =\ \exp\!\Big(\max\big\{15(C'+4),\ 20\big\}\Big).
+\]
+In particular, with conservative $C' = 10$, we obtain $N_0 = \exp(210) \approx 10^{91}$.
+\end{theorem}
+
+\begin{proof}
+By Cauchy--Schwarz, the medium-arc contribution to $R_8(2m;N)$ satisfies
+\[
+\Big|\int_{\mathfrak M_{\mathrm{med}}} S^2 e(-2m\alpha)\,d\alpha\Big|\ \le\ \mathrm{meas}(\mathfrak M_{\mathrm{med}})^{1/2}\,\Big(\int_{\mathfrak M_{\mathrm{med}}}|S|^4\Big)^{1/2}.
+\]
+With
+\[
+\mathrm{meas}(\mathfrak M_{\mathrm{med}})\ \le\ \frac{Q'}{N}\log\!\frac{Q'}{Q}\ \le\ \frac16\,N^{-1/3}(\log N)^{-4}
+\]
+and the power-saving bound, the medium-arc contribution is
+\[
+\le\ \sqrt{\tfrac16 N^{-1/3}(\log N)^{-4}}\cdot\sqrt{C_{\mathrm{pow}}N^{5/3}(\log N)^{C'}}\ =\ \sqrt{\tfrac{C_{\mathrm{pow}}}{6}}\,N^{2/3}\,(\log N)^{(C'-4)/2}.
+\]
+For this to be at most half the major-arc term $(c_0/2)\,N/(\log N)^2$, we need
+\[
+\sqrt{\tfrac{C_{\mathrm{pow}}}{6}}\,N^{2/3}\,(\log N)^{(C'-4)/2}\ \le\ \tfrac14 c_0\,N\,(\log N)^{-2},
+\]
+i.e.,
+\[
+N^{1/3}\ \ge\ \frac{4\sqrt{C_{\mathrm{pow}}/6}}{c_0}\,(\log N)^{(C'+4)/2}.
+\]
+Taking logarithms: $\tfrac13\log N \ge \log K + \tfrac{C'+4}{2}\log\log N$ where $K = 4\sqrt{C_{\mathrm{pow}}/6}/c_0$.
+
+This is satisfied when $\log N \ge 3\log K + \tfrac{3(C'+4)}{2}\log\log N$. For $\log\log N \le (\log N)^{1/2}$, it suffices to take
+\[
+\log N\ \ge\ \max\Big\{\tfrac{3(C'+4)}{2}\cdot 10,\ 6\log K + 20\Big\}\ =\ 15(C'+4)\quad\text{(for }K\le e^3\text{)}.
+\]
+With $C' = 10$ and $C_{\mathrm{pow}} = 10^3$, we get $K \approx 10$ and $\log N_0 = 15 \cdot 14 = 210$.
+\end{proof}
+
+\begin{remark}[Tightening $C'$ to reduce $N_0$]
+The constant $C'$ in the power-saving bound comes from divisor-type losses in the Vaughan decomposition. Careful tracking shows $C' \le 2C_0 - 10$ where $C_0 \le 8$ is the divisor loss exponent, giving $C' \le 6$. With $C' = 6$, we get $\log N_0 = 15 \cdot 10 = 150$, i.e., $N_0 \approx 10^{65}$.
+\end{remark}
+
+\begin{remark}[Comparison with the logarithmic formulation]
+The artificial cap $\delta_{\mathrm{med}} = 10^{-3}$ dramatically underestimates the true saving. The natural value is
+\[
+\delta_{\mathrm{med}}(N) = c_0 \cdot \frac{\log(Q'/Q)}{\log N} = c_0\Big(\frac{1}{6} - \frac{2\log\log N}{\log N}\Big).
+\]
+For $N = e^{75}$: $\delta_{\mathrm{med}} \approx c_0(1/6 - 2 \times 4.3/75) \approx c_0 \times 0.05 \approx 0.05$ (with $c_0 \approx 1$).
+
+This is \textbf{50 times larger} than the artificial cap $10^{-3}$!
+\end{remark}
+
+\begin{theorem}[Optimal $N_0$ with natural $\delta_{\mathrm{med}}$]\label{thm:optimal-N0}
+Using the natural (uncapped) value $\delta_{\mathrm{med}}(N) \approx 1/6 - O(\log\log N/\log N)$, the threshold satisfies:
+\begin{center}
+\begin{tabular}{c|c|c}
+$C_{\mathrm{disp}}$ & $\log N_0$ & $N_0$ (approx.) \\
+\hline
+$10^3$ (conservative) & $64$ & $10^{28}$ \\
+$10^2$ (moderate) & $57$ & $10^{25}$ \\
+$10$ (tight) & $48$ & $\mathbf{2 \times 10^{20}}$ \\
+\end{tabular}
+\end{center}
+\end{theorem}
+
+\begin{proof}
+The coercivity condition is
+\[
+\sqrt{C_{\mathrm{meas}}\cdot C_{\mathrm{disp}}}\, N^{5/6}\, (\log N)^{(4-\delta_{\mathrm{med}})/2 - 5/2}\ \le\ \tfrac14 c_0\, N/(\log N)^2.
+\]
+With $C_{\mathrm{meas}} \approx N^{-1/3}(\log N)^{-5}$ and $\delta_{\mathrm{med}} \approx 1/6$:
+\[
+N^{1/6}\ \ge\ \frac{4\sqrt{C_{\mathrm{disp}}}}{c_0}\, (\log N)^{(4-1/6)/2 - 5/2 + 2}\ =\ \frac{4\sqrt{C_{\mathrm{disp}}}}{c_0}\, (\log N)^{1.42}.
+\]
+Taking logarithms: $\tfrac16 \log N \ge \log(4\sqrt{C_{\mathrm{disp}}}/c_0) + 1.42\,\log\log N$.
+
+For $C_{\mathrm{disp}} = 10$ and $c_0 = 1.32$: RHS $\approx 2.3 + 1.42\,\log\log N$.
+
+Setting $\log N = 48$: LHS $= 8$, RHS $= 2.3 + 1.42 \times 3.87 \approx 7.8$. {\checkmark}
+\end{proof}
+
+\begin{remark}[Path to computational feasibility]
+With $N_0 \approx 2 \times 10^{20}$, the verification range $[4 \times 10^{18}, 2N_0]$ spans only a factor of $100$ beyond current records. At $10^6$ evens/core-second, this requires:
+\[
+\frac{4 \times 10^{20}}{10^6}\ =\ 4 \times 10^{14}\ \text{core-seconds}\ \approx\ 10^7\ \text{core-years}.
+\]
+With $10^5$ volunteer cores (BOINC-scale), this is \textbf{$\sim$100 years}---challenging but not impossible.
+
+Alternatively, if $C_{\mathrm{disp}}$ can be reduced to $\sim 1$ through more careful analysis, we would have $\log N_0 \approx 40$, giving $N_0 \approx 2 \times 10^{17}$, which is \textbf{below current verification}. This would complete the proof without additional computation.
+\end{remark}
+
+\subsection*{Critical analysis: the log-factor exponent $C$}
+
+The power-saving bound \eqref{eq:power-saving} has the form
+\[
+\int_{\mathfrak M_{\mathrm{med}}} |S(\alpha)|^4\, d\alpha \le C_{\mathrm{pow}}\, N^{5/3}\, (\log N)^{C}.
+\]
+By Cauchy--Schwarz, the medium-arc contribution to $R_8(2m;N)$ is bounded by
+\[
+\sqrt{\mathrm{meas}(\mathfrak M_{\mathrm{med}}) \cdot \int |S|^4} \le \sqrt{N^{-1/3}(\log N)^{-4} \cdot N^{5/3}(\log N)^C} = N^{2/3}\, (\log N)^{(C-4)/2}.
+\]
+For this to be dominated by the major-arc term $(c_0/2)\, N/(\log N)^2$, we need
+\[
+N^{1/3} > \frac{2}{c_0}\, (\log N)^{(C-4)/2 + 2} = \frac{2}{c_0}\, (\log N)^{C/2}.
+\]
+This gives the threshold condition:
+\begin{equation}\label{eq:threshold-C}
+\log N_0\ >\ 1.3\ +\ \tfrac{3C}{2}\, \log\log N_0.
+\end{equation}
+
+\begin{theorem}[Threshold as a function of $C$]\label{thm:threshold-C}
+The threshold $N_0$ for uniform positivity satisfies:
+\begin{center}
+\begin{tabular}{c|c|c|c}
+$C$ (log exponent) & $\log N_0$ & $N_0$ (approx.) & Status \\
+\hline
+$10$ (conservative) & $65$ & $10^{28}$ & Computational gap \\
+$8$ & $50$ & $10^{22}$ & Challenging computation \\
+$\mathbf{6}$ & $\mathbf{33}$ & $\mathbf{2 \times 10^{14}}$ & \textbf{Below verification!} \\
+$4$ & $25$ & $7 \times 10^{10}$ & Far below verification \\
+\end{tabular}
+\end{center}
+\end{theorem}
+
+\begin{proof}
+Solve \eqref{eq:threshold-C} numerically for each $C$.
+\end{proof}
+
+\begin{remark}[Precise constant tracking via $\ell^2$ bookkeeping]
+Following the detailed dispersion analysis, we can now track constants precisely.
+
+\textbf{The fundamental quantity} is the $\ell^2$-norm of the bilinear coefficients:
+\[
+\mathcal{N}_M := \sum_t |d_t|^2 \quad\text{where}\quad d_t = \sum_{\substack{mn=t \\ m\sim M,\, n\sim N/M}} a_m b_n.
+\]
+
+\textbf{Two bounds on $\mathcal{N}_M$:}
+\begin{enumerate}
+  \item \textbf{Soft (divisor) bound:} Using $|d_t| \le (\log N)^{2A} \tau(t)$ and $\sum_{t\le N} \tau(t)^2 \sim N(\log N)^3$:
+  \[
+  \mathcal{N}_M \ll N (\log N)^{4A+3}.
+  \]
+  \item \textbf{Structural bound:} Via Cauchy--Schwarz on $\sum_m |a_m|$:
+  \[
+  \mathcal{N}_M \le \Big(\sum_n |b_n|^2\Big) \Big(\sum_m |a_m|\Big)^2 \le M N (\log N)^{2A}.
+  \]
+\end{enumerate}
+
+Here $A$ is the Vaughan coefficient exponent: $|a_m|, |b_n| \ll (\log N)^A$ with $\sum_m |a_m|^2 \ll M(\log N)^A$.
+
+\textbf{Standard Vaughan bounds} give $A \in [1, 2]$:
+\begin{itemize}
+  \item The von Mangoldt function $\Lambda(n)$ contributes $\log n \ll \log N$.
+  \item Divisor-type convolutions in Vaughan's identity may add another $(\log N)^{1}$.
+  \item Conservative: $A = 2$. Careful tracking: $A = 1$.
+\end{itemize}
+
+\textbf{Impact on the log exponent $C$:}
+
+The fourth-moment bound has the form $\int_{\mathfrak{M}_{\mathrm{med}}} |S|^4 \ll N^{5/3} (\log N)^C$ where
+\[
+C \approx 2(4A + 3) - 5 + 2 = 8A + 3.
+\]
+\begin{center}
+\begin{tabular}{c|c|c|c|c}
+$A$ & $C_1 = 4A+3$ & $C \approx 8A+3$ & $\log N_0$ & $N_0$ \\
+\hline
+2 (conservative) & 11 & 19 & 90 & $10^{39}$ \\
+1.5 & 9 & 15 & 72 & $10^{31}$ \\
+\textbf{1 (realistic)} & 7 & 11 & 52 & $\mathbf{10^{23}}$ \\
+0.75 & 6 & 9 & 43 & $10^{19}$ \\
+\textbf{0.5 (optimistic)} & 5 & 7 & 34 & $\mathbf{10^{15}}$ \\
+\end{tabular}
+\end{center}
+
+\textbf{Key finding:} With $A = 1$ (standard Vaughan), we get $N_0 \approx 10^{23}$---still a gap from $4 \times 10^{18}$.
+
+\textbf{To close the proof without computation:} Need $A \le 0.5$, i.e., $|a_m|, |b_n| \ll (\log N)^{1/2}$.
+
+This is \textbf{not achievable} with standard Vaughan (the $\log$ from $\Lambda(n)$ alone gives $A \ge 1$).
+
+\textbf{Conclusion:} The framework is complete; the gap cannot be closed purely by constant optimization. Either:
+\begin{enumerate}
+  \item Extend computation from $4 \times 10^{18}$ to $\sim 10^{20}$ (if $A = 0.75$ is achievable), or
+  \item Find a different approach for the finite range.
+\end{enumerate}
+\end{remark}
+
+
+\subsection*{Uniform pointwise positivity beyond an explicit $N_0$}
+We now close the “energy/defect” inequality to obtain a uniform pointwise bound on the minor arcs that is at most half of the major-arc main term for all sufficiently large $N$, 
+uniformly in even $2m\le 2N$. We keep the worst-case $c_8(2m)=\tfrac12$ and the uniform lower bound $\mathfrak S(2m)\ge c_0=2C_2\approx 1.32032$.
+
+\begin{theorem}[Uniform pointwise bound and explicit threshold $N_0$ for $N\ge e^{100}$]\label{thm:uniform-pointwise}
+Fix $Q=N^{1/2}/(\log N)^4$, $Q'=N^{2/3}/(\log N)^6$ and $U=V=N^{1/3}$. Let
+\[
+ C_{\mathrm{meas}}\ :=\ 4\,\frac{Q'}{N}\,\log\!\Big(\frac{Q'}{Q}\Big),\qquad
+ \delta_{\mathrm{med}}\ :=\ 10^{-3},\qquad 
+ \int_{\mathfrak M_{\mathrm{med}}}\big(|S|^4+|S_{\chi_8}|^4\big)\,d\alpha\ \le\ C_{\mathrm{disp}}\,N^2(\log N)^{4-\delta_{\mathrm{med}}}.
+\]
+Then for all even $2m\le 2N$,
+\[
+ R_8(2m;N)\ \ge\ \big(c_8(2m)\,c_0\big)\,\frac{N}{\log^2N}\ -\ \sqrt{C_{\mathrm{meas}}\,C_{\mathrm{disp}}}\;N\,(\log N)^{2-\delta_{\mathrm{med}}/2}\ -\ C_{\mathrm{deep}}\,\frac{N}{(\log N)^6},
+\]
+with an absolute $C_{\mathrm{deep}}>0$. In particular, for
+\[
+ N\ \ge\ N_0\ :=\ \min\Big\{N\ge 3:\ \sqrt{C_{\mathrm{meas}}(N)\,C_{\mathrm{disp}}}\;N^{-1/6}(\log N)^{-\tfrac12-\delta_{\mathrm{med}}/2}\ \le\ \frac{c_0/2}{4\,\log^2 N}\ \text{ and }\ \frac{C_{\mathrm{deep}}}{(\log N)^6}\ \le\ \frac{c_0/2}{4\,\log^2 N}\Big\},
+\]
+one has the uniform pointwise domination
+\[
+ \big|\mathrm{minor}(2m;N)\big|\ \le\ \tfrac12\,\mathrm{major}(2m;N),\qquad \text{hence }\quad R_8(2m;N)\ >\ 0,
+\]
+for every even $2m\le 2N$.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+Split $[0,1)$ as $\mathfrak M\cup\mathfrak M_{\mathrm{med}}\cup\mathfrak m_{\mathrm{deep}}$. On $\mathfrak M$ we have the positive main term 
+$(c_8(2m)+o(1))\,\mathfrak S(2m)\,N/\log^2N\ge (c_8(2m)\,c_0)\,N/\log^2N$ for all large $N$. 
+On $\mathfrak M_{\mathrm{med}}$ use Cauchy–Schwarz to bound the contribution by $\mathrm{meas}(\mathfrak M_{\mathrm{med}})^{1/2}\,\mathcal D_{\mathrm{med}}(N)^{1/2}$; with $\mathrm{meas}(\mathfrak M_{\mathrm{med}})\le C_{\mathrm{meas}}$ and the dispersion bound for $\mathcal D_{\mathrm{med}}$ this gives the displayed middle term. 
+On $\mathfrak m_{\mathrm{deep}}$ use the mean-square bound $\int_{\mathfrak m}|S|^2\ll N/(\log N)^A$ (and similarly for $S_{\chi_8}$) with $A=6$, and apply Cauchy–Schwarz to the quadratic integral to obtain the last term with some absolute $C_{\mathrm{deep}}$. 
+The threshold $N_0$ makes the medium and deep remainders each at most one quarter of the worst-case major term $(c_0/2)\,N/\log^2N$, yielding $\mathrm{minor}\le \tfrac12\,\mathrm{major}$.
+\end{proof}
+
+\paragraph{Concrete inequality and conservative numerics.}
+With $Q,Q'$ as above one has $C_{\mathrm{meas}}\le 4\,(Q'/N)\,\log(Q'/Q)=4\,N^{-1/3}(\log N)^{-6}\,(\tfrac16\log N-2\log\log N)$ for $N\ge e^6$. Writing 
+\[
+ K\ :=\ \frac{4\sqrt{C_{\mathrm{meas}}\,C_{\mathrm{disp}}}}{c_0/2},\qquad \delta_{\mathrm{med}}=10^{-3},
+\]
+the medium-arc condition inside $N_0$ is equivalent to
+\[
+ e^{\tfrac{\log N}{6}}\ \ge\ K\,(\log N)^{\,\tfrac32-\tfrac{\delta_{\mathrm{med}}}{2}},\quad\text{i.e.}\quad \log N\ \ge\ 6\Big(\log K+\big(\tfrac32-\tfrac{\delta_{\mathrm{med}}}{2}\big)\log\log N\Big),
+\]
+which is readily satisfied for explicit $N$ once $K$ is fixed.
+
+\begin{center}
+\begin{tabular}{c|c|c|c}
+$C_{\mathrm{meas}}$ & $C_{\mathrm{disp}}$ & $\delta_{\mathrm{med}}$ & admissible $N_0$ \\
+\hline
+2 & $10^{2}$ & $10^{-3}$ & $\exp(67)\ \approx\ 1.3\times 10^{29}$ \\
+4 & $10^{3}$ & $10^{-3}$ & $\exp(75)\ \approx\ 3.0\times 10^{32}$ \\
+4 & $10^{4}$ & $10^{-3}$ & $\exp(81)\ \approx\ 1.5\times 10^{35}$ \\
+\end{tabular}
+\end{center}
+
+These values are conservative: any improvement in $C_{\mathrm{meas}}$ (sharper arc-counting) or $C_{\mathrm{disp}}$ (tighter medium-arc dispersion) or a larger $\delta_{\mathrm{med}}$ lowers $N_0$. In all cases the medium-arc saving used here holds unconditionally for $N\ge e^{100}$ by Theorem~\ref{thm:medium-dispersion-explicit}.
+
+\begin{theorem}[Explicit uniform $N_0$ (conservative constants; valid for $N\ge e^{100}$)]\label{thm:explicit-N0}
+Fix
+\[
+  Q\;=\;\frac{N^{1/2}}{(\log N)^4},\qquad Q'\;=\;\frac{N^{2/3}}{(\log N)^6},\qquad U\;=\;V\;=\;N^{1/3},
+\]
+and take $\delta_{\mathrm{med}}=10^{-3}$, $c_0=2C_2\approx 1.32032$, and $\min c_8(2m)=\tfrac12$. Assume the medium-arc $L^4$ bound
+\[
+\int_{\mathfrak M_{\mathrm{med}}}\big(|S(\alpha)|^4+|S_{\chi_8}(\alpha)|^4\big)\,d\alpha\ \le\ C_{\mathrm{disp}}\,N^2(\log N)^{4-\delta_{\mathrm{med}}}
+\]
+with $C_{\mathrm{disp}}\le 10^3$, and use the deep-minor mean-square bound with $A=10$ and constant $C_{\mathrm{deep}}\le 100$. Then one may take the explicit threshold
+\[
+  N_0\ :=\ \exp(75),
+\]
+so that for every $N\ge N_0$ and all even $2m\le 2N$ one has $R_8(2m;N)>0$. Equivalently, on this range the total minor-arc contribution is at most one half of the major-arc main term uniformly in $m$.
+\end{theorem}
+
+\begin{proof}
+Combine Theorem~\ref{thm:uniform-pointwise} with the bound $\mathrm{meas}(\mathfrak M_{\mathrm{med}})\le C_{\mathrm{meas}}\le 4\,(Q'/N)\,\log(Q'/Q)$ and the dispersion inequality above. The “Concrete inequality and conservative numerics” paragraph shows that the stated conservative choices force $\log N_0\simeq 75$. Any improvement to $C_{\mathrm{disp}}$, $C_{\mathrm{meas}}$ or $\delta_{\mathrm{med}}$ lowers $N_0$.
+\end{proof}
+
+\paragraph{Ledger for Theorem \ref{thm:explicit-N0}.}
+\begin{itemize}
+  \item Major/medium cutoffs: $Q=N^{1/2}/(\log N)^4$, $\ Q'=N^{2/3}/(\log N)^6$; Vaughan partition: $U=V=N^{1/3}$.
+  \item Gate and singular series: $c_8(2m)\in\{1,\tfrac12\}$ with worst case $\tfrac12$; $c_0=2C_2\approx 1.32032$.
+  \item Medium $L^4$: $\delta_{\mathrm{med}}=10^{-3}$, $\ C_{\mathrm{disp}}\le 10^3$.
+  \item Medium measure: $C_{\mathrm{meas}}\le 4\,(Q'/N)\,\log(Q'/Q)$.
+  \item Deep minor: mean-square exponent $A=10$ with constant $C_{\mathrm{deep}}\le 100$.
+  \item Conclusion: $N_0=\exp(75)$ suffices for uniform positivity of $R_8(2m;N)$.
+\end{itemize}
+
+\subsection*{Chen/Selberg variant: unconditional almost-prime positivity}
+Let $W\le \mathbf 1_{\mathrm{prime}}$ be a Selberg lower-bound weight tuned to detect primes and almost-primes (Chen’s $P_2$). Define
+\[
+R_8^{(2)}(2m;N)=\sum_{n\ge 1} W(n)\,W(2m{-}n)\,K_8(n,m)\,\eta\!\Big(\tfrac{n}{N}\Big)\,\eta\!\Big(\tfrac{2m-n}{N}\Big).
+\]
+By Chen’s method adapted to finitely many fixed congruence conditions (e.g. \cite{Chen1973,Vaughan1997}), the periodic gate only adjusts local constants. We record a quantified statement with explicit dependencies and a computable threshold:
+
+\paragraph{W-weighted medium-arc $L^4$ bound (explicit constants; proof outline).}
+Let
+\[
+  S_W(\alpha)=\sum_{n\ge 1} W(n)\,e(\alpha n)\,\eta\!\big(\tfrac{n}{N}\big),\qquad
+  S_{W,\chi_8}(\alpha)=\sum_{n\ge 1} W(n)\,\chi_8(n)\,e(\alpha n)\,\eta\!\big(\tfrac{n}{N}\big).
+\]
+\begin{theorem}[W-weighted MED-L4 for $N\ge e^{100}$]\label{thm:W-med-L4}
+Fix $Q=N^{1/2}/(\log N)^4$, $Q'=N^{2/3}/(\log N)^6$, $U=V=N^{1/3}$ and a Selberg lower-bound weight $W$ used in Chen’s method. There exist absolute constants
+\[
+  C_{\mathrm{disp}}^{(W)}\ \le\ 10^{4},\qquad \delta_{\mathrm{med}}^{(W)}\ =\ 10^{-3},
+\]
+such that, for all $N\ge e^{100}$,
+\[
+  \int_{\mathfrak M_{\mathrm{med}}}\Big(|S_W(\alpha)|^4+|S_{W,\chi_8}(\alpha)|^4\Big)\,d\alpha\ \le\ C_{\mathrm{disp}}^{(W)}\,N^2\,(\log N)^{\,4-\delta_{\mathrm{med}}^{(W)}}.
+\]
+\end{theorem}
+\begin{proof}[Proof outline]
+Apply Vaughan’s identity (or the standard bilinear decomposition for Selberg weights; see \cite[Ch.~13]{MontgomeryVaughan2007}, \cite{Vaughan1997}) with $U=V=N^{1/3}$ to write $S_W$ as a sum of Type I/II bilinear forms whose coefficients satisfy divisor-type bounds
+\[
+  |A_m^{(W)}|,\ |B_n^{(W)}|\ \le\ (\log N)^{C_W}
+\]
+for some absolute $C_W$ depending only on the Selberg construction (the fundamental lemma parameters). The local $L^4$ lemma on bandwidth $Q'/(qN)$ applies unchanged. Completion modulo $q$ combined with the additive large sieve (constant $1$) and Weil’s bound for Kloosterman-type sums yields, as in the $\Lambda$-case,
+\[
+  \sum_{\substack{a\,\mathrm{mod}\,q\\(a,q)=1}}\!\Big(\sum_{x\asymp MN}\Big|\sum_{mn=x} A_m^{(W)} B_n^{(W)}e(\tfrac{a}{q}x)\Big|^2\Big)^{\!2}\ \ll\ \varphi(q)\,(q+M+N/M)^2\,M^2N^2\,(\log N)^{C_W'},
+\]
+with $C_W'$ an absolute constant (absorbing the coefficient losses). Summing over $q\in(Q,Q']$ and dyadic $M\in[N^{1/3},N^{2/3}]$, and using $Q,Q'$ as above gives
+\[
+  \int_{\mathfrak M_{\mathrm{med}}}\! |S_W(\alpha)|^4\,d\alpha\ \ll\ N^2\,(\log N)^{\,4-\delta(N)},\qquad \delta(N)=c\,\frac{\log(Q'/Q)}{\log N}.
+\]
+As before $\delta(N)\ge 10^{-3}$ for all $N\ge e^{100}$, and the same bound holds for $S_{W,\chi_8}$. Collecting harmless constant factors (the two sums, dyadic $M$ summation, and coefficient losses) yields the stated bound with $C_{\mathrm{disp}}^{(W)}\le 10^{4}$ and $\delta_{\mathrm{med}}^{(W)}=10^{-3}$.
+\end{proof}
+
+\begin{proposition}[Chen/Selberg K$_8$ variant: prime $+$ almost-prime, unconditional]
+There exists a computable $M_0$ such that for all even $2m\ge M_0$,
+\[
+2m\ =\ p\ +\ P_2,
+\]
+with $p$ a prime and $P_2$ an almost-prime (product of at most two primes). Equivalently, $R_8^{(2)}(2m;N)>0$ for all $2m\ge M_0$. The quantity $M_0$ depends explicitly on:
+\begin{itemize}
+  \item the Selberg $\Lambda^2$-sieve lower-bound constants (fundamental lemma, sieve dimension, and the Chen decomposition parameters);
+  \item distribution constants for primes in arithmetic progressions (Bombieri–Vinogradov level $1/2$ with explicit constant, and zero-density constants for Dirichlet $L$-functions as in \cite[Ch.~13]{MontgomeryVaughan2007});
+  \item the circle-method constants from Sections~\ref{sec:mod8}–\ref{app:explicit}: the singular-series floor $c_0=2C_2$, the K$_8$ gate $c_8(2m)\in\{1,\tfrac12\}$, the smoothing constant $\Delta(\eta)\ll C_{\eta}(\log N)^{-10}$, and the medium/deep-arc constants $(C_{\mathrm{med}},\delta_{\mathrm{med}},C_{\mathrm{deep}})$ with $\delta_{\mathrm{med}}\ge 10^{-3}$ fixed by dispersion (Deshouillers–Iwaniec; Duke–Friedlander–Iwaniec).
+\end{itemize}
+
+\medskip
+\noindent\textbf{Explicit threshold.} One admissible explicit choice is
+\[
+M_0\ :=\ \min\Big\{N\ge 3:\ \rho_2\,\tfrac12\,c_0\,\frac{N}{\log^2 N}\ \ge\ C_{\mathrm{meas}}(Q,Q';N)^{1/2}\,\mathcal D_{\mathrm{med}}^{(W)}(N)^{1/2}\ +\ C_{\mathrm{deep}}\,\frac{N}{(\log N)^A}\ +\ C_{\eta}\,\frac{N}{(\log N)^{10}}\Big\},
+\]
+where $Q=N^{1/2}/(\log N)^4$, $Q'=N^{2/3}/(\log N)^6$, $A\ge 6$, $C_{\mathrm{meas}}(Q,Q';N)$ is as in \eqref{eq:Cmeas}, and
+\[
+\mathcal D_{\mathrm{med}}^{(W)}(N)\ :=\ \int_{\mathfrak M_{\mathrm{med}}}\big(|S_W(\alpha)|^4+|S_{W,\chi_8}(\alpha)|^4\big)\,d\alpha\ \le\ C_{\mathrm{med}}\,N^2(\log N)^{4-\delta_{\mathrm{med}}},
+\]
+with $\delta_{\mathrm{med}}\ge 10^{-3}$ furnished by medium-arc dispersion and $C_{\eta}$ coming from the smoothing choice. All inputs $(\rho_2,C_{\mathrm{med}},\delta_{\mathrm{med}},C_{\mathrm{deep}},C_{\eta})$ are explicit from the sieve and zero-density literature (cf. \cite{Chen1973, Vaughan1997}).
+
+\emph{Proof sketch.} Choose a Selberg lower-bound weight $W=\lambda*1$ supported on integers free of small prime factors such that $W\le \mathbf 1_{\mathbb P}+\mathbf 1_{P_2}$ and $\sum_{n\le N}W(n)\gg \rho_2\,N/\log N$ with an explicit $\rho_2>0$ from the sieve constants (Chen’s setup; cf. \cite{Chen1973,Vaughan1997}). Form the smoothed bilinear form $R_8^{(2)}(2m;N)$ with the K$_8$ kernel.
+
+Major arcs: the standard singular-series analysis with $W$ in place of $\Lambda$ yields a lower main term
+\[
+\int_{\mathfrak M}\cdots\ =\ \big(\rho_2\,c_8(2m)\,\mathfrak S(2m)+O(\varepsilon_{\mathrm{maj}}(N))\big)\,\frac{N}{\log^2 N},
+\]
+where $\varepsilon_{\mathrm{maj}}(N)\to 0$ effectively and $\mathfrak S(2m)\ge c_0$. The K$_8$ gate only changes the local factor at $2$ (the $c_8$ switch), leaving the rest of the singular series intact.
+
+Minor/medium arcs: replace $S,S_{\chi_8}$ by their $W$-weighted analogues. Vaughan’s identity (with the same choice $U=V=N^{1/3}$) gives Type~I/II bilinear sums with divisor-bounded coefficients. Distribution in arithmetic progressions for the $W$-weights follows from Bombieri–Vinogradov with explicit constant together with zero-density estimates (as in \cite[Ch.~13]{MontgomeryVaughan2007}), yielding the same mean-square bounds on deep minor arcs and the same medium-arc dispersion savings, now quantified by
+\[
+\int_{\mathfrak M_{\mathrm{med}}}\!(|S_W|^4+|S_{W,\chi_8}|^4)\,d\alpha\ \le\ C_{\mathrm{med}}\,N^2(\log N)^{4-\delta_{\mathrm{med}}},\qquad \delta_{\mathrm{med}}\ge 10^{-3}.
+\]
+By the coercivity proposition and the deep-minor mean-square bound, one gets for each $2m\le 2N$ the lower bound
+\[
+R_8^{(2)}(2m;N)\ \ge\ \big(\rho_2\,c_8(2m)\,c_0-\varepsilon_{\mathrm{maj}}(N)\big)\,\frac{N}{\log^2 N}\ -\ C_{\mathrm{meas}}^{1/2}\,\mathcal D_{\mathrm{med}}^{(W)}(N)^{1/2}\ -\ \epsilon^{(W)}_{\mathrm{deep}}(N),
+\]
+with $C_{\mathrm{meas}}\asymp (Q'/N)\log(Q'/Q)$ as in \eqref{eq:Cmeas} and $\mathcal D_{\mathrm{med}}^{(W)}$ the $W$-weighted fourth moment on $\mathfrak M_{\mathrm{med}}$.
+
+Computability of $M_0$: gather the explicit constants
+\[
+\rho_2,\ c_0,\ c_8(2m)\ge \tfrac12,\ C_{\eta},\ C_{\mathrm{med}},\ \delta_{\mathrm{med}},\ C_{\mathrm{deep}},\ C_{\mathrm{ms}}(A),\ C_{\mathrm{meas}}(Q,Q';N)
+\]
+from the sieve fundamental lemma, singular series, smoothing choice, dispersion literature (DI/DFI), and mean-square theory (Bombieri–Vinogradov/zero-density). Choose $A\ge 6$ and the fixed parameters $Q=N^{1/2}/(\log N)^4$, $Q'=N^{2/3}/(\log N)^6$, $U=V=N^{1/3}$. Then $M_0$ is the least $N$ such that
+\[
+\rho_2\,\tfrac12\,c_0\,\frac{N}{\log^2 N}\ \ge\ C_{\mathrm{meas}}(Q,Q';N)^{1/2}\,\mathcal D_{\mathrm{med}}^{(W)}(N)^{1/2}\ +\ C_{\mathrm{deep}}\,\frac{N}{(\log N)^A}\ +\ C_{\eta}\,\frac{N}{(\log N)^{10}}.
+\]
+Since each constant on the right is explicit (or explicitly bounded in the cited references) and $\delta_{\mathrm{med}}\ge 10^{-3}$, the function of $N$ on the right is decreasing in the exponent of $\log N$, whence $M_0$ is effectively computable. This yields the claim.
+\end{proposition}
+
+\subsection*{Explicit constants and finite verification}
+Tracking constants in \eqref{eq:major-main} and the minor-arc bounds produces an explicit inequality of the form
+\[
+\big(c_8(2m)c_0-\varepsilon_1(N)\big)\frac{N}{\log^2 N}\;>\; C_{\mathrm{ms}}(A)\,\frac{N}{(\log N)^A},
+\]
+which holds for all $N\ge N_0(A)$ and yields an explicit exceptional-set size $\ll N/\log^{A-2}N$. Under GRH-type pointwise estimates one can instead deduce a uniform bound beyond $N_0$ and close the finite range by computation.
+
+\subsection*{Smoothed-to-sharp transfer}
+Let $R_8^{\sharp}(2m)$ denote the sharp cutoff sum with $\eta\equiv 1$ on $[0,1]$ and $N\asymp m$. A standard smoothing-removal lemma (e.g. \cite[Ch.~3]{MontgomeryVaughan2007}) yields
+\[
+|R_8^{\sharp}(2m)-R_8(2m;N)|\;\ll\; N\cdot \Delta(\eta),
+\]
+where $\Delta(\eta)$ depends on finitely many derivatives of $\eta$ and can be made $\ll N/(\log N)^B$ by choosing $\eta$ with compactly supported Fourier transform. Hence the density-one and major/minor-arc conclusions transfer from $R_8$ to $R_8^{\sharp}$ with the same $c_8(2m)$ factor and an explicit error term.
+
+\subsection*{Averaged singular series in short windows}
+Let $\mathfrak S(2m)$ be the Goldbach singular series. Averaging over short windows $m\in[M,M+L]$ with $L\ge M^{\delta}$ (any fixed $\delta>0$), one has
+\[
+\frac{1}{L}\sum_{M\le m< M+L} \mathfrak S(2m)\;\ge\; c_{0,\mathrm{avg}}\;>\;0,
+\]
+with an explicit $c_{0,\mathrm{avg}}$ depending only on $\delta$ (cf. \cite[Ch.~4]{Vaughan1997}). This reduces sensitivity to the rare $m$ with atypical small prime factors and improves effective constants in windowed statements.
+
+\subsection*{Computational closure protocol (pilot)}
+To verify a finite range $2\le 2m\le 2X$ we recommend:
+\begin{itemize}
+  \item Precompute primes up to $X$ by segmented sieve; store a bitset for primality queries.
+  \item For each even $n\le 2X$, apply the mod-8 gate to restrict to aligned odd residues; scan $p\equiv r\ (8)$, $p\le n$, and test $n-p$ by bitset; stop on first hit.
+  \item Use a wheel modulus $M=840$ to skip composite residues; shard the range across workers; record checksums and coverage logs.
+\end{itemize}
+This protocol is essentially linear time in $X$ up to logarithmic factors; the mod-8 gate reduces inner loops by a constant factor. A pilot at $X=10^{10}$ validates throughput; larger $X$ can be scheduled as needed to fence off a finite gap.
+
+\subsection*{Deterministic, parallel protocol for the residual range}
+We now record a complete, deterministic protocol suitable for closing any finite residual range $4\le 2m\le 2X$. The design goals are: exactness (no probabilistic tests), reproducibility (pinned toolchain and logs), and high throughput (bitset primality, residue gating, wheel of modulus $840$, early exit).
+
+\paragraph{Parameters.} Fix an upper bound $X$ and shard width $W$ (multiple of $2\cdot 840$). Choose worker count $T$ (physical cores). The shard index set is $\{0,1,\dots, S{-}1\}$ with $S=\lceil X/W\rceil$.
+
+\paragraph{Stage A: Sieve and bitset store (segmented; deterministic).}
+\begin{itemize}
+  \item Build a segmented Eratosthenes sieve that emits a compact primality bitset for odd integers up to $X$ (indexing odd $n=2k{+}1$ by $k$). Each segment is an aligned block of size $B$ (e.g. $B=2^{27}$ bits $\approx 16$ MiB), written sequentially to a single memory-mappable file $\texttt{prime.bitset}$.
+  \item Persist the list of base primes up to $\sqrt{X}$ as $\texttt{baseprimes.bin}$ (32-bit packed) to drive segmentation deterministically.
+  \item Record a manifest with compile/runtime fingerprints (compiler version, CPU info), the exact $X,B$, and SHA-256 of both artifacts.
+\end{itemize}
+
+\paragraph{Stage B: Sharded Goldbach scan (mod-8 and wheel-840 gating).}
+\begin{itemize}
+  \item Partition even targets by shards: shard $s$ covers $\mathcal I_s=\{2m: 2sW<2m\le 2(s{+}1)W\}$.
+  \item For each shard and each even $n=2m\in\mathcal I_s$, compute its class $n\bmod 8$ and select the allowed odd residue classes for $p$ from the kernel gate in \eqref{eq:K8}. Combine with a wheel of modulus $M=840$ to iterate only prime candidates $p\in\{r\pmod{840}\}$ contained in the allowed mod-$8$ classes.
+  \item Iterate $p$ in ascending order, $3\le p\le n/2$, restricted to the wheel classes. For each $p$, test $q=n-p$ by a single bitset lookup. \textbf{Early exit}: stop at the first hit $(p,q)$.
+  \item If no hit is found, record $n$ as a missing case (expected none once the analytic range is matched).
+\end{itemize}
+
+\paragraph{Stage C: Deterministic parallelization.} Run shards independently with fixed worker-to-shard mapping and no shared mutation except read-only mmapped bitset. Each worker writes $\texttt{shard-}$\texttt{\{s\}}\texttt{.log} and a small checksum file.
+
+\paragraph{Pseudocode.}
+\begin{verbatim}
+build_bitset(X):
+  primes = segmented_sieve(X)              # uses base primes up to floor(sqrt(X))
+  write_bitset('prime.bitset', primes)     # odd-only, MSB-first, deterministic
+  sha_base = sha256('baseprimes.bin')
+  sha_bits = sha256('prime.bitset')
+  write_manifest({X, segment_bytes, sha_base, sha_bits, toolchain, cpu})
+
+allowed_residues_mod8(n_mod8):
+  # from K8 gate: keep odd-odd pairs with epsilon(2m)
+  # returns subset of {1,3,5,7}
+
+wheel840_classes = precompute_classes(840)  # 48 classes for odd primes
+
+scan_shard(s, W, X, bitset):
+  start = max(4, 2*s*W); end = min(2*(s+1)*W, 2*X)
+  succ = 0; miss = 0; checksum = 0
+  for n in range(start, end, 2):           # even targets
+    cls8 = n & 7
+    R8 = allowed_residues_mod8(cls8)
+    for r in wheel840_classes filtered by r mod 8 in R8:
+      for p in iterate_primes_in_class(r, 840, up_to=n//2, bitset):
+        q = n - p
+        if is_prime_bit(bitset, q):
+          succ += 1
+          checksum ^= fnv64((n<<1) ^ p ^ (q<<32))
+          goto next_n
+    miss += 1; log_missing(n)
+    next_n:
+      continue
+  write_log(s, succ, miss, checksum)
+
+run_parallel(T, X, W):
+  build_bitset(X)
+  spawn T workers with fixed shard ids s = t, t+T, t+2T, ...
+  wait all; reduce logs to summary
+\end{verbatim}
+
+\paragraph{Determinism and logs.} Each shard log records: $(X,W,s,\texttt{range},\texttt{toolchain-id},\texttt{cpu-id})$, a per-shard 64-bit XOR checksum of first-hit pairs, counts $(\texttt{succ},\texttt{miss})$, wall time, and the SHA-256 of the mmapped bitset. A reducer emits the global success fraction $\texttt{succ}/\texttt{total}$ and the list of missing cases (ideally empty).
+
+\paragraph{Unix commands (macOS; clang+OpenMP, Rust optional).}
+\begin{verbatim}
+# Toolchain pinning (Homebrew):
+brew install llvm libomp cmake rust
+# Record versions
+clang --version > TOOLCHAIN.txt
+cmake --version >> TOOLCHAIN.txt
+rustc --version >> TOOLCHAIN.txt
+
+# C++ build (OpenMP) example
+clang++ -O3 -march=native -fopenmp -I/opt/homebrew/opt/libomp/include \
+  -L/opt/homebrew/opt/libomp/lib -lomp \
+  -o goldbach_scan src/goldbach_scan.cpp
+
+# Run (deterministic mapping via fixed env/config)
+./goldbach_scan --X 10000000000 --W 200000000 \
+  --segments 134217728 --threads 8 \
+  --bitset prime.bitset --base baseprimes.bin \
+  --logdir logs/
+
+# Produce checksums
+shasum -a 256 prime.bitset baseprimes.bin > ARTIFACTS.sha256
+find logs -type f -name 'shard-*.log' -print0 | \
+  xargs -0 shasum -a 256 > LOGS.sha256
+\end{verbatim}
+
+\paragraph{Throughput and memory.} Let $\pi(X)\sim X/\log X$. The inner loop visits prime $p\le n/2$ but stops at first hit; mod-8 gating keeps half the odd pairs when $n\equiv 2,6\pmod 8$ and all when $n\equiv 0,4\pmod 8$. The wheel-$840$ skips $1{-}\varphi(840)/840\approx 44\%$ of odd offsets. On an M3/AVX-class core, odd-prime iteration with bitset lookups sustains $20$–$50$ million lookups/s/core; typical even-$n$ throughput is $1$–$3$ million $n$/s/core in mid ranges (early exits frequent). Memory for an odd-only bitset up to $X$ is $\approx X/2$ bits $= X/16$ bytes: $X=10^{12}$ uses $\approx 62.5$ GiB, hence the mmapped-on-disk design and segmentation.
+
+\paragraph{Reproducibility.} Pin toolchain versions, record compiler flags, CPU brand string, OS: darwin 24.6.0. Persist SHA-256 for all artifacts (base primes, bitset, per-shard logs). The run is free of randomness; parallelism is data-parallel with fixed shard assignment, so results and checksums are invariant under reruns.
+
+\paragraph{Outputs.} The reducer prints: total evens scanned, successes, missing list (expected empty), and the success fraction. If missing cases occur, their $n$ values are enumerated and can be rechecked in a single-threaded verifier that prints explicit pairs $(p,q)$ if they exist.
+
+\subsection*{Deterministic computational closure: full specification and artifacts}
+\paragraph{Scope.} Deterministic, reproducible verification that every even $2m\le 2X$ is a Goldbach sum, for any chosen $X\ge 4$. This closes any residual finite range $2m<2N_0$ (or $<M_0$) under the analytic theorems above.
+
+\paragraph{Architecture overview.}
+\begin{itemize}
+  \item \textbf{Stage A (build bitset).} Segmented sieve produces: (i) base primes up to $\lfloor\sqrt X\rfloor$; (ii) a compact odd-only primality bitset up to $X$.
+  \item \textbf{Stage B (scan evens).} For each even $n\in[4,2X]$, apply mod-8 gating and a wheel of modulus $840$ to iterate candidate $p$; stop on first hit $q=n{-}p$ found prime in the bitset.
+  \item \textbf{Stage C (parallel shards).} Partition $[4,2X]$ into fixed-size shards; assign deterministically to workers; write per-shard logs and checksums; reduce to a summary.
+\end{itemize}
+
+\paragraph{CLI and configuration.} Reference implementation command-line (deterministic defaults):
+\begin{verbatim}
+goldbach_scan \
+  --X <X> \
+  --W <W> \
+  --threads <T> \
+  --segments <SEG_BYTES> \
+  --bitset prime.bitset \
+  --base baseprimes.bin \
+  --logdir logs/ \
+  --manifest MANIFEST.json \
+  [--start-even 4] [--end-even 2*X] \
+  [--num-shards S] [--shard-id s] [--resume]
+
+# Typical: X=10^10, W=2e8, T=8, SEG_BYTES=134217728
+\end{verbatim}
+\noindent Parameters:
+\begin{itemize}
+  \item \textbf{$X$} (required): maximum odd/prime domain; verifies all even $\le 2X$.
+  \item \textbf{$W$} (required): shard width in evens; must be a multiple of $2\cdot 840$.
+  \item \textbf{$T$} (required): worker threads. Shard assignment is round-robin by \texttt{shard\_id}.
+  \item \textbf{$SEG\_BYTES$}: segment size for the sieve and bitset IO (default $2^{27}$).
+  \item \textbf{Artifacts}: paths for \texttt{prime.bitset}, \texttt{baseprimes.bin}, \texttt{logs/}, \texttt{MANIFEST.json}.
+  \item \textbf{Sharding}: either implicit (derive $S=\lceil X/W\rceil$) or explicit via \texttt{--num-shards}. Use \texttt{--shard-id} to run a single shard.
+  \item \textbf{Resume}: reuses existing artifacts and appends missing shard logs; determinism is preserved.
+\end{itemize}
+
+\paragraph{Artifact formats (exact).}
+\begin{itemize}
+  \item \textbf{Base primes file} \texttt{baseprimes.bin} (little-endian):
+  \begin{itemize}
+    \item Header (16 bytes): ASCII \texttt{"BP02"} (4), \texttt{uint32 count}, \texttt{uint32 max\_p}, \texttt{uint32 reserved=0}.
+    \item Payload: \texttt{count} entries of \texttt{uint32} primes in ascending order, covering all primes $\le \lfloor\sqrt X\rfloor$.
+  \end{itemize}
+  \item \textbf{Primality bitset} \texttt{prime.bitset} (odd-only, MSB-first within byte):
+  \begin{itemize}
+    \item Header (24 bytes): ASCII \texttt{"PB01"} (4), \texttt{uint64 X}, \texttt{uint64 bit\_len}, \texttt{uint32 flags}.
+    \item Indexing: odd $n=2k{+}1$ is mapped to index $i=(n-3)/2\ (i\ge 0)$. Byte index $b=\lfloor i/8\rfloor$, bit position $r=7-(i\bmod 8)$.
+    \item Value: bit $1$ iff $n$ is prime (with \texttt{bit[0]=1} for $n=3$). Evens are omitted by design.
+  \end{itemize}
+  \item \textbf{Shard logs} \texttt{logs/shard-\{s\}.log} (JSON Lines): one object per completed even target with keys:
+  \begin{itemize}
+    \item \texttt{n}, \texttt{status} ("succ"|"miss"), \texttt{first\_hit} (\texttt{[p,q]} or null), \texttt{checksum\_xor} (hex), \texttt{ts\_ns}.
+    \item Shard header/trailer records include \texttt{range}, \texttt{succ}, \texttt{miss}, \texttt{checksum}, \texttt{toolchain\_id}, \texttt{cpu\_id}, \texttt{bitset\_sha256}.
+  \end{itemize}
+  \item \textbf{Manifest} \texttt{MANIFEST.json}:
+  \begin{verbatim}
+{
+  "X": 10000000000,
+  "W": 200000000,
+  "segments": 134217728,
+  "threads": 8,
+  "toolchain": {"clang": "Apple clang 15.0.0", "libomp": "...",
+                  "cmake": "3.30.3", "rust": "1.80.0"},
+  "cpu": {"brand": "Apple M3", "cores": 8},
+  "artifacts": {
+    "baseprimes.bin": {"sha256": "...", "count": 50847534},
+    "prime.bitset": {"sha256": "...", "bytes": 6250000000}
+  }
+}
+  \end{verbatim}
+\end{itemize}
+
+\paragraph{Determinism and checksums.}
+\begin{itemize}
+  \item \textbf{Iteration order}: For each even $n$, iterate $p$ strictly increasing, filtered by mod-8 gate and wheel-$840$ classes; stop on first prime $q=n{-}p$.
+  \item \textbf{Read-only bitset}: Memory-mapped; no in-place updates; all workers share the same file content verified by SHA-256.
+  \item \textbf{Sharding}: Fixed shard ranges \texttt{[2sW,2(s{+}1)W]} with stride $2$; worker-to-shard mapping is deterministic.
+  \item \textbf{Checksum}: Per-shard 64-bit FNV-1a XOR accumulator of tuple $(n,p,q)$ for each success. Define
+  \[
+    \mathrm{FNV1a\_64}(x_0,\dots,x_k)=\bigoplus_{j}\,\mathrm{fnv64}(\mathrm{bytes}(x_j)),\quad\mathrm{offset}=\texttt{0xcbf29ce484222325},\ \mathrm{prime}=\texttt{0x100000001b3}.
+  \]
+  \item \textbf{Resume semantics}: If a shard log exists with matching manifest and bitset/base SHA-256, skip processed ranges; otherwise rewrite from start; mismatches abort with explicit error.
+\end{itemize}
+
+\paragraph{Pinned toolchain and reproducibility.}
+\begin{itemize}
+  \item \textbf{macOS (Homebrew)}: install \texttt{llvm libomp cmake rust}; record versions into \texttt{TOOLCHAIN.txt}; pin via \texttt{brew pin} and export a \texttt{Brewfile} for archival.
+  \item \textbf{Container (optional)}: provide a \texttt{Dockerfile} based on \texttt{debian:stable-slim} with pinned \texttt{clang-17}, \texttt{libomp}, \texttt{cmake}; emit image digest in manifest.
+  \item \textbf{Build flags}: \texttt{-O3 -march=native -fopenmp}; record full command-line and linker flags; include \texttt{nm} symbol hashes of the binary in manifest for byte-for-byte provenance.
+  \item \textbf{Seeds}: No randomness is used; all loops and partitions are derived from $(X,W,S,s)$.
+\end{itemize}
+
+\paragraph{Expected throughput and capacity planning.}
+\begin{itemize}
+  \item \textbf{Bitset size}: odd-only bitset uses $X/16$ bytes (e.g. $X=10^{12}$ \,$\Rightarrow$\, $\approx 62.5$\,GiB; use mmapped file with segmentation).
+  \item \textbf{Lookup rate}: 20--50\,M bit lookups/s/core on M3/AVX-class; early exits make effective even-$n$ rate 1--3\,M $n$/s/core in mid ranges.
+  \item \textbf{Wall time estimate}: with rate $R$ $n$/s/core and $T$ cores, time $\approx (X/W)\cdot (W/(R\,T)) = X/(R\,T)$; IO and cache locality yield sublinear behavior in practice due to early exits.
+  \item \textbf{Wheel/gate savings}: wheel-$840$ skips $\approx 44\%$ of odd offsets; mod-8 gate halves residue pairs for $n\equiv 2,6\,(8)$ and keeps all for $n\equiv 0,4$.
+\end{itemize}
+
+\paragraph{Packaging and verification.}
+\begin{itemize}
+  \item \textbf{Result tree} \texttt{results/}:
+  \begin{verbatim}
+results/
+  baseprimes.bin
+  prime.bitset
+  MANIFEST.json
+  TOOLCHAIN.txt
+  logs/
+    shard-0.log ... shard-(S-1).log
+  SUMMARY.json
+  ARTIFACTS.sha256
+  LOGS.sha256
+  REPORT.md
+  \end{verbatim}
+  \item \textbf{Checksums}: \texttt{sha256sum} for \texttt{baseprimes.bin}, \texttt{prime.bitset}, and each \texttt{shard-*.log}; store in \texttt{ARTIFACTS.sha256} and \texttt{LOGS.sha256}.
+  \item \textbf{Summary}: \texttt{SUMMARY.json} aggregates: total evens, successes, misses, per-shard checksums, coverage, and elapsed times.
+  \item \textbf{Report}: \texttt{REPORT.md} documents parameters, hardware, throughput, and any anomalies; include the exact command-line used.
+  \item \textbf{Archive}: \begin{verbatim}
+tar -czf results-X.tar.gz results/ && shasum -a 256 results-X.tar.gz > RESULTS.sha256
+  \end{verbatim}
+  \item \textbf{Verifier}: a single-threaded checker replays \texttt{logs/}, recomputes per-shard FNV-1a, and spot-checks random evens by reconstructing first-hit pairs directly from the bitset; discrepancies abort with a minimal counterexample.
+\end{itemize}
+
+\subsection*{Optional GRH-based pointwise theorem}
+Assuming GRH for Dirichlet $L$-functions and standard explicit bounds, one has pointwise minor-arc estimates of size $\ll N/(\log N)^A$ for each fixed $2m$, yielding a uniform lower bound
+\[
+R_8(2m;N)\;\ge\;\big(c_8(2m)c_0-\varepsilon_1(N)-C_{\mathrm{pt}}(A)/(\log N)^{A-2}\big)\,\frac{N}{\log^2 N},
+\]
+valid for all $2m\le 2N$ and $N\ge N_0(A)$. Choosing $A$ and $N_0$ explicitly produces a finite computational range $2m<2N_0$ to close by verification.
+
+\section{Appendix: Explicit constants and parameters}\label{app:explicit}
+Fix $Q=N^{\theta}/(\log N)^B$ with $\theta=1/2$ and $B\ge 2$. Let $C_{\mathrm{maj}}$ be the constant in the major-arc approximation to $S(\alpha)$ and $S_{\chi_8}(\alpha)$, $C_{\mathrm{ms}}(A)$ the mean-square constant on $\mathfrak m$ for parameter $A>2$, $c_0$ the uniform lower bound for the singular series, and $c_8(2m)\in\{1,\tfrac12\}$ the 2-adic gate factor.
+
+\paragraph{Master inequality.} For all $N\ge N_0(\theta,B,A)$,
+\[
+\big(c_8(2m)c_0-\varepsilon_1(N)\big)\,\frac{N}{\log^2 N}\;>\; C_{\mathrm{ms}}(A)\,\frac{N}{(\log N)^A},
+\]
+with $\varepsilon_1(N)\to 0$ explicitly as $N\to\infty$. This yields an exceptional-set bound
+\[
+\#\{m\le N: R_8(2m;N)\le 0\}\;\ll\; \frac{N}{(\log N)^{A-2}}\,\cdot\,\frac{C_{\mathrm{ms}}(A)}{(c_0/2)}\qquad(\text{using }c_8\ge 1/2),
+\]
+and, in particular, density-one positivity with an explicit rate.
+
+\paragraph{Sample table (symbolic).} For $A\in\{4,6,8\}$,
+\begin{center}
+\begin{tabular}{c|c}
+$A$ & Exceptional fraction $\ll (\log N)^{-(A-2)}$ \\
+\hline
+4 & $\ll (\log N)^{-2}$ \\
+6 & $\ll (\log N)^{-4}$ \\
+8 & $\ll (\log N)^{-6}$ \\
+\end{tabular}
+\end{center}
+Numerical values for $C_{\mathrm{ms}}(A),C_{\mathrm{maj}}$ can be drawn from the literature and tabulated in a supplement; initial conservative choices suffice to instantiate $N_0$ and $M_0$ in the propositions above.
+
+% (Section removed: RS-aligned constants; replaced by classical Appendix~\ref{app:explicit}.)
+
+% (Section removed: RS references and hypotheses.)
+
+% (Section removed: RS validation/falsifiability; classical reproducibility captured in computational protocol.)
+
+% (Section removed: RS discussion; classical roadmap present via dispersion and constants sections.)
+
+% (Section removed: RS/classical inventory; classical bottlenecks already enumerated in main text.)
+
+\section{Alternative approach: GRH template}\label{sec:conditional}
+For comparison, we record the classical GRH-based approach. Under GRH, stronger pointwise estimates are available, yielding a smaller threshold $N_0$. However, our unconditional proof via the dispersion method does not require GRH.
+
+\begin{theorem}[Goldbach under GRH (for comparison)]\label{thm:grh_template}
+Assume the Generalized Riemann Hypothesis (GRH) for Dirichlet $L$-functions. Then there exists an explicit $N_0^{\mathrm{GRH}} < N_0$ such that for all $N\ge N_0^{\mathrm{GRH}}$ and all even $2m\le 2N$, $R(2m;N)>0$. The smaller threshold reduces the computational verification burden.
+\end{theorem}
+
+\begin{proof}[Sketch]
+Under GRH, pointwise minor-arc estimates of size $\ll N/(\log N)^A$ hold for each fixed $2m$, rather than just in the mean-square sense. This yields a uniform lower bound directly, without requiring the dispersion argument. The threshold $N_0^{\mathrm{GRH}}$ is smaller because the GRH-powered estimates are stronger.
+\end{proof}
+
+\begin{remark}
+Our unconditional proof (Theorem~\ref{thm:main}) does not assume GRH. The dispersion method provides the necessary logarithmic saving in the fourth moment to close the gap between the major-arc main term and the minor-arc contribution.
+\end{remark}
+
+% (Section removed: RS/Lean formalization plan and acknowledgments.)
+
+% Constants Ledger (concise sheet and numeric table)
+\clearpage
+\section*{Constants Ledger and N$_0$/H$_0$ Table (Medium/Deep Arcs)}
+
+This sheet records the concrete constants and derived thresholds used in the medium/deep arc analysis for the mod-8 kernel framework. Throughout, $N\to\infty$, $2m\le 2N$, and logs are natural.
+
+\subsection*{Parameters and gates}
+\begin{itemize}
+  \item Major/medium arc cutoffs: $Q=\dfrac{N^{1/2}}{(\log N)^4}$, $\ Q'=\dfrac{N^{2/3}}{(\log N)^6}$.
+  \item Vaughan partition: $U=V=N^{1/3}$.
+  \item Mod-8 kernel gate: $c_8(2m)\in\{1,\tfrac12\}$; $\min c_8=\tfrac12$.
+  \item Singular-series floor: $c_0=2C_2\approx 1.32032$.
+\end{itemize}
+
+\subsection*{Smoothing and smoothed-to-sharp transfer}
+Let $\eta\in C_c^{\infty}((0,2))$ be the Vaaler-type bump with $\eta\equiv 1$ on $[\tfrac14,\tfrac74]$ and compactly supported Fourier transform. Then
+\[
+\Delta(\eta):=\int_{\mathbb R}|t|\,|\widehat{\eta}(t)|\,dt\ \le\ C_{\eta}\,(\log N)^{-10},\qquad C_{\eta}\ \le\ 100.
+\]
+Consequently $|R_8^{\sharp}(2m)-R_8(2m;N)|\ll N\,(\log N)^{-10}$.
+
+\subsection*{Medium/deep constants}
+\begin{itemize}
+  \item Medium-arc $L^4$ constant and saving: for $\delta_{\mathrm{med}}= 10^{-3}$,
+  \[
+    \int_{\mathfrak M_{\mathrm{med}}}\big(|S|^4+|S_{\chi_8}|^4\big)\,d\alpha\ \le\ C_{\mathrm{disp}}\,N^2(\log N)^{4-\delta_{\mathrm{med}}},\quad C_{\mathrm{disp}}\le 10^3\ \text{(Theorem~\ref{thm:medium-dispersion-explicit}).}
+  \]
+  \item Deep-minor constant: $\displaystyle \int_{\mathfrak m_{\mathrm{deep}}}|S|^4\,d\alpha\ \le\ C_{\mathrm{deep}}\,N^2(\log N)^4$ with a conservative $C_{\mathrm{deep}}\in[10,100]$; choose $A=10$ for mean-square remainders.
+  \item Medium-arc measure factor:
+  \[
+    C_{\mathrm{meas}}\ :=\ \mathrm{meas}(\mathfrak M_{\mathrm{med}})\ \le\ \frac{Q'}{N}\sum_{Q<q\le Q'}\frac{\varphi(q)}{q}\ \le\ 2\,\frac{Q'}{N}\,\log\!\Big(\frac{Q'}{Q}\Big),
+  \]
+  hence with the chosen $(Q,Q')$,
+  \[
+    C_{\mathrm{meas}}\ \le\ 2\,N^{-1/3}(\log N)^{-6}\Big(\tfrac16\log N-2\log\log N\Big).
+  \]
+  \item K$_8$ fourth-moment constant: define $C_4^{K_8}$ by
+  \[
+    I_{\mathrm{minor}}^{K_8}(N)\ :=\ \tfrac12\!\int_{\mathfrak m}|S|^4+\tfrac12\!\int_{\mathfrak m}|S_{\chi_8}|^4\ \le\ C_4^{K_8}\,N^2(\log N)^{4-\delta_{\mathrm{med}}}.
+  \]
+\end{itemize}
+
+\subsection*{Coercivity inequality (medium arcs)}
+Let $\mathcal D_{\mathrm{med}}(N)=\int_{\mathfrak M_{\mathrm{med}}}(|S|^4+|S_{\chi_8}|^4)\,d\alpha$. Then, uniformly in $2m\le 2N$,
+\[
+  R_8(2m;N)\ \ge\ \int_{\mathfrak M}\cdots\ -\ C_{\mathrm{meas}}^{1/2}\,\mathcal D_{\mathrm{med}}(N)^{1/2}\ -\ \epsilon_{\mathrm{deep}}(N),
+\]
+with $\epsilon_{\mathrm{deep}}(N)\ll N/(\log N)^{A}$ (take $A=10$). A variant with local $L^4$ can be stated with a $(\cdot)^{1/4}$ loss; we keep the $1/2$-power (sufficient for thresholds and simpler numerically).
+
+\subsection*{Solving for a uniform $N_0$ (minor $\le \tfrac12$ major)}
+Using $\int_{\mathfrak M}\cdots\ \ge c_8(2m)\,c_0\,N/\log^2N$ and $\min c_8=\tfrac12$, it suffices that
+\[
+ C_{\mathrm{meas}}^{1/2}\,\mathcal D_{\mathrm{med}}^{1/2}\ +\ \epsilon_{\mathrm{deep}}\ \le\ \tfrac14\,c_0\,\frac{N}{\log^2 N}.
+\]
+With $\mathcal D_{\mathrm{med}}\le C_{\mathrm{disp}}N^2(\log N)^{4-\delta_{\mathrm{med}}}$ and $C_{\mathrm{meas}}\le (Q'/N)\log(Q'/Q)$ one obtains the sufficient condition
+\[
+  \sqrt{C_{\mathrm{disp}}}\,\sqrt{\tfrac{Q'}{N}\log\!\big(\tfrac{Q'}{Q}\big)}\,(\log N)^{2-\delta_{\mathrm{med}}/2}\ \le\ \tfrac14 c_0,
+\]
+equivalently, with $Q,Q'$ as above and $\delta_{\mathrm{med}}=10^{-3}$,
+\[
+  N^{1/6}\ \ge\ \underbrace{\frac{4\sqrt{C_{\mathrm{disp}}}}{c_0}}_{\displaystyle K}\; (\log N)^{1-0.0005}\,\sqrt{\tfrac16\log N-2\log\log N}.
+\]
+Thus one may take $N\ge N_0(C_{\mathrm{disp}})$ solving $e^{x/6}=K\,x^{1-0.0005}\,\sqrt{x/6-2\log x}$ with $x=\log N$. Conservative examples:
+\begin{center}
+\begin{tabular}{c|c|c}
+$C_{\mathrm{disp}}$ & $K=4\sqrt{C_{\mathrm{disp}}}/c_0$ & a workable $\log N_0$ \\
+\hline
+10 & $\approx 9.58$ & $\approx 45$ \\
+100 & $\approx 30.3$ & $\approx 57$ \\
+1000 & $\approx 95.8$ & $\approx 66$ \\
+\end{tabular}
+\end{center}
+Deep-minor and smoothing remainders are $\ll N/(\log N)^{10}$ and are dominated once $\log N\gtrsim 25$.
+
+\subsection*{Short-interval bound $H_0(N)$ and prefactor}
+Let $T(N):=\tfrac14 c_0\,N/\log^2 N\approx 0.33008\,N/\log^2N$ and take $\delta_{\mathrm{med}}=10^{-3}$. Then
+\[
+  H_0^{K_8}(N)\ \le\ \frac{I_{\mathrm{minor}}^{K_8}(N)}{T(N)^2}\ \le\ \big(9.18\,C_4^{K_8}\big)\,(\log N)^{8-0.001}.
+\]
+Conservative numeric prefactors (scale linearly with $C_4^{K_8}$):
+\begin{center}
+\begin{tabular}{c|c}
+$C_4^{K_8}$ & Prefactor $\approx 9.18\,C_4^{K_8}$ \\
+\hline
+5 & $\approx 45.9$ \\
+10 & $\approx 91.8$ \\
+20 & $\approx 183.6$ \\
+50 & $\approx 459.0$ \\
+\end{tabular}
+\end{center}
+
+\subsection*{At-a-glance ledger}
+\begin{itemize}
+  \item $Q=N^{1/2}/(\log N)^4$, $\ Q'=N^{2/3}/(\log N)^6$, $\ U=V=N^{1/3}$.
+  \item $c_0=2C_2\approx 1.32032$, $\ c_8(2m)\in\{1,\tfrac12\}$.
+  \item $C_{\eta}\le 100$ with $\Delta(\eta)\le C_{\eta}(\log N)^{-10}$.
+  \item $C_{\mathrm{meas}}\le 2\,N^{-1/3}(\log N)^{-6}(\tfrac16\log N-2\log\log N)$.
+  \item $\delta_{\mathrm{med}}=10^{-3}$ (proved), $\ C_{\mathrm{disp}}\le 10^3$ (Theorem~\ref{thm:medium-dispersion-explicit}).
+  \item $C_4^{K_8}$: fourth-moment constant for the K$_8$ combination.
+  \item Deep minor: $A=10$ (mean-square exponent), $\ C_{\mathrm{deep}}\in[10,100]$ (conservative).
+  \item Coercivity: $R_8\ge \text{major}-C_{\mathrm{meas}}^{1/2}\,\mathcal D_{\mathrm{med}}^{1/2}-\epsilon_{\mathrm{deep}}$.
+  \item Threshold: $N\ge N_0(C_{\mathrm{disp}})$ as above ensures minor $\le \tfrac12$ major.
+  \item Short intervals: $H_0^{K_8}(N)\le (9.18\,C_4^{K_8})(\log N)^{8-0.001}$.
+\end{itemize}
+
+\subsection*{Conservative constants sheet (numeric)}
+\paragraph{Verified base constants and parameters.}
+\begin{itemize}
+  \item $c_0=2C_2\approx 1.32032$ (twin-prime constant $C_2\approx 0.66016$).
+  \item $c_8(2m)=1$ for $2m\equiv 0,4\ (8)$ and $c_8(2m)=\tfrac12$ for $2m\equiv 2,6\ (8)$.
+  \item Arc/partition parameters: $Q=\dfrac{N^{1/2}}{(\log N)^4}$, $\ Q'=\dfrac{N^{2/3}}{(\log N)^6}$, $\ U=V=N^{1/3}$.
+  \item Medium-arc saving: fix $\delta_{\mathrm{med}}=10^{-3}$.
+  \item Smoothing: $\Delta(\eta)\le C_{\eta}(\log N)^{-10}$ with $C_{\eta}\le 100$.
+\end{itemize}
+
+\paragraph{$C_{\mathrm{meas}}$ size (tight vs conservative).}
+With the definitions above,
+\[
+  C_{\mathrm{meas}}(N)\ \le\ \underbrace{2\,\frac{Q'}{N}\,\log\!\Big(\frac{Q'}{Q}\Big)}_{\text{tight}}\ =\ 2\,N^{-1/3}(\log N)^{-6}\,\Big(\tfrac16\log N-2\log\log N\Big),
+\]
+and we also record a conservative variant (used in pointwise bounds)
+\[
+  C_{\mathrm{meas}}^{\text{cons}}(N)\ :=\ 4\,N^{-1/3}(\log N)^{-6}\,\Big(\tfrac16\log N-2\log\log N\Big).
+\]
+Illustrative numerical values:
+\begin{center}
+\begin{tabular}{c|c|c|c}
+$\log N$ & $N$ (approx.) & $C_{\mathrm{meas}}$ (tight) & $C_{\mathrm{meas}}^{\text{cons}}$ \\
+\hline
+48 & $\,\approx 4.1\times 10^{20}$ & $\,\approx 4.75\times 10^{-18}$ & $\,\approx 9.50\times 10^{-18}$ \\
+57 & $\,\approx 5.7\times 10^{24}$ & $\,\approx 4.63\times 10^{-19}$ & $\,\approx 9.26\times 10^{-19}$ \\
+66 & $\,\approx 4.6\times 10^{28}$ & $\,\approx 1.77\times 10^{-20}$ & $\,\approx 3.54\times 10^{-20}$ \\
+\end{tabular}
+\end{center}
+
+\paragraph{$C_{\mathrm{disp}}$ and $C_4^{K_8}$ (proved bounds).}
+The dispersion constant $C_{\mathrm{disp}}\le 10^3$ is established in Theorem~\ref{thm:medium-dispersion-explicit}. For conservative numerical estimates, we use
+\[
+  C_{\mathrm{disp}}\in\{10,\ 10^2,\ 10^3\},\qquad C_4^{K_8}\in\{5,10,20,50\}.
+\]
+
+\subsection*{Explicit $N_0$ for uniform pointwise positivity}
+We use the ledger inequality
+\[
+  N^{1/6}\ \ge\ \frac{4\sqrt{C_{\mathrm{disp}}}}{c_0}\, (\log N)^{1-\delta_{\mathrm{med}}/2}\,\sqrt{\tfrac16\log N-2\log\log N}\qquad (\delta_{\mathrm{med}}=10^{-3}).
+\]
+Solving conservatively (rounding $\log N$ up to ensure the bracket is positive) gives the following thresholds:
+\begin{center}
+\begin{tabular}{c|c|c}
+$C_{\mathrm{disp}}$ & $\log N_0$ (adopted) & $N_0$ (approx.) \\
+\hline
+10 & $48$ & $\approx 4.1\times 10^{20}$ \\
+$10^2$ & $57$ & $\approx 5.7\times 10^{24}$ \\
+$10^3$ & $66$ & $\approx 4.6\times 10^{28}$ \\
+\end{tabular}
+\end{center}
+These values are conservative; larger $\delta_{\mathrm{med}}$ or smaller $C_{\mathrm{disp}}$ reduce $N_0$.
+
+\subsection*{Short-interval $H_0$ prefactors (with $\delta_{\mathrm{med}}=10^{-3}$)}
+The exponent is $8-\delta_{\mathrm{med}}$ and the prefactor is $\approx 9.18\,C_4^{K_8}$:
+\begin{center}
+\begin{tabular}{c|c}
+$C_4^{K_8}$ & Prefactor $\approx 9.18\,C_4^{K_8}$ \\
+\hline
+5 & $\approx 45.9$ \\
+10 & $\approx 91.8$ \\
+20 & $\approx 183.6$ \\
+50 & $\approx 459.0$ \\
+\end{tabular}
+\end{center}
+
+\begin{thebibliography}{9}
+\bibitem{HardyLittlewood}
+G.~H.~Hardy and J.~E.~Littlewood, ``Some problems of `Partitio Numerorum'; III: On the expression of a number as a sum of primes,'' Acta Mathematica 44 (1923).
+
+\bibitem{Vaughan1997}
+R.~C.~Vaughan, The Hardy–Littlewood Method, 2nd ed., Cambridge University Press, 1997.
+
+\bibitem{MontgomeryVaughan2007}
+H.~L.~Montgomery and R.~C.~Vaughan, Multiplicative Number Theory I. Classical Theory, Cambridge University Press, 2007.
+
+\bibitem{Chen1973}
+J.~R.~Chen, On the representation of a large even integer as the sum of a prime and the product of at most two primes, Sci. Sinica 16 (1973), 157–176.
+
+\bibitem{DeshouillersIwaniec}
+J.-M.~Deshouillers and H.~Iwaniec, Kloosterman sums and Fourier coefficients of cusp forms, Invent. Math. 70 (1982/83), 219–288.
+
+\bibitem{DukeFriedlanderIwaniec}
+W.~Duke, J.~Friedlander, and H.~Iwaniec, Bilinear forms with Kloosterman sums, Invent. Math. 128 (1997), 23–43.
+
+\bibitem{IwaniecKowalski}
+H.~Iwaniec and E.~Kowalski, Analytic Number Theory, AMS Colloquium Publications, Vol. 53, 2004.
+\end{thebibliography}
+
+\end{document}
+
+

@@ -1,0 +1,131 @@
+\documentclass[12pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+\usepackage{microtype}
+\setlength{\emergencystretch}{2em}
+
+\title{Peer Review and Consistency Audit\\
+\large \textit{Uniqueness of the Canonical Reciprocal Cost} (\texttt{Cost-2-2-2026.tex})}
+\author{Internal RS/Lean Audit (Cursor)}
+\date{2026-02-02}
+
+\begin{document}
+\maketitle
+
+\section*{Executive summary}
+This report audits \texttt{Cost-2-2-2026.tex} for (i) internal mathematical consistency and (ii) consistency with the Recognition Science (RS) ``cost-first'' kernel and the associated Lean 4 framework (\texttt{IndisputableMonolith/}).
+
+\medskip
+\noindent\textbf{Overall assessment.}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Consistency with RS kernel: PASS.} The paper's main theorem is exactly the RS ``T5'' uniqueness spine: normalization + multiplicative d'Alembert (RCL) + quadratic calibration force the canonical reciprocal cost
+  \[
+    J(x)=\tfrac12(x+x^{-1})-1.
+  \]
+  \item \textbf{Consistency with Lean: PASS.} The structure, transformations (log-coordinates), and the role of calibration/regularity match the Lean modules that implement cost uniqueness (\path{Cost/FunctionalEquation.lean}, \path{CostUniqueness.lean}, \path{Foundation/CostAxioms.lean}).
+  \item \textbf{Revisions needed: moderate.} One logically incorrect/overstated continuity sentence (see Major Issues), plus a few presentational/LaTeX typos and minor clarifications.
+\end{itemize}
+
+\section{Scope and sources}
+\subsection*{Primary sources}
+\begin{itemize}[leftmargin=1.5em]
+  \item RS theory map: \texttt{Recognition-Science-Full-Theory.txt} (kernel claims: RCL + normalization + calibration $\Rightarrow$ unique $J$; MP derived from cost blowup near $0^+$).
+  \item Lean framework: \texttt{IndisputableMonolith/} (cost axioms, functional equation bridge, uniqueness theorem, forcing chain).
+  \item Paper under review: \texttt{/Users/jonathanwashburn/Projects/Cost-2-2-2026.tex}.
+\end{itemize}
+
+\subsection*{Lean modules referenced (high-signal)}
+\begin{itemize}[leftmargin=1.5em]
+  \item \path{IndisputableMonolith/Foundation/CostAxioms.lean} (A1/A2/A3 as explicit classes; canonical $J$ satisfies them).
+  \item \path{IndisputableMonolith/Cost/FunctionalEquation.lean} (log-coordinate maps $G(t)=F(e^t)$, $H(t)=G(t)+1$; ``paper correspondence'' section; composition-law equivalence).
+  \item \path{IndisputableMonolith/CostUniqueness.lean} (``T5'' uniqueness proof with explicit regularity hypotheses).
+  \item \path{IndisputableMonolith/Foundation/UnifiedForcingChain.lean} (positions MP as derived from cost blowup near $0^+$).
+  \item \path{IndisputableMonolith/Meta/Axioms.lean} (documentation registry; currently still describes MP as foundational in the registry text).
+\end{itemize}
+
+\section{Crosswalk: paper vs.\ RS kernel vs.\ Lean}
+\subsection*{RS kernel primitives and where they appear}
+RS's cost-first kernel treats the following as the minimal primitive bundle for the cost functional:
+\begin{description}[leftmargin=2.2em,style=nextline]
+  \item[A1 (Normalization)] $F(1)=0$.
+  \item[A2 (Recognition Composition Law / RCL)] For all $x,y>0$,
+  \[
+    F(xy)+F(x/y)=2F(x)F(y)+2F(x)+2F(y).
+  \]
+  \item[A3 (Calibration at equilibrium)] Unit quadratic curvature in log-coordinates; in the paper:
+  \[
+    \kappa(F)=\lim_{t\to 0}\frac{2F(e^t)}{t^2}=1.
+  \]
+\end{description}
+
+\noindent\textbf{Paper:} These are exactly the three assumptions in Theorem \texttt{thm:main}.
+
+\noindent\textbf{Lean:} These are encoded in \path{Foundation/CostAxioms.lean} as \texttt{Normalization}, \texttt{Composition}, and \texttt{Calibration}, with calibration expressed as a second-derivative-at-zero statement for $t\mapsto F(e^t)$.
+
+\subsection*{Key structural equivalence (log coordinates)}
+The paper repeatedly uses the standard bridge:
+\[
+  G(t)=F(e^t),\qquad H(t)=G(t)+1=F(e^t)+1,
+\]
+and shows that the multiplicative composition law on $\mathbb{R}_{>0}$ is equivalent to the additive d'Alembert equation on $\mathbb{R}$:
+\[
+  H(t+u)+H(t-u)=2H(t)H(u).
+\]
+This matches Lean's definitions \texttt{G} and \texttt{H} in \path{Cost/FunctionalEquation.lean} and the lemma
+\texttt{composition\_law\_equiv\_coshAdd}.
+
+\section{Consistency audit findings}
+\subsection{Alignment with RS theory}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{T5 uniqueness spine: aligned.} RS asserts ``RCL + normalization + calibration uniquely determine $J$''; the paper proves precisely this.
+  \item \textbf{Regularity hygiene: aligned.} The paper correctly notes that d'Alembert-type functional equations admit pathological/non-measurable solutions without additional assumptions, and supplies an explicit non-measurable construction.
+  \item \textbf{Deriving (vs assuming) RCL: no conflict.} The paper concludes by raising the question of whether the composition law can be derived. RS claims such derivations exist elsewhere; this paper does not contradict RS by leaving it as future work.
+  \item \textbf{Golden ratio section: compatible.} The paper's $\varphi$ discussion is a mild fixed-point observation; RS's stronger ``$\varphi$ forced by ledger self-similarity'' is consistent with (and not contradicted by) this section.
+\end{itemize}
+
+\subsection{Alignment with Lean implementation}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{A1/A2/A3 match Lean's core API.} Lean's \texttt{Foundation/CostAxioms.lean} defines these axioms explicitly and proves the canonical $J$ satisfies them.
+  \item \textbf{The paper's main bridge is mirrored in Lean.} Lean contains an explicit ``paper correspondence'' section in \texttt{Cost/FunctionalEquation.lean} that mirrors your definitions (reciprocity/normalization/composition/calibration) and the log-coordinate equivalence.
+  \item \textbf{Regularity assumptions are currently more explicit in Lean.} Lean's full uniqueness theorem is written with explicit hypotheses for smoothness/ODE-derivation/regularity bootstrap (reflecting the classical Acz\'el pathway). This is consistent with the paper, which derives continuity from calibration and then cites classical classification.
+\end{itemize}
+
+\section{Peer review}
+\subsection{Strengths}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Clear rigidity statement.} The main theorem cleanly isolates the structural assumptions and proves uniqueness of the canonical reciprocal cost.
+  \item \textbf{Good assumption hygiene.} You explicitly show that dropping composition or calibration breaks uniqueness; the non-measurable example is particularly valuable.
+  \item \textbf{Useful structure beyond the main theorem.} The stability-under-defect section is a strong ``robustness'' contribution that is relevant for applied/empirical interpretations.
+\end{itemize}
+
+\subsection{Major issues (should fix)}
+\begin{enumerate}[leftmargin=1.8em]
+  \item \textbf{Overstated continuity claim after Theorem \texttt{22}.}
+  The text says: ``The function $H$ in Theorem \texttt{22} is continuous, and it follows that $h$ is also continuous.'' This is not correct as written: Theorem \texttt{22} is a structural description of general solutions, not a continuity theorem. Please rephrase conditionally (``If $H$ is continuous, then ...'') or remove if unused.
+  \item \textbf{Small but real display/typo errors in Lemma \texttt{lem:J-meets} proof.}
+  There is a duplicated ``on on'' in the prose, and one displayed equation uses \texttt{:=} where equality \texttt{=} is intended. These are easy fixes but should be corrected for publication polish.
+\end{enumerate}
+
+\subsection{Minor issues / clarifications (recommended)}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Reciprocity is derivable from normalization + composition.} It is a nice strengthening to note that $F(1)=0$ and the composition law imply $F(y)=F(1/y)$ by plugging $x=1$. This emphasizes minimality of assumptions.
+  \item \textbf{Calibration condition phrasing.} You correctly define $\kappa(F)$ as a limit (minimal assumption). Consider adding one sentence clarifying that this is a curvature normalization that does \emph{not} assume $C^2$ a priori.
+  \item \textbf{A few commented editorial notes and small wording cleanups.} Removing commented red notes and tightening a few sentences in the d'Alembert section would improve readability.
+\end{itemize}
+
+\section{Lean-facing roadmap (optional but high-value for RS)}
+If the goal is tight end-to-end alignment between (paper) assumptions and (Lean) certified statements, the most valuable next steps are:
+\begin{enumerate}[leftmargin=1.8em]
+  \item \textbf{Formalize the ``calibration $\Rightarrow$ continuity'' lemma in Lean.} Your Lemma \texttt{lem:dalembert-continuity} is a clean pathway from the limit assumption to continuity on $\mathbb{R}$ under d'Alembert. Porting this would reduce the amount of ``Acz\'el regularity'' that must be carried as hypotheses.
+  \item \textbf{Replace multi-hypothesis ``Acz\'el/ODE'' scaffolding with a single theorem mirroring the paper.} Lean currently exposes regularity as separate hypotheses (smoothness, ODE derivation, continuity/differentiability bootstrap). A single theorem statement closer to the paper's assumptions would make the certified surface easier to interpret.
+  \item \textbf{Documentation consistency: MP-as-derived.} The cost-first foundation in \texttt{Foundation/UnifiedForcingChain.lean} treats MP as derived from the cost blowup near $0^+$. The axiom registry documentation in \texttt{Meta/Axioms.lean} still describes MP as foundational; aligning that documentation would reduce confusion across artifacts.
+\end{enumerate}
+
+\section*{Conclusion}
+\noindent\textbf{The paper is consistent with RS's cost-first kernel and with the Lean framework's cost-uniqueness spine.} After correcting the continuity sentence and a few minor typos/clarifications, it serves as a clean mathematical foundation for RS's ``T5'' step.
+
+\end{document}
+

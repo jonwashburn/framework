@@ -1,0 +1,654 @@
+\documentclass[11pt,twocolumn]{article}
+
+% --- Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{enumitem}
+
+\geometry{margin=1in}
+
+% --- Theorem environments ---
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{remark}{Remark}[section]
+
+% --- Custom commands ---
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\phival}{\varphi}
+
+% --- Title ---
+\title{%
+  Solid-State Virtual Rotor Systems:\\
+  Architecture, Control Surfaces, and Metrology\\
+  for High-Q Rotating-Field Experiments%
+}
+
+\author{%
+  Recognition Science Research Institute\\
+  \texttt{[correspondence address]}
+}
+
+\date{February 1, 2026}
+
+\begin{document}
+
+\maketitle
+
+% ============================================================================
+% ABSTRACT
+% ============================================================================
+\begin{abstract}
+Any claimed anomalous effect in rotating-field experiments will be correctly dismissed unless experiments are instrumented to reject thermal, vibrational, and electromagnetic interference (EMI) artifacts. This paper specifies a modular solid-state architecture---the ``Virtual Rotor''---comprising stationary coils pulsed in sequence to create a rotating magnetic field without moving parts. We present the mathematical formalization of the virtual rotor geometry, the control surfaces for resonance locking, and a comprehensive metrology stack including force measurement, thermal mapping, EMI characterization, and vibration monitoring.
+
+The paper defines a complete null-test suite for artifact rejection, an experimental runbook, and a data-analysis pipeline that produces publication-grade figures regardless of whether results are positive or null. The framework is designed to survive skeptical peer review by pre-registering acceptance criteria and uncertainty quantification methods.
+
+\textbf{Keywords:} phased array, rotating magnetic field, commutation, EMI hardening, null tests, metrology, resonance locking, uncertainty quantification
+\end{abstract}
+
+% ============================================================================
+% 1. INTRODUCTION
+% ============================================================================
+\section{Introduction}
+\label{sec:intro}
+
+\subsection{Motivation}
+
+The history of unconventional propulsion claims is littered with experiments that failed to adequately control for mundane effects: thermal convection, vibration coupling, electromagnetic pickup, and measurement drift. Any future experiment must be designed from the ground up to survive skeptical review.
+
+This paper provides the engineering specification and metrology protocol for a class of experiments using \emph{solid-state virtual rotors}---phased arrays of stationary coils that create rotating magnetic fields without moving mass. The virtual rotor concept offers several advantages over mechanical rotors:
+
+\begin{itemize}
+    \item No mechanical wear or failure modes
+    \item Precise electronic control of frequency and phase
+    \item Instantaneous reversal capability for sign-flip tests
+    \item Ability to achieve effective ``rotation speeds'' exceeding mechanical limits
+\end{itemize}
+
+\subsection{Scope Boundaries}
+
+This paper is a \textbf{methods, apparatus, and measurement} specification. It does not report experimental results or claim any effect magnitude. Claims of effect are explicitly \emph{data-gated} and belong in separate results publications.
+
+This paper connects to:
+\begin{itemize}
+    \item \textbf{NM-0 (Foundation)}: Defines the $\phival$-log-spiral geometry and 8-tick scheduling discipline used here.
+    \item \textbf{NM-2 (Power and Safety)}: Defines generator-mode operation and safety governors referenced in the safety integration section.
+\end{itemize}
+
+\subsection{System Overview}
+
+The complete experimental system comprises six subsystems (Figure~\ref{fig:block}):
+
+\begin{enumerate}
+    \item \textbf{Geometry}: $\phival$-spiral coil layout (NM-0)
+    \item \textbf{Scheduling}: 8-tick neutral drive patterns (NM-0)
+    \item \textbf{Driver/Power Stage}: High-speed switching electronics
+    \item \textbf{Field Generation}: Virtual rotor phased array
+    \item \textbf{Sensors}: Force, thermal, EMI, vibration
+    \item \textbf{Safety Governor}: Detune/shutdown control (NM-2)
+\end{enumerate}
+
+\begin{figure}[h]
+\centering
+\fbox{\parbox{0.9\columnwidth}{
+\textbf{Block Diagram (Conceptual)}\\[0.5em]
+\texttt{Geometry (NM-0)} $\rightarrow$ \texttt{Schedule (NM-0)}\\
+\hspace*{2em}$\downarrow$\\
+\texttt{Driver Stage} $\rightarrow$ \texttt{Coil Array} $\rightarrow$ \texttt{Field}\\
+\hspace*{2em}$\downarrow$\\
+\texttt{Sensors} $\rightarrow$ \texttt{Data Logging}\\
+\hspace*{2em}$\downarrow$\\
+\texttt{Governor (NM-2)} $\leftarrow$ \texttt{Safety Interlocks}
+}}
+\caption{System block diagram showing subsystem interconnections.}
+\label{fig:block}
+\end{figure}
+
+% ============================================================================
+% 2. SYSTEM ARCHITECTURE
+% ============================================================================
+\section{System Architecture}
+\label{sec:architecture}
+
+\subsection{Virtual Rotor: Mathematical Formalization}
+
+The virtual rotor is a phased array of stationary electromagnetic coils positioned according to a $\phival$-log-spiral and pulsed in sequence to create a rotating field pattern.
+
+\begin{definition}[Coil Element]
+\label{def:coil}
+A coil element $C_i$ is characterized by a tuple:
+\begin{equation}
+    C_i = (i, \theta_i, r_i, \psi_i)
+\end{equation}
+where:
+\begin{itemize}
+    \item $i \in \{0, 1, \ldots, n-1\}$ is the coil index
+    \item $\theta_i \in [0, 2\pi)$ is the angular position
+    \item $r_i > 0$ is the radial position
+    \item $\psi_i \in \{0, 1, \ldots, 7\}$ is the phase offset (8-tick)
+\end{itemize}
+\end{definition}
+
+\begin{definition}[Spiral Array]
+\label{def:spiralarray}
+For $n$ coils, base radius $r_0 > 0$, and pitch parameter $\kappa \in \Z$, the \emph{spiral array} is the set of coils:
+\begin{equation}
+    \mathcal{A}(n, r_0, \kappa) = \{C_i : i = 0, \ldots, n-1\}
+\end{equation}
+where each coil is positioned at:
+\begin{align}
+    \theta_i &= \frac{2\pi i}{n} \label{eq:theta}\\
+    r_i &= r_0 \cdot \phival^{\,\kappa \theta_i / (2\pi)} = r_0 \cdot \phival^{\,\kappa i / n} \label{eq:radius}\\
+    \psi_i &= i \mod 8 \label{eq:phase}
+\end{align}
+\end{definition}
+
+\noindent The phase assignment~\eqref{eq:phase} ensures that the 8-tick neutrality constraint from NM-0 is automatically satisfied when all coils are driven in their assigned phase slots.
+
+\begin{definition}[Field Velocity]
+\label{def:fieldvel}
+The effective ``velocity'' of the rotating field pattern is:
+\begin{equation}
+    v_{\text{field}} = \frac{2\pi r}{T_{\text{period}}} = \frac{2\pi r}{n \cdot \tau_{\text{pulse}}}
+    \label{eq:fieldvel}
+\end{equation}
+where $r$ is a characteristic radius, $n$ is the number of coils, and $\tau_{\text{pulse}}$ is the pulse width for each coil.
+\end{definition}
+
+\begin{remark}[Relativistic Field Speeds]
+If $\tau_{\text{pulse}}$ is in the nanosecond range (MHz switching), the field velocity~\eqref{eq:fieldvel} can approach a significant fraction of the speed of light $c$. For example, with $r = 0.1$ m, $n = 8$ coils, and $\tau_{\text{pulse}} = 1$ ns:
+\begin{equation}
+    v_{\text{field}} = \frac{2\pi \times 0.1}{8 \times 10^{-9}} \approx 7.85 \times 10^7 \text{ m/s} \approx 0.26c.
+\end{equation}
+\end{remark}
+
+\subsection{Physical Embodiments}
+
+The virtual rotor can be implemented in several physical forms:
+
+\begin{enumerate}
+    \item \textbf{Multi-layer PCB traces}: Spiral traces on a printed circuit board, with each layer carrying one phase.
+    \item \textbf{Wound coils on substrate}: Discrete inductors wound on a non-conductive substrate at the positions specified by~\eqref{eq:theta}--\eqref{eq:radius}.
+    \item \textbf{Hybrid}: PCB traces for lower-power signals with discrete inductors for high-current phases.
+\end{enumerate}
+
+\subsection{Driver/Power Stage Interface}
+
+The driver stage must meet the following interface requirements:
+
+\begin{table}[h]
+\centering
+\caption{Driver Stage Interface Requirements}
+\label{tab:driver}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Parameter & Requirement & Notes \\
+\midrule
+Supply voltage & [Configurable] & Depends on coil design \\
+Max switching rate & $\geq 10$ MHz & For high $v_{\text{field}}$ \\
+Rise/fall time & $< 0.1 \times \tau_{\text{pulse}}$ & For clean edges \\
+Current sensing & Per-channel & Overcurrent protection \\
+Jitter (RMS) & $< 0.01 \times \tau_{\text{pulse}}$ & Coherence requirement \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Timing and Clock Integrity}
+
+\begin{definition}[Coherence Requirement]
+\label{def:coherence}
+The pulse sequence satisfies the \emph{coherence requirement} if the drive signal $w : \N \to \{-1, +1\}$ satisfies 8-gate neutrality:
+\begin{equation}
+    \sum_{k=0}^{7} w(t_0 + k) = 0 \quad \forall\, t_0 \in \N.
+    \label{eq:coherence}
+\end{equation}
+\end{definition}
+
+\noindent Clock integrity requirements:
+\begin{itemize}
+    \item Single master clock with distribution network
+    \item Matched path lengths to each driver channel
+    \item Jitter measurement logged for every run
+    \item Deterministic replay: ability to execute identical schedules across runs
+\end{itemize}
+
+\subsection{Shielding and Mechanical Integration}
+
+\textbf{EMI Shielding:}
+\begin{itemize}
+    \item Faraday enclosure around the virtual rotor
+    \item Shielded cables with proper grounding
+    \item Common-mode chokes on power and signal lines
+\end{itemize}
+
+\textbf{Mechanical Integration:}
+\begin{itemize}
+    \item Vibration-isolated mounting platform
+    \item Symmetric mass distribution
+    \item Vacuum-compatible materials if chamber testing is planned
+\end{itemize}
+
+% ============================================================================
+% 3. CONTROL SURFACES
+% ============================================================================
+\section{Control Surfaces}
+\label{sec:control}
+
+\subsection{Schedule Generation}
+
+The control software implements the 8-tick scheduling discipline from NM-0:
+
+\begin{enumerate}
+    \item \textbf{Schedule families}: Parameterized by $(f_{\text{drive}}, \phi_{\text{offset}}, \text{direction})$.
+    \item \textbf{Phase reversal}: First-class operation for sign-flip tests---swap the drive direction instantaneously.
+    \item \textbf{Parameter encoding}: Each run is tagged with a unique schedule ID and full parameter snapshot.
+\end{enumerate}
+
+\subsection{Resonance Lock Controller}
+
+The resonance lock controller operates in two modes:
+
+\textbf{Open-Loop Mode (Sweeps):}
+\begin{enumerate}
+    \item Coarse sweep: Step through candidate frequencies from the resonance map (NM-0).
+    \item Fine sweep: High-resolution scan around peaks identified in coarse sweep.
+    \item Dwell time: Configurable hold at each frequency for sensor integration.
+\end{enumerate}
+
+\textbf{Closed-Loop Mode (Locking):}
+\begin{enumerate}
+    \item Monitor a ``resonance score'' (e.g., coherence between drive and sensor signals).
+    \item Nudge frequency/phase to maximize the score.
+    \item Respect safety limits: maximum power, maximum temperature, governor overrides.
+\end{enumerate}
+
+\subsection{Safety Integration Points}
+
+The control system exposes the following interfaces to the safety governor (detailed in NM-2):
+
+\begin{itemize}
+    \item \texttt{DETUNE}: Command to shift drive frequency off-resonance (soft stop).
+    \item \texttt{SHUTDOWN}: Immediate drive disable (hard stop).
+    \item \texttt{LIMITS}: Configurable thresholds for overcurrent, overtemperature, over-vibration.
+\end{itemize}
+
+\subsection{Data Logging and Provenance}
+
+Every experimental run must log:
+\begin{itemize}
+    \item \textbf{Timebase}: Monotonic timestamps synchronized to GPS or NTP.
+    \item \textbf{Config snapshot}: Full parameter set, firmware version, git commit hash.
+    \item \textbf{Sensor streams}: Raw data at full sampling rate.
+    \item \textbf{Checksums}: SHA-256 hash of each data file for tamper evidence.
+\end{itemize}
+
+% ============================================================================
+% 4. METROLOGY STACK
+% ============================================================================
+\section{Metrology Stack}
+\label{sec:metrology}
+
+\subsection{Force/Thrust Measurement}
+
+\textbf{Primary Modality: Precision Load Cell Platform}
+
+\begin{table}[h]
+\centering
+\caption{Load Cell Requirements}
+\label{tab:loadcell}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Parameter & Requirement \\
+\midrule
+Resolution & $< 1$ mN \\
+Bandwidth & $\geq 100$ Hz \\
+Drift (24h) & $< 10$ mN \\
+Cross-axis rejection & $> 100:1$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent Calibration procedure:
+\begin{enumerate}
+    \item Multi-point calibration with NIST-traceable masses.
+    \item Temperature coefficient characterization.
+    \item Cross-axis sensitivity mapping.
+    \item Baseline drift characterization (no drive, 24h).
+\end{enumerate}
+
+\textbf{Secondary Modality: Torsion Pendulum}
+
+For higher sensitivity measurements (sub-mN), a torsion pendulum with optical displacement sensing may be used. Requirements:
+\begin{itemize}
+    \item Period $> 100$ s (for low-frequency sensitivity)
+    \item Optical encoder resolution $< 1$ $\mu$rad
+    \item Vacuum operation capability
+\end{itemize}
+
+\subsection{Thermal Measurement}
+
+\begin{enumerate}
+    \item \textbf{Near-field mapping}: Thermistors or RTDs at $\geq 8$ locations around the virtual rotor.
+    \item \textbf{IR camera}: If available, with calibrated emissivity and reflection correction.
+    \item \textbf{Calorimetric accounting}: For generator-mode tests, measure input power, output power, and heat flow.
+\end{enumerate}
+
+\subsection{EMI Measurement}
+
+\begin{enumerate}
+    \item \textbf{Near-field probes}: E-field and H-field probes at critical sensor locations.
+    \item \textbf{Spectrum snapshots}: Capture EMI spectrum before, during, and after each run.
+    \item \textbf{Magnetometer placement}: 3-axis magnetometers to detect stray fields.
+\end{enumerate}
+
+\subsection{Vibration and Environmental Sensors}
+
+\begin{enumerate}
+    \item \textbf{Accelerometers}: 3-axis on platform and on chamber (if applicable).
+    \item \textbf{Pressure gauge}: For vacuum tests.
+    \item \textbf{Ambient monitoring}: Temperature, humidity, airflow.
+\end{enumerate}
+
+\subsection{Synchronization and Sampling}
+
+\begin{itemize}
+    \item All sensors share a common clock or are synchronized to $< 1$ $\mu$s.
+    \item Anti-aliasing filters: $f_{\text{cutoff}} < f_{\text{sample}}/2$.
+    \item Latency measurement: Characterize and log sensor latencies for each channel.
+\end{itemize}
+
+% ============================================================================
+% 5. NULL TESTS
+% ============================================================================
+\section{Null Tests and Controls}
+\label{sec:nulltests}
+
+A rigorous experiment must include null tests that would produce \emph{no effect} if the claimed phenomenon is real. The following suite is mandatory.
+
+\subsection{Geometry Controls}
+
+\begin{enumerate}
+    \item \textbf{Non-$\phival$ spiral}: Replace $\phival$ with an arbitrary constant (e.g., 1.5) in~\eqref{eq:radius}.
+    \item \textbf{Randomized layout}: Coils at random positions (not spiral).
+    \item \textbf{Scrambled phase}: Same geometry but random phase assignments $\psi_i$.
+\end{enumerate}
+
+\textbf{Prediction:} No effect should appear with control geometries.
+
+\subsection{Scheduling Controls}
+
+\begin{enumerate}
+    \item \textbf{Off-resonance}: Drive at frequencies not in the resonance map.
+    \item \textbf{Random schedule}: Same duty cycle and power but randomized timing.
+    \item \textbf{Phase reversal}: Reverse the drive direction.
+\end{enumerate}
+
+\textbf{Prediction:} Off-resonance and random schedules show no effect; phase reversal shows sign flip.
+
+\subsection{Power/Thermal Controls}
+
+\begin{enumerate}
+    \item \textbf{Matched heating}: Dissipate the same power through resistors (no rotating field).
+    \item \textbf{Thermal gradient injection}: Artificially create thermal gradients to map buoyancy coupling.
+\end{enumerate}
+
+\textbf{Prediction:} Matched heating produces no force signal.
+
+\subsection{Vibration Controls}
+
+\begin{enumerate}
+    \item \textbf{External shaker}: Inject known vibration and measure force channel response.
+    \item \textbf{Correlation analysis}: Compute coherence between accelerometer and force channels.
+\end{enumerate}
+
+\textbf{Prediction:} If vibration coupling is controlled, coherence should be low during actual runs.
+
+\subsection{EMI Coupling Controls}
+
+\begin{enumerate}
+    \item \textbf{Decoupled drive}: Run drivers into dummy loads (no field generated).
+    \item \textbf{EMI injection}: Inject known EMI patterns and measure sensor response.
+\end{enumerate}
+
+\textbf{Prediction:} Decoupled drive produces no force signal.
+
+% ============================================================================
+% 6. EXPERIMENTAL PROCEDURES
+% ============================================================================
+\section{Experimental Procedures}
+\label{sec:procedures}
+
+\subsection{Pre-Flight Checklist}
+
+Before each experimental session:
+\begin{enumerate}
+    \item Mechanical inspection: shielding, mounting, connections.
+    \item Sensor calibration verification.
+    \item Baseline drift measurement (no drive, $\geq 10$ minutes).
+    \item Clock synchronization verification.
+\end{enumerate}
+
+\subsection{Sweep Protocol}
+
+\begin{enumerate}
+    \item \textbf{Coarse sweep}: Step through resonance-map frequencies; dwell 10 s each; log sensor peaks.
+    \item \textbf{Fine sweep}: 0.1\% frequency steps around identified peaks; dwell 30 s each.
+    \item \textbf{Replication}: Repeat on different days; rotate apparatus 90°; vary ambient temperature.
+\end{enumerate}
+
+\subsection{Data Products}
+
+Every run must produce:
+\begin{enumerate}
+    \item Config snapshot and schedule ID.
+    \item Raw sensor streams (full rate).
+    \item Processed summary: spectra, coherence plots, drift metrics.
+    \item Null-test comparison plots.
+\end{enumerate}
+
+% ============================================================================
+% 7. DATA ANALYSIS
+% ============================================================================
+\section{Data Analysis Pipeline}
+\label{sec:analysis}
+
+\subsection{Signal Processing}
+
+\begin{enumerate}
+    \item \textbf{Spectral analysis}: FFT of force signal; identify peaks at drive harmonics.
+    \item \textbf{Lock-in detection}: Demodulate force signal at drive frequency.
+    \item \textbf{Coherence}: Compute coherence between drive and force channels.
+\end{enumerate}
+
+\subsection{Uncertainty Quantification}
+
+Error bars combine:
+\begin{enumerate}
+    \item Calibration uncertainty (from calibration curve).
+    \item Drift uncertainty (from baseline measurements).
+    \item Statistical uncertainty (from repeated measurements).
+\end{enumerate}
+
+\textbf{Multiple-hypothesis correction:} When scanning multiple frequencies, apply Bonferroni or Benjamini-Hochberg correction to avoid false discovery.
+
+\subsection{Acceptance Criteria}
+
+\textbf{Pre-registered thresholds:}
+\begin{enumerate}
+    \item Signal-to-noise ratio $> 5$ at predicted frequency.
+    \item Null-test comparison: control runs show SNR $< 2$.
+    \item Minimum replication: $\geq 3$ independent runs on different days.
+    \item Artifact rejection: EMI, vibration, and thermal coupling all below detection threshold.
+\end{enumerate}
+
+% ============================================================================
+% 8. SAFETY
+% ============================================================================
+\section{Safety Considerations}
+\label{sec:safety}
+
+\subsection{Electrical Safety}
+
+\begin{itemize}
+    \item High-voltage and high-current hazards from driver stage.
+    \item Proper insulation, interlocks, and emergency stop.
+    \item No exposed conductors during operation.
+\end{itemize}
+
+\subsection{Vacuum Safety}
+
+If operating in a vacuum chamber:
+\begin{itemize}
+    \item Rated viewport and feedthrough seals.
+    \item Controlled pump-down and vent procedures.
+    \item No personnel in exclusion zone during operation.
+\end{itemize}
+
+\subsection{Thermal Safety}
+
+\begin{itemize}
+    \item Overtemperature interlocks on all coils.
+    \item Thermal runaway detection with automatic shutdown.
+\end{itemize}
+
+\subsection{Governor Integration}
+
+Before any high-power testing:
+\begin{itemize}
+    \item Safety governor (NM-2) must be integrated and tested.
+    \item Governor must have independent power and control path.
+    \item Governor detune function must be verified to stop resonance within 1 cycle.
+\end{itemize}
+
+% ============================================================================
+% 9. CONCLUSION
+% ============================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+This paper has presented a complete engineering and metrology specification for solid-state virtual rotor experiments. The key contributions are:
+
+\begin{enumerate}
+    \item Mathematical formalization of the virtual rotor geometry with $\phival$-spiral positioning and 8-tick phase assignment.
+    \item Control surface specifications for schedule generation, resonance locking, and safety integration.
+    \item A comprehensive metrology stack covering force, thermal, EMI, and vibration measurements.
+    \item A mandatory null-test suite for artifact rejection.
+    \item Pre-registered acceptance criteria and uncertainty quantification methods.
+\end{enumerate}
+
+This framework is designed to produce publication-grade results regardless of whether the outcome is positive or null. The emphasis on metrology, null tests, and pre-registration ensures that any claimed effect will survive skeptical peer review.
+
+% ============================================================================
+% APPENDICES
+% ============================================================================
+\appendix
+
+\section{Interface Specifications}
+\label{app:interface}
+
+\subsection{Telemetry Schema (JSON)}
+
+\begin{verbatim}
+{
+  "run_id": "NM1-2026-02-01-001",
+  "timestamp_utc": "2026-02-01T12:00:00Z",
+  "config": {
+    "n_coils": 8,
+    "r0_mm": 50,
+    "kappa": 1,
+    "f_drive_hz": 1000,
+    "tau_pulse_ns": 1000
+  },
+  "sensors": {
+    "force_mN": [...],
+    "temp_C": [...],
+    "accel_g": [...],
+    "emi_dBm": [...]
+  },
+  "checksum_sha256": "..."
+}
+\end{verbatim}
+
+\section{Calibration Worksheets}
+\label{app:calibration}
+
+\subsection{Load Cell Calibration}
+
+\begin{enumerate}
+    \item Zero: Record output with no load for 60 s.
+    \item Span: Apply 5 calibration masses; record output for 30 s each.
+    \item Fit: Linear regression to obtain sensitivity (mN/V).
+    \item Residual check: All calibration points within $\pm 0.5\%$.
+\end{enumerate}
+
+\subsection{Thermistor Calibration}
+
+\begin{enumerate}
+    \item Ice bath (0°C) and boiling water (100°C) reference points.
+    \item Additional points at 25°C and 50°C.
+    \item Steinhart-Hart fit for each thermistor.
+\end{enumerate}
+
+\section{Example Plot Templates}
+\label{app:plots}
+
+\subsection{Sweep Curve Template}
+
+\begin{verbatim}
+X-axis: Frequency (Hz)
+Y-axis: Force signal (mN, lock-in amplitude)
+Error bars: 1-sigma from 3 replications
+Vertical lines: Predicted resonance frequencies
+\end{verbatim}
+
+\subsection{Null Test Comparison Template}
+
+\begin{verbatim}
+Bar chart: 
+  - "Resonant drive" (expected signal)
+  - "Off-resonance" (null)
+  - "Matched heating" (null)
+  - "Random schedule" (null)
+Error bars: 1-sigma
+Threshold line: Detection limit
+\end{verbatim}
+
+% ============================================================================
+% REFERENCES
+% ============================================================================
+\begin{thebibliography}{9}
+
+\bibitem{commutation}
+T.~A.~Lipo,
+\textit{Introduction to AC Machine Design}.
+Wiley, 2017.
+
+\bibitem{emi}
+H.~W.~Ott,
+\textit{Electromagnetic Compatibility Engineering}.
+Wiley, 2009.
+
+\bibitem{metrology}
+BIPM,
+\textit{Guide to the Expression of Uncertainty in Measurement (GUM)}.
+JCGM 100:2008, 2008.
+
+\bibitem{nulltests}
+E.~Fischbach and C.~Talmadge,
+\textit{The Search for Non-Newtonian Gravity}.
+Springer, 1999.
+
+\end{thebibliography}
+
+\end{document}

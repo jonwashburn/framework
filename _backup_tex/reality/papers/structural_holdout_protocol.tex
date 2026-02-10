@@ -1,0 +1,64 @@
+\section{Non-circular calibration / hold-out protocol for the structural mass model}
+\label{sec:holdout-protocol}
+
+\paragraph{Why this section exists.}
+Anil's Section~4 critique is methodological: if we ``test'' a proposed correction term by
+rearranging the same measured mass we are testing, the exercise is circular.
+This section states (and runs) a strict non-circular procedure for the \emph{structural} part of the mass model.
+
+\paragraph{Important clarification (what this is \emph{not}).}
+This hold-out test is \emph{not} the SM single-anchor identity paper (which is purely RG-side).
+It is a separate check for the RS \emph{structural ladder} model, whose parameters include sector-global offsets.
+
+\subsection*{Protocol}
+We work sector-by-sector (Lepton / UpQuark / DownQuark / Electroweak).
+Within each sector we assume the structural-only ladder form
+\[
+  m_{\mathrm{struct}}(i)
+  =
+  2^{B(\mathrm{sector})}\,E_{\mathrm{coh}}\,\varphi^{r_0(\mathrm{sector})}\,\varphi^{r_i-8},
+\]
+where:
+\begin{itemize}
+  \item \(B(\mathrm{sector})\) is a fixed sector binary weight,
+  \item \(E_{\mathrm{coh}}\) and \(\varphi\) are global constants,
+  \item \(r_i\) is the rung assigned to the species,
+  \item \(r_0(\mathrm{sector})\) is a \emph{single} sector offset (one value per sector).
+\end{itemize}
+
+\paragraph{Hold-out rule.}
+To avoid circularity, a species' measured mass is never used in its own prediction.
+Concretely, for each sector we perform \textbf{leave-one-out} cross-validation:
+\begin{itemize}
+  \item pick one species to hold out,
+  \item fit the sector offset \(r_0(\mathrm{sector})\) using only the \emph{other} species in that sector,
+  \item freeze \(r_0(\mathrm{sector})\) and predict the held-out species,
+  \item record prediction error.
+\end{itemize}
+
+\paragraph{Implementation (reproducible).}
+This protocol is implemented by:
+\begin{itemize}
+  \item \texttt{tools/holdout\_structural\_masses.py}
+  \item input data: \texttt{data/masses.json}
+  \item outputs:
+    \texttt{out/masses/structural\_holdout.csv} and
+    \texttt{out/masses/structural\_holdout\_table.tex}.
+\end{itemize}
+
+\subsection*{Results (structural-only hold-out)}
+\paragraph{What the table means.}
+Each row is an \emph{out-of-sample} prediction: the sector offset \(r_0\) was fit from other species,
+then used to predict the held-out one.
+If the structural-only model were already complete, these errors would be small.
+
+\input{out/masses/structural_holdout_table.tex}
+
+\paragraph{Interpretation.}
+The errors are not uniformly small under this strict protocol, which is exactly the point:
+\textbf{a sector-wide ladder with one offset is not, by itself, sufficient for high-precision prediction
+across all species.}
+This is compatible with the broader framework, which includes additional (theory-side) residue structure
+and/or transport corrections; but it makes the methodology explicit and prevents accidental self-fitting.
+
+

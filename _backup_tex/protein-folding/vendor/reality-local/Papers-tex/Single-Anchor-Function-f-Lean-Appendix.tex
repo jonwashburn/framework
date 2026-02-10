@@ -1,0 +1,378 @@
+\documentclass[11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs}
+\usepackage{geometry}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\geometry{margin=1in}
+
+\definecolor{codebg}{RGB}{248,248,248}
+\definecolor{codefg}{RGB}{25,25,25}
+
+\lstset{
+  basicstyle=\ttfamily\small\color{codefg},
+  backgroundcolor=\color{codebg},
+  frame=single,
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  tabsize=2
+}
+
+% --- Notation ---
+\newcommand{\phig}{\varphi} % golden ratio
+\newcommand{\lnphi}{\ln\phig}
+\newcommand{\gap}{\mathcal{F}}
+
+\title{Recognition Meta-Theory and the Single-Anchor Mass Residue Function \texorpdfstring{$f$}{f}:\\
+Lean-Backed Definitions, Evaluation Steps, and Rounding/Consistency Notes}
+\author{Internal technical appendix (workspace: \texttt{reality})}
+\date{December 2025}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note is a standalone, Lean-backed appendix for collaborators working on the particle-mass ``single-anchor'' program in this repository. It does two things:
+(i) extracts the recognition ``meta-theory'' spine (Meta-Principle $\Rightarrow$ Recognition $\Rightarrow$ Ledger $\Rightarrow$ Cost $\Rightarrow \phig$ scaling) as it is recorded in \texttt{Source-Super.txt}, and maps it to the corresponding Lean modules;
+(ii) presents the exact Lean definitions of the mass-residue function~$f$ (and its closed-form ``display'' $\gap(Z)$), then walks through explicit numerical evaluation steps showing why hand computations can disagree with rounding utilities when precision/rounding order differs.
+
+This appendix is intentionally explicit about what is \emph{proved} in Lean versus what is currently stated as an \emph{axiom}/phenomenological assumption.
+\end{abstract}
+
+\tableofcontents
+
+\section{Context: what this appendix is for}
+
+In the single-anchor phenomenology, one defines an \emph{integrated mass-running residue} $f_i(\mu_\star,m_i)$ and observes (empirically, under declared kernel/policy choices) that at a universal anchor scale~$\mu_\star$ it collapses to a closed form
+\[
+f_i(\mu_\star,m_i)\;=\;\gap(Z_i)
+\qquad\text{where}\qquad
+\gap(Z)\;:=\;\frac{\ln(1 + Z/\phig)}{\ln \phig}.
+\]
+The most common ``inconsistency'' reports in practice are not conceptual; they are numerical:
+different implementations (or by-hand computations) can disagree if they (a) truncate $\phig$, (b) round intermediate values, or (c) use floating-point logs/base-change differently.
+
+This document points to the exact Lean definitions and provides a reproducible evaluation procedure aligned with the repository.
+
+\section{Recognition meta-theory: spine and Lean anchors}
+
+\subsection{Source document summary (machine-ingestion format)}
+
+The repository's condensed ``recognition meta-theory'' is recorded in \texttt{Source-Super.txt} as a structured chain and module map. The key architectural claim (as recorded) is a forcing chain:
+\[
+\text{Meta-Principle (MP)} \Rightarrow \text{Recognition necessity} \Rightarrow \text{Ledger necessity}
+\Rightarrow \text{Cost uniqueness} \Rightarrow \phig \Rightarrow \text{derived structure/predictions}.
+\]
+See in particular the sections labeled \texttt{@MP\_JUSTIFICATION}, \texttt{@RECOGNITION\_OPERATOR}, \texttt{@COST}, \texttt{@LEDGER}, and the particle-mass anchor summary under \texttt{@SM\_MASSES} and \texttt{@SPECTRA}.
+
+\subsection{Lean modules that implement the spine}
+
+For collaborators, the most useful operational view is a map from the narrative objects to Lean names and file paths.
+Table~\ref{tab:spine} gives the minimum set of modules you typically need open when working on the mass residue function~$f$.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+Concept & Lean module (import path) & Notes \\
+\midrule
+Meta-Principle (MP) & \texttt{IndisputableMonolith/Recognition.lean} & \texttt{Recognition.mp\_holds} \\
+Recognition necessity & \texttt{Verification/Necessity/RecognitionNecessity.lean} & Observable $\Rightarrow$ recognition scaffolding \\
+Ledger necessity & \texttt{Verification/Necessity/LedgerNecessity.lean} & balance/ledger forcing (some axioms remain) \\
+$\phig$ constant & \texttt{IndisputableMonolith/Constants.lean} & \texttt{Constants.phi := (1 + sqrt 5)/2} \\
+Single-anchor display $\gap(Z)$ & \texttt{IndisputableMonolith/RSBridge/Anchor.lean} & \texttt{RSBridge.gap} definition \\
+Residue interface $f_i(\mu)$ & \texttt{Physics/AnchorPolicy.lean} & \texttt{f\_residue} is an axiom; display identity is an axiom \\
+Electron mass bounds & \texttt{Physics/ElectronMass/Necessity.lean} & interval-style inequalities for $\gap(1332)$ etc. \\
+\bottomrule
+\end{tabular}
+\caption{Recognition meta-theory spine: key Lean entry points.}
+\label{tab:spine}
+\end{table}
+
+\paragraph{Audit note.}
+\texttt{Source-Super.txt} includes an explicit audit section that distinguishes proved components from scaffolds and from axioms. In particular, the physics-facing residue laws at the anchor are intentionally isolated as axioms in Lean (see \S\ref{sec:lean-f}).
+
+\section{The function \texorpdfstring{$f$}{f} in the Lean mass framework}
+\label{sec:lean-f}
+
+\subsection{The ``display'' function \texorpdfstring{$\gap(Z)$}{F(Z)} is definitional}
+
+In the Lean ``bridge'' layer, the closed form is a \emph{definition} (not a derived theorem):
+
+\begin{lstlisting}
+-- file: IndisputableMonolith/RSBridge/Anchor.lean
+noncomputable def gap (Z : ℤ) : ℝ :=
+  (Real.log (1 + (Z : ℝ) / (Constants.phi))) / (Real.log (Constants.phi))
+\end{lstlisting}
+
+Mathematically, this is exactly
+\[
+\gap(Z)\;=\;\frac{\ln\!\bigl(1 + Z/\phig\bigr)}{\ln\phig},
+\qquad
+\text{with}\quad
+\phig := \frac{1+\sqrt{5}}{2}.
+\]
+
+\subsection{The residue function \texorpdfstring{$f_i(\mu)$}{f} is an explicit interface (axiom)}
+
+The physics module \texttt{IndisputableMonolith/Physics/AnchorPolicy.lean} introduces an abstract residue function,
+intended to represent the Standard-Model integrated mass anomalous-dimension residue:
+
+\begin{lstlisting}
+-- file: IndisputableMonolith/Physics/AnchorPolicy.lean
+axiom f_residue : (f : Fermion) → (mu : ℝ) → ℝ
+\end{lstlisting}
+
+At the anchor, the phenomenological identity is stated as an axiom:
+
+\begin{lstlisting}
+-- file: IndisputableMonolith/Physics/AnchorPolicy.lean
+axiom display_identity_at_anchor :
+  ∀ (A : AnchorSpec), A.equalWeight →
+    ∀ (f : Fermion), f_residue f A.muStar = F (ZOf f)
+\end{lstlisting}
+
+Here \texttt{F} is defined as an alias of \texttt{RSBridge.gap}. This is the ``function $f$'' that most mass-work discussions refer to:
+\[
+f_i(\mu)\;\;\text{(RG residue)}\qquad\text{and}\qquad
+f_i(\mu_\star)\stackrel{\text{(phen.)}}{=}\gap(Z_i).
+\]
+
+\subsection{Z-map and canonical values}
+
+In \texttt{IndisputableMonolith/RSBridge/Anchor.lean}, species are mapped to an integer \texttt{ZOf} and then to $\gap(Z)$.
+For charged leptons, the resulting canonical value is
+\[
+Z_e = (6Q)^2 + (6Q)^4 = (-6)^2 + (-6)^4 = 36 + 1296 = 1332.
+\]
+The same file also contains a rung map \texttt{rung : Fermion → ℤ} which is used in the anchor-mass expression.
+
+\section{Explicit evaluation of \texorpdfstring{$\gap(Z)$}{F(Z)} (all steps shown)}
+\label{sec:explicit-eval}
+
+\subsection{Definition and a numerically stable evaluation order}
+
+To evaluate
+\[
+\gap(Z)=\frac{\ln(1+Z/\phig)}{\ln\phig},
+\]
+use the following order (this is what the repository's high-precision audit scripts effectively implement):
+\begin{enumerate}
+  \item compute $\phig=\frac{1+\sqrt{5}}{2}$ at \emph{high precision};
+  \item compute $u := Z/\phig$ at high precision;
+  \item compute $a := 1+u$ at high precision;
+  \item compute $n := \ln(a)$ and $d := \ln(\phig)$ (natural logs);
+  \item return $\gap(Z)=n/d$;
+  \item apply rounding \emph{only at the end} (for reporting).
+\end{enumerate}
+
+\subsection{Numerical reference values (high precision)}
+
+Using a 80-digit decimal evaluation (see \texttt{tools/audit\_shift.py} and the computation used to generate this table), the canonical bands are:
+\[
+\gap(24)\approx 5.7398521550,\quad
+\gap(276)\approx 10.6918286240,\quad
+\gap(1332)\approx 13.9531879297.
+\]
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}rr@{}}
+\toprule
+$Z$ & $\gap(Z)=\ln(1+Z/\phig)/\ln\phig$ \\
+\midrule
+24   & 5.73985215504422730153513080293 \\
+276  & 10.69182862404125239444951794911 \\
+1332 & 13.95318792974569079790645563973 \\
+\bottomrule
+\end{tabular}
+\caption{High-precision reference values for the three canonical $Z$ bands.}
+\label{tab:gap-values}
+\end{table}
+
+\subsection{Worked example: $Z=1332$ (charged leptons)}
+
+For charged leptons, $Z=1332$. The explicit steps are:
+\begin{align*}
+\phig &= \frac{1+\sqrt{5}}{2} \approx 1.6180339887498948482, \\
+u &= \frac{1332}{\phig} \approx 823.221814\ldots, \\
+a &= 1+u \approx 824.221814\ldots, \\
+n &= \ln(a) \approx 6.71444\ldots, \\
+d &= \ln(\phig) \approx 0.481211825059603447\ldots, \\
+\gap(1332) &= n/d \approx 13.9531879297456907979\ldots.
+\end{align*}
+
+This is the numerical value your colleague should recover when evaluating the closed form
+\[
+f_i(\mu_\star)\stackrel{\text{(phen.)}}{=}\gap(1332).
+\]
+
+\subsection{Worked example: empirical electron residue and the implied shift}
+
+Many ``by-hand vs tool'' mismatches arise when combining (i) the closed-form display $\gap(1332)$ with
+(ii) an independently computed empirical residue from a measured electron mass, and then subtracting.
+In the Lean development, these objects appear (schematically) as:
+\begin{itemize}
+  \item the structural mass \texttt{electron\_structural\_mass} (see \texttt{Physics/ElectronMass/Defs.lean}),
+  \item the empirical residue \texttt{electron\_residue := log\_phi(m\_obs/m\_struct)},
+  \item the shift used in the electron formula (bounded in \texttt{Physics/ElectronMass/Necessity.lean}).
+\end{itemize}
+
+\paragraph{Step 1: structural mass.}
+The Lean theorem \texttt{electron\_structural\_mass\_forced} in \texttt{Physics/ElectronMass/Defs.lean} states the exact simplification
+\[
+m_{\mathrm{struct}} \;=\; 2^{-22}\,\phig^{51}.
+\]
+A high-precision evaluation gives
+\[
+m_{\mathrm{struct}} \approx 10856.997757911682\quad\text{(dimensionless MeV-scale factor in the repo's conventions).}
+\]
+
+\paragraph{Step 2: empirical residue from the measured electron mass.}
+Using the reference $m_e = 0.510998950\,\mathrm{MeV}$ (as in \texttt{Physics/ElectronMass/Defs.lean}), define
+\[
+\Delta_{\mathrm{emp}} \;:=\; \log_{\phig}\!\Bigl(\frac{m_e}{m_{\mathrm{struct}}}\Bigr)
+\;=\; \frac{\ln(m_e/m_{\mathrm{struct}})}{\ln\phig}.
+\]
+Evaluated at high precision, this yields
+\[
+\Delta_{\mathrm{emp}} \approx -20.7059600999245948880\ldots
+\]
+
+\paragraph{Step 3: implied shift.}
+With $\gap(1332)\approx 13.9531879297456907979\ldots$ from above, the implied shift is
+\[
+\delta_{\mathrm{emp}} \;:=\; \gap(1332) - \Delta_{\mathrm{emp}}
+\approx 34.6591480296702856859\ldots
+\]
+This value is what \texttt{tools/audit\_shift.py} prints as ``Missing Shift'', and it is consistent with the
+Lean-side interval bounds on the refined shift in \texttt{Physics/ElectronMass/Necessity.lean}.
+
+\subsection{Why truncating/rounding early breaks the $10^{-6}$ comparisons}
+
+The single-anchor paper checks an identity at the $10^{-6}$ level. If you truncate $\phig$ too aggressively, the error in $\gap(Z)$ can exceed $10^{-6}$.
+
+\paragraph{Example.}
+If you replace $\phig$ by $1.618033$ (6 decimal digits), then for $Z=1332$ the resulting $\gap(1332)$ shifts by about $1.9\times 10^{-5}$, which is \emph{an order of magnitude larger} than $10^{-6}$.
+If you instead use $1.618034$, the shift is about $2.2\times 10^{-7}$ (small enough for $10^{-6}$ checks but still non-negligible if you compare many digits).
+
+\section{The empirical residue \texorpdfstring{$f^{\mathrm{exp}}$}{f\_exp}: RG transport definition}
+
+Your colleague correctly points out that the residue $f^{\mathrm{exp}}$ is not merely a log-ratio by definition; it is a physical quantity defined by the Renormalization Group (RG) flow between the physical mass scale and the anchor $\mu_\star$.
+
+\subsection{Definition via anomalous dimension integral}
+
+Let $\gamma_m(\mu) = -\frac{d \ln m}{d \ln \mu}$ be the mass anomalous dimension (depending on couplings $\alpha_s(\mu), \alpha(\mu)$, etc.).
+The running mass evolves as:
+\[
+m(\mu) = m(\mu_0) \exp\left( - \int_{\ln \mu_0}^{\ln \mu} \gamma_m(\mu') \, d\ln\mu' \right).
+\]
+We define the \emph{integrated residue} at the anchor $\mu_\star$ relative to the physical mass $m_{\mathrm{phys}}$ (e.g., pole mass or $\overline{\mathrm{MS}}$ mass at a scale $\mu_{\mathrm{phys}}$) as:
+\[
+f_i(\mu_\star) \;:=\; \frac{1}{\lambda} \int_{\ln \mu_\star}^{\ln m_{\mathrm{phys}}} \gamma_i(\mu) \, d\ln\mu,
+\]
+where $\lambda = \ln\varphi$.
+
+\subsection{Relation to the mass formula}
+
+The structural mass $m_{\mathrm{struct}}$ is defined at the anchor $\mu_\star$. The mass formula posits:
+\[
+m(\mu_\star) \;=\; m_{\mathrm{struct}}.
+\]
+However, the physical mass $m_{\mathrm{phys}}$ relates to $m(\mu_\star)$ via the RG flow:
+\[
+m(\mu_\star) \;=\; m_{\mathrm{phys}} \exp\left( - \int_{\ln m_{\mathrm{phys}}}^{\ln \mu_\star} \gamma_i \, d\ln\mu \right)
+\;=\; m_{\mathrm{phys}} \exp\left( \int_{\ln \mu_\star}^{\ln m_{\mathrm{phys}}} \gamma_i \, d\ln\mu \right).
+\]
+Substituting the definition of $f_i$:
+\[
+m(\mu_\star) \;=\; m_{\mathrm{phys}} \exp( \lambda f_i ) \;=\; m_{\mathrm{phys}} \varphi^{f_i}.
+\]
+If the theory holds ($m(\mu_\star) \approx m_{\mathrm{struct}}$), then:
+\[
+m_{\mathrm{struct}} \approx m_{\mathrm{phys}} \varphi^{f_i} \implies m_{\mathrm{phys}} \approx m_{\mathrm{struct}} \varphi^{-f_i}.
+\]
+(Note: sign conventions on $f$ may vary; usually $m = m_{\mathrm{struct}} \varphi^{\delta}$, so $\delta = -f$ or similar. In this repo, \texttt{residue\_delta} corresponds to the exponent required to match).
+
+\subsection{Repository status: implicit transport}
+
+Historically, this repository did not contain a Lean-native implementation of the full QCD(4L)+QED(2L) RG kernels used in the Single-Anchor phenomenology paper, so we treated the transported quantities as external inputs. Concretely:
+\begin{itemize}
+  \item The values in \texttt{data/masses.json} (e.g., \texttt{mass\_ref}) are effectively treated as the target physical masses.
+  \item The script \texttt{tools/audit\_masses.py} calculates the \emph{required} residue $\delta = \log_\varphi(m_{\mathrm{ref}} / m_{\mathrm{struct}})$ that would satisfy the relation.
+  \item The \emph{physics claim} is that this required $\delta$ matches the geometric $\gap(Z)$ (and the integral of $\gamma$).
+\end{itemize}
+For a rigorous check, one must perform the transport/integral using a faithful SM evaluator (e.g.\ RunDec / CRunDec) and compare.
+
+\paragraph{New in this repo: explicit ``literal RG'' evaluator.}
+To directly address collaborator concerns, we added \texttt{tools/eval\_f\_exp\_rg.py}, a minimal, dependency-free script that integrates the \emph{paper-text} QCD/QED kernels (as written in Appendix~B of \texttt{Papers-tex/Masses-Paper1-Single-Anchor-updated.txt}) and reports the resulting $f_i$ values.
+
+\subsection{Sanity check: the literal SM $\gamma_m$ integral does \emph{not} yield $\gap(Z)$}
+
+If one interprets the paper’s definition
+\[
+f_i(\mu_\star,m_i)=\frac{1}{\ln\varphi}\int_{\ln\mu_\star}^{\ln m_i}\gamma_i(\mu)\,d\ln\mu
+\]
+literally with $\gamma_i$ given by the standard $\overline{\mathrm{MS}}$ QCD(4L) and QED(2L) mass anomalous dimensions (Appendix~B), then the integral is numerically \emph{small}:
+for representative endpoints we find values on the order of $10^{-2}$--$10^{-1}$ for charged leptons and $\sim 10^{-1}$--$10^{0}$ for quarks, not $5$--$14$.
+
+For example, running the script
+\[
+\texttt{python3 tools/eval\_f\_exp\_rg.py --show-all}
+\]
+prints (QED $\alpha$ frozen at $M_Z$, matching the paper’s baseline policy):
+\[
+f_e \approx 4.94\times 10^{-2}\quad\text{vs}\quad \gap(1332)\approx 13.953,
+\]
+and similarly $f_u,f_d\approx 0.48$ vs $\gap(276)\approx 10.692$ and $\gap(24)\approx 5.740$.
+This reproduces the collaborator’s critique: under the literal SM-$\gamma_m$ interpretation, $f_i^{\mathrm{exp}}$ does \emph{not} land on the $\gap(Z)$ bands.
+
+\paragraph{Conclusion.}
+Either (i) the phenomenology paper’s $f_i$ is \emph{not} the literal running-mass integral of the standard SM anomalous dimension (despite notation), or (ii) an additional normalization/definition step is missing from the writeup.
+We capture the reproduction and discussion in \texttt{docs/functionf\_rg\_check.md}.
+
+\section{Reproducibility: reference computations in this repo}
+
+\subsection{Recommended: high-precision reference for debugging}
+
+If your colleague is diagnosing discrepancies, start with the decimal-precision script:
+\begin{itemize}
+  \item \texttt{tools/audit\_shift.py}: prints $\phig$, structural mass, empirical residue, $\gap(1332)$, and the implied shift.
+  \item \texttt{tools/eval\_function\_f.py}: prints all intermediate steps for $\gap(Z)$ and can reproduce rounding/truncation mismatches (e.g.\ \texttt{--phi-trunc 6}).
+  \item \texttt{tools/eval\_f\_exp\_rg.py}: integrates the paper-text QCD/QED RG kernels and reports the resulting $f_i^{\mathrm{exp}}$ (useful for auditing the colleague’s objection).
+\end{itemize}
+This script computes $\phig$ as $(1+\sqrt{5})/2$ in \texttt{Decimal} at 50-digit precision and avoids premature rounding.
+
+\subsection{Workflow alignment and rounding policy for papers}
+
+\texttt{Source-Super.txt} records a paper policy line (units/constants/rounding) stating that rounding should match measurement significant figures for presentation. Operationally:
+\begin{itemize}
+  \item use high precision internally for computations and checks;
+  \item round \emph{only when formatting} values for tables/plots;
+  \item if comparing to a $10^{-6}$ tolerance, do not truncate $\phig$ to fewer than $\sim 9$--10 decimal digits.
+\end{itemize}
+
+\appendix
+\section{Lean symbol crib sheet for mass-residue work}
+
+\begin{tabular}{@{}ll@{}}
+\toprule
+Mathematical object & Lean symbol \\
+\midrule
+$\phig=(1+\sqrt{5})/2$ & \texttt{IndisputableMonolith.Constants.phi} \\
+$\gap(Z)=\ln(1+Z/\phig)/\ln\phig$ & \texttt{IndisputableMonolith.RSBridge.gap} \\
+species-to-$Z$ map & \texttt{IndisputableMonolith.RSBridge.ZOf} \\
+rung map $r_i$ & \texttt{IndisputableMonolith.RSBridge.rung} \\
+anchor mass (bridge) & \texttt{IndisputableMonolith.RSBridge.massAtAnchor} \\
+abstract RG residue $f_i(\mu)$ & \texttt{IndisputableMonolith.Physics.AnchorPolicy.f\_residue} \\
+\bottomrule
+\end{tabular}
+
+\end{document}

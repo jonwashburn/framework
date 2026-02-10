@@ -1,0 +1,10 @@
+import Mathlib
+open Complex
+#check Complex.conj_re
+#check Complex.conj_im
+#check Complex.add_conj
+#check Complex.add_conj
+#check Complex.conj_add
+#check Complex.re_add_im
+#check Complex.re_add
+#check Complex.re_star

@@ -1,0 +1,229 @@
+\documentclass[11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{hyperref}
+
+% Local operator definitions used in the manuscript
+\DeclareMathOperator{\Mass}{Mass}
+
+\geometry{margin=1in}
+\hypersetup{hidelinks}
+
+\title{\bfseries Referee Patch Report (Amir v1)\\
+\large Critical blockers raised by a hostile referee, and the concrete fixes applied}
+\author{Auto-generated in \texttt{docs/referee/} from the Cursor session}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section*{Scope}
+This note summarizes two \emph{critical} referee blockers previously identified in \texttt{Hodge\_REFEREE\_Amir-v1.tex}, and documents the corresponding edits that were applied:
+\begin{itemize}
+\item the impossible coverage statement in Proposition \texttt{prop:dense-holo};
+\item the per-cube mass matching step in Theorem \texttt{thm:global-cohom} (and its local precursor \texttt{lem:local-bary}), including the quantifier/scaling issue around fixed \(m\).
+\item \textbf{hygiene/readability fixes} prompted by the AI referee notes: removal of stray duplicate proof blocks and addition of a brief convention note for “algebraic class”.
+\item \textbf{analytic/auxiliary fixes}: (i) the LICD ``classical SYR'' gluing step was corrected to use flat-norm smallness (not a false global boundary-mass bound); (ii) a scaling typo was corrected in the Bergman-kernel jet-control lemma used in the holomorphic manufacturing package.
+\end{itemize}
+This report is \emph{not} a proof audit of the full manuscript; it is a surgical “what changed and why” memo.
+
+\section{Blocker 1: Proposition \texttt{prop:dense-holo} (finite family covering every point)}
+\subsection*{Referee objection}
+The manuscript stated (paraphrasing) that for a compact set \(K\subset X\) and \(\varepsilon>0\), there exists a \emph{finite} family of proper calibrated submanifolds \(Y_1,\dots,Y_M\) such that for \emph{every} \(x\in K\) and \emph{every} calibrated plane \(\Pi\subset T_xX\), one can find \(j\) with \(x\in Y_j\) and \(T_xY_j\) \(\varepsilon\)-close to \(\Pi\).
+
+For \(p\ge 1\) and \(K\) with nonempty interior, a finite union of proper submanifolds cannot contain all points of \(K\). Hence the original formulation is false as stated (even if morally intended as a “finite net at centers” statement).
+
+\subsection*{Correction applied}
+The statement was replaced by the correct finite-net formulation:
+\begin{itemize}
+\item choose finitely many centers \(x_\alpha\) covering \(K\) at scale \(\varepsilon\);
+\item at each center \(x_\alpha\), realize a finite \(\varepsilon/2\)-net of calibrated planes by calibrated complete intersections \(Y_{\alpha,j}\) through \(x_\alpha\);
+\item compare an arbitrary \(x\in K\) to a nearby center via a fixed identification of tangent spaces in a coordinate ball (e.g.\ chart differential or parallel transport).
+\end{itemize}
+An explicit “Referee note” was added directly under the proposition explaining why the stronger global coverage formulation cannot hold for a finite family.
+
+\subsection*{Why this resolves the blocker}
+The revised statement matches what the proof actually constructs and removes an impossible topological/dimension claim. It also aligns with later discretization logic: directions are approximated at finitely many sample points and propagated by continuity estimates.
+
+\section{Blocker 2: Theorem \texttt{thm:global-cohom} (per-cube mass matching / quantifier swap)}
+\subsection*{Referee objection}
+In the per-cube local quantization step, the manuscript previously asserted:
+\begin{enumerate}
+\item “any affine calibrated sheet with tangent plane \(P_{Q,j}\) has the same \(\psi\)-mass in \(Q\), call it \(A_{Q,j}\)” (translation-independence in a cube);
+\item choose integers \(N_{Q,j}\) so that \(\sum_j N_{Q,j}A_{Q,j}\approx M_Q\), where \(M_Q:=m\int_Q\beta\wedge\psi\);
+\item justify existence by “\(m\) may be taken arbitrarily large.”
+\end{enumerate}
+The referee objection had two parts:
+\begin{itemize}
+\item The “common sheet mass” assertion is false for generic orientations (even in \(\mathbb R^2\), line--square intersection length depends on offset).
+\item A scaling obstruction: if \(A_{Q,j}\sim h^{k}\) with \(k=2n-2p\) and \(M_Q\sim m h^{2n}\), then \(M_Q/A_{Q,j}\sim m h^{2p}\to 0\) as \(h\to 0\) for fixed \(m\). Thus integer matching fails on sufficiently fine meshes unless one lets \(m\to\infty\), contradicting the fixed-\(m\) SYR definition.
+\end{itemize}
+
+\subsection*{Correction applied}
+The matching is now routed through the manuscript’s \emph{corner-exit template} mechanism:
+\begin{itemize}
+\item introduce a tunable footprint scale \(s\ll h:=\mathrm{side}(Q)\);
+\item use the corner-exit template lemmas to choose, for each direction label \((Q,j)\), a family of sheet pieces in \(Q\) with \emph{identical} corner-exit footprints (hence equal \(\psi\)-mass within the family, up to a common small-slope distortion factor);
+\item denote this common per-piece mass by \(A_{Q,j}\), with scaling \(A_{Q,j}\asymp s^{k}\) where \(k=2n-2p\);
+\item choose \(s\) small enough so that \(M_Q/A_{Q,j}\gg 1\), enabling integer rounding with fixed \(m\) (no “\(m\to\infty\)” quantifier swap).
+\end{itemize}
+The same idea was reflected in the local precursor lemma \texttt{lem:local-bary}, which was strengthened to explicitly include the cube budget \(M_Q:=m\int_Q\beta\wedge\psi\) and a quantitative error target \(|\Mass(S_Q)-M_Q|\le \delta M_Q\).
+
+\subsection*{Why this resolves the blocker}
+The equal-mass property is no longer a false geometric claim about generic translates; it becomes a \emph{design feature} of the template box. The scaling obstruction is addressed by shrinking the per-piece mass scale \(A_{Q,j}\asymp s^k\) with \(s\ll h\), allowing many pieces per cube while keeping the total budget \(M_Q\) fixed (so fixed-\(m\) SYR quantifiers are not violated).
+
+\section{Editorial hygiene (referee readability)}
+\subsection*{Duplicate proof blocks removed}
+Two locations contained \emph{duplicated} proof environments back-to-back (a common artifact when patching draft text with conditional blocks):
+\begin{itemize}
+\item a second proof following Lemma \texttt{lem:radial-min};
+\item a second proof following the distance-to-cone proposition in the “calibrated cone” preliminaries.
+\end{itemize}
+These duplicates were deleted, keeping a single clean proof in each case.
+Additionally, the extra duplicated proof blocks previously flagged around \texttt{lem:limit\_is\_calibrated} and \texttt{prop:almost-calibration} were removed so each result has exactly one proof in the compiled manuscript.
+
+\subsection*{Clarification in the transport $\Rightarrow$ flat norm step}
+In Proposition \texttt{prop:transport-flat-glue}, the Step~1 Lipschitz bound implicitly requires working on an \emph{interior} face patch after the standard edge-trimming/localization (so that each face slice is a cycle, i.e.\ has zero boundary as a current on the interior face).
+This hypothesis was made explicit in item~(b) and the proof was adjusted accordingly (dropping the spurious boundary-slice term in the homotopy/Lipschitz estimate).
+
+\subsection*{Notation cleanup: cohomology multiplier \(m\) vs.\ Bergman/holomorphic power}
+In the weighted-scaling discussion, the symbol \(m\) was being used in two different senses (cohomology multiplier \(m\) in \(\mathrm{PD}(m[\gamma])\) and tensor power in Bergman-scale holomorphic manufacturing). This led to misleading phrases such as “\(h\downarrow 0\) (equivalently \(m\to\infty\))” and a dimensional typo involving \(\sqrt m\,h\).
+The manuscript now separates these roles explicitly (using a distinct holomorphic scale parameter \(N\) where both appear simultaneously), corrects the Bergman-scale relation to \(h\sim c\,N^{-1/2}\), and removes the misleading “\(h\downarrow 0\iff m\to\infty\)” equivalence in the fixed-\(m\) SYR regime.
+
+\subsection*{Additional notation hygiene: Carath\'eodory bound and \(\omega^p\) lemma}
+Two further low-level notation collisions were removed:
+\begin{itemize}
+\item The Carath\'eodory bound (formerly denoted \(N(n,p)\) in the local decomposition/quantization step) was renamed to \(N_{\mathrm{Car}}=N_{\mathrm{Car}}(n,p)\) to avoid collision with the holomorphic tensor power \(N\).
+\item In Lemma \texttt{lem:gamma-minus-alg} (\(\omega^p\) is algebraic), the line-bundle tensor power used to produce a complete intersection was renamed from \(m\) to \(q\) to avoid collision with the global cohomology multiplier \(m\) used throughout the SYR/microstructure closure chain.
+\end{itemize}
+
+\subsection*{Packaging clarity: global coherence and template displacement}
+Two small “reader-facing” clarifications were added to reduce hidden-quantifier concerns in the gluing hinge:
+\begin{itemize}
+\item In Proposition \texttt{prop:global-coherence-all-labels}, the proof now explicitly defines the integer counts \(N_{Q,v,i}=\lfloor M_{Q,v,i}/\mu_{Q,v,i}\rceil\) (vertex-split budgets and per-piece mass scales) and clarifies that \(m\) in the period-locking step is the \emph{fixed} cohomology multiplier from the global parameter schedule.
+\item In Lemma \texttt{lem:template-displacement}, the proof now explicitly bounds the summed slice-mass contribution by \(h^{-1}M_F\) (available in either the rounded-cell or corner-exit regimes), justifying the stated \(C_{\angle}\,\varepsilon\,M_F\) term from the small-angle/model-error estimate.
+\end{itemize}
+
+\subsection*{Uniformly convex slice-boundary inequality: proof hygiene}
+In Lemma \texttt{lem:uniformly-convex-slice-boundary}, we added two short referee-facing clarifications:
+\begin{itemize}
+\item an explicit bound for the large-volume case \(v(t)\ge v_0\), using a parallel-body/Steiner argument to bound \(\mathcal H^{k-1}(\partial K_t)\) uniformly when the slice \(K_t\) lies in a fixed-radius ball;
+\item an explicit choice of the normal direction \(u\) for the small-volume case, taking \(t_0\) as a nearest boundary point in the projection \(D=\pi(Q)\) and setting \(u=(t_0-t)/\|t_0-t\|\), so that the parameterization \(t=t_0-su\) is fully justified.
+\end{itemize}
+
+\subsection*{Borderline case \(p=n/2\): consistent endgame packaging}
+The TeX now treats the middle-dimensional case \(p=n/2\) consistently across the parameter schedule and the H2-package summary:
+\begin{itemize}
+\item Lemma \texttt{lem:borderline-p-half} is used as the explicit closure mechanism in the borderline regime, showing
+\(\mathcal F(\partial T^{\mathrm{raw}})\to 0\) under the refined displacement schedule \(\varrho=o(\varepsilon)\) (together with the footprint-scale packing bound).
+\item Consequently, the same implication
+\(\mathcal F(\partial T^{\mathrm{raw}}_j)\to 0 \Rightarrow \Mass(U_\epsilon)\to 0\) via Proposition \texttt{prop:glue-gap}
+feeds into the exact-class rounding step \texttt{prop:cohomology-match} without any “extra closure input” placeholder.
+\end{itemize}
+
+\subsection*{Step 5 (period locking): making the “\(R\) bounds integrally” point explicit}
+In the Step~5 boundary-correction subsection (used inside Proposition \texttt{prop:cohomology-match}), the TeX now explicitly notes that
+in an integral flat-norm decomposition \(\partial S=R+\partial Q\) one has \(\partial R=0\) and \(R=\partial(S-Q)\).
+This makes it completely formal that \(R\) bounds in \(X\) by an \emph{integral} current, so Lemma \texttt{lem:FF-filling-X}
+applies without any hidden homological step.
+
+\subsection*{Final closure chain: indexing and compactness minimality}
+Two final referee-facing hygiene improvements were made in the SYR endgame:
+\begin{itemize}
+\item In Proposition \texttt{prop:almost-calibration} and Theorem \texttt{thm:syr-realization}, the sheet current is now written as \(S_\epsilon\) (rather than a fixed \(S\)),
+so the family \(T_\epsilon:=S_\epsilon-U_\epsilon\) is unambiguous as \(\epsilon\downarrow 0\).
+\item In Theorem \texttt{thm:syr-realization}, the compactness step is now phrased purely in the Federer--Fleming framework for integral currents; varifold language was removed since it was not used in the argument.
+\end{itemize}
+
+\subsection*{Classical SYR under LICD: gluing corrected to use flat norm (not boundary mass)}
+In the auxiliary theorem \texttt{thm:classical-syr-licd}, the original Step~3 asserted a global estimate of the form
+\(\Mass(\partial \sum_Q S_Q)\lesssim C\varepsilon\) at mesh scale \(\varepsilon\).
+As a global mass statement this is not robust (and is generally false in mesh-refinement regimes).
+The TeX now correctly phrases the closure step in the \emph{flat norm}:
+\(\mathcal F(\partial S^{\mathrm{raw}}_\varepsilon)\to 0\) by duality plus Stokes (using that \(d\beta=0\)),
+then applies a standard filling/isoperimetric inequality to produce a filling current \(R_\varepsilon\) with \(\Mass(R_\varepsilon)\to 0\).
+This yields a closed cycle \(T_\varepsilon=S^{\mathrm{raw}}_\varepsilon+R_\varepsilon\) with quantitative almost-calibration
+\(0\le \Def_{\mathrm{cal}}(T_\varepsilon)\le 2\,\Mass(R_\varepsilon)\to 0\).
+
+\subsection*{Bergman kernel jet-control lemma: scaling typo corrected}
+In Lemma \texttt{lem:bergman-control}, the proof constructs basis sections by differentiating the Bergman kernel and rescaling.
+For the resulting \(1\)-jets \(ds_{a,N}(0)\) to be \(O(1)\) (hence uniformly invertible) on Bergman balls of radius \(\asymp N^{-1/2}\),
+the normalization factor must be \(N^{-(n+1/2)}\) (not \(N^{-(n+1)/2}\)).
+This scaling was corrected in the TeX, and the downstream derivative comparison in the proof was rewritten in the stable form
+\(\sup_{|Z|\le\sigma}\|ds_{a,N}(Z)-ds_{a,N}(0)\|\le \varepsilon\).
+
+\subsection*{Local multi-sheet construction: translate-mass dependence made explicit}
+In Theorem \texttt{thm:local-sheets}, the proof previously treated the \(\psi\)-mass of a flat model translate \((\widetilde\Pi_j+t)\cap Q\) as independent of \(t\), which is false for generic cube geometry.
+The proof now treats the translate mass \(A_j(t)\) as a continuous function of \(t\) and chooses translations within a small radius so that all masses in a family agree up to \(O(\delta)\), which is sufficient for the subsequent Diophantine rounding step.
+The internal rounding parameter was also renamed (to \(M\)) to avoid collision with global uses of \(m\).
+
+\subsection*{Corner-exit disjointness scale: separation at the footprint diameter (important for \(p=n/2\))}
+The corner-exit/sliver program uses small footprint simplices of diameter \(D_Q\asymp s\asymp \varrho h\) inside a mesh cube of diameter \(h\). The natural “graph thickness” of a sheet on its footprint is \(\asymp \varepsilon D_Q\), not \(\varepsilon h\).
+To avoid an implicit contradiction (especially in the borderline schedule \(p=n/2\) where one requires \(\varrho=o(\varepsilon)\)), the manuscript’s disjointness bookkeeping was tightened:
+\begin{itemize}
+\item Lemma \texttt{lem:sliver-stability} now states disjointness persistence in terms of the \emph{footprint diameter} \(D_i=\mathrm{diam}((P+t_i)\cap Q)\), giving the correct separation scale \(\|t_1-t_2\|\gtrsim \varepsilon\max\{D_1,D_2\}\).
+\item Proposition \texttt{prop:finite-template} now phrases the separation hypothesis using \(D_Q:=\max_a \mathrm{diam}((P+t_a)\cap Q)\), which matches the corner-exit regime \(D_Q\asymp s\).
+\item The parameter-schedule / weighted-scaling remarks were updated to explicitly treat separation at the footprint scale \(\delta_{\mathrm{sep}}\asymp \varepsilon s\), and the borderline lemma \texttt{lem:borderline-p-half} now explicitly cites the footprint-scale packing interpretation.
+\end{itemize}
+These are “quantifier/scale” fixes (not changes in mathematical strategy) that remove a potential referee objection about simultaneously having \(\varrho=o(\varepsilon)\) and still manufacturing many disjoint sliver pieces.
+
+\subsection*{Borderline regime $p=n/2$ (middle dimension)}
+Several places in the TeX already flagged that the middle-dimensional regime requires extra care. We made one additional clarification:
+\begin{itemize}
+\item Corollary \texttt{cor:raw-boundary-flat-small} now explicitly notes that in the borderline case \(p=n/2\), the conclusion
+\(\mathcal F(\partial T^{\mathrm{raw}})=o(m)\) is to be read under the refined displacement schedule of Lemma \texttt{lem:borderline-p-half}
+(e.g.\ \(\varrho=o(\varepsilon)\)).
+\end{itemize}
+
+\subsection*{Period locking proof hygiene}
+The “period locking” proposition \texttt{prop:cohomology-match} contains an internal Step~5 (construction of the tiny-mass boundary correction) and is immediately followed by a dedicated subsection “Step~5: Boundary correction with vanishing mass” that carries the same construction.
+To avoid two near-identical constructions living in the manuscript simultaneously, the internal Step~5 construction was removed from the proposition proof; the proof now points to the following subsection for the existence and estimates for \(U_\epsilon\).
+
+\subsection*{SYR realization proof: varifold tangent-plane bookkeeping made explicitly optional}
+In the “SYR Realization” theorem (\texttt{thm:syr-realization}), an intermediate tangent-plane/varifold viewpoint was written out in a way that could be misread as an additional input (or as requiring a specific \emph{oriented} Grassmann-bundle convention, since \(\langle T,\psi\rangle\) depends on current orientation).
+Because this tangent-plane bookkeeping is \emph{not needed} for the closure step, the detailed formulas were marked as optional and disabled in the TeX.
+The proof’s core remains purely current-theoretic: Federer–Fleming flat compactness, mass lower semicontinuity, and the comass inequality imply the subsequential limit is \(\psi\)-calibrated.
+
+\subsection*{Filling lemma: ensure the tubular projection is actually defined}
+In Lemma \texttt{lem:FF-filling-X}, the original Nash-embedding proof implicitly pushed forward a Euclidean filling current \(Q\) by the nearest-point projection \(\pi:U\to X\) from a tubular neighborhood \(U\) of \(\iota(X)\).
+This requires \(Q\) to be supported in \(U\), which is not automatic for an arbitrary Euclidean filling.
+The proof now explicitly invokes a \emph{relative} filling inequality in the fixed tubular neighborhood \(U\) (a standard GMT fact for integral currents in domains), so that \(Q\subset U\) and \(\pi_\#Q\) is well-defined.
+
+\subsection*{Holomorphic corner-exit footprint geometry: duplicate proofs removed}
+The corner-exit geometry proposition \texttt{prop:holomorphic-corner-exit-g1g2} had accumulated multiple back-to-back proof environments (draft variants of the same argument).
+These were removed, leaving a single concise proof so that the compiled manuscript presents one unambiguous argument.
+
+\subsection*{Corner-exit direction-net packaging: missing uniform constant added}
+In the finite direction-net packaging proposition \texttt{prop:corner-exit-template-net}, the proof introduced per-direction constants
+\(\alpha_*(i),\alpha^*(i),A_*(i)\) but only explicitly took a minimum/maximum for \(\alpha_*\) and \(A_*\) before applying the open-template lemma.
+This was tightened to also define \(\alpha^*:=\max_i\alpha^*(i)\) (hence a finite \(\Lambda=\alpha^*/\alpha_*\)) before invoking Lemma \texttt{lem:corner-exit-template-open}.
+This is a small but important bookkeeping correction for referee readability.
+
+\subsection*{Template packing language: “arbitrarily long \(\delta\)-separated lists”}
+Several template statements used shorthand like “an ordered \(\delta\)-separated list \((t_a)_{a\ge 1}\)” inside a bounded parameter box (or “arbitrarily long \(\delta\)-separated list for any \(\delta>0\)”). Literally, a bounded set cannot contain an infinite \(\delta\)-separated family for fixed \(\delta>0\).
+These statements were corrected to the accurate formulation: for each fixed \(\delta>0\) one gets a \emph{finite} \(\delta\)-separated list of length \(N(\delta)\), and \(N(\delta)\to\infty\) as \(\delta\downarrow 0\) (with the footprint scale fixed).
+This does not change any downstream argument (where \(\delta_{\perp}\) is chosen as part of the mesh schedule), but removes a potential referee objection.
+
+\subsection*{Grid master-template quantifiers (finite prefixes on a finite lattice set)}
+In Proposition \texttt{prop:integer-transport}, the master transverse atoms were written as an “ordered template \((y_a)_{a\ge 1}\subset B_{C_0\varrho h}(0)\cap \delta_\perp\mathbb Z^{2p}\)”. For fixed \(h\) and fixed \(\delta_\perp>0\), the grid intersection is a \emph{finite} set, so the intended meaning is: pick \emph{as many grid atoms as needed} for the finite prefixes used at that mesh scale.
+The TeX now states this correctly by choosing a finite ordered list \((y_a)_{a=1}^{N_*}\) of grid atoms and requiring the working prefix length \(N_F\le N_*\).
+
+\subsection*{Convention note: “algebraic class”}
+A short remark was added near the main theorem stating the manuscript’s convention: an \emph{algebraic class} in \(H^{2p}(X,\mathbb Q)\) means a class in the \(\mathbb Q\)-span of cycle classes (equivalently, the image of the cycle class map with \(\mathbb Q\)-coefficients), hence a \(\mathbb Q\)-vector subspace.
+
+\section*{What remains to be checked}
+These edits remove two hard referee blockers but do not, by themselves, certify the full proof. The remaining highest-risk verification areas include:
+\begin{itemize}
+\item global coherence across all labels and meshes (integer data satisfying face constraints and period constraints simultaneously);
+\item transport \(\Rightarrow\) flat-norm gluing estimates and their parameter dependence;
+\item exact-class enforcement (\texttt{prop:cohomology-match}) under the full parameter schedule;
+\item ensuring the schedule can satisfy all asymptotic requirements simultaneously (including the new explicit footprint scale \(s_j\ll h_j\)).
+\end{itemize}
+
+\end{document}
+
+

@@ -1,0 +1,118 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\usepackage[hidelinks]{hyperref}
+\usepackage{microtype}
+\usepackage{fontspec}
+\usepackage{listings}
+\usepackage{xcolor}
+
+% Improve Unicode coverage in code listings (XeTeX via Tectonic).
+\IfFontExistsTF{Menlo}{\setmonofont{Menlo}}{}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  columns=fullflexible,
+  frame=single,
+  rulecolor=\color{black!20},
+  % Render a few unicode symbols inside listings (Lean snippets).
+  literate=
+    {τ}{{$\tau$}}1
+    {⟨}{{$\langle$}}1
+    {⟩}{{$\rangle$}}1
+    {→}{{$\to$}}1
+}
+
+\title{\textbf{Cross-Agent Alignment is Forced (Up to Gauge):}\\
+\large A Minimal, Auditable Comparability Layer for RS-Native Measurement}
+\author{Jonathan Washburn \and Emma Tully \\
+\textit{Recognition Science / RS-native measurement notes}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Recognition Science (RS) and the Universal Light Language (ULL) define meaning and measurement in RS-native units and invariants, but a persistent reviewer objection remains: even if a system is internally closed, \emph{cross-agent comparability} can be hidden inside unspoken choices of basis, extraction conventions, and gauge.
+This note isolates a minimal, publishable result: whenever a candidate semantic/measurement layer is required to respect a recognition quotient (``observable = quotient'') and to be invariant under an explicit gauge, then cross-agent comparison must factor through a canonical alignment object.
+
+Concretely, we show a solved case at the WToken signature layer: if the mode-4 $\tau$-offset variants are treated as a global-phase gauge direction, then the cross-agent meaning object is forced to live in the quotient that forgets $\tau$. We package this as an auditable alignment protocol and an explicit map \texttt{WTokenId $\to$ (mode, $\varphi$-level)}. We then state the general ``alignment-as-argmin'' template: when two agents share anchor events and a canonical mismatch cost (the RS reciprocal mismatch cost), the best alignment is an explicit minimizer \emph{up to gauge}, yielding falsifiers and preregisterable tests.
+\end{abstract}
+
+\section{The problem}
+Any ambitious ``physics of meaning'' needs a way to compare reports from different observers:
+different labs, different sensors, different ML models, different languages, or different subjects.
+If the comparison rule is informal, the theory becomes non-falsifiable: disagreements can be dismissed as ``different coordinate systems.''
+
+RS-native measurement already adopts the principle ``measurement = observable + protocol'' and treats gauge as a quotient direction.
+What is missing is a short, paper-friendly statement of what is \emph{forced} once those principles are accepted.
+
+\section{Principle: observables must factor through quotients}
+Fix a configuration space $\mathcal{C}$ and an event space $\mathcal{E}$.
+A recognizer $R:\mathcal{C}\to\mathcal{E}$ induces an indistinguishability relation
+\[
+c_1 \sim_R c_2 \quad\Longleftrightarrow\quad R(c_1)=R(c_2).
+\]
+The recognition quotient $\mathcal{C}/\!\sim_R$ is the observable state space.
+Any semantics/measurement intended to be physical must be constant on $\sim_R$-classes, i.e.\ must factor through the quotient.
+
+\section{A solved case: WToken meaning modulo $\tau$}
+At the ULL WToken signature layer, a common RS claim is that certain degrees of freedom (notably a $\tau$-offset within a self-conjugate family) are not semantic data beyond a global phase gauge.
+If so, cross-agent comparison must ignore $\tau$.
+
+We can express that ``ignore $\tau$'' move as a concrete alignment map and an explicit protocol.
+In the Lean implementation, we define a meaning class that keeps only (mode family, $\varphi$-level) and forgets $\tau$:
+
+\begin{lstlisting}
+-- WToken meaning class at the signature layer, modulo τ gauge.
+structure WTokenMeaningClass where
+  mode : WTokenMode
+  phi_level : PhiLevel
+
+-- Canonical projection WTokenId → WTokenMeaningClass.
+def wtokenMeaning (w : WTokenId) : WTokenMeaningClass :=
+  ⟨(WTokenId.toSpec w).mode, (WTokenId.toSpec w).phi_level⟩
+\end{lstlisting}
+
+This is already enough to support a publishable claim:
+\begin{quote}
+\textbf{Claim (minimal, falsifiable).}
+If $\tau$-offset is a gauge direction at the signature layer, then the cross-agent meaning object is the quotient that forgets $\tau$; any two agents may disagree on $\tau$ while still agreeing on meaning.
+\end{quote}
+
+\paragraph{Falsifier.}
+If $\tau$-variants produce empirically distinguishable meanings \emph{beyond} global phase (under preregistered protocols), then $\tau$ is not gauge and must not be quotiented out.
+
+\section{General template: alignment-as-argmin (up to gauge)}
+In the general cross-agent setting, an ``alignment'' is a map from one agent's coordinate system to another's, accompanied by an explicit protocol: assumptions, invariants to preserve, and falsifiers.
+RS suggests a canonical choice rule: alignments are selected by minimizing a canonical mismatch cost.
+
+Let $\mathcal{A}$ be a family of admissible alignment maps (e.g.\ linear maps, permutations, unitary maps, etc.).
+Let $\{(x_i,y_i)\}_{i=1}^n$ be shared anchor events, where $x_i$ is agent-1's extracted representation and $y_i$ is agent-2's.
+Let $J$ be the reciprocal mismatch cost used throughout RS.
+Define:
+\[
+A^\star \in \arg\min_{A\in\mathcal{A}} \;\sum_{i=1}^n J\!\left(\frac{\iota(A(x_i))}{\iota(y_i)}\right),
+\]
+with an explicit gauge quotient identifying alignments that differ only by gauge.
+The output is an alignment object that is unique \emph{up to gauge} when the admissibility class and anchors are sufficiently constraining.
+
+\section{What this buys the program}
+The practical payoff is that cross-agent comparability becomes:
+(i) explicit, (ii) auditable, and (iii) falsifiable.
+This turns claims like ``ULL is universal across modalities/agents'' into preregisterable test suites rather than interpretive arguments.
+
+\section{Status and next steps}
+This note intentionally isolates the minimum publishable core:
+\begin{itemize}
+  \item A \emph{worked} solved case (WToken meaning modulo $\tau$ gauge).
+  \item A general alignment-as-argmin template suitable for preregistration.
+\end{itemize}
+
+Next steps are empirical and protocol-engineering work:
+choose anchor suites (shared stimuli), define admissible alignment families, and run preregistered benchmarks (word similarity, synonymy/antonymy, analogy, cross-lingual consistency, or sensor-level stimulus alignment).
+
+\end{document}
+

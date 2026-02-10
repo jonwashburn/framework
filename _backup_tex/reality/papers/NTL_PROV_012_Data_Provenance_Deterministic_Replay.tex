@@ -1,0 +1,278 @@
+\documentclass[11pt]{article}
+
+% Keep packages minimal for TeX Live "basic" installs.
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{array}
+
+\geometry{margin=1in}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue
+}
+
+% ---------------------------------------------------------------------------
+% Convenience macros
+% ---------------------------------------------------------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+
+\newcommand{\PatentTitle}{Deterministic Replay Bundles, Tamper-Evident Logging, and Signed Configuration Artifacts for Rotating-Field Experiments}
+\newcommand{\Docket}{NTL-PROV-012}
+\newcommand{\Inventors}{[Inventor Names]}
+\newcommand{\Assignee}{[Assignee / Organization]}
+\newcommand{\FilingDate}{February 1, 2026}
+
+\begin{document}
+
+\begin{center}
+{\LARGE \textbf{\PatentTitle}}\\[0.75em]
+{\large \textbf{Docket:} \Docket}\\[0.25em]
+{\large \textbf{Inventors:} \Inventors}\\[0.25em]
+{\large \textbf{Assignee:} \Assignee}\\[0.25em]
+{\large \textbf{Date:} \FilingDate}\\[0.75em]
+\end{center}
+
+\vspace{-0.5em}
+\hrule
+\vspace{0.75em}
+
+% ===========================================================================
+% ABSTRACT (PATENT)
+% ===========================================================================
+\section*{Abstract}
+
+Disclosed are systems, methods, and non-transitory computer-readable media for producing deterministic replay bundles and tamper-evident run artifacts for rotating-field experiments and commutated electromagnetic devices. In various embodiments, a run artifact includes: (i) a canonical configuration snapshot (geometry ID, schedule ID, firmware/software identifiers, calibration parameters, and safety envelope parameters), (ii) raw synchronized sensor streams, (iii) derived features and gate outcomes, (iv) a cryptographic integrity structure (hashes and/or Merkle trees) covering all run components, and (v) one or more digital signatures over a manifest describing the run artifact. The system optionally anchors the run hash to an external timestamp service or distributed ledger to provide an independent time ordering.
+
+The disclosure further provides deterministic replay procedures that ensure a future run can reproduce the same schedule intent and waveform realization within specified tolerances by replaying the signed configuration and applying stored calibration parameters. The disclosed provenance framework improves scientific credibility, enables litigation-grade audit trails, and reduces risk of undetected tampering or configuration drift.
+
+% ===========================================================================
+% TECHNICAL FIELD
+% ===========================================================================
+\section*{Technical Field}
+
+The present disclosure relates to data provenance and experimental integrity, and more particularly to deterministic replay bundles, tamper-evident logging, cryptographic hashing, and signed configuration artifacts for rotating-field experiments, resonant system operation, and associated instrumentation workflows.
+
+% ===========================================================================
+% BACKGROUND
+% ===========================================================================
+\section*{Background}
+
+Experimental claims in high-sensitivity domains are often undermined by irreproducible configurations, undocumented calibration parameters, missing metadata, and unverifiable data provenance. In complex electro-mechanical experiments, the effective ``configuration'' includes not only nominal setpoints, but also firmware versions, clock calibration, sensor placements, filtering settings, and safety thresholds.
+
+Additionally, as datasets grow and are shared across teams, it becomes difficult to prove that a dataset is authentic, untampered, and corresponds to the configuration claimed. Without tamper-evident mechanisms, accidental or malicious modifications to data, configuration files, or analysis outputs can go undetected.
+
+Accordingly, there is a need for a deterministic and auditable system that (i) captures complete run configuration and calibration parameters, (ii) records synchronized data streams and derived outputs, (iii) provides tamper-evident integrity, (iv) supports deterministic replay, and (v) optionally provides independent timestamping.
+
+% ===========================================================================
+% SUMMARY
+% ===========================================================================
+\section*{Summary}
+
+This disclosure provides a provenance framework centered on a \emph{run manifest} and a \emph{run artifact bundle}.
+
+In one aspect, a run manifest is a structured record containing identifiers, configuration snapshots, file listings, and cryptographic hashes for all bundle components. The run manifest is digitally signed.
+
+In another aspect, a run bundle contains raw sensor streams, processed outputs, and an integrity structure (hashes or a Merkle tree) enabling verification that no component was altered.
+
+In another aspect, deterministic replay is enabled by storing: schedule intent, waveform realization parameters, clock calibration, sensor calibration, and safety envelope parameters, and by verifying these parameters before replaying a run.
+
+In another aspect, the run manifest hash is anchored to an external timestamp to provide independent evidence of existence at or before a time.
+
+% ===========================================================================
+% BRIEF DESCRIPTION OF DRAWINGS
+% ===========================================================================
+\section*{Brief Description of the Drawings}
+
+Drawings may be provided later. For purposes of this specification:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{FIG. 1} depicts a run artifact bundle containing a manifest, data files, and signatures.
+  \item \textbf{FIG. 2} depicts a Merkle tree structure covering run files.
+  \item \textbf{FIG. 3} depicts deterministic replay using a signed configuration snapshot and calibration parameters.
+  \item \textbf{FIG. 4} depicts optional anchoring of a run hash to an external timestamp service.
+  \item \textbf{FIG. 5} depicts a verification procedure that validates bundle integrity and signature authenticity.
+\end{itemize}
+
+% ===========================================================================
+% DEFINITIONS
+% ===========================================================================
+\section*{Definitions and Notation}
+
+Unless otherwise indicated:
+\begin{itemize}[leftmargin=*]
+  \item A \emph{run} refers to an execution of an experimental protocol under a configuration, producing data and outputs.
+  \item A \emph{run bundle} refers to a directory or archive containing run files and metadata.
+  \item A \emph{manifest} refers to a structured description of a run bundle (e.g., JSON) including file digests.
+  \item A \emph{digest} refers to a cryptographic hash (e.g., SHA-256) of content.
+  \item A \emph{Merkle tree} refers to a hash tree over files enabling efficient integrity proofs.
+  \item A \emph{signature} refers to a digital signature over a digest or manifest (e.g., Ed25519, ECDSA).
+  \item \emph{Deterministic replay} refers to reproducing a run's control schedule and relevant calibrations within specified tolerances.
+  \item \emph{Configuration drift} refers to unintended differences between the claimed configuration and the actual configuration used.
+\end{itemize}
+
+% ===========================================================================
+% DETAILED DESCRIPTION
+% ===========================================================================
+\section*{Detailed Description}
+
+\subsection*{1. Run Bundle Structure}
+
+In one embodiment, a run bundle contains:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{manifest file} (e.g., manifest.json);
+  \item \textbf{configuration snapshot} files (e.g., config.json, schedule.json, calibration.json);
+  \item \textbf{raw data streams} (sensor channels, driver telemetry);
+  \item \textbf{derived outputs} (features, plots, summaries, gate outcomes);
+  \item \textbf{integrity artifacts} (hash list and/or Merkle tree data);
+  \item \textbf{signature artifacts} (signature files, public key IDs, certificate chains);
+  \item \textbf{optional external timestamp proof} (receipt from timestamp authority or ledger anchor).
+\end{itemize}
+
+In one embodiment, the run bundle is stored as a directory; in another embodiment, the bundle is stored as an archive (e.g., zip/tar) whose digest is included in the manifest.
+
+\subsection*{2. Canonical Configuration Snapshot}
+
+\paragraph{2.1 What must be captured.}
+In one embodiment, the configuration snapshot captures:
+\begin{itemize}[leftmargin=*]
+  \item geometry ID and geometry parameters;
+  \item schedule ID and schedule parameters (intent layer);
+  \item waveform realization parameters (driver layer: dead-time, limits, edge shaping);
+  \item clock parameters and timing calibration (per-channel delays, jitter bounds);
+  \item sensor metadata (placements, sampling rates, filters, latencies);
+  \item calibration constants for each sensor channel and their uncertainties;
+  \item safety envelope parameters (limits, stop criteria, governor thresholds);
+  \item software identifiers (firmware hash, git commit hash, binary digest);
+  \item hardware identifiers (board serial numbers, DUT serial numbers, probe IDs).
+\end{itemize}
+
+\paragraph{2.2 Canonical serialization.}
+In one embodiment, configuration snapshots are serialized in a canonical form to avoid hash mismatch due to key ordering or whitespace differences. Canonicalization rules may include:
+\begin{itemize}[leftmargin=*]
+  \item normalized JSON key ordering;
+  \item fixed numeric formatting;
+  \item explicit units for all quantities.
+\end{itemize}
+
+\subsection*{3. Tamper-Evident Integrity Structures}
+
+\paragraph{3.1 Flat hash list.}
+In one embodiment, the manifest includes a flat list of file paths and digests:
+\[
+\mathrm{digest}(\text{file}_i) = H(\text{bytes of file}_i),
+\]
+where \(H\) is a cryptographic hash.
+
+\paragraph{3.2 Merkle tree over files.}
+In one embodiment, file digests are combined into a Merkle tree whose root digest \(R\) commits to all files. The manifest stores the root \(R\). Verification of a single file can be performed by checking a Merkle proof.
+
+\paragraph{3.3 Streaming logs.}
+In one embodiment, for streaming sensor logs, the system computes chunked digests and commits to a Merkle root per stream to enable incremental verification.
+
+\subsection*{4. Signed Manifests and Identity}
+
+\paragraph{4.1 Signature over manifest digest.}
+In one embodiment, the system computes a digest of the manifest and signs it:
+\[
+\sigma = \mathrm{Sign}_{k_{\text{priv}}}(H(\text{manifest})).
+\]
+The run bundle includes \(\sigma\) and a public key identifier.
+
+\paragraph{4.2 Key management (non-limiting).}
+Keys may be stored in hardware security modules, TPMs, or secure enclaves. The system may enforce policies such as requiring two-person approval for signing.
+
+\subsection*{5. Deterministic Replay}
+
+\paragraph{5.1 Replay pre-checks.}
+In one embodiment, before replaying a run, the system verifies:
+\begin{itemize}[leftmargin=*]
+  \item manifest signature validity;
+  \item all file digests match the manifest;
+  \item required calibration parameters exist and are within valid ranges;
+  \item firmware/software version matches or is compatible;
+  \item hardware is mapped to required channels.
+\end{itemize}
+
+\paragraph{5.2 Replay execution.}
+In one embodiment, the system replays:
+\begin{itemize}[leftmargin=*]
+  \item schedule intent (phase order, dwell, frequency tables);
+  \item waveform realization parameters (gate timing, limits);
+  \item timing calibration (per-channel delays) to match the original timing model.
+\end{itemize}
+The system records replay metrics and includes them in a new signed run bundle.
+
+\subsection*{6. External Timestamping (Optional)}
+
+In one embodiment, the system anchors the run bundle digest or manifest digest to an external timestamp service. The bundle stores the timestamp receipt, enabling verification that the run existed at or before a time. External anchors may include a trusted timestamp authority, notarization service, or distributed ledger.
+
+\subsection*{7. Example Manifest Schema (Non-Limiting)}
+
+An example manifest structure (illustrative only) includes:
+\begin{itemize}[leftmargin=*]
+  \item run\_id, created\_utc, operator\_id;
+  \item config\_digests: digests of config files;
+  \item data\_streams: file list and digests;
+  \item derived\_outputs: file list and digests;
+  \item merkle\_root (optional);
+  \item signature block (algorithm, public key id, signature bytes);
+  \item external timestamp receipt (optional).
+\end{itemize}
+
+% ===========================================================================
+% CLAIMS (DRAFT / PROVISIONAL-STYLE)
+% ===========================================================================
+\section*{Claims (Draft)}
+
+\textbf{Note:} The following claims are an initial, non-limiting claim set intended to preserve multiple fallback positions. Final claim strategy should be reviewed by counsel.
+
+\subsection*{Independent Claims}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{(System)} A provenance system for rotating-field experiments, the system comprising: one or more processors and memory storing instructions that, when executed, cause the system to: generate a configuration snapshot for a run; collect synchronized sensor streams produced during the run; compute cryptographic digests for at least the configuration snapshot and the synchronized sensor streams; generate a manifest describing the run and including the cryptographic digests; and digitally sign the manifest to produce a signed run bundle.
+
+  \item \textbf{(Method)} A method of producing a deterministic replay artifact for a rotating-field experiment, the method comprising: generating a canonical configuration snapshot including schedule intent parameters and waveform realization parameters; recording calibration parameters and timing calibration parameters; producing a tamper-evident integrity structure committing to recorded data; signing a manifest describing the recorded data; and replaying the experiment using the canonical configuration snapshot and the timing calibration parameters.
+
+  \item \textbf{(Non-transitory medium)} A non-transitory computer-readable medium storing instructions that, when executed by one or more processors, cause the one or more processors to: verify a signature on a run manifest; verify that one or more file digests match the run manifest; and output a validation result indicating whether a run bundle is authentic and untampered.
+\end{enumerate}
+
+\subsection*{Dependent Claims (Examples; Non-Limiting)}
+
+\begin{enumerate}[leftmargin=*]
+  \setcounter{enumi}{3}
+  \item The system of claim 1, wherein the integrity structure comprises a Merkle tree over files in the run bundle.
+  \item The method of claim 2, further comprising anchoring a digest of the manifest to an external timestamp service and storing a timestamp receipt in the run bundle.
+  \item The system of claim 1, wherein generating the canonical configuration snapshot comprises canonicalizing JSON serialization to a normalized key order and numeric format.
+  \item The non-transitory medium of claim 3, wherein verifying comprises verifying digests for chunked streaming logs committed to a Merkle root.
+  \item The method of claim 2, wherein replaying comprises applying stored per-channel delay calibrations prior to executing a commutation schedule.
+  \item The system of claim 1, wherein the configuration snapshot includes a firmware digest and a hardware serial number list.
+\end{enumerate}
+
+% ===========================================================================
+% FALLBACK POSITIONS / ADDITIONAL EMBODIMENTS
+% ===========================================================================
+\section*{Additional Embodiments and Fallback Positions (Non-Limiting)}
+
+\begin{itemize}[leftmargin=*]
+  \item Run bundles may be encrypted for confidential sharing while retaining integrity verification via signed manifests.
+  \item The system may support partial disclosure by revealing Merkle proofs for selected files without revealing all files.
+  \item Signature policies may require multiple signatures (multi-party signing) or threshold signatures.
+  \item The system may generate standardized human-readable reports alongside machine-readable bundles.
+  \item The provenance system may be integrated into an automated runbook engine and may refuse to execute runs if configuration drift is detected.
+\end{itemize}
+
+\vspace{1em}
+\hrule
+\vspace{0.75em}
+\noindent \textbf{End of Specification (Draft)}
+
+\end{document}
+

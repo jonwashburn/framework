@@ -1,0 +1,562 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm}
+
+\title{Weighted Flat-Norm Gluing for Sliver Microstructures and Vanishing-Mass Boundary Correction}
+\author{
+Jonathan Washburn\\
+Recognition Science\\
+Recognition Physics Institute\\
+\texttt{jon@recognitionphysics.org}\\
+Austin, Texas, USA
+}
+\date{}
+
+% --- theorem environments ---
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+
+% --- notation ---
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\F}{\mathcal{F}}
+\newcommand{\Mass}{\operatorname{Mass}}
+\newcommand{\dist}{\operatorname{dist}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We prove a quantitative gluing estimate for mesh-based assemblies of many small calibrated pieces (``slivers'') in a compact Riemannian manifold. Given a cubical mesh and, in each cell, a sum of calibrated sheet pieces with controlled geometry, the raw assembly $T^{\mathrm{raw}}$ typically has boundary concentrated on interior faces. Our main result bounds the integral flat norm $\F(\partial T^{\mathrm{raw}})$ by a weighted face-sum involving (i) a transverse displacement scale controlling how far unmatched sheets are shifted and (ii) slice boundary masses of the individual pieces.
+
+A key geometric input is a slice boundary shrinkage estimate on smooth uniformly convex cells: for each sliver piece of mass $m$ in dimension $k$, the relevant face-slice boundary contribution is $O(m^{(k-1)/k})$. This yields a global estimate
+\[
+\F(\partial T^{\mathrm{raw}})\ \lesssim\ \varrho\,h^2 \sum_{Q}\ \sum_{a} m_{Q,a}^{(k-1)/k},
+\]
+uniformly in the number of slivers per cell, and includes a refined displacement schedule that closes the borderline case $k=d/2$ (in particular, $k=n$ when $d=2n$ and $p=n/2$ in complex-geometric applications). Consequently, standard filling inequalities produce a boundary correction $U$ with $\Mass(U)\to 0$, enabling closure without disrupting almost-calibration.
+\end{abstract}
+
+\section{Introduction}
+
+In many microstructure constructions one assembles a global $k$--dimensional integral current by summing many local pieces supported inside the cells of a fine mesh. If each cellwise piece is individually calibrated (or almost calibrated), then the only obstruction to producing a \emph{global cycle} is that boundary traces on shared faces may not cancel perfectly. The question is whether one can correct this residual boundary by an integral filling whose mass tends to zero as the mesh is refined.
+
+The flat norm is the right tool for this bookkeeping. It measures a current up to the addition of a boundary at the cost of the filling mass. In particular, if $\F(\partial T^{\mathrm{raw}})\to 0$ then there exists an integral correction $U$ with $\partial U=\partial T^{\mathrm{raw}}$ and $\Mass(U)\to 0$, so that $T^{\mathrm{raw}}-U$ is a closed integral current and differs from $T^{\mathrm{raw}}$ by a vanishing-mass perturbation.
+
+The novelty in the sliver regime is that each cell may contain \emph{many} tiny pieces. A useful gluing estimate must therefore avoid any explicit dependence on ``number of pieces.'' The correct scaling is instead \emph{weighted}: displacement across a face multiplied by (a bound on) the face-slice boundary masses of the pieces. The geometric core is the exponent $(k-1)/k$, which is the sharp scaling for boundary size versus volume for small slices in uniformly convex domains.
+
+\section{Currents, mass, and flat norm}
+
+We work on a compact smooth Riemannian manifold $(X^d,g)$ without boundary. We will use integral currents in the standard geometric-measure sense, but only a small amount of the formalism is needed.
+
+\begin{definition}[Mass]
+For an integral $\ell$--current $T$ on $X$, its mass is
+\[
+\Mass(T)\ :=\ \sup\bigl\{\, T(\eta)\ :\ \eta\in \Omega_c^\ell(X),\ \|\eta\|_\infty\le 1 \,\bigr\},
+\]
+where $\|\cdot\|_\infty$ denotes the comass norm induced by $g$.
+\end{definition}
+
+\begin{definition}[Flat norm]
+Fix an integer $\ell\ge 0$. For an integral $\ell$--current $T$ on $X$, the flat norm is
+\[
+\F(T)\ :=\ \inf\Bigl\{\Mass(R)+\Mass(Q)\ :\ T=R+\partial Q,\ R\ \text{integral $\ell$--current},\ Q\ \text{integral $(\ell+1)$--current}\Bigr\}.
+\]
+\end{definition}
+
+\begin{remark}[Subadditivity]
+The flat norm is subadditive: $\F(T_1+T_2)\le \F(T_1)+\F(T_2)$. This follows directly from the definition by summing decompositions.
+\end{remark}
+
+\section{Mesh assemblies and mismatch currents}
+
+Fix a small mesh scale $h>0$. We assume $X$ is covered by a finite cubical mesh
+\[
+X = \bigcup_{Q\in\mathcal{Q}_h} \overline{Q},
+\]
+where each cell $Q$ has diameter comparable to $h$, each interior codimension-one face $F$ is shared by exactly two cells, and the overlap structure is uniformly bounded (a fixed number of faces per cell, independent of $h$).
+
+\begin{definition}[Cellwise pieces and raw assembly]
+Fix $1\le k<d$. For each cell $Q\in\mathcal{Q}_h$, let
+\[
+S_Q\ :=\ \sum_{a\in\mathcal{S}(Q)} S_{Q,a}
+\]
+be a finite sum of integral $k$--currents $S_{Q,a}$ supported in $\overline{Q}$, each satisfying $\partial S_{Q,a}$ supported in $\partial Q$.
+Define the raw assembled current
+\[
+T^{\mathrm{raw}}\ :=\ \sum_{Q\in\mathcal{Q}_h} S_Q.
+\]
+\end{definition}
+
+Because each $\partial S_Q$ lives on $\partial Q$, the boundary $\partial T^{\mathrm{raw}}$ is supported on the union of mesh interfaces. On an interior face $F=Q\cap Q'$ shared by adjacent cells, the two traces need not cancel. We define the resulting mismatch current.
+
+\begin{definition}[Face mismatch current]
+Fix an orientation on each interior face $F$. For an interior face $F=Q\cap Q'$, let
+\[
+B_F \ :=\ \bigl(\partial S_Q\bigr)\!\llcorner F\ -\ \bigl(\partial S_{Q'}\bigr)\!\llcorner F,
+\]
+where the restrictions are interpreted in the common face orientation (so the sign convention is consistent).
+\end{definition}
+
+\begin{lemma}[Boundary decomposes into face mismatches]
+One has
+\[
+\partial T^{\mathrm{raw}} \ =\ \sum_{F\in\mathcal{F}_h} B_F,
+\qquad\text{hence}\qquad
+\F\bigl(\partial T^{\mathrm{raw}}\bigr)\ \le\ \sum_{F\in\mathcal{F}_h} \F(B_F),
+\]
+where $\mathcal{F}_h$ is the set of interior faces.
+\end{lemma}
+
+\begin{proof}
+By linearity, $\partial T^{\mathrm{raw}}=\sum_Q \partial S_Q$. Each oriented interior face $F$ appears exactly twice in the sum, once from each adjacent cell, and the contribution on $F$ is exactly the difference of the two traces, which is $B_F$ by definition. Subadditivity of $\F$ gives the inequality.
+\end{proof}
+
+\section{Facewise transport-to-filling: a weighted flat bound}
+
+The core local estimate is that translating a slice current by a vector $v$ costs at most $|v|$ times its boundary size. We state it in the Euclidean model, which is the correct local chart model on scale $h$.
+
+\subsection*{A translation (homotopy) bound}
+
+Let $\tau_v:\R^{d-1}\to\R^{d-1}$ be translation by $v\in\R^{d-1}$.
+
+\begin{lemma}[Flat control for translations]
+Let $\Sigma$ be an integral $(k-1)$--current in $\R^{d-1}$ and let $v\in\R^{d-1}$. Then there exist integral currents
+$R$ of dimension $(k-1)$ and $Q$ of dimension $k$ such that
+\[
+\Sigma-\tau_{v\#}\Sigma\ =\ R+\partial Q
+\]
+and
+\[
+\Mass(R)+\Mass(Q)\ \le\ |v|\Bigl(\Mass(\Sigma)+\Mass(\partial\Sigma)\Bigr).
+\]
+In particular,
+\[
+\F\bigl(\Sigma-\tau_{v\#}\Sigma\bigr)\ \le\ |v|\Bigl(\Mass(\Sigma)+\Mass(\partial\Sigma)\Bigr).
+\]
+\end{lemma}
+
+\begin{proof}
+Define the straight-line homotopy $H:[0,1]\times \R^{d-1}\to \R^{d-1}$ by $H(t,x)=x+t v$.
+Let $Q:=H_{\#}\bigl([0,1]\times \Sigma\bigr)$ and $R:=H_{\#}\bigl([0,1]\times \partial\Sigma\bigr)$, where $[0,1]\times \Sigma$ denotes the product current.
+The homotopy formula gives
+\[
+\partial Q\ =\ \tau_{v\#}\Sigma-\Sigma\ -\ R,
+\]
+equivalently $\Sigma-\tau_{v\#}\Sigma = R + \partial(-Q)$.
+
+For the mass bounds, note that at almost every point of the rectifiable support, the $k$--vector spanning the cylinder has the form
+$v\wedge \tau$ where $\tau$ is a unit $(k-1)$--vector tangent to $\Sigma$, so $|v\wedge \tau|\le |v|\,|\tau|=|v|$.
+Thus $\Mass(Q)\le |v|\,\Mass(\Sigma)$. Similarly $\Mass(R)\le |v|\,\Mass(\partial\Sigma)$.
+Summing yields the stated inequality.
+\end{proof}
+
+\subsection*{Weighted matching on an interface face}
+
+We now formalize the local ``sliver face trace'' model. The main hypothesis is that each piece contributes a slice current on a face that is obtained from a reference slice by translation in a face chart.
+
+\begin{definition}[Translation model for face slices]
+Fix an interior face $F$ and identify a neighborhood in $F$ with an open subset of $\R^{d-1}$ by a bi-Lipschitz chart.
+A \emph{translation model} on $F$ is a family of integral $(k-1)$--currents $\Sigma(u)$, indexed by parameters $u$ in a bounded set $\Omega_F\subset\R^{d-1}$, such that
+\[
+\Sigma(u)\ =\ \tau_{u\#}\Sigma(0)
+\]
+in the chart.
+\end{definition}
+
+\begin{proposition}[Weighted transport $\Rightarrow$ face flat control]
+Assume a translation model $\Sigma(u)$ on an interior face $F$.
+Suppose the two sides of $F$ contribute two equal-cardinality multisets of parameters
+$\{u_a\}_{a=1}^N$ and $\{u'_a\}_{a=1}^N$, hence two face currents
+\[
+S_{Q\to F}:=\sum_{a=1}^N \Sigma(u_a),
+\qquad
+S_{Q'\to F}:=\sum_{a=1}^N \Sigma(u'_a),
+\qquad
+B_F:=S_{Q\to F}-S_{Q'\to F}.
+\]
+Then
+\[
+\F(B_F)\ \le\ \inf_{\sigma\in S_N}\ \sum_{a=1}^N |u_a-u'_{\sigma(a)}|\Bigl(\Mass(\Sigma(u_a))+\Mass(\partial\Sigma(u_a))\Bigr).
+\]
+In particular, if $\Mass(\Sigma(u_a))+\Mass(\partial\Sigma(u_a))\le b_F$ for all $a$, then
+\[
+\F(B_F)\ \le\ b_F\cdot \inf_{\sigma\in S_N}\ \sum_{a=1}^N |u_a-u'_{\sigma(a)}|.
+\]
+\end{proposition}
+
+\begin{proof}
+Fix a permutation $\sigma\in S_N$. For each $a$, the two currents $\Sigma(u_a)$ and $\Sigma(u'_{\sigma(a)})$ differ by translation by $v_a:=u'_{\sigma(a)}-u_a$.
+Apply the translation lemma to $\Sigma(u_a)$ and $v_a$ to obtain
+\[
+\Sigma(u_a)-\Sigma(u'_{\sigma(a)})\ =\ R_a+\partial Q_a,
+\qquad
+\Mass(R_a)+\Mass(Q_a)\ \le\ |v_a|\Bigl(\Mass(\Sigma(u_a))+\Mass(\partial\Sigma(u_a))\Bigr).
+\]
+Summing over $a$ yields $B_F=R+\partial Q$ with $R=\sum_a R_a$ and $Q=\sum_a Q_a$, and
+\[
+\Mass(R)+\Mass(Q)\ \le\ \sum_{a=1}^N |v_a|\Bigl(\Mass(\Sigma(u_a))+\Mass(\partial\Sigma(u_a))\Bigr).
+\]
+Taking the infimum over $\sigma$ and then over decompositions in the definition of $\F$ gives the claim.
+\end{proof}
+
+\subsection*{A weighted variant for ``prefix edits''}
+
+In prefix-based bookkeeping, adjacent cells may use different prefix lengths, producing an unmatched ``tail.'' The key point is that tail mismatch is handled if it is (i) localized and (ii) a small fraction of the total face-slice boundary mass.
+
+\begin{lemma}[Cone bound for localized cycles]
+Let $Z$ be an integral $(k-1)$--cycle in $\R^{d-1}$ supported in a Euclidean ball of radius $r$. Then
+\[
+\F(Z)\ \le\ r\,\Mass(Z).
+\]
+\end{lemma}
+
+\begin{proof}
+Let $x_0$ be the ball center and define the cone map $C:[0,1]\times \R^{d-1}\to \R^{d-1}$ by $C(t,x)=x_0+t(x-x_0)$.
+Let $Q:=C_{\#}\bigl([0,1]\times Z\bigr)$. Since $Z$ is a cycle, $\partial Q=Z$.
+The $k$--Jacobian of $C$ on the cylinder is bounded by $r$, hence $\Mass(Q)\le r\,\Mass(Z)$.
+Thus $\F(Z)\le \Mass(Q)\le r\,\Mass(Z)$.
+\end{proof}
+
+\begin{proposition}[Matched transport + small localized edits]
+On an interior face $F$, suppose the mismatch current decomposes as
+\[
+B_F \ =\ B_F^{\mathrm{ma}} + B_F^{\mathrm{un}},
+\]
+where:
+\begin{itemize}
+\item $B_F^{\mathrm{ma}}$ is the difference of two equal-cardinality translated-slice sums, so the weighted transport bound applies;
+\item $B_F^{\mathrm{un}}$ is an integral $(k-1)$--cycle supported in a ball of radius $r_F$ in the face chart;
+\item the unmatched mass satisfies
+\[
+\Mass\bigl(B_F^{\mathrm{un}}\bigr)\ \le\ \theta_F \sum_{a\in\mathcal{S}(F)} \Mass\bigl(\Sigma_F(a)\bigr),
+\]
+where $\mathcal{S}(F)$ indexes the pieces meeting $F$ and $\Sigma_F(a)$ denotes the face-slice current contributed by piece $a$.
+\end{itemize}
+Then
+\[
+\F(B_F)\ \le\ \F(B_F^{\mathrm{ma}})\ +\ r_F\,\Mass(B_F^{\mathrm{un}})
+\ \le\ \F(B_F^{\mathrm{ma}})\ +\ r_F\,\theta_F \sum_{a\in\mathcal{S}(F)} \Mass\bigl(\Sigma_F(a)\bigr).
+\]
+In particular, if $r_F\lesssim h$ and $\theta_F\lesssim h$, then the edit term contributes at the same $h^2$ scale as a displacement schedule of size $\Delta_F\asymp h^2$.
+\end{proposition}
+
+\begin{proof}
+Subadditivity gives $\F(B_F)\le \F(B_F^{\mathrm{ma}})+\F(B_F^{\mathrm{un}})$.
+Apply the cone bound to $B_F^{\mathrm{un}}$ to get $\F(B_F^{\mathrm{un}})\le r_F\,\Mass(B_F^{\mathrm{un}})$ and then substitute the assumed mass bound.
+\end{proof}
+
+\section{Slice boundary shrinkage on smooth uniformly convex cells}
+
+The weighted transport estimate reduces global gluing to bounding the mass of the face-slice currents. The core geometric input is that, in a smooth uniformly convex domain, small $k$--dimensional slices have boundary size controlled by volume to the exponent $(k-1)/k$.
+
+\begin{definition}[Uniformly convex cells at scale $h$]
+A bounded domain $Q\subset\R^d$ is \emph{smooth uniformly convex at scale $h$} if:
+\begin{itemize}
+\item $\partial Q$ is $C^2$ and strictly convex;
+\item $\operatorname{diam}(Q)\asymp h$;
+\item all principal curvatures $\kappa_i$ of $\partial Q$ satisfy
+\[
+\frac{c}{h}\ \le\ \kappa_i\ \le\ \frac{C}{h}
+\quad\text{everywhere on }\partial Q,
+\]
+for fixed constants $0<c\le C$ independent of $h$.
+\end{itemize}
+\end{definition}
+
+\begin{lemma}[Boundary shrinkage for plane slices]
+Let $Q\subset\R^d$ be smooth uniformly convex at scale $h$.
+Fix $1\le k<d$ and a $k$--plane $P$. For each translate $P+t$ with nonempty intersection, define
+\[
+v(t):=\mathcal{H}^{k}\bigl((P+t)\cap Q\bigr),
+\qquad
+a(t):=\mathcal{H}^{k-1}\bigl((P+t)\cap \partial Q\bigr).
+\]
+Then there exists a constant $C_\ast=C_\ast(d,k,c,C)$ such that
+\[
+a(t)\ \le\ C_\ast\,\bigl(v(t)\bigr)^{\frac{k-1}{k}}
+\qquad\text{for all such }t.
+\]
+\end{lemma}
+
+\begin{proof}
+The estimate is scale-invariant, so rescale by $x\mapsto x/h$ and assume $\operatorname{diam}(Q)\asymp 1$ and curvatures are pinched between fixed positive constants.
+Write $K_t:=(P+t)\cap Q\subset P+t\cong\R^k$, so $v(t)=\mathcal{H}^k(K_t)$ and $a(t)=\mathcal{H}^{k-1}(\partial K_t)$.
+
+If $v(t)\ge v_0>0$ for some fixed threshold, then $K_t$ is contained in a fixed-radius ball in $P+t$, hence $a(t)\le A_0$ for a constant $A_0(d,k)$.
+Enlarging $C_\ast$ if needed gives $a(t)\le C_\ast v(t)^{(k-1)/k}$ on this range.
+
+Now assume $v(t)\le v_0$ with $v_0$ small. Uniform convexity implies a rolling-ball condition: there exist radii
+$r_{\mathrm{in}},r_{\mathrm{out}}\asymp 1$ such that at each boundary point $x_0\in\partial Q$ there are tangent balls
+$B_{\mathrm{in}}\subset Q$ and $B_{\mathrm{out}}\supset Q$ of radii $r_{\mathrm{in}}$ and $r_{\mathrm{out}}$ touching $\partial Q$ at $x_0$.
+For small slices $K_t$, the plane $P+t$ lies close to a supporting hyperplane at some $x_0$, and $K_t$ is trapped between
+$(P+t)\cap B_{\mathrm{in}}$ and $(P+t)\cap B_{\mathrm{out}}$, which are $k$--balls of radii comparable to $\sqrt{s}$,
+where $s$ is the offset distance of $P+t$ from the supporting plane in the normal direction.
+Consequently, for small $s$,
+\[
+v(t)\ \asymp\ s^{k/2},
+\qquad
+a(t)\ \lesssim\ s^{(k-1)/2}.
+\]
+Eliminating $s$ gives $a(t)\lesssim v(t)^{(k-1)/k}$ for all sufficiently small $v(t)$.
+Combining with the large-volume range completes the proof.
+\end{proof}
+
+\begin{definition}[Sliver pieces (geometric hypothesis)]
+Let $Q\subset\R^d$ be smooth uniformly convex at scale $h$. An integral $k$--current $S$ supported in $\overline{Q}$ is a \emph{sliver in $Q$} if it is represented by integration over a smooth oriented $k$--submanifold $Y$ without boundary, and $Y\cap Q$ is a single $C^1$ graph of slope $\le \varepsilon$ over a plane slice $(P+t)\cap Q$ for some $k$--plane $P$ and translate parameter $t$.
+\end{definition}
+
+\begin{corollary}[Slice boundary bound for slivers]
+Let $Q\subset\R^d$ be smooth uniformly convex at scale $h$.
+Let $S$ be a sliver in $Q$ of mass $m:=\Mass(S\llcorner Q)$. Then the boundary trace satisfies
+\[
+\Mass\bigl(\partial(S\llcorner Q)\bigr)\ \le\ C\, m^{\frac{k-1}{k}},
+\]
+where $C$ depends only on $(d,k,c,C)$ and on the slope tolerance (through a harmless factor $(1+O(\varepsilon^2))$).
+In particular, for any boundary patch $F\subset \partial Q$ one has
+\[
+\Mass\bigl(\partial(S\llcorner Q)\llcorner F\bigr)\ \le\ C\, m^{\frac{k-1}{k}}.
+\]
+\end{corollary}
+
+\begin{proof}
+If $Y\cap Q$ is a $C^1$ graph of slope $\le\varepsilon$ over $(P+t)\cap Q$, the area formula gives
+\[
+m\ =\ \Mass(S\llcorner Q)\ =\ (1+O(\varepsilon^2))\, v(t),
+\]
+and similarly
+\[
+\Mass\bigl(\partial(S\llcorner Q)\bigr)\ =\ (1+O(\varepsilon^2))\, a(t),
+\]
+where $v(t)$ and $a(t)$ are the plane-slice volume and plane-slice boundary measure.
+Apply the plane-slice shrinkage lemma and absorb $(1+O(\varepsilon^2))$ into the constant.
+The patch bound follows because restriction cannot increase mass.
+\end{proof}
+
+\section{Global weighted flat-norm gluing estimate}
+
+We now state the main global result in a form designed for sliver microstructures.
+
+\begin{theorem}[Global weighted flat bound in the sliver regime]
+Let $(X^d,g)$ be compact and let $\mathcal{Q}_h$ be a cubical mesh at scale $h$ with interior faces $\mathcal{F}_h$.
+Fix $1\le k<d$.
+
+Assume:
+\begin{enumerate}
+\item (\emph{Sliver geometry}) Each piece $S_{Q,a}$ is a sliver in $Q$ (in suitable face charts), and there is a uniform constant $C_{\Sigma}$ such that every face-slice current $\Sigma_F(Q,a):=\partial(S_{Q,a}\llcorner Q)\llcorner F$ satisfies
+\[
+\Mass\bigl(\Sigma_F(Q,a)\bigr)\ \le\ C_{\Sigma}\, m_{Q,a}^{\frac{k-1}{k}},
+\qquad
+m_{Q,a}:=\Mass(S_{Q,a}\llcorner Q).
+\]
+\item (\emph{Translation model and displacement schedule})
+For each interior face $F=Q\cap Q'$, after trimming to avoid the $(d-2)$--skeleton, the matched part of $B_F$ is controlled by the weighted transport bound with a uniform displacement scale
+\[
+|u-u'|\ \le\ \Delta_F,
+\qquad
+\Delta_F\ \le\ C_{\Delta}\,\varrho\,h^2,
+\]
+for some parameter $\varrho=\varrho(h)\in(0,1]$.
+\item (\emph{$O(h)$ edit regime for unmatched tails}) The unmatched part (if present) is an integral $(k-1)$--cycle supported in a face patch of radius $\lesssim h$ and has mass at most an $O(h)$ fraction of the total face-slice mass. Concretely, there exists $C_{\mathrm{edit}}$ such that on every interior face $F$,
+\[
+\Mass\bigl(B_F^{\mathrm{un}}\bigr)\ \le\ C_{\mathrm{edit}}\,h\sum_{a\in\mathcal{S}(F)} \Mass\bigl(\Sigma_F(a)\bigr).
+\]
+\item (\emph{Bounded overlap}) Each piece $S_{Q,a}$ meets only $O(1)$ faces of its cell (true for any fixed cell shape).
+\end{enumerate}
+
+Then there exists a constant $C=C(X,g,d,k)$ such that
+\[
+\F\bigl(\partial T^{\mathrm{raw}}\bigr)\ \le\ C\,\varrho\,h^2 \sum_{Q\in\mathcal{Q}_h}\ \sum_{a\in\mathcal{S}(Q)} m_{Q,a}^{\frac{k-1}{k}}.
+\]
+The estimate is uniform in the number of pieces per cell.
+\end{theorem}
+
+\begin{proof}
+By the face decomposition lemma,
+\[
+\F(\partial T^{\mathrm{raw}})\ \le\ \sum_{F\in\mathcal{F}_h}\F(B_F).
+\]
+Fix an interior face $F=Q\cap Q'$. Decompose $B_F=B_F^{\mathrm{ma}}+B_F^{\mathrm{un}}$ as matched plus unmatched.
+
+For the matched part, apply the weighted transport bound with displacement $\le \Delta_F$ and use the slice mass bound:
+\[
+\F(B_F^{\mathrm{ma}})
+\ \le\ \Delta_F\sum_{a\in\mathcal{S}(F)} \Mass\bigl(\Sigma_F(a)\bigr)
+\ \le\ C_{\Delta}\,\varrho\,h^2 \sum_{a\in\mathcal{S}(F)} C_{\Sigma}\, m(a)^{\frac{k-1}{k}}.
+\]
+For the unmatched part, apply the localized edit proposition: by the $O(h)$ edit regime and localization scale $\lesssim h$,
+\[
+\F(B_F^{\mathrm{un}})\ \lesssim\ h\cdot \Mass(B_F^{\mathrm{un}})
+\ \lesssim\ h\cdot h \sum_{a\in\mathcal{S}(F)} \Mass(\Sigma_F(a))
+\ \lesssim\ h^2 \sum_{a\in\mathcal{S}(F)} m(a)^{\frac{k-1}{k}}.
+\]
+Since $\varrho\in(0,1]$, the $h^2$ term is absorbed into the $\varrho h^2$ scale after increasing the constant.
+
+Thus for each face,
+\[
+\F(B_F)\ \lesssim\ \varrho\,h^2\sum_{a\in\mathcal{S}(F)} m(a)^{\frac{k-1}{k}}.
+\]
+Summing over faces and using bounded overlap (each piece meets only $O(1)$ faces) converts the face sum into a cell sum:
+\[
+\sum_{F}\sum_{a\in\mathcal{S}(F)} m(a)^{\frac{k-1}{k}}
+\ \lesssim\
+\sum_{Q}\sum_{a\in\mathcal{S}(Q)} m_{Q,a}^{\frac{k-1}{k}}.
+\]
+Combining yields the stated global estimate.
+\end{proof}
+
+\begin{remark}[What ``uniform in number of slivers'' means]
+The estimate does not require a lower bound on $m_{Q,a}$ and does not contain the raw counts $|\mathcal{S}(Q)|$.
+All dependence on splitting is captured explicitly by the weighted sum $\sum m_{Q,a}^{(k-1)/k}$.
+For equal masses $m_{Q,a}=M_Q/N_Q$ one has
+\[
+\sum_{a=1}^{N_Q} m_{Q,a}^{(k-1)/k}
+\ =\
+N_Q\Bigl(\frac{M_Q}{N_Q}\Bigr)^{(k-1)/k}
+\ =\
+M_Q^{(k-1)/k}\,N_Q^{1/k},
+\]
+so the dependence on the number of pieces is mild (power $1/k$) and is separated cleanly from all geometric constants.
+\end{remark}
+
+\section{Borderline middle-dimensional regime}
+
+In complex-geometric applications one often has $d=2n$ and $k=2(n-p)$.
+The middle-dimensional case $p=n/2$ corresponds to $k=n=d/2$.
+In this borderline, the global $h^2$ factor is exactly canceled by the number of cells in a coarse Hölder bound, so one needs a refined schedule tying the displacement parameter $\varrho$ to the geometric tolerance used to pack many slivers.
+
+\begin{theorem}[Borderline $k=d/2$: refined schedule]
+Assume $k=d/2$ and the hypotheses of the global weighted flat bound.
+Assume additionally a packing bound: there exists $\varepsilon\in(0,1)$ and a constant $C_{\mathrm{pack}}$ such that
+\[
+|\mathcal{S}(Q)|\ \le\ C_{\mathrm{pack}}\,\varepsilon^{-k}
+\qquad\text{for all cells }Q.
+\]
+Then there exists a constant $C=C(X,g,d)$ such that
+\[
+\F\bigl(\partial T^{\mathrm{raw}}\bigr)\ \le\ C\,\frac{\varrho}{\varepsilon}\,\Mass\bigl(T^{\mathrm{raw}}\bigr)^{\frac{k-1}{k}}.
+\]
+In particular, if $\sup_h \Mass(T^{\mathrm{raw}})<\infty$ and $\varrho=o(\varepsilon)$ as $h\downarrow 0$, then
+$\F(\partial T^{\mathrm{raw}})\to 0$ as $h\downarrow 0$.
+\end{theorem}
+
+\begin{proof}
+Start from the global estimate:
+\[
+\F(\partial T^{\mathrm{raw}})\ \lesssim\ \varrho\,h^2 \sum_Q \sum_{a\in\mathcal{S}(Q)} m_{Q,a}^{\frac{k-1}{k}}.
+\]
+For a fixed cell $Q$, let $M_Q:=\sum_{a} m_{Q,a}$. By concavity of $t\mapsto t^{(k-1)/k}$ (or by Hölder),
+\[
+\sum_{a\in\mathcal{S}(Q)} m_{Q,a}^{\frac{k-1}{k}}
+\ \le\ |\mathcal{S}(Q)|^{1/k}\,M_Q^{\frac{k-1}{k}}.
+\]
+Using the packing bound gives $|\mathcal{S}(Q)|^{1/k}\le C_{\mathrm{pack}}^{1/k}\varepsilon^{-1}$, hence
+\[
+\sum_{a\in\mathcal{S}(Q)} m_{Q,a}^{\frac{k-1}{k}}
+\ \lesssim\ \varepsilon^{-1}\,M_Q^{\frac{k-1}{k}}.
+\]
+Summing over $Q$ and applying Hölder across cells yields
+\[
+\sum_Q M_Q^{\frac{k-1}{k}}
+\ \le\ (\#\mathcal{Q}_h)^{1/k}\Bigl(\sum_Q M_Q\Bigr)^{\frac{k-1}{k}}
+\ =\ (\#\mathcal{Q}_h)^{1/k}\,\Mass(T^{\mathrm{raw}})^{\frac{k-1}{k}}.
+\]
+Since $\#\mathcal{Q}_h\asymp h^{-d}$ and $k=d/2$, we have $(\#\mathcal{Q}_h)^{1/k}\asymp h^{-2}$, which cancels the $h^2$ factor.
+Combining the inequalities gives
+\[
+\F(\partial T^{\mathrm{raw}})\ \lesssim\ \frac{\varrho}{\varepsilon}\,\Mass(T^{\mathrm{raw}})^{\frac{k-1}{k}},
+\]
+as claimed.
+\end{proof}
+
+\section{Boundary correction with vanishing mass}
+
+We now record the standard consequence of $\F(\partial T^{\mathrm{raw}})\to 0$: the boundary can be corrected by an integral filling with vanishing mass.
+
+\begin{lemma}[Filling inequality (standard)]
+Fix $1\le k<d$.
+There exists a constant $C_{\mathrm{fill}}=C_{\mathrm{fill}}(X,g,k)$ such that for every integral $(k-1)$--cycle $Z$ on $X$ there exists an integral $k$--current $V$ with $\partial V=Z$ and
+\[
+\Mass(V)\ \le\ C_{\mathrm{fill}}\ \Mass(Z)^{\frac{k}{k-1}}.
+\]
+\end{lemma}
+
+\begin{theorem}[Flat-norm small boundary $\Rightarrow$ vanishing-mass correction]
+Let $T$ be an integral $k$--current on $X$ and set $Z:=\partial T$.
+Then there exists an integral $k$--current $U$ with
+\[
+\partial U = Z
+\]
+and
+\[
+\Mass(U)\ \le\ \F(Z)\ +\ C_{\mathrm{fill}}\ \F(Z)^{\frac{k}{k-1}}.
+\]
+In particular, if $\F(Z)\to 0$ along a sequence, then $\Mass(U)\to 0$ along the same sequence.
+\end{theorem}
+
+\begin{proof}
+By definition of $\F(Z)$, for any $\eta>0$ there exist integral currents $R$ (dimension $k-1$) and $Q$ (dimension $k$) such that
+\[
+Z=R+\partial Q,
+\qquad
+\Mass(R)+\Mass(Q)\ \le\ \F(Z)+\eta.
+\]
+Since $Z$ is a cycle ($\partial Z=0$), taking $\partial$ gives $\partial R=0$, so $R$ is a $(k-1)$--cycle.
+Apply the filling inequality to obtain a $k$--current $V$ with $\partial V=R$ and
+\[
+\Mass(V)\ \le\ C_{\mathrm{fill}}\ \Mass(R)^{\frac{k}{k-1}}.
+\]
+Set $U:=Q+V$. Then
+\[
+\partial U=\partial Q+\partial V = (Z-R)+R = Z,
+\]
+and
+\[
+\Mass(U)\ \le\ \Mass(Q)+\Mass(V)
+\ \le\ \Mass(Q) + C_{\mathrm{fill}}\ \Mass(R)^{\frac{k}{k-1}}
+\ \le\ \F(Z)+\eta + C_{\mathrm{fill}}\ (\F(Z)+\eta)^{\frac{k}{k-1}}.
+\]
+Letting $\eta\downarrow 0$ yields the stated bound.
+\end{proof}
+
+\begin{remark}[Why this is enough for ``almost-calibration'']
+If the cellwise pieces are calibrated (or almost calibrated), the correction $U$ is the only non-calibrated ingredient. The estimate $\Mass(U)\to 0$ implies that subtracting $U$ from $T^{\mathrm{raw}}$ changes both mass and calibrated pairing by $o(1)$, so ``almost-calibration'' is preserved in the limit.
+\end{remark}
+
+\section{Parameter discipline (a practical checklist)}
+
+This paper is a gluing module. To guarantee $\Mass(U)\to 0$, it suffices to enforce the following as $h\downarrow 0$:
+
+\smallskip
+\noindent\textbf{(1) Cell geometry.}
+Use smooth uniformly convex cells at scale $h$ (or work in charts where each cell is uniformly bi-Lipschitz to such a domain). This is what makes the $(k-1)/k$ slice-shrinkage exponent uniform.
+
+\smallskip
+\noindent\textbf{(2) Sliver graph control.}
+Each piece in each cell should be a single $C^1$ graph with small slope over a plane slice (or over a uniformly fat simplex footprint), so that boundary traces are controlled by the plane-slice shrinkage estimate.
+
+\smallskip
+\noindent\textbf{(3) Displacement schedule.}
+Across each interior face, matched slices should admit a pairing whose translation displacements satisfy
+$\Delta_F\le C\,\varrho(h)\,h^2$.
+
+\smallskip
+\noindent\textbf{(4) Edit regime.}
+Any unmatched tail created by integer edits should be localized and carry only an $O(h)$ fraction of the total face-slice mass, so its flat contribution is also $O(h^2)$ times the face-slice mass sum.
+
+\smallskip
+\noindent\textbf{(5) Global weighted smallness.}
+Ensure
+\[
+\varrho(h)\,h^2 \sum_{Q,a} m_{Q,a}^{(k-1)/k}\ \longrightarrow\ 0.
+\]
+In middle dimension $k=d/2$, a sufficient condition is the refined schedule $\varrho=o(\varepsilon)$ together with a packing bound $|\mathcal{S}(Q)|\lesssim \varepsilon^{-k}$ and uniform boundedness of $\Mass(T^{\mathrm{raw}})$.
+
+\section*{Conclusion}
+
+Flat-norm gluing in the sliver regime is controlled by a weighted matching cost: displacement across faces multiplied by the boundary sizes of the individual pieces. Uniformly convex cell geometry supplies the sharp $(k-1)/k$ boundary shrinkage exponent, allowing gluing estimates that do not depend explicitly on the number of pieces per cell. As a consequence, if the weighted face-sum tends to zero, then the raw assembly admits a vanishing-mass boundary correction, producing a closed integral current without disturbing the almost-calibrated structure.
+
+\end{document}

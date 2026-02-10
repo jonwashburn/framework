@@ -1,0 +1,292 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+% --- RS notation (keep lightweight; no extra packages) ---
+\newcommand{\phiG}{\varphi}
+\newcommand{\Ecoh}{E_{\mathrm{coh}}}
+\newcommand{\epscoh}{\epsilon_{\mathrm{coh}}}
+\newcommand{\tauZero}{\tau_0}
+\newcommand{\muStar}{\mu_\star}
+\newcommand{\lambdaRec}{\lambda_{\mathrm{rec}}}
+\newcommand{\tauRec}{\tau_{\mathrm{rec}}}
+
+\title{\textbf{Internal Memo: Mass from Light}\\[0.3em]
+\large Coherence Energy, the Eight-Tick Clock, and the Ladder Spectrum}
+
+\author{Jonathan Washburn\\
+Recognition Physics Institute\\
+Austin, Texas, USA\\
+\texttt{jon@recognitionphysics.org}}
+
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Executive Summary}
+
+\paragraph{Two distinct meanings of ``mass from light.''}
+This memo uses the phrase \emph{mass from light} in two layered senses:
+\begin{itemize}
+  \item \textbf{Standard relativity (the ``true derivation''):}
+  light (photons) is individually massless, but \emph{any isolated system of light} can have \emph{nonzero invariant mass} whenever its total four-momentum is timelike.
+  Equivalently, \emph{confined radiation} contributes an inertial/gravitational mass increment \(\Delta M=E_{\mathrm{rad}}/c^2\).
+
+  \item \textbf{RS modeling statement (how RS uses the phrase):}
+  RS organizes particle \(mc^2\) values as a \(\phiG\)-ladder built on a coherence-energy unit \(\Ecoh\).
+  In that sense, the mass spectrum is ``made of'' a light-linked energy quantum times discrete rungs.
+\end{itemize}
+
+\paragraph{Refereeing note (what was wrong before, and what is fixed here).}
+The earlier draft of this memo correctly stated the RS mass-law formula but (i) pointed to a non-existent file name (\texttt{Source-Super-rrf.txt}), (ii) used stale repo paths (\texttt{reality/IndisputableMonolith/...}), and (iii) implicitly mixed the IR-gate identity with a Planck-gate display formula.
+This revision corrects those pointers, separates the layers explicitly, and adds the standard SR/GR derivation of how light energy yields invariant mass.
+
+\section{Repository Ground Truth (Definitions vs. Bridge Displays)}
+
+\paragraph{Golden ratio.}
+\(\phiG\) denotes the golden ratio
+\[
+  \phiG := (1+\sqrt{5})/2.
+\]
+In Lean this is \path{IndisputableMonolith.Constants.phi} (in \path{IndisputableMonolith/Constants.lean}).
+
+\paragraph{Coherence factor in the model layer (dimensionless).}
+In the Lean \emph{model layer}, the coherence quantity is defined as a \emph{dimensionless} factor
+\[
+  \epscoh := \phiG^{-5}.
+\]
+This is \path{Anchor.E_coh} in \path{IndisputableMonolith/Masses/Anchor.lean}.
+When papers/memos quote ``\(\Ecoh\approx 0.09017\,\mathrm{eV}\)'', they are using the display convention
+\(\Ecoh := \epscoh\,\mathrm{eV}\) (a choice of units, not a Lean theorem).
+
+\paragraph{Display numerics (IR scale).}
+Under the common convention \(\Ecoh := \epscoh\,\mathrm{eV}\), one has
+\(\Ecoh\approx 0.09017\,\mathrm{eV}\), corresponding to an infrared photon scale
+\(\lambda\approx 13.8\,\mu\mathrm{m}\) (equivalently \(\tilde\nu\approx 724\,\mathrm{cm^{-1}}\)).
+This IR-scale interpretation appears explicitly in the super-source (see \path{book/papers/txt/Source-Super.txt}, e.g.\ the ``eight\_beat\_IR'' notes).
+
+\paragraph{Eight-tick minimality (proved witness).}
+The eight-tick claim exists in Lean as a witness proposition
+\texttt{RH.RS.eightTickWitness} and is proven via
+\path{Patterns.period_exactly_8}; see
+\path{IndisputableMonolith/RH/RS/Spec.lean}.
+A corresponding certificate wrapper exists as \path{URCGenerators.EightTickMinimalCert}
+in \path{IndisputableMonolith/URCGenerators/CoreCerts.lean}.
+
+\paragraph{IR gate (stated in the super-source).}
+The project super-source records an IR gate identity
+\[
+  \hbar = \Ecoh\,\tauZero
+  \quad\text{(IR gate statement)}.
+\]
+See \path{book/papers/txt/Source-Super.txt} (entry \path{IR_GATE}, field \path{hbar_identity}).
+\emph{Referee clarification:} this identity is \textbf{dimensionally meaningful only after you specify what physical units \(\Ecoh\) carries}.
+In the Lean model layer \(\epscoh\) is dimensionless; converting it into Joules/eV is part of the bridge-to-SI story.
+
+\paragraph{\(2\pi\) bookkeeping (avoiding a common confusion).}
+Recall \(E=\hbar\omega\) and \(T=2\pi/\omega\), hence \(E=2\pi\hbar/T\).
+Thus an identity of the form \(\hbar=E\,\tau\) naturally corresponds to \(\tau=1/\omega\) (a time-per-radian), whereas formulas written with \(2\pi\hbar/\tau\) treat \(\tau\) as a cycle period.
+
+\paragraph{Planck-gate display (Lean bridge helper).}
+Separately, the Lean \emph{bridge display} includes a Planck-side construction
+\[
+  \lambdaRec(B) := \sqrt{\frac{\hbar G}{\pi c^3}},\qquad
+  \tauRec(B) := \frac{\lambdaRec(B)}{c},
+\]
+and then defines an \emph{energy-scale display}
+\[
+  \Ecoh^{\mathrm{disp}}(B)
+  := \phiG^{-5}\,\frac{2\pi\hbar}{\tauRec(B)}.
+\]
+This is implemented as \path{IndisputableMonolith.Bridge.DataExt.tick_tau0} and
+\path{IndisputableMonolith.Bridge.DataExt.E_coh} in
+\path{IndisputableMonolith/Bridge/DataExt.lean}.
+\emph{Referee note:} this is a Planck-gate display expression (it uses \(G,\hbar,c\)); it should not be silently identified with the IR-gate statement without an explicit ``no-mixing'' justification.
+
+\section{The True Derivation: How Light Contributes to Mass}
+
+\subsection{Invariant mass from four-momentum (SR)}
+
+\paragraph{Definition.}
+For any isolated system in special relativity, define total energy \(E\) and total momentum \(\mathbf p\) in a given inertial frame.
+The invariant mass \(M\) of the \emph{whole system} is
+\begin{equation}
+  M^2c^4 = E^2 - (pc)^2,\qquad p:=\lVert\mathbf p\rVert.
+  \label{eq:invariant-mass}
+\end{equation}
+Equivalently, if \(P^\mu=(E/c,\mathbf p)\), then \(M^2c^2=P^\mu P_\mu\).
+
+\paragraph{Key point.}
+A single photon satisfies \(E=pc\), so \eqref{eq:invariant-mass} gives \(M=0\).
+But a \emph{collection} of photons can have \(M>0\) whenever the vector momenta fail to sum to a null total.
+
+\subsection{Two-photon example (why ``light can make mass'' without contradiction)}
+
+Take two photons each of energy \(E_\gamma\) with an angle \(\theta\) between their momentum vectors.
+Then \(E_{\rm tot}=2E_\gamma\) and
+\(p_{\rm tot}=\lVert\mathbf p_1+\mathbf p_2\rVert = 2(E_\gamma/c)\cos(\theta/2)\).
+Plugging into \eqref{eq:invariant-mass}:
+\[
+  M^2c^4 = (2E_\gamma)^2 - \bigl(2E_\gamma\cos(\theta/2)\bigr)^2
+  = 4E_\gamma^2\sin^2(\theta/2),
+\]
+so
+\begin{equation}
+  M = \frac{2E_\gamma}{c^2}\,\sin(\theta/2).
+  \label{eq:two-photon-mass}
+\end{equation}
+Special cases:
+\(\theta=0\Rightarrow M=0\) (collinear photons behave like one photon);
+\(\theta=\pi\Rightarrow M=2E_\gamma/c^2\) (head-on pair has a rest frame).
+
+\subsection{``Box of light'' (confined radiation has inertia)}
+
+Consider a perfectly reflecting cavity that contains radiation of total energy \(E_{\rm rad}\) in the cavity rest frame.
+By symmetry the total momentum vanishes in that rest frame, so \eqref{eq:invariant-mass} gives a system mass increment
+\begin{equation}
+  \Delta M = \frac{E_{\rm rad}}{c^2}.
+  \label{eq:box-of-light}
+\end{equation}
+This is the cleanest statement of ``mass from light'' in standard physics:
+\emph{energy stored as radiation contributes to the rest mass of the composite system}.
+
+\paragraph{Why confinement matters.}
+If the light is not confined, there is generally no rest frame (the total four-momentum can be null).
+Confinement (or any arrangement that yields a timelike total four-momentum) is what turns massless quanta into a massive composite.
+
+\subsection{Einstein's two-pulse argument (why \texorpdfstring{\(E=mc^2\)}{E=mc2} follows from SR + conservation)}
+
+Consider a body of rest mass \(M\) that, in its rest frame, emits two photons of equal energy \(L/2\) in opposite directions.
+In that rest frame the net momentum of the light is zero, so the body does not recoil; its rest mass changes to \(M'\).
+
+Now view the same emission in a frame where the body moves at speed \(v\) along the emission axis, with
+\(\beta:=v/c\) and \(\gamma:=1/\sqrt{1-\beta^2}\).
+Photon energies transform as \(E'=\gamma E(1\pm\beta)\), so the forward/back photon energies are
+\[
+  E'_\pm = \gamma\,\frac{L}{2}\,(1\pm\beta),
+\]
+hence the light carries net momentum
+\[
+  p'_{\rm light}=\frac{E'_+-E'_-}{c}=\gamma\,\frac{L\beta}{c}.
+\]
+Since the body does not recoil in its rest frame, it continues at the same speed \(v\) in this moving frame; its momentum therefore changes only because its mass changed:
+\[
+  \gamma M v - \gamma M' v = p'_{\rm light}.
+\]
+Canceling \(\gamma v\) gives
+\[
+  (M-M')c^2 = L.
+\]
+Thus emitting (or absorbing) light energy \(L\) changes inertial mass by \(L/c^2\). This is the classic ``mass from light'' derivation.
+
+\subsection{GR viewpoint (stress--energy, pressure, and the ``Tolman paradox'')}\label{sec:gr-view}
+
+General relativity replaces ``mass sources gravity'' with ``stress--energy sources curvature.''
+Radiation has pressure as well as energy density, so naively it can look like ``pressure gravitates too.''
+For a \emph{closed, static} system (radiation + container + stresses), those stress contributions are not optional: the wall stresses required to confine radiation contribute with opposite sign in the relevant global mass formula, and the net gravitational mass reduces to the same total-energy statement \eqref{eq:box-of-light}.
+Operationally: a cavity full of light weighs more by \(E_{\rm rad}/c^2\).
+
+\paragraph{Connection back to RS language.}
+Equations \eqref{eq:box-of-light} and \((M-M')c^2=L\) are the mainstream content behind the slogan ``mass from light'': \\emph{stable, bound field energy contributes to rest mass}.
+RS's additional claim is not this equivalence, but the specific discrete \(\phiG\)-ladder organization of the stabilized (coherent) energy spectrum.
+
+\section{How RS Uses ``Mass from Light'' (Ladder Spectrum)}
+
+\paragraph{Mass in energy units.}
+In RS mass formulas, ``mass'' is often treated in particle-physics units where one quotes \(mc^2\) in eV/GeV.
+With that convention, the phrase ``mass from light'' becomes literal: the mass scale is built from a light-linked energy unit.
+
+\paragraph{Canonical spectrum statement (super-source).}
+The project super-source summarizes the mass spectrum as
+\begin{equation}
+  m_{\mathrm{pole},i}
+  =
+  B_i\,\Ecoh\,\phiG^{\,r_i + f^{\mathrm{Rec}}(Z_i) + f^{\mathrm{RG}}_i},
+  \qquad
+  r_i\in\mathbb Z,\quad
+  B_i\in\{2^k:k\in\mathbb Z\}.
+  \label{eq:mass-law}
+\end{equation}
+See \texttt{book/papers/txt/Source-Super.txt} (block \texttt{@SPECTRA} \(\to\) \texttt{MASS\_LAW}).
+
+\subsection{The three ingredients}
+
+\paragraph{(1) Sector prefactor \(B_i\).}
+\(B_i\) is a sector-global power-of-two prefactor (leptons vs up-quarks vs down-quarks vs EW), implemented in Lean as \texttt{Anchor.B\_pow} in \texttt{IndisputableMonolith/Masses/Anchor.lean}.
+
+\paragraph{(2) Rung integer \(r_i\).}
+\(r_i\) is an integer rung.
+Example rung tables are implemented in Lean as \texttt{Integers.r\_lepton}, \texttt{Integers.r\_up}, \texttt{Integers.r\_down}, \texttt{Integers.r\_boson} in \texttt{IndisputableMonolith/Masses/Anchor.lean}.
+
+\paragraph{(3) Recognition residue \(f^{\mathrm{Rec}}(Z)\) and RG residue \(f^{\mathrm{RG}}_i\).}
+In the mass manuscripts, the spectrum separates a closed-form recognition-side residue from a small Standard-Model transport correction.
+A canonical closed form used across the repo is
+\begin{equation}
+  f^{\mathrm{Rec}}(Z)
+  =
+  \frac{1}{\ln\phiG}\,\ln\!\Bigl(1+\frac{Z}{\phiG}\Bigr),
+  \label{eq:rec-residue}
+\end{equation}
+with an RG transport term \(f^{\mathrm{RG}}_i\) used only for like-for-like comparison across schemes/scales.
+(See \texttt{Papers-tex/Masses-Paper1-Single-Anchor-updated.txt} for the framework-separated statement.)
+
+\subsection{The integer charge map \texorpdfstring{\(Z\)}{Z}}
+
+RS encodes a charge-derived integer \(Z\) (``word charge'') using the scaled charge \(\tilde Q:=6Q\in\mathbb Z\):
+\[
+  Z
+  =
+  \begin{cases}
+  \tilde Q^2+\tilde Q^4, & \text{charged leptons},\\[2pt]
+  4+\tilde Q^2+\tilde Q^4, & \text{quarks},\\[2pt]
+  0, & \text{Dirac neutrinos (in the stated model)}.
+  \end{cases}
+\]
+This is implemented as \texttt{ChargeIndex.Z} in \texttt{IndisputableMonolith/Masses/Anchor.lean}.
+
+\section{Single-Anchor Evaluation Point (\texorpdfstring{\(\muStar\)}{mu-star})}
+
+For Standard-Model running-mass residues, the project uses a common anchor scale
+\[
+  \muStar = 182.201~\mathrm{GeV},
+  \qquad
+  \lambda = \ln\phiG,
+  \qquad
+  \kappa = \phiG,
+\]
+as recorded in \texttt{book/papers/txt/Source-Super.txt} (block \texttt{@SM\_MASSES}).
+
+\section{Where This Lives in the Repo (Pointers)}
+
+\begin{itemize}
+  \item \textbf{Mass constants and integer maps (Lean, model layer):}
+  \texttt{IndisputableMonolith/Masses/Anchor.lean}.
+
+  \item \textbf{Eight-tick witness and certificates (Lean):}
+  \texttt{IndisputableMonolith/RH/RS/Spec.lean} and
+  \texttt{IndisputableMonolith/URCGenerators/CoreCerts.lean}.
+
+  \item \textbf{Bridge display helpers (Lean):}
+  \texttt{IndisputableMonolith/Bridge/Data.lean} and
+  \texttt{IndisputableMonolith/Bridge/DataExt.lean}.
+
+  \item \textbf{Single-anchor mass manuscript (framework-separated):}
+  \texttt{Papers-tex/Masses-Paper1-Single-Anchor-updated.txt}.
+
+  \item \textbf{One-file narrative summary (mass law, IR gate, SM anchor):}
+  \texttt{book/papers/txt/Source-Super.txt}.
+\end{itemize}
+
+\end{document}

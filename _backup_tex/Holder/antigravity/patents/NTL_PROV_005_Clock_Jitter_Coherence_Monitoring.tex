@@ -1,0 +1,348 @@
+\documentclass[11pt]{article}
+
+% Keep packages minimal for TeX Live "basic" installs.
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{enumitem}
+
+\geometry{margin=1in}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue
+}
+
+% ---------------------------------------------------------------------------
+% Convenience macros (avoid Unicode Greek in text; use LaTeX math symbols)
+% ---------------------------------------------------------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\N}{\mathbb{N}}
+
+\newcommand{\PatentTitle}{Clock-Integrity, Jitter-Bounded, and Coherence-Monitored Commutation Networks for Multi-Phase Drive Systems}
+\newcommand{\Docket}{NTL-PROV-005}
+\newcommand{\Inventors}{[Inventor Names]}
+\newcommand{\Assignee}{[Assignee / Organization]}
+\newcommand{\FilingDate}{February 1, 2026}
+
+\begin{document}
+
+\begin{center}
+{\LARGE \textbf{\PatentTitle}}\\[0.75em]
+{\large \textbf{Docket:} \Docket}\\[0.25em]
+{\large \textbf{Inventors:} \Inventors}\\[0.25em]
+{\large \textbf{Assignee:} \Assignee}\\[0.25em]
+{\large \textbf{Date:} \FilingDate}\\[0.75em]
+\end{center}
+
+\vspace{-0.5em}
+\hrule
+\vspace{0.75em}
+
+% ===========================================================================
+% ABSTRACT (PATENT)
+% ===========================================================================
+\section*{Abstract}
+
+Disclosed are apparatus, systems, methods, and non-transitory computer-readable media for generating, distributing, measuring, and enforcing clock integrity in multi-phase drive systems that synthesize rotating fields or commutate multi-channel actuators. The disclosure provides: (i) a clock distribution architecture with bounded inter-channel skew and jitter; (ii) channel-level time-stamping and time-to-digital conversion (TDC) or equivalent measurement to estimate per-channel phase error; (iii) a coherence metric that compares expected commutation events to observed electrical waveforms (e.g., current and voltage), enabling closed-loop correction and drift compensation; and (iv) fault detection and mitigation including detuning, shutdown, or safe-mode commutation when coherence falls below threshold.
+
+In various embodiments, a multi-phase schedule is represented as an 8-tick kernel repeated over time; the disclosed clock-integrity layer ensures that the physical commutation events remain aligned with the intended tick grid to within a programmable tolerance. The disclosed techniques increase reproducibility, reduce artifact risk, and enable deterministic replay across experimental runs and hardware platforms.
+
+% ===========================================================================
+% TECHNICAL FIELD
+% ===========================================================================
+\section*{Technical Field}
+
+The present disclosure relates to timing integrity in multi-channel drive systems, and more particularly to clock distribution, jitter/skew measurement, coherence monitoring, and closed-loop correction for multi-phase commutation and rotating-field synthesis in electromagnetic and electromechanical devices.
+
+% ===========================================================================
+% BACKGROUND
+% ===========================================================================
+\section*{Background}
+
+In high-speed multi-phase systems (e.g., commutated coil arrays, brushless motor drives, and phased electromagnetic arrays), system behavior depends not only on the nominal schedule but also on timing integrity. Clock jitter, channel skew, and schedule drift can cause:
+\begin{itemize}[leftmargin=*]
+  \item phase errors that destroy intended commutation order;
+  \item increased harmonic content and unintended EMI;
+  \item inconsistent results across hardware builds and runs;
+  \item unsafe overshoot when a controller loses phase lock;
+  \item false positives in sensitive metrology due to timebase/sensor misalignment.
+\end{itemize}
+
+Conventional timing solutions (e.g., a nominal PWM clock) often do not provide end-to-end verification that commutation events occurred when intended, nor do they provide a system-level coherence metric that ties the timing system to measured electrical behavior. Accordingly, there is a need for a clock-integrity framework that provides both (i) bounded timing distribution and (ii) measured coherence between intended schedules and observed waveforms.
+
+% ===========================================================================
+% SUMMARY
+% ===========================================================================
+\section*{Summary}
+
+This disclosure provides an end-to-end clock-integrity and coherence-monitoring stack for multi-phase commutation networks.
+
+In one aspect, a system distributes a reference clock to \(C\) drive channels with bounded skew and jitter, optionally using a PLL, DLL, or digitally controlled delay (DCD) per channel.
+
+In another aspect, the system measures actual commutation event times (e.g., driver edge times, sensed current zero-crossings, or gate-drive transitions) and computes per-channel phase error relative to expected tick times.
+
+In another aspect, the system computes a coherence score that quantifies alignment between intended commutation events and observed waveforms; the score is used for closed-loop correction and for fault gating.
+
+In another aspect, the system provides deterministic replay by storing a canonical schedule representation together with clock calibration parameters and measured jitter/skew statistics.
+
+% ===========================================================================
+% BRIEF DESCRIPTION OF DRAWINGS
+% ===========================================================================
+\section*{Brief Description of the Drawings}
+
+Drawings may be provided later. For purposes of this specification:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{FIG. 1} depicts a reference clock distributed to multiple channels, including per-channel delay adjustment and measurement.
+  \item \textbf{FIG. 2} depicts definitions of jitter, skew, and phase error relative to a tick grid.
+  \item \textbf{FIG. 3} depicts a time-to-digital converter (TDC) measuring edge timestamps and computing phase errors.
+  \item \textbf{FIG. 4} depicts a coherence score computed from expected event times and observed current/voltage waveforms.
+  \item \textbf{FIG. 5} depicts a closed-loop correction system that updates channel delays and/or schedule phase to maintain lock.
+  \item \textbf{FIG. 6} depicts fault gating and safe-mode behaviors triggered by low coherence or excessive jitter.
+  \item \textbf{FIG. 7} depicts deterministic replay packaging including schedule, calibration, and integrity hashes.
+\end{itemize}
+
+% ===========================================================================
+% DEFINITIONS
+% ===========================================================================
+\section*{Definitions and Notation}
+
+Unless otherwise indicated:
+\begin{itemize}[leftmargin=*]
+  \item \(C\in\N\) is the number of drive channels.
+  \item \(t\in\N\) is a discrete tick index.
+  \item \(\tau_{\text{nom}}>0\) is the nominal tick period (seconds).
+  \item \(T_{\text{ref}}(t) := t\cdot \tau_{\text{nom}}\) is the ideal time of tick \(t\) under the reference clock.
+  \item \(T_c(t)\) is the measured (actual) time of a commutation event associated with tick \(t\) on channel \(c\).
+  \item The \emph{phase error} (time-domain) for channel \(c\) at tick \(t\) is:
+  \[
+    e_c(t) := T_c(t) - T_{\text{ref}}(t).
+  \]
+  \item \emph{Skew} refers to differences in phase error between channels:
+  \[
+    \Delta_{c,c'}(t) := e_c(t) - e_{c'}(t).
+  \]
+  \item \emph{Jitter} refers to time variation of a channel's phase error over time. One convenient proxy is:
+  \[
+    J_c(t) := e_c(t) - e_c(t-1).
+  \]
+  \item A \emph{coherence score} is a scalar that quantifies agreement between expected commutation events and observed signals.
+\end{itemize}
+
+% ===========================================================================
+% DETAILED DESCRIPTION
+% ===========================================================================
+\section*{Detailed Description}
+
+\subsection*{1. System Overview}
+
+In one embodiment, a commutation network comprises:
+\begin{itemize}[leftmargin=*]
+  \item a reference clock source (e.g., oscillator or recovered clock);
+  \item a clock distribution network delivering timing to \(C\) channels;
+  \item per-channel timing adjustment elements (optional) such as delay lines;
+  \item per-channel drivers (power stages) generating physical commutation events;
+  \item measurement circuitry (e.g., TDC, comparators, ADCs) to timestamp events and measure waveforms;
+  \item a controller computing phase errors, coherence scores, and corrective actions.
+\end{itemize}
+
+\subsection*{2. Clock Distribution with Bounded Skew and Jitter}
+
+\paragraph{2.1 Reference clock.}
+In one embodiment, the system uses a reference clock with specified phase noise. The reference clock may be temperature-compensated, oven-controlled, or disciplined by an external reference.
+
+\paragraph{2.2 Distribution network.}
+In one embodiment, the reference clock is distributed over:
+\begin{itemize}[leftmargin=*]
+  \item matched-length PCB traces,
+  \item differential pairs (e.g., LVDS),
+  \item shielded coax,
+  \item optical links for galvanic isolation.
+\end{itemize}
+
+\paragraph{2.3 Per-channel calibration (delay alignment).}
+In one embodiment, a per-channel delay \(d_c\) is applied so that:
+\[
+T_c(t) \approx T_{\text{ref}}(t) + d_c,
+\]
+and the controller chooses \(d_c\) to minimize \(|e_c(t)|\) and/or to minimize inter-channel skew \(|\Delta_{c,c'}(t)|\).
+
+\paragraph{2.4 Acceptance thresholds.}
+In one embodiment, the system enforces thresholds:
+\begin{itemize}[leftmargin=*]
+  \item \(\max_c |e_c(t)| \le e_{\max}\) (absolute phase error bound),
+  \item \(\max_{c,c'} |\Delta_{c,c'}(t)| \le \Delta_{\max}\) (skew bound),
+  \item \(\text{RMS}(J_c) \le J_{\max}\) (jitter bound).
+\end{itemize}
+Thresholds may be configured per operating regime (e.g., higher frequency requires tighter bounds).
+
+\subsection*{3. Event Time Measurement and Phase Error Estimation}
+
+\paragraph{3.1 Event sources (non-limiting).}
+An ``event'' may refer to:
+\begin{itemize}[leftmargin=*]
+  \item a gate-drive rising edge,
+  \item a driver output edge,
+  \item a sensed current threshold crossing,
+  \item a voltage threshold crossing,
+  \item a digital marker produced by the driver stage.
+\end{itemize}
+
+\paragraph{3.2 Time stamping.}
+In one embodiment, each channel provides a timestamp \(T_c(t)\) for at least one event per tick. Timestamps may be acquired using:
+\begin{itemize}[leftmargin=*]
+  \item a TDC referenced to the master clock,
+  \item a counter capture unit (timer capture),
+  \item a high-speed ADC with interpolated crossing time.
+\end{itemize}
+
+\paragraph{3.3 Phase error estimation.}
+Given timestamps \(T_c(t)\) and ideal times \(T_{\text{ref}}(t)\), compute:
+\[
+e_c(t)=T_c(t)-T_{\text{ref}}(t).
+\]
+In one embodiment, the controller estimates and subtracts systematic offsets (e.g., fixed driver propagation delay) to isolate variable timing error.
+
+\subsection*{4. Coherence Monitoring}
+
+\paragraph{4.1 Motivation.}
+Even if edge timestamps are within tolerance, a driver may fail to produce the intended physical waveform due to load changes, saturation, supply droop, EMI, or component faults. Therefore, timing integrity is strengthened by monitoring coherence between intended commutation and observed waveforms.
+
+\paragraph{4.2 Observed signals.}
+Let \(x_c(t)\) be a measured signal per channel such as current magnitude, current sign, voltage, or a demodulated sensor output sampled synchronously with ticks.
+
+\paragraph{4.3 Expected sign sequence (example).}
+In one embodiment, a schedule specifies an expected sign \(s_c(t)\in\{-1,+1\}\) for a bipolar drive. The observed sign \(\hat{s}_c(t)\) may be inferred from current polarity or comparator outputs.
+
+\paragraph{4.4 Per-channel coherence score (example).}
+Define a coherence score over a window of length \(N\):
+\begin{equation}
+  \mathrm{Coher}_c(t_0;N) :=
+  \frac{1}{N}\sum_{k=0}^{N-1} \mathbf{1}\{\hat{s}_c(t_0+k)=s_c(t_0+k)\},
+  \label{eq:coher_sign}
+\end{equation}
+where \(\mathbf{1}\{\cdot\}\) is an indicator function. This yields a value in \([0,1]\).
+
+\paragraph{4.5 Correlation-based coherence (example).}
+For real-valued signals, define:
+\begin{equation}
+  \mathrm{Coher}_c(t_0;N) :=
+  \frac{\sum_{k=0}^{N-1} x_c(t_0+k)\,u_c(t_0+k)}
+       {\sqrt{\sum_{k=0}^{N-1} x_c(t_0+k)^2}\;\sqrt{\sum_{k=0}^{N-1} u_c(t_0+k)^2}},
+  \label{eq:coher_corr}
+\end{equation}
+where \(u_c(t)\) is an expected reference waveform derived from the schedule (e.g., \(\pm 1\) values). This yields a normalized correlation in \([-1,1]\).
+
+\paragraph{4.6 Aggregate coherence.}
+In one embodiment, the controller computes:
+\[
+\mathrm{Coher}_{\text{agg}} := \min_c \mathrm{Coher}_c
+\quad \text{or} \quad
+\mathrm{Coher}_{\text{agg}} := \frac{1}{C}\sum_c \mathrm{Coher}_c,
+\]
+and triggers mitigation if \(\mathrm{Coher}_{\text{agg}} < \gamma\) for a threshold \(\gamma\in(0,1)\).
+
+\subsection*{5. Closed-Loop Correction and Drift Compensation}
+
+\paragraph{5.1 Delay correction.}
+In one embodiment, the system updates \(d_c\) using:
+\[
+d_c \leftarrow d_c - K_e \cdot \overline{e_c},
+\]
+where \(\overline{e_c}\) is an averaged phase error and \(K_e>0\) is a gain.
+
+\paragraph{5.2 Schedule phase correction.}
+In one embodiment, the system applies a global phase shift to the schedule (equivalently, shifts the tick alignment) when common-mode error is detected across channels.
+
+\paragraph{5.3 Combined objective.}
+In one embodiment, the controller optimizes a combined objective:
+\[
+\min \left( \alpha \max_c |e_c| + \beta \max_{c,c'}|\Delta_{c,c'}| \right)
+\quad \text{subject to} \quad \mathrm{Coher}_{\text{agg}} \ge \gamma.
+\]
+
+\subsection*{6. Fault Detection and Safe-Mode Behaviors}
+
+\paragraph{6.1 Timing faults.}
+If \(|e_c|>e_{\max}\) or \(|\Delta_{c,c'}|>\Delta_{\max}\), the system declares a timing fault.
+
+\paragraph{6.2 Coherence faults.}
+If \(\mathrm{Coher}_{\text{agg}}<\gamma\) for a persistence interval, the system declares a coherence fault.
+
+\paragraph{6.3 Mitigation actions.}
+Mitigation actions include (non-limiting):
+\begin{itemize}[leftmargin=*]
+  \item detune/phase slip injection (soft stop),
+  \item reduction of drive amplitude or duty,
+  \item switching to a safe neutral kernel,
+  \item full shutdown with latching fault state.
+\end{itemize}
+
+\subsection*{7. Deterministic Replay and Provenance (Optional)}
+
+In one embodiment, the system stores a replay bundle containing:
+\begin{itemize}[leftmargin=*]
+  \item a canonical schedule representation,
+  \item calibration parameters \(\{d_c\}\),
+  \item measured jitter/skew statistics and thresholds,
+  \item hashes and signatures for integrity.
+\end{itemize}
+The bundle enables reproduction of timing and coherence behavior across runs.
+
+% ===========================================================================
+% CLAIMS (DRAFT / PROVISIONAL-STYLE)
+% ===========================================================================
+\section*{Claims (Draft)}
+
+\textbf{Note:} The following claims are an initial, non-limiting claim set intended to preserve multiple fallback positions. Final claim strategy should be reviewed by counsel.
+
+\subsection*{Independent Claims}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{(System)} A multi-phase commutation system comprising: a reference clock source; a clock distribution network configured to provide a clock signal to a plurality of drive channels; measurement circuitry configured to obtain timing measurements of commutation events associated with the plurality of drive channels; and a controller configured to compute a phase error based on the timing measurements and to output a corrective action to reduce at least one of clock jitter or inter-channel skew.
+
+  \item \textbf{(Method)} A method of operating a multi-channel drive system, the method comprising: distributing a reference clock to a plurality of channels; generating commutation events according to a schedule; measuring actual event times for at least one commutation event per channel; computing a phase error between the actual event times and expected event times; computing a coherence score comparing observed electrical behavior to expected behavior; and modifying at least one of a per-channel delay, a schedule phase, or a drive amplitude based on the phase error and the coherence score.
+
+  \item \textbf{(Non-transitory medium)} A non-transitory computer-readable medium storing instructions that, when executed by one or more processors, cause the one or more processors to: compute per-channel phase errors from captured event timestamps; compute an aggregate coherence score from measured current or voltage waveforms and an expected reference waveform; and trigger a fault mitigation action when at least one of a phase error bound or a coherence threshold is violated.
+\end{enumerate}
+
+\subsection*{Dependent Claims (Examples; Non-Limiting)}
+
+\begin{enumerate}[leftmargin=*]
+  \setcounter{enumi}{3}
+  \item The system of claim 1, wherein the measurement circuitry comprises a time-to-digital converter referenced to the reference clock source.
+  \item The system of claim 1, wherein the controller is configured to apply a per-channel digitally controlled delay to reduce inter-channel skew.
+  \item The method of claim 2, wherein measuring actual event times comprises capturing gate-drive edge timestamps.
+  \item The method of claim 2, wherein computing the coherence score comprises computing a normalized correlation between a measured signal and an expected schedule-derived waveform.
+  \item The method of claim 2, wherein modifying comprises switching to a safe neutral kernel when the coherence score falls below a threshold.
+  \item The non-transitory medium of claim 3, wherein the fault mitigation action comprises detuning or phase slip injection.
+  \item The system of claim 1, wherein the clock distribution network comprises differential signaling over matched-length traces.
+  \item The system of claim 1, further comprising storing a deterministic replay bundle including the schedule and calibration parameters.
+\end{enumerate}
+
+% ===========================================================================
+% FALLBACK POSITIONS / ADDITIONAL EMBODIMENTS
+% ===========================================================================
+\section*{Additional Embodiments and Fallback Positions (Non-Limiting)}
+
+\begin{itemize}[leftmargin=*]
+  \item Timing measurements may be obtained from any combination of edge capture, comparator crossing, ADC interpolation, or digital markers.
+  \item Coherence monitoring may use sign agreement, correlation, spectral coherence, lock-in techniques, or combinations thereof.
+  \item Corrective actions may include delay calibration, schedule phase shifting, frequency nudging, amplitude/duty reduction, detuning, or shutdown.
+  \item The system may enforce different timing bounds depending on operating mode or frequency.
+  \item The system may report timing metrics and coherence metrics in real time and store them for forensic analysis.
+\end{itemize}
+
+\vspace{1em}
+\hrule
+\vspace{0.75em}
+\noindent \textbf{End of Specification (Draft)}
+
+\end{document}
+

@@ -1,0 +1,185 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{hyperref}
+
+% Simple page style
+\pagestyle{plain}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\begin{document}
+
+\begin{center}
+\textbf{\LARGE PATENT APPLICATION}\\[0.5cm]
+\textbf{\Large Method and System for Hybrid-Verified Seam-Contract Simulation Architecture\\in Safety-Critical Fusion Control}\\[1cm]
+
+\begin{tabular}{rl}
+\textbf{Application Type:} & Utility Patent \\
+\textbf{Filing Date:} & January 25, 2026 \\
+\textbf{Inventor:} & Jonathan Washburn \\
+\textbf{Technology Field:} & Fusion Energy / Software Architecture / Formal Methods \\
+\textbf{International Class:} & G06F 11/36; G05B 19/042; G21D 3/00 \\
+\end{tabular}
+\end{center}
+
+\vspace{1cm}
+\hrule
+\vspace{0.5cm}
+
+\section*{ABSTRACT}
+
+A method and system for constructing safety-critical simulation and control software using a ``Hybrid-Verified Seam-Contract'' architecture. The invention partitions the software into two domains: a certified specification/proof kernel (e.g., Lean 4 sources defining and proving model-layer invariants) and an empirical shell (e.g., Python) that handles I/O, numerical approximation, and hardware interfacing. The domains interact through explicit ``Seam Contracts''—data structures and predicates that define validity conditions for empirical data and explicitly declare which assumptions are empirical seams (hypotheses) versus certified properties. The runtime system implements contract checks (e.g., range/domain guards and envelope predicates) and emits auditable certificate/artifact records (hash-based by default) so that contract violations are detected and blocked before propagating to safety-critical outputs. This architecture enables high-assurance fusion control systems without claiming that the entire physics simulation is formally verified.
+
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+
+\section{BACKGROUND OF THE INVENTION}
+
+\subsection{Technical Field}
+
+This invention relates generally to software architecture for high-assurance control systems, and specifically to methods for integrating formal verification with high-performance numerical simulation in nuclear fusion environments.
+
+\subsection{Description of Related Art}
+
+Fusion reactor control involves complex physics simulations (e.g., magnetohydrodynamics, neutronics) that are traditionally implemented in languages like Fortran, C++, or Python for performance. However, these languages lack the rigorous safety guarantees required for licensing commercial nuclear plants.
+
+Formal verification (using theorem provers like Coq or Lean) can provide mathematical guarantees of correctness, but it is often too slow or rigid for entire physics simulations.
+
+A common compromise is ``runtime verification,'' where monitors check outputs. However, without a structural guarantee that the monitors match the formal specification, the safety case remains weak.
+
+There is a need for an architecture that structurally enforces the separation of ``proven logic'' from ``empirical approximation'' while maintaining high performance.
+
+\section{SUMMARY OF THE INVENTION}
+
+The present invention provides a \textbf{Hybrid-Verified Seam-Contract Architecture}.
+
+The system comprises:
+\begin{enumerate}
+    \item \textbf{Certified Kernel:} A core logic module written in a proof assistant (e.g., Lean 4). It defines and proves model-layer invariants used by the controller (e.g., monotonicity/boundedness of barrier scaling). It serves as the certified specification (and may optionally be exported as an executable interface).
+    \item \textbf{Empirical Shell:} A high-performance outer layer (e.g., Python) that manages data ingestion, matrix operations, and hardware drivers.
+    \item \textbf{Seam Contracts:} Explicit data structures defined in the Kernel that specify the \textit{preconditions} required for data to enter the Kernel and the \textit{postconditions} guaranteed by the Kernel.
+    \item \textbf{Runtime Bridge:} A middleware layer that:
+    \begin{itemize}
+        \item Intercepts data passing from Shell to Kernel.
+        \item Validates it against the Seam Contract (e.g., checking bounds, types, and calibration signatures).
+        \item Rejects non-compliant data, preventing the Kernel from entering an undefined state.
+    \end{itemize}
+\end{enumerate}
+
+This architecture treats the Empirical Shell as an ``untrusted oracle'' that proposes values, while the Certified Kernel acts as a ``gatekeeper'' that accepts them only if they satisfy the formal contract.
+
+\section{BRIEF DESCRIPTION OF THE DRAWINGS}
+
+\begin{itemize}
+    \item \textbf{FIG. 1} is a high-level block diagram of the Hybrid Architecture.
+    \item \textbf{FIG. 2} illustrates the data flow through a Seam Contract.
+    \item \textbf{FIG. 3} shows the mapping between Lean structures and Python classes.
+\end{itemize}
+
+\section{DETAILED DESCRIPTION OF EMBODIMENTS}
+
+\subsection{Definitions}
+
+\begin{itemize}
+    \item \textbf{Certified Kernel:} The subset of code that is formally verified.
+    \item \textbf{Empirical Shell:} The subset of code that relies on testing and approximation.
+    \item \textbf{Seam Contract:} A formal specification of the interface between Kernel and Shell.
+    \item \textbf{Digital Twin:} A simulation instance running this architecture.
+\end{itemize}
+
+\subsection{The Seam Contract Mechanism}
+
+A Seam Contract consists of:
+\begin{enumerate}
+    \item \textbf{Type Definition:} A rigorous data type (e.g., \texttt{PositiveReal}) defined in the Kernel.
+    \item \textbf{Predicate:} A logical condition (e.g., $x > 0$) that must hold.
+    \item \textbf{Witness:} A proof token (in the formal domain) or a runtime check (in the executable domain) that attests to the satisfaction of the predicate.
+\end{enumerate}
+
+\textbf{Example:} The \texttt{TraceabilityHypothesis} (from PF-09) is a Seam Contract. It requires the Shell to provide calibration parameters (Scale, Offset) and asserts that the physical measurement lies within that envelope. The Kernel's safety proof is conditional on this contract.
+
+\subsection{Runtime Implementation}
+
+In the preferred embodiment (Python + Lean):
+\begin{itemize}
+    \item The Kernel defines a stable executable interface specification (and may export a shared library in some deployments).
+    \item The Shell implements or wraps the executable interface via a Bridge layer.
+    \item When the Shell calls \texttt{compute\_barrier\_scale(inputs)}, the Bridge:
+    \begin{enumerate}
+        \item Hashes the inputs.
+        \item Checks if the inputs satisfy the \texttt{RSCoherenceParams} contract (e.g., values in $[0,1]$) and records explicit seams (e.g., calibration envelope predicates) when applicable.
+        \item Passes valid inputs to the Kernel function.
+        \item Receives the result and the \texttt{CertificateBundle}.
+        \item Returns the result to the Shell.
+    \end{enumerate}
+\end{itemize}
+
+\subsection{Self-Check Integration}
+
+The architecture includes a mandatory \texttt{selfcheck} module (PF-12) that verifies the integrity of the runtime bridge and the Lean-aligned executable interfaces at startup. It ensures that key invariants and interface-level identities hold under the deployed numerical environment; any stronger claim (e.g., hardware attestation or non-repudiable signing) is an explicit integration seam.
+
+\subsection{Advantages}
+
+\begin{itemize}
+    \item \textbf{Performance:} Heavy number crunching happens in the optimized Shell.
+    \item \textbf{Safety:} Critical logic (safety interlocks, threshold checks) happens in the verified Kernel.
+    \item \textbf{Auditability:} The Seam Contracts force explicit documentation of all empirical assumptions.
+\end{itemize}
+
+\section{CLAIMS}
+
+\begin{enumerate}
+    \item \textbf{A method for constructing safety-critical simulation software, comprising:}
+    \begin{enumerate}
+        \item defining a certified kernel module containing formally verified logic and data types;
+        \item defining an empirical shell module containing unverified numerical and input/output logic;
+        \item establishing a seam contract interface between the kernel and the shell, wherein the contract specifies validity predicates for all data entering the kernel;
+        \item implementing a runtime bridge that intercepts data transfer between the shell and the kernel; and
+        \item configuring the bridge to validate data against the seam contract predicates and block execution if a violation is detected.
+    \end{enumerate}
+
+    \item The method of claim 1, wherein the certified kernel is implemented in a theorem proving language and the empirical shell is implemented in a general-purpose programming language.
+
+    \item The method of claim 1, wherein the runtime bridge computes a cryptographic input digest of the input data configuration for auditability.
+
+    \item The method of claim 1, wherein the runtime bridge generates a certificate artifact recording the contract validation status for each execution.
+
+    \item \textbf{A hybrid control architecture for fusion reactors, comprising:}
+    \begin{enumerate}
+        \item a verified core implementing safety logic and conservation laws;
+        \item an unverified outer layer implementing sensor drivers and optimization heuristics;
+        \item a contract enforcement layer interposed between the core and the outer layer; and
+        \item a self-verification module configured to check the consistency of data definitions between the core and the outer layer upon system initialization.
+    \end{enumerate}
+
+    \item The system of claim 5, wherein the contract enforcement layer rejects control actions proposed by the outer layer that do not satisfy the safety logic of the verified core.
+
+    \item \textbf{A non-transitory computer-readable medium storing instructions that, when executed by a processor, cause a control system to:}
+    \begin{enumerate}
+        \item receive a candidate control parameter from an empirical algorithm;
+        \item validate the candidate parameter against a formal contract defined in a verified software kernel;
+        \item execute the kernel logic using the parameter only if validation succeeds; and
+        \item output a certified control command or a contract violation error.
+    \end{enumerate}
+\end{enumerate}
+
+\section*{APPENDIX: Implementation Evidence}
+
+The core logic of this invention is implemented in the accompanying software artifacts:
+\begin{itemize}
+    \item \textbf{Python Implementation (bridge checks + audit artifacts):}
+    \texttt{fusion/simulator/fusion/certificate.py} (hash-based \texttt{CertificateBundle} + theorem refs),
+    \texttt{fusion/simulator/control/artifacts.py} (seam notes + canonical hashing for diagnostic runs),
+    and \texttt{fusion/simulator/selfcheck.py} (runtime integrity check + \texttt{run\_safety\_gate}).
+    \item \textbf{Formal Definition:} The \texttt{TraceabilityHypothesis} and \texttt{CertificateBundle} structures in \texttt{IndisputableMonolith/Fusion/DiagnosticsBridge.lean} define the formal side of the Seam Contract.
+\end{itemize}
+
+\end{document}

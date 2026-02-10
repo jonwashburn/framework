@@ -1,0 +1,203 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{hyperref}
+
+% Simple page style
+\pagestyle{plain}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\begin{document}
+
+\begin{center}
+\textbf{\LARGE PATENT APPLICATION}\\[0.5cm]
+\textbf{\Large Method and System for Generating Auditable Viability Certificates\\for Nuclear Fusion Ignition Using Solvable Thresholds}\\[1cm]
+
+\begin{tabular}{rl}
+\textbf{Application Type:} & Utility Patent \\
+\textbf{Filing Date:} & January 25, 2026 \\
+\textbf{Inventor:} & Jonathan Washburn \\
+\textbf{Technology Field:} & Fusion Energy / Reactor Control / Formal Verification \\
+\textbf{International Class:} & G21B 1/00; G05B 19/00; G06F 17/11 \\
+\end{tabular}
+\end{center}
+
+\vspace{1cm}
+\hrule
+\vspace{0.5cm}
+
+\section*{ABSTRACT}
+
+A method and system for certifying \textit{model-layer viability} of nuclear fusion operating points under committed, auditable proxy models. The invention introduces a rigorous method for calculating explicit, solvable thresholds for temperature ($T^*$) and reaction rate enhancement ($E^*$) that are sufficient to guarantee a positive net-power inequality in a specified loss/heating proxy model. By committing to an explicit model of bremsstrahlung and transport losses and an explicit deposited-heating proxy, the system derives a conservative sufficient condition: if $T \ge T^*$ and the enhancement factor $E \ge E^*$ (with required domain conditions such as $n>0$ and positive deposition/heating coefficients), then the formal viability inequality holds in the committed proxy model. The system generates an auditable certificate bundle for each operating point, including a cryptographic input digest (e.g., SHA-256 over canonicalized inputs), computed thresholds, pass/fail status, and references to machine-checked theorems (e.g., in Lean 4) proving the stated sufficiency result. This provides a deterministic mechanism for gating high-power operations \textit{under an explicit seam-labeled model}, without claiming facility-independent physical ignition.
+
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+
+\section{BACKGROUND OF THE INVENTION}
+
+\subsection{Technical Field}
+
+This invention relates generally to the control and certification of nuclear fusion reactors, and specifically to methods for determining and verifying the conditions required for self-sustaining fusion burn (ignition).
+
+\subsection{Description of Related Art}
+
+Fusion ignition occurs when the energy deposited by fusion products (e.g., alpha particles) exceeds the energy lost to radiation (bremsstrahlung) and transport. The classic Lawson criterion ($n\tau T$) provides a general figure of merit but is often insufficient for real-time control because it relies on simplified assumptions about loss scaling.
+
+In advanced fusion concepts (like Coherence-Controlled Fusion, PF-01), the reaction rate is enhanced by a factor $E$ due to barrier suppression. Operators need to know: ``For a given enhancement $E$, what is the minimum temperature $T$ required for net gain?''
+
+Existing control systems typically use look-up tables or complex numerical simulations (hydrocodes) to answer this. These methods are:
+\begin{itemize}
+    \item \textbf{Opaque:} The assumptions inside the code are hidden.
+    \item \textbf{Unverified:} There is no formal proof that the code's output guarantees ignition.
+    \item \textbf{Slow:} Hydrocodes are too computationally expensive for kHz-rate control loops.
+\end{itemize}
+
+There is a need for a method that provides \textbf{explicit, solvable thresholds} for ignition that can be computed instantly and are backed by a rigorous mathematical proof.
+
+\section{SUMMARY OF THE INVENTION}
+
+The present invention provides a \textbf{Viability Certification System} that computes guaranteed ignition thresholds based on a formally verified power balance model.
+
+The method comprises:
+\begin{enumerate}
+    \item \textbf{Model Commitment:} Explicitly defining the loss power $P_{\text{loss}}(T, n, Z_{\text{eff}})$ (bremsstrahlung + transport) and the fusion heating power $P_{\text{heat}}(T, n)$.
+    \item \textbf{Threshold Derivation:} Calculating two critical values:
+    \begin{itemize}
+        \item \textbf{Temperature Threshold ($T^*$):} The temperature above which the Gamow tunneling exponent behaves favorably (specifically, $\eta(T) \le 1$). This is derived from nuclear constants: $T^* = \max(1, \text{gamowCoeff}^2)$.
+        \item \textbf{Enhancement Threshold ($E^*$):} The minimum reaction rate multiplier required to overcome losses at the target density. $E^* = \frac{k_{\text{brem}}Z_{\text{eff}} + k_{\text{tr}}/n}{A} + 1$, where $A$ is a fusion constant.
+    \end{itemize}
+    \item \textbf{Certification:} Evaluating the reactor state $(T, E)$. If $T \ge T^*$ and $E \ge E^*$, the system issues a \textbf{Viability Certificate}.
+    \item \textbf{Formal Guarantee:} The certificate references a machine-checked theorem (e.g., \texttt{viable\_of\_T\_ge\_T\_star...}) proving that these conditions are \textit{sufficient} for $P_{\text{heat}} > P_{\text{loss}}$.
+\end{enumerate}
+
+This approach replaces heuristic guesses with algebraic guarantees, enabling safe, automated reactor startup sequences.
+
+\section{BRIEF DESCRIPTION OF THE DRAWINGS}
+
+\begin{itemize}
+    \item \textbf{FIG. 1} plots the power balance curves $P_{\text{heat}}$ vs $P_{\text{loss}}$ and identifies the ignition point.
+    \item \textbf{FIG. 2} shows the viability region in the $(T, E)$ plane defined by $T^*$ and $E^*$.
+    \item \textbf{FIG. 3} is a block diagram of the certification module.
+\end{itemize}
+
+\section{DETAILED DESCRIPTION OF EMBODIMENTS}
+
+\subsection{Definitions}
+
+\begin{itemize}
+    \item \textbf{Viability (model-layer):} The condition where the deposited fusion-heating proxy exceeds the total loss proxy, i.e. $P_{\text{heat}} > P_{\text{loss}}$ under the committed proxy model.
+    \item \textbf{Enhancement Factor ($E$):} The ratio of the actual reaction rate to the classical baseline rate (e.g., due to RS barrier scaling).
+    \item \textbf{Gamow Coefficient:} A nuclear constant determining the stiffness of the tunneling barrier.
+    \item \textbf{Power Balance Parameters:} Coefficients for bremsstrahlung ($k_{\text{brem}}$), transport ($k_{\text{tr}}$), and fusion energy ($k_{\text{fus}}$).
+    \item \textbf{Domain conditions:} For the closed-form thresholds used here, the system requires (at minimum) $n>0$, $Z_{\text{eff}}\ge 0$, and positive deposited-heating coefficients (e.g., $f_{\text{dep}}>0$ and $k_{\text{fus}}>0$) so that the enhancement threshold is well-defined.
+\end{itemize}
+
+\subsection{The Power Balance Model}
+
+The system commits to the following model (in normalized units):
+\[
+P_{\text{loss}} = k_{\text{brem}} Z_{\text{eff}} n^2 \sqrt{T} + k_{\text{tr}} n T
+\]
+\[
+P_{\text{heat}} = E \cdot f_{\text{dep}} \cdot k_{\text{fus}} n^2 \cdot \text{proxy}(T)
+\]
+where the proxy for fusion reactivity is $\text{proxy}(T) = T \exp(-\eta(T))$.
+
+\subsection{Threshold Computation}
+
+The system computes the thresholds algebraically.
+
+\subsubsection{Temperature Threshold $T^*$}
+Derived from the condition that the Gamow exponent $\eta(T) \le 1$ to ensure the reactivity proxy behaves monotonically.
+\[
+T^* = \max(1, (31.3 Z_1 Z_2 \sqrt{\mu})^2)
+\]
+(Units: keV in this committed proxy convention. The coefficient $31.3$ is an explicit constant of the model-layer Gamow proxy used by the certified sufficiency theorem; its physical interpretation/calibration is a seam if mapped to facility units.)
+
+\subsubsection{Enhancement Threshold $E^*$}
+Derived from a conservative lower-bound regime used in the proof (specifically $T\ge 1$ and $\eta(T)\le 1$, which are ensured by $T\ge T^*$). The resulting closed-form $E^*$ is independent of $T$ and requires $n>0$ and a positive baseline heating factor.
+\[
+E^* = \frac{k_{\text{brem}} Z_{\text{eff}} + k_{\text{tr}}/n}{f_{\text{dep}} k_{\text{fus}} e^{-1}} + 1
+\]
+This formula guarantees that if the enhancement is at least $E^*$, the fusion curve sits above the loss curve in the relevant regime.
+
+\subsection{Certification Workflow}
+
+\begin{enumerate}
+    \item \textbf{Input:} Receive real-time plasma parameters: $T$ (temperature), $n$ (density), $Z_{\text{eff}}$ (impurity), and $E$ (current coherence enhancement).
+    \item \textbf{Compute:} Calculate $T^*$ and $E^*$ using the fixed nuclear constants and current density.
+    \item \textbf{Check:}
+    \begin{itemize}
+        \item Is $T \ge T^*$?
+        \item Is $E \ge E^*$?
+    \end{itemize}
+    \item \textbf{Issue:}
+    \begin{itemize}
+        \item If YES: Generate a \texttt{ViabilityCertificate} with \texttt{passed=true}.
+        \item If NO: Generate a certificate with \texttt{passed=false} and the required gap (e.g., ``Need +2 keV'').
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Formal Verification Link}
+
+The validity of this method relies on the theorem:
+\[
+(T \ge T^*) \land (E \ge E^*) \implies P_{\text{heat}}(T) > P_{\text{loss}}(T)
+\]
+This theorem is formally proven in the accompanying Lean 4 codebase (\texttt{IndisputableMonolith/Fusion/ViabilityThresholds.lean}). The runtime certificate records theorem identifiers (references) and an input digest binding the certificate to the evaluated operating point and parameters; optional external signing and/or proof-hash pinning can be added as an integration step if required by a facility.
+
+\section{CLAIMS}
+
+\begin{enumerate}
+    \item \textbf{A method for certifying nuclear fusion viability, comprising:}
+    \begin{enumerate}
+        \item defining a power balance model comprising a loss function and a fusion heating function parameterized by an enhancement factor $E$;
+        \item deriving an explicit temperature threshold $T^*$ based on nuclear Gamow coefficients;
+        \item deriving an explicit enhancement threshold $E^*$ based on the ratio of loss coefficients to fusion coefficients;
+        \item measuring a physical temperature $T$ and a current enhancement factor $E$ of a fusion plasma; and
+        \item generating a digital certificate affirming viability if $T \ge T^*$ and $E \ge E^*$.
+    \end{enumerate}
+
+    \item The method of claim 1, wherein the temperature threshold is calculated as $T^* = \max(1, C_G^2)$, where $C_G$ is a Gamow coefficient.
+
+    \item The method of claim 1, wherein the enhancement threshold is calculated as $E^* = (L_0 / H_0) + 1$, where $L_0$ represents baseline losses and $H_0$ represents baseline heating.
+
+    \item The method of claim 1, wherein the digital certificate includes a reference to a machine-checked mathematical proof that the conditions $T \ge T^*$ and $E \ge E^*$ are sufficient to guarantee net positive power in the defined model.
+
+    \item \textbf{A control system for a fusion reactor, comprising:}
+    \begin{enumerate}
+        \item a parameter estimator configured to determine plasma density, temperature, and impurity content;
+        \item a threshold engine configured to compute a required minimum temperature and minimum reaction rate enhancement for ignition;
+        \item a comparator configured to verify if the current plasma state exceeds said minimums; and
+        \item a permissive logic module configured to enable high-power operations only upon successful verification.
+    \end{enumerate}
+
+    \item The system of claim 5, wherein the threshold engine implements an algebraic solution derived from a convex bound on the power balance inequality.
+
+    \item \textbf{A non-transitory computer-readable medium storing instructions that, when executed by a processor, cause a system to:}
+    \begin{enumerate}
+        \item ingest plasma state variables;
+        \item calculate sufficient conditions for ignition using a formally verified inequality model;
+        \item output a viability status indicating whether the plasma is in a guaranteed burn regime; and
+        \item log the viability status and the calculated thresholds to an audit trail.
+    \end{enumerate}
+\end{enumerate}
+
+\section*{APPENDIX: Implementation Evidence}
+
+The core logic of this invention is implemented in the accompanying software artifacts:
+\begin{itemize}
+    \item \textbf{Python Implementation:} \texttt{fusion/simulator/fusion/viability\_thresholds.py} implements the \texttt{compute\_thresholds} and \texttt{guaranteed\_viable} functions.
+    \item \textbf{Certificate Emission (Python):} \texttt{fusion/simulator/fusion/certificate.py} can emit a certificate bundle for the viability-threshold check, including an input hash and theorem references.
+    \item \textbf{Formal Verification:} The sufficiency theorem is proven in Lean 4 in \texttt{IndisputableMonolith/Fusion/ViabilityThresholds.lean}, specifically the theorem \texttt{viable\_of\_T\_ge\_T\_star\_and\_E\_ge\_E\_star}.
+\end{itemize}
+
+\end{document}

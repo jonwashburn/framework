@@ -1,0 +1,9 @@
+import Mathlib
+#check le_div_iff
+#check le_div_iff'
+#check le_div_iff_of_pos
+#check le_div_iff_of_neg
+#check div_le_iff
+#check div_le_iff'
+#check div_le_iff_of_pos
+#check div_le_iff_of_neg

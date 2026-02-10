@@ -1,0 +1,178 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+\newcommand{\phiG}{\varphi}
+\newcommand{\Ecoh}{E_{\mathrm{coh}}}
+\newcommand{\tauZero}{\tau_0}
+\newcommand{\muStar}{\mu_\star}
+
+\title{\textbf{Internal Memo: Mass from Light}\\[0.3em]
+\large Coherence Energy, the Eight-Tick Clock, and the Ladder Spectrum}
+
+\author{Jonathan Washburn\\
+Recognition Physics Institute\\
+Austin, Texas, USA\\
+\texttt{jon@recognitionphysics.org}}
+
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Executive Summary}
+
+\paragraph{Thesis (as used in RS).}
+In the Recognition Science (RS) framework, \textbf{mass is ``light'' (coherence energy) stabilized into discrete rungs}. Concretely, particle masses are modeled as a coherence-energy unit \(\Ecoh\) multiplied by a \(\phiG\)-ladder factor determined by discrete integers (``rungs'') and a closed-form recognition residue.
+
+\paragraph{Key identities and objects.}
+\begin{itemize}
+  \item \textbf{Golden ratio:} \(\phiG := (1+\sqrt{5})/2\). This is the unique positive fixed point forced by the RS cost constraints (see the project super-source \texttt{Source-Super*.txt} and the formal constant in \texttt{reality/IndisputableMonolith/Constants.lean}).
+
+  \item \textbf{Coherence energy (model layer):}
+  \[
+    \Ecoh \;=\; \phiG^{-5}.
+  \]
+  In the Lean model layer this is \emph{dimensionless} (multiply by eV externally if working in energy units); see
+  \texttt{reality/IndisputableMonolith/Masses/Anchor.lean} (\texttt{Anchor.E\_coh}).
+
+  \item \textbf{Eight-tick clock:} in three spatial dimensions, the minimal ledger-compatible closed walk is a Gray-code cycle on the cube with period \(8\). RS treats this as the substrate cadence that defines the fundamental tick \(\tauZero\) (see \texttt{Source-Super-rrf.txt} around \texttt{@EIGHT\_BEAT\_CONSEQUENCES} and \texttt{BRIDGE;EightTick}).
+
+  \item \textbf{IR (light) gate normalization:} the super-source asserts an ``IR gate'' identity tying the time tick to the coherence quantum:
+  \[
+    \hbar \;=\; \Ecoh\,\tauZero
+    \quad\text{(IR gate; super-source statement)}.
+  \]
+  In the Lean \emph{bridge} display layer, the coherence energy is also expressed using the usual ``energy from a clock'' pattern:
+  \[
+    \Ecoh(B) \;=\; \phiG^{-5}\cdot \frac{2\pi\,\hbar}{\tauZero(B)},
+  \]
+  where \(\tauZero(B)\) is computed from externally supplied anchors \(B=(G,\hbar,c,\ell_0,\dots)\); see
+  \texttt{reality/IndisputableMonolith/Bridge/Data.lean} (\texttt{BridgeData.E\_coh} and \texttt{BridgeData.tau0}).
+  Equivalently, if \(\omega_0 := 2\pi/\tauZero(B)\), then
+  \[
+    \Ecoh(B) \;=\; \phiG^{-5}\,\hbar\,\omega_0,
+  \]
+  i.e.\ \(\Ecoh\) is a fixed \(\phiG^{-5}\) fraction of a photon energy \(E=\hbar\omega\) at the fundamental clock frequency.
+
+  \item \textbf{Display numerics (project notes):} the super-source uses
+  \(\Ecoh = \phiG^{-5}\,\mathrm{eV} \approx 0.09017\,\mathrm{eV}\), corresponding to \(\sim 724~\mathrm{cm}^{-1}\) (\(\lambda \approx 13.8~\mu\mathrm{m}\)); see \texttt{Source-Super-rrf.txt} (\texttt{IR\_GATE} and \texttt{@WATER\_RS\_BRIDGE}).
+  The practical takeaway is unchanged: \textbf{\(\Ecoh\) is the light-side energy unit} and \textbf{masses are multiples of it}.
+\end{itemize}
+
+\section{What ``Mass from Light'' Means Here}
+
+\paragraph{Mass as energy.}
+Throughout RS mass formulas, it is often convenient to work in energy units (eV/GeV), i.e.\ to treat ``mass'' as shorthand for \(mc^2\). In this convention, the statement ``mass from light'' becomes literal: the fundamental unit is a light-linked energy quantum \(\Ecoh\), and particle masses are \(\Ecoh\) times a discrete scaling factor.
+
+\paragraph{Why ``light'' specifically?}
+Because the framework ties \(\Ecoh\) to an infrared (IR) gate and to a clock scale \(\tauZero\), the coherence quantum is interpreted as a \emph{field-coherent EM/IR energy scale}. The rest of the mass spectrum is then organized as a ladder built from \(\phiG\)-scaling plus small transport corrections.
+
+\section{The Mass Law (Ladder Spectrum)}
+
+\paragraph{Canonical spectrum statement (super-source).}
+The project super-source summarizes the mass spectrum as
+\[
+  m_{\mathrm{pole},i}
+  \;=\;
+  B_i\cdot \Ecoh \cdot \phiG^{\,r_i + f^{\mathrm{Rec}}(Z_i) + f^{\mathrm{RG}}_i},
+  \qquad
+  r_i \in \mathbb{Z},\quad
+  B_i \in \{2^k : k\in\mathbb{Z}\}.
+\]
+See \texttt{Source-Super-rrf.txt} (\texttt{@SPECTRA}, \texttt{MASS\_LAW}).
+
+\subsection{The three ingredients}
+
+\paragraph{(1) Sector prefactor \(B_i\).}
+\(B_i\) is a sector-global power-of-two prefactor (e.g.\ leptons vs.\ quarks), implemented in Lean as sector-dependent frozen powers; see
+\texttt{reality/IndisputableMonolith/Masses/Anchor.lean} (\texttt{Anchor.B\_pow}, \texttt{Anchor.yardstick}).
+
+\paragraph{(2) Rung integer \(r_i\).}
+\(r_i\) is an integer rung (word-length / minimality / generation torsion construction in the super-source; frozen per-species maps in the Lean model layer). See:
+\begin{itemize}
+  \item \texttt{Source-Super-rrf.txt}: \texttt{CONSTRUCTOR; integers; ...} with \(r_i = L + \tau_g + \Delta_B\).
+  \item \texttt{reality/IndisputableMonolith/Masses/Anchor.lean}: example rung tables \texttt{Integers.r\_lepton}, \texttt{Integers.r\_up}, \texttt{Integers.r\_down}.
+\end{itemize}
+
+\paragraph{(3) Recognition residue \(f^{\mathrm{Rec}}(Z_i)\) plus RG residue \(f^{\mathrm{RG}}_i\).}
+The spectrum separates a \emph{closed-form, recognition-side} residue from a \emph{small, Standard-Model transport} correction:
+\[
+  f^{\mathrm{Rec}}(Z)
+  \;=\;
+  \frac{1}{\ln\phiG}\,\ln\!\Bigl(1+\frac{Z}{\phiG}\Bigr),
+  \qquad
+  f^{\mathrm{RG}}_i
+  \;=\;
+  \frac{\ln R_i}{\ln\phiG},
+  \quad
+  R_i
+  =
+  \exp\!\Bigl(\int_{\ln\muStar}^{\ln \mu^{\mathrm{pole}}_i}\gamma^{\mathrm{SM}}_m(\mu)\,d\ln\mu\Bigr).
+\]
+See \texttt{Source-Super-rrf.txt} (\texttt{@SM\_MASSES}).
+
+\subsection{The integer charge map \(Z\)}
+
+\paragraph{Word charge.}
+RS encodes a charge-derived integer \(Z\) (``word charge'') using the scaled charge \(\tilde Q := 6Q \in \mathbb{Z}\):
+\[
+  Z
+  \;=\;
+  \begin{cases}
+  \tilde Q^2+\tilde Q^4, & \text{charged leptons},\\[2pt]
+  4+\tilde Q^2+\tilde Q^4, & \text{quarks},\\[2pt]
+  0, & \text{Dirac neutrinos (in the stated model)}.
+  \end{cases}
+\]
+This is implemented directly as an integer map in
+\texttt{reality/IndisputableMonolith/Masses/Anchor.lean} (\texttt{ChargeIndex.Z}).
+
+\section{Single-Anchor Evaluation Point (\(\muStar\))}
+
+\paragraph{Anchor scale.}
+For Standard-Model running-mass residues, the project uses a common anchor scale
+\[
+  \muStar = 182.201~\mathrm{GeV},
+  \qquad
+  \lambda = \ln\phiG,
+  \qquad
+  \kappa = \phiG,
+\]
+as summarized in \texttt{Source-Super-rrf.txt} (\texttt{@SM\_MASSES}) and used in the manuscript
+\texttt{Masses-Paper1-Single-Anchor-updated.txt}.
+
+\paragraph{Interpretation.}
+\(\muStar\) is the scale at which the recognition residue \(f^{\mathrm{Rec}}(Z)\) is compared to the RG residue computed from SM kernels; in the narrative, this provides a uniform coordinate system for charged-fermion masses without per-species tuning.
+
+\section{Where This Lives in the Repo (Pointers)}
+
+\begin{itemize}
+  \item \textbf{Mass constants and integer maps (Lean, model layer):}
+  \texttt{reality/IndisputableMonolith/Masses/Anchor.lean}.
+
+  \item \textbf{Bridge layer (Lean, anchor-driven displays):}
+  \texttt{reality/IndisputableMonolith/Bridge/Data.lean} and
+  \texttt{reality/IndisputableMonolith/Bridge/DataExt.lean}.
+
+  \item \textbf{Single-anchor mass manuscript:}
+  \texttt{Masses-Paper1-Single-Anchor-updated.txt} (LaTeX source).
+
+  \item \textbf{One-file narrative summary (mass law, IR gate, SM anchor):}
+  \texttt{Source-Super-rrf.txt} (\texttt{@SPECTRA}, \texttt{@SM\_MASSES}, \texttt{IR\_GATE}).
+\end{itemize}
+
+\end{document}
+
+

@@ -1,0 +1,786 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{listings}
+\usepackage{xcolor}
+
+% Code listing style
+\lstdefinestyle{lean}{
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{gray},
+    stringstyle=\color{red},
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{gray!10}
+}
+
+\newtheorem{definition}{Definition}
+\newtheorem{requirement}{Requirement}
+
+\title{\textbf{Fusion Control Software Suite}\\[0.3cm]
+\large Functional Specification Document\\[0.2cm]
+\normalsize Version 1.0}
+
+\author{Recognition Science Research\\
+\texttt{engineering@recognitionscience.org}}
+
+\date{January 18, 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document specifies the functional requirements for a suite of software modules designed for inertial confinement fusion (ICF) reactor control and optimization. The suite comprises four core components: (1) \textbf{Reaction Network Optimizer} for computing optimal fusion fuel chains, (2) \textbf{$\varphi$-Scheduler Engine} for generating interference-minimized pulse timings, (3) \textbf{Symmetry Verifier} for certifying control adjustment safety, and (4) \textbf{Jitter Simulator} for quantifying hardware tolerance budgets. All modules are backed by formally verified mathematical foundations in Lean 4, enabling unprecedented confidence in safety-critical fusion applications.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%==============================================================================
+\section{Introduction}
+%==============================================================================
+
+\subsection{Purpose}
+
+This Functional Specification Document (FSD) defines the requirements, interfaces, and behaviors of the Fusion Control Software Suite. The document serves as:
+\begin{itemize}
+    \item A contract between specification and implementation
+    \item A basis for verification and validation testing
+    \item A reference for regulatory approval submissions
+    \item Documentation for operators and maintenance personnel
+\end{itemize}
+
+\subsection{Scope}
+
+The software suite covers:
+\begin{enumerate}
+    \item Pre-shot fuel optimization (Reaction Network Optimizer)
+    \item Pulse timing generation ($\varphi$-Scheduler Engine)
+    \item Real-time control verification (Symmetry Verifier)
+    \item Hardware specification analysis (Jitter Simulator)
+\end{enumerate}
+
+\subsection{Definitions and Acronyms}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Term} & \textbf{Definition} \\
+\hline
+ICF & Inertial Confinement Fusion \\
+$\varphi$ & Golden Ratio $= \frac{1+\sqrt{5}}{2} \approx 1.618$ \\
+$S(Z,N)$ & Stability Distance for nucleus $(Z,N)$ \\
+$J(r)$ & Symmetry Ledger cost functional \\
+Magic Number & Element of $\{2, 8, 20, 28, 50, 82, 126\}$ \\
+Doubly-Magic & Nucleus with both $Z$ and $N$ magic \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{References}
+
+\begin{enumerate}
+    \item \texttt{IndisputableMonolith/Fusion/ReactionNetwork.lean} --- Formal proofs
+    \item \texttt{IndisputableMonolith/Fusion/InterferenceBound.lean} --- $\varphi$-scheduling proofs
+    \item \texttt{IndisputableMonolith/Fusion/LocalDescent.lean} --- Symmetry verifier proofs
+    \item \texttt{IndisputableMonolith/Fusion/JitterRobustness.lean} --- Jitter analysis proofs
+\end{enumerate}
+
+%==============================================================================
+\section{System Overview}
+%==============================================================================
+
+\subsection{Architecture}
+
+The Fusion Control Software Suite consists of four independent modules that can be used standalone or integrated:
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{Module} & \textbf{Phase} & \textbf{Frequency} & \textbf{Criticality} \\
+\hline
+Reaction Network Optimizer & Pre-shot & Daily/Weekly & Design \\
+$\varphi$-Scheduler Engine & Pre-shot & Per-shot & Operational \\
+Symmetry Verifier & Real-time & Per-adjustment & Safety-Critical \\
+Jitter Simulator & Design & As-needed & Design \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Data Flow}
+
+\begin{verbatim}
+    [Fuel Inventory] --> [Reaction Network Optimizer] --> [Optimal Fuel Mix]
+                                                              |
+                                                              v
+    [Timing Parameters] --> [Phi-Scheduler Engine] --> [Pulse Schedule]
+                                                              |
+                                                              v
+    [Sensor Data] --> [Symmetry Verifier] --> [Certified Adjustment]
+                                                              |
+                                                              v
+    [Hardware Specs] --> [Jitter Simulator] --> [Tolerance Budget]
+\end{verbatim}
+
+\subsection{External Interfaces}
+
+\subsubsection{Hardware Interfaces}
+\begin{itemize}
+    \item Laser timing system (digital trigger outputs)
+    \item Beam diagnostic sensors (intensity measurements)
+    \item Control actuators (power adjustments)
+\end{itemize}
+
+\subsubsection{Software Interfaces}
+\begin{itemize}
+    \item Facility control system (EPICS or equivalent)
+    \item Nuclear data libraries (ENDF/B format)
+    \item Logging and audit systems
+\end{itemize}
+
+%==============================================================================
+\section{Module 1: Reaction Network Optimizer}
+%==============================================================================
+
+\subsection{Purpose}
+
+Compute optimal fusion fuel combinations by analyzing the weighted reaction network graph, minimizing Stability Distance to maximize energy yield.
+
+\subsection{Functional Requirements}
+
+\begin{requirement}[RNO-001: Graph Construction]
+The system shall construct a fusion reaction network graph from:
+\begin{itemize}
+    \item Input: Set of available nuclear species (fuel inventory)
+    \item Output: Weighted directed graph $G = (V, E, w)$
+\end{itemize}
+where vertices are nuclear configurations and edges are fusion reactions.
+\end{requirement}
+
+\begin{requirement}[RNO-002: Stability Distance Computation]
+For each nuclear configuration $(Z, N)$, the system shall compute:
+\begin{equation}
+    S(Z, N) = d(Z) + d(N)
+\end{equation}
+where $d(x) = \min_{m \in \mathcal{M}} |x - m|$ and $\mathcal{M} = \{2, 8, 20, 28, 50, 82, 126\}$.
+\end{requirement}
+
+\begin{requirement}[RNO-003: Edge Weight Assignment]
+For each fusion reaction edge $e: (Z_1, N_1) + (Z_2, N_2) \to (Z_3, N_3)$:
+\begin{equation}
+    w(e) = S(Z_1, N_1) + S(Z_2, N_2) - S(Z_3, N_3)
+\end{equation}
+\end{requirement}
+
+\begin{requirement}[RNO-004: Path Optimization]
+The system shall find the path from initial fuel to doubly-magic products that maximizes cumulative edge weight.
+\end{requirement}
+
+\begin{requirement}[RNO-005: Magic-Favorable Filter]
+The system shall optionally filter to show only Magic-Favorable reactions ($w > 0$).
+\end{requirement}
+
+\subsection{Inputs}
+
+\begin{center}
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Parameter} & \textbf{Type} & \textbf{Units} & \textbf{Description} \\
+\hline
+\texttt{fuel\_inventory} & List[(Z, N, count)] & --- & Available nuclei \\
+\texttt{max\_A} & Integer & amu & Maximum mass number to consider \\
+\texttt{target\_products} & List[(Z, N)] & --- & Desired end products \\
+\texttt{filter\_favorable} & Boolean & --- & Show only $w > 0$ edges \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Outputs}
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Output} & \textbf{Type} & \textbf{Description} \\
+\hline
+\texttt{optimal\_path} & List[Edge] & Sequence of reactions \\
+\texttt{total\_weight} & Float & Cumulative stability improvement \\
+\texttt{fuel\_recommendation} & Dict & Suggested fuel mixture \\
+\texttt{doubly\_magic\_products} & List[(Z, N)] & Predicted end states \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Algorithms}
+
+\subsubsection{Graph Construction}
+\begin{lstlisting}[style=lean]
+structure Node where
+  Z : Nat  -- protons
+  N : Nat  -- neutrons
+  deriving DecidableEq
+
+structure Edge where
+  source1 : Node
+  source2 : Node
+  target  : Node
+  h_Z : target.Z = source1.Z + source2.Z
+  h_N : target.N = source1.N + source2.N
+\end{lstlisting}
+
+\subsubsection{Path Search}
+Dijkstra's algorithm with negated weights for maximum-weight path:
+\begin{enumerate}
+    \item Initialize priority queue with starting nodes
+    \item For each node, explore outgoing edges
+    \item Update path weights and predecessors
+    \item Terminate when doubly-magic sink is reached
+\end{enumerate}
+
+\subsection{Performance Requirements}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Metric} & \textbf{Requirement} \\
+\hline
+Graph construction time & $< 1$ second for $A \leq 250$ \\
+Path optimization time & $< 5$ seconds \\
+Memory usage & $< 1$ GB \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Verification}
+
+The module shall pass the following test cases:
+\begin{enumerate}
+    \item \textbf{He-4 terminus:} pp-chain terminates at $(2, 2)$
+    \item \textbf{O-16 capture:} $\alpha$-capture reaches $(8, 8)$
+    \item \textbf{Ca-40 ladder:} $\alpha$-ladder reaches $(20, 20)$
+\end{enumerate}
+
+%==============================================================================
+\section{Module 2: $\varphi$-Scheduler Engine}
+%==============================================================================
+
+\subsection{Purpose}
+
+Generate pulse timing sequences using Golden Ratio intervals to minimize interference and maximize jitter robustness.
+
+\subsection{Functional Requirements}
+
+\begin{requirement}[PSE-001: $\varphi$-Sequence Generation]
+The system shall generate pulse times according to:
+\begin{equation}
+    t_k = \tau_0 \cdot \varphi^{k-1}, \quad k = 1, \ldots, n
+\end{equation}
+where $\tau_0$ is the base timing and $\varphi = \frac{1+\sqrt{5}}{2}$.
+\end{requirement}
+
+\begin{requirement}[PSE-002: Interference Ratio Bound]
+The generated sequence shall satisfy:
+\begin{equation}
+    R = \frac{I_{\text{total}}}{I_{\text{self}}} < \rho
+\end{equation}
+for user-specified threshold $\rho$.
+\end{requirement}
+
+\begin{requirement}[PSE-003: Duration Constraint]
+The system shall support specifying:
+\begin{itemize}
+    \item Total sequence duration $T$
+    \item Number of pulses $n$
+\end{itemize}
+and compute $\tau_0$ accordingly.
+\end{requirement}
+
+\begin{requirement}[PSE-004: Hardware Format Export]
+The system shall export timing sequences in formats compatible with:
+\begin{itemize}
+    \item TTL trigger generators
+    \item Arbitrary waveform generators
+    \item FPGA timing systems
+\end{itemize}
+\end{requirement}
+
+\begin{requirement}[PSE-005: Visualization]
+The system shall provide graphical display of:
+\begin{itemize}
+    \item Pulse timing diagram
+    \item Interference overlap visualization
+    \item Comparison to equal-spaced baseline
+\end{itemize}
+\end{requirement}
+
+\subsection{Inputs}
+
+\begin{center}
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Parameter} & \textbf{Type} & \textbf{Units} & \textbf{Description} \\
+\hline
+\texttt{n\_pulses} & Integer & --- & Number of pulses \\
+\texttt{tau\_0} & Float & seconds & Base timing interval \\
+\texttt{total\_duration} & Float & seconds & Optional: total span \\
+\texttt{pulse\_width} & Float & seconds & Envelope FWHM \\
+\texttt{interference\_threshold} & Float & --- & Maximum $R$ allowed \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Outputs}
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Output} & \textbf{Type} & \textbf{Description} \\
+\hline
+\texttt{pulse\_times} & List[Float] & Sequence of times $t_1, \ldots, t_n$ \\
+\texttt{interference\_ratio} & Float & Computed $R$ for sequence \\
+\texttt{equal\_baseline\_ratio} & Float & $R$ for equal-spaced comparison \\
+\texttt{improvement\_factor} & Float & $R_{\text{eq}} / R_{\varphi}$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Algorithms}
+
+\subsubsection{Fibonacci Recursion for Efficiency}
+Exploit $\varphi^{k+1} = \varphi^k + \varphi^{k-1}$:
+\begin{lstlisting}[style=lean]
+def phiPowers (n : Nat) : List Real :=
+  let rec go (k : Nat) (prev curr : Real) : List Real :=
+    if k = 0 then []
+    else curr :: go (k-1) curr (prev + curr)
+  go n 1 phi
+\end{lstlisting}
+
+\subsubsection{Interference Computation}
+For Gaussian envelopes with width $\sigma$:
+\begin{equation}
+    I_{\text{total}} = \sum_{i \neq j} \sqrt{\pi}\sigma \cdot e^{-(t_i - t_j)^2/4\sigma^2}
+\end{equation}
+
+\subsection{Performance Requirements}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Metric} & \textbf{Requirement} \\
+\hline
+Sequence generation time & $< 10$ ms for $n \leq 1000$ \\
+Timing precision & $< 1$ ps resolution \\
+Export latency & $< 100$ ms to hardware \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Verification}
+
+\begin{enumerate}
+    \item \textbf{Ratio bound:} $R_{\varphi} < \rho$ for all generated sequences
+    \item \textbf{Improvement:} $R_{\varphi} < R_{\text{eq}}$ for $n \geq 3$
+    \item \textbf{Timing accuracy:} $|t_k - \tau_0 \varphi^{k-1}| < 1$ fs
+\end{enumerate}
+
+%==============================================================================
+\section{Module 3: Symmetry Verifier}
+%==============================================================================
+
+\subsection{Purpose}
+
+Provide real-time mathematical certification that proposed control adjustments will improve implosion symmetry, based on the Local Descent Link theorem.
+
+\subsection{Functional Requirements}
+
+\begin{requirement}[SV-001: Ledger Computation]
+The system shall compute the Symmetry Ledger:
+\begin{equation}
+    J(r) = \sum_{i=1}^{n} w_i (r_i - 1)^2
+\end{equation}
+from intensity ratio measurements $r = (r_1, \ldots, r_n)$.
+\end{requirement}
+
+\begin{requirement}[SV-002: Descent Verification]
+For any proposed adjustment yielding predicted ratios $r'$, the system shall verify:
+\begin{equation}
+    J(r') < J(r)
+\end{equation}
+and return PASS or FAIL.
+\end{requirement}
+
+\begin{requirement}[SV-003: Trust Region Check]
+The system shall verify that the current configuration is within the trust region:
+\begin{equation}
+    |r_i - 1| \leq \rho \quad \forall i
+\end{equation}
+where $\rho$ is the certified operating envelope.
+\end{requirement}
+
+\begin{requirement}[SV-004: Certificate Generation]
+On PASS, the system shall generate a machine-checkable certificate containing:
+\begin{itemize}
+    \item Current ledger value $J(r)$
+    \item Predicted ledger value $J(r')$
+    \item Descent margin $J(r) - J(r')$
+    \item Timestamp and configuration ID
+\end{itemize}
+\end{requirement}
+
+\begin{requirement}[SV-005: Audit Logging]
+All verification decisions shall be logged with:
+\begin{itemize}
+    \item Input measurements
+    \item Proposed adjustment
+    \item Decision (PASS/FAIL)
+    \item Certificate (if PASS)
+\end{itemize}
+\end{requirement}
+
+\subsection{Inputs}
+
+\begin{center}
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Parameter} & \textbf{Type} & \textbf{Units} & \textbf{Description} \\
+\hline
+\texttt{intensity\_ratios} & Array[Float] & --- & Measured $r_i$ values \\
+\texttt{weights} & Array[Float] & --- & Importance weights $w_i$ \\
+\texttt{proposed\_adjustment} & Array[Float] & --- & Control change $\Delta u$ \\
+\texttt{system\_model} & Model & --- & Predicts $r'$ from $\Delta u$ \\
+\texttt{trust\_radius} & Float & --- & Operating envelope $\rho$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Outputs}
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Output} & \textbf{Type} & \textbf{Description} \\
+\hline
+\texttt{decision} & Enum\{PASS, FAIL\} & Verification result \\
+\texttt{current\_ledger} & Float & $J(r)$ \\
+\texttt{predicted\_ledger} & Float & $J(r')$ \\
+\texttt{descent\_margin} & Float & $J(r) - J(r')$ \\
+\texttt{certificate} & Certificate & Machine-checkable proof \\
+\texttt{trust\_region\_status} & Boolean & Within envelope? \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Algorithms}
+
+\subsubsection{Ledger Computation}
+\begin{lstlisting}[style=lean]
+def symmetryLedger (r : Fin n -> Real) (w : Fin n -> Real) : Real :=
+  Finset.sum Finset.univ (fun i => w i * (r i - 1)^2)
+\end{lstlisting}
+
+\subsubsection{Descent Check}
+\begin{lstlisting}[style=lean]
+def verifyDescent (J_current J_predicted : Real) : Bool :=
+  J_predicted < J_current
+\end{lstlisting}
+
+\subsection{Safety Requirements}
+
+\begin{requirement}[SV-SAFE-001: Fail-Safe Default]
+If verification cannot be completed (timeout, error), the system shall return FAIL.
+\end{requirement}
+
+\begin{requirement}[SV-SAFE-002: Envelope Violation Alarm]
+If trust region is violated, the system shall:
+\begin{enumerate}
+    \item Return FAIL
+    \item Trigger operator alarm
+    \item Log critical event
+\end{enumerate}
+\end{requirement}
+
+\begin{requirement}[SV-SAFE-003: Watchdog Timer]
+Verification shall complete within 10 ms or timeout with FAIL.
+\end{requirement}
+
+\subsection{Performance Requirements}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Metric} & \textbf{Requirement} \\
+\hline
+Verification latency & $< 1$ ms typical, $< 10$ ms maximum \\
+Certificate generation & $< 5$ ms \\
+Availability & 99.99\% uptime \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Verification}
+
+\begin{enumerate}
+    \item \textbf{Descent guarantee:} PASS implies $J(r') < J(r)$
+    \item \textbf{Soundness:} Never PASS when $J(r') \geq J(r)$
+    \item \textbf{Timeout safety:} All timeouts result in FAIL
+\end{enumerate}
+
+%==============================================================================
+\section{Module 4: Jitter Simulator}
+%==============================================================================
+
+\subsection{Purpose}
+
+Quantify timing jitter tolerance budgets for laser hardware, enabling cost-effective component selection based on the Quadratic Advantage theorem.
+
+\subsection{Functional Requirements}
+
+\begin{requirement}[JS-001: Degradation Model]
+The system shall compute expected performance degradation under jitter:
+\begin{align}
+    D_{\text{equal}}(j) &= \gamma j + O(j^2) \\
+    D_{\varphi}(j) &= \beta j^2 + O(j^3)
+\end{align}
+for both equal-spaced and $\varphi$-spaced sequences.
+\end{requirement}
+
+\begin{requirement}[JS-002: Tolerance Computation]
+Given maximum acceptable degradation $D_{\max}$, compute:
+\begin{align}
+    j_{\max}^{\text{eq}} &= D_{\max} / \gamma \\
+    j_{\max}^{\varphi} &= \sqrt{D_{\max} / \beta}
+\end{align}
+\end{requirement}
+
+\begin{requirement}[JS-003: Monte Carlo Simulation]
+The system shall provide Monte Carlo simulation:
+\begin{itemize}
+    \item Sample jitter from specified distribution
+    \item Compute interference ratio for each sample
+    \item Report statistics (mean, std, percentiles)
+\end{itemize}
+\end{requirement}
+
+\begin{requirement}[JS-004: Hardware Specification]
+Given jitter tolerance $j_{\max}$, output:
+\begin{itemize}
+    \item Required oscillator stability
+    \item Acceptable timing board specifications
+    \item Cost comparison for component options
+\end{itemize}
+\end{requirement}
+
+\begin{requirement}[JS-005: Comparison Report]
+Generate report comparing:
+\begin{itemize}
+    \item $\varphi$-scheduling vs equal-spacing tolerance
+    \item Cost savings from relaxed jitter requirements
+    \item Risk assessment for different hardware choices
+\end{itemize}
+\end{requirement}
+
+\subsection{Inputs}
+
+\begin{center}
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Parameter} & \textbf{Type} & \textbf{Units} & \textbf{Description} \\
+\hline
+\texttt{pulse\_sequence} & List[Float] & seconds & Nominal pulse times \\
+\texttt{jitter\_distribution} & Distribution & --- & Gaussian, uniform, etc. \\
+\texttt{jitter\_magnitude} & Float & seconds & Standard deviation $j$ \\
+\texttt{max\_degradation} & Float & --- & Acceptable $D_{\max}$ \\
+\texttt{n\_samples} & Integer & --- & Monte Carlo sample count \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Outputs}
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Output} & \textbf{Type} & \textbf{Description} \\
+\hline
+\texttt{degradation\_mean} & Float & Expected $D(j)$ \\
+\texttt{degradation\_std} & Float & Standard deviation \\
+\texttt{max\_jitter\_equal} & Float & $j_{\max}^{\text{eq}}$ \\
+\texttt{max\_jitter\_phi} & Float & $j_{\max}^{\varphi}$ \\
+\texttt{improvement\_ratio} & Float & $j_{\max}^{\varphi} / j_{\max}^{\text{eq}}$ \\
+\texttt{hardware\_recommendations} & Report & Component specifications \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Algorithms}
+
+\subsubsection{Analytical Degradation}
+\begin{lstlisting}[style=lean]
+def degradationFormula (isPhiSpaced : Bool) (j : Real) : Real :=
+  if isPhiSpaced then
+    beta * j^2  -- Quadratic
+  else
+    gamma * j   -- Linear
+\end{lstlisting}
+
+\subsubsection{Monte Carlo Engine}
+\begin{enumerate}
+    \item Generate $N$ jitter samples from distribution
+    \item For each sample, perturb pulse times
+    \item Compute interference ratio
+    \item Aggregate statistics
+\end{enumerate}
+
+\subsection{Performance Requirements}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Metric} & \textbf{Requirement} \\
+\hline
+Analytical computation & $< 100$ ms \\
+Monte Carlo ($10^6$ samples) & $< 10$ seconds \\
+Report generation & $< 1$ second \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Verification}
+
+\begin{enumerate}
+    \item \textbf{Quadratic bound:} $D_{\varphi}(j) \leq \beta j^2$ for $j \leq j_{\max}$
+    \item \textbf{Monte Carlo accuracy:} Mean within 5\% of analytical
+    \item \textbf{Improvement ratio:} $j_{\max}^{\varphi} / j_{\max}^{\text{eq}} \geq 3$ typically
+\end{enumerate}
+
+%==============================================================================
+\section{Integration Requirements}
+%==============================================================================
+
+\subsection{Module Interoperability}
+
+\begin{requirement}[INT-001: Data Format Consistency]
+All modules shall use consistent data formats:
+\begin{itemize}
+    \item Time values: 64-bit IEEE 754 floating point, SI seconds
+    \item Nuclear configurations: (Z, N) integer pairs
+    \item Ratios: Dimensionless floating point
+\end{itemize}
+\end{requirement}
+
+\begin{requirement}[INT-002: API Compatibility]
+Modules shall expose:
+\begin{itemize}
+    \item Python bindings for scripting
+    \item C/C++ interface for real-time systems
+    \item REST API for distributed operation
+\end{itemize}
+\end{requirement}
+
+\begin{requirement}[INT-003: Logging Standard]
+All modules shall log to common format with:
+\begin{itemize}
+    \item ISO 8601 timestamps
+    \item Severity levels (DEBUG, INFO, WARN, ERROR, CRITICAL)
+    \item Structured JSON payloads
+\end{itemize}
+\end{requirement}
+
+\subsection{Deployment Options}
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Deployment} & \textbf{Modules} & \textbf{Use Case} \\
+\hline
+Workstation & All & Development, analysis \\
+Control room & PSE, SV & Shot operations \\
+FPGA & SV core & Real-time control \\
+Cloud & RNO, JS & Design studies \\
+\hline
+\end{tabular}
+\end{center}
+
+%==============================================================================
+\section{Formal Verification Traceability}
+%==============================================================================
+
+\subsection{Lean 4 Proof Artifacts}
+
+Each module's critical algorithms are backed by formal proofs:
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Module} & \textbf{Proof File} \\
+\hline
+Reaction Network Optimizer & \texttt{Fusion/ReactionNetwork.lean} \\
+$\varphi$-Scheduler Engine & \texttt{Fusion/InterferenceBound.lean} \\
+Symmetry Verifier & \texttt{Fusion/LocalDescent.lean} \\
+Jitter Simulator & \texttt{Fusion/JitterRobustness.lean} \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Theorem-to-Requirement Mapping}
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Requirement} & \textbf{Theorem} & \textbf{Status} \\
+\hline
+RNO-002 & \texttt{stabilityDistance\_zero\_of\_doublyMagic} & Verified \\
+RNO-004 & \texttt{doublyMagic\_is\_minimum} & Verified \\
+PSE-002 & \texttt{phi\_interference\_bound\_exists} & Verified \\
+SV-002 & \texttt{local\_descent\_link} & Verified \\
+JS-001 & \texttt{phi\_scheduling\_quadratic} & Verified \\
+\hline
+\end{tabular}
+\end{center}
+
+%==============================================================================
+\section{Appendix: Mathematical Definitions}
+%==============================================================================
+
+\subsection{Magic Numbers}
+\begin{equation}
+    \mathcal{M} = \{2, 8, 20, 28, 50, 82, 126\}
+\end{equation}
+
+\subsection{Distance to Magic}
+\begin{equation}
+    d(x) = \min_{m \in \mathcal{M}} |x - m|
+\end{equation}
+
+\subsection{Stability Distance}
+\begin{equation}
+    S(Z, N) = d(Z) + d(N)
+\end{equation}
+
+\subsection{Golden Ratio}
+\begin{equation}
+    \varphi = \frac{1 + \sqrt{5}}{2} \approx 1.6180339887...
+\end{equation}
+
+\subsection{Symmetry Ledger}
+\begin{equation}
+    J(r) = \sum_{i=1}^{n} w_i (r_i - 1)^2
+\end{equation}
+
+\subsection{Interference Ratio}
+\begin{equation}
+    R = \frac{\sum_{i \neq j} C_{ij}}{n \int E(t)^2 dt}
+\end{equation}
+
+\subsection{Degradation Functions}
+\begin{align}
+    D_{\varphi}(j) &= \beta j^2 + O(j^3) \\
+    D_{\text{eq}}(j) &= \gamma j + O(j^2)
+\end{align}
+
+\end{document}

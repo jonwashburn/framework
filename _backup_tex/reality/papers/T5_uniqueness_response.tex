@@ -1,0 +1,245 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{example}[theorem]{Example}
+
+\title{Response to Referee Comments on T5 (Cost Uniqueness): \\
+Clarification of the d'Alembert Functional Equation Requirement}
+
+\author{Recognition Physics Institute}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We respond to the referee's valid critique regarding the uniqueness theorem T5 
+for the cost functional $J(x) = \frac{1}{2}(x + x^{-1}) - 1$. The referee 
+correctly identifies that the five conditions stated in the manuscript---Reciprocity, 
+Convexity, Minimality, Normalization, and Reciprocal-invariance---are insufficient 
+for uniqueness, providing an explicit one-parameter family of counterexamples. 
+We acknowledge this error and provide the corrected theorem statement based on 
+the Recognition Composition Law, which is the actual constraint used in our 
+Lean 4 formalization. We prove that the referee's counterexample family violates 
+the d'Alembert equation for all $\varepsilon > 0$.
+\end{abstract}
+
+\section{Acknowledgment of the Referee's Critique}
+
+The referee has provided a rigorous and valuable critique. We fully acknowledge 
+that the counterexample family
+\begin{equation}
+J_\varepsilon(x) = \frac{1}{2}(x + x^{-1} - 2) + \varepsilon(x + x^{-1} - 2)^2, 
+\quad \varepsilon \geq 0
+\end{equation}
+satisfies all five conditions (1)--(5) as stated in the manuscript:
+
+\begin{enumerate}
+\item \textbf{Reciprocity:} $J_\varepsilon(x) = J_\varepsilon(x^{-1})$ holds because 
+$x + x^{-1}$ is symmetric under $x \mapsto x^{-1}$.
+
+\item \textbf{Convexity:} The referee proves $J_\varepsilon''(x) > 0$ for all $x > 0$ 
+and $\varepsilon \geq 0$.
+
+\item \textbf{Minimality:} $J_\varepsilon(1) = 0$ and $J_\varepsilon(x) > 0$ for 
+$x \neq 1$ follows from $u(x) := x + x^{-1} - 2 \geq 0$ with equality iff $x = 1$.
+
+\item \textbf{Normalization:} The referee verifies $J_\varepsilon''(1) = 1$.
+
+\item \textbf{Reciprocal-invariance:} By construction, 
+$J_\varepsilon(x) = g_\varepsilon(f(x))$ where $f(x) = x + x^{-1}$.
+\end{enumerate}
+
+This is a valid counterexample to the theorem as incorrectly stated in the manuscript.
+
+\section{The Correct Uniqueness Theorem}
+
+The actual uniqueness of $J(x)$ comes from the \textbf{Recognition Composition Law}, 
+which is Axiom A2 in our Lean 4 formalization. The correct theorem statement is:
+
+\begin{theorem}[T5: Cost Uniqueness---Corrected Statement]
+\label{thm:T5-corrected}
+Let $F: \mathbb{R}_{>0} \to \mathbb{R}$ satisfy:
+\begin{enumerate}
+\item[\textbf{(A1)}] \textbf{Normalization:} $F(1) = 0$.
+\item[\textbf{(A2)}] \textbf{Recognition Composition Law:} For all $x, y > 0$,
+\begin{equation}
+F(xy) + F(x/y) = 2F(x)F(y) + 2F(x) + 2F(y).
+\end{equation}
+\item[\textbf{(A3)}] \textbf{Calibration:} In log coordinates $G(t) := F(e^t)$, 
+we have $G''(0) = 1$.
+\item[\textbf{(A4)}] \textbf{Continuity:} $F$ is continuous on $\mathbb{R}_{>0}$.
+\end{enumerate}
+Then $F$ is uniquely determined:
+\begin{equation}
+F(x) = \frac{1}{2}(x + x^{-1}) - 1.
+\end{equation}
+\end{theorem}
+
+\begin{remark}
+The five conditions (1)--(5) in the manuscript are \emph{consequences} of 
+(A1)--(A4), not equivalent to them. Specifically:
+\begin{itemize}
+\item Reciprocity follows from the d'Alembert equation by setting $y = x$.
+\item Strict convexity follows from the functional form once uniqueness is established.
+\item Reciprocal-invariance follows from reciprocity.
+\end{itemize}
+The d'Alembert equation (A2) is the crucial constraint that was missing from 
+the stated theorem.
+\end{remark}
+
+\section{Why the Counterexample Fails Under d'Alembert}
+
+We now prove that $J_\varepsilon$ violates the d'Alembert equation for all $\varepsilon > 0$.
+
+\begin{theorem}
+For $\varepsilon > 0$, the function $J_\varepsilon(x) = \frac{1}{2}(x + x^{-1} - 2) + 
+\varepsilon(x + x^{-1} - 2)^2$ does \emph{not} satisfy the Recognition Composition Law.
+\end{theorem}
+
+\begin{proof}
+Work in log coordinates: let $G_\varepsilon(t) := J_\varepsilon(e^t)$. Then
+\begin{align}
+G_\varepsilon(t) &= \frac{1}{2}(e^t + e^{-t} - 2) + \varepsilon(e^t + e^{-t} - 2)^2 \\
+&= (\cosh t - 1) + 4\varepsilon(\cosh t - 1)^2.
+\end{align}
+
+The d'Alembert equation in log coordinates is:
+\begin{equation}
+G(t+u) + G(t-u) = 2G(t)G(u) + 2G(t) + 2G(u).
+\label{eq:dalembert-log}
+\end{equation}
+
+For $G_0(t) = \cosh t - 1$, this identity holds (this is well-known for cosh-shifted functions).
+
+For $\varepsilon > 0$, let us check at $t = u$. The LHS of \eqref{eq:dalembert-log} becomes:
+\begin{align}
+\text{LHS} &= G_\varepsilon(2t) + G_\varepsilon(0) \\
+&= (\cosh 2t - 1) + 4\varepsilon(\cosh 2t - 1)^2 + 0.
+\end{align}
+
+Using $\cosh 2t = 2\cosh^2 t - 1$:
+\begin{equation}
+\text{LHS} = 2\cosh^2 t - 2 + 4\varepsilon(2\cosh^2 t - 2)^2.
+\end{equation}
+
+The RHS of \eqref{eq:dalembert-log} at $t = u$ becomes:
+\begin{align}
+\text{RHS} &= 2G_\varepsilon(t)^2 + 4G_\varepsilon(t) \\
+&= 2[(\cosh t - 1) + 4\varepsilon(\cosh t - 1)^2]^2 + 4[(\cosh t - 1) + 4\varepsilon(\cosh t - 1)^2].
+\end{align}
+
+Let $c := \cosh t - 1 \geq 0$. Then:
+\begin{align}
+\text{LHS} &= 2(c + c^2) + 4\varepsilon \cdot 4(c + c^2)^2 \\
+&= 2c(1 + c) + 16\varepsilon c^2(1 + c)^2.
+\end{align}
+
+Meanwhile:
+\begin{align}
+\text{RHS} &= 2(c + 4\varepsilon c^2)^2 + 4(c + 4\varepsilon c^2) \\
+&= 2c^2(1 + 4\varepsilon c)^2 + 4c(1 + 4\varepsilon c).
+\end{align}
+
+For the linear terms in $\varepsilon$:
+\begin{align}
+\text{LHS (linear in } \varepsilon\text{)} &= 16\varepsilon c^2(1 + c)^2, \\
+\text{RHS (linear in } \varepsilon\text{)} &= 2c^2 \cdot 2 \cdot 4\varepsilon c + 4c \cdot 4\varepsilon c = 16\varepsilon c^3 + 16\varepsilon c^2.
+\end{align}
+
+For these to match:
+\begin{equation}
+16\varepsilon c^2(1 + c)^2 = 16\varepsilon c^2(1 + c),
+\end{equation}
+which requires $(1 + c)^2 = (1 + c)$, i.e., $c = 0$ or $c = -1$.
+
+Since $c = \cosh t - 1 \geq 0$ and $c > 0$ for $t \neq 0$, the equation fails for all 
+$t \neq 0$ when $\varepsilon > 0$.
+\end{proof}
+
+\begin{corollary}
+The unique continuous solution to the Recognition Composition Law (A2) with 
+normalization (A1) and calibration (A3) is $J(x) = \frac{1}{2}(x + x^{-1}) - 1$.
+\end{corollary}
+
+\section{Lean 4 Verification}
+
+The correct uniqueness theorem is verified in our Lean 4 repository. The key modules are:
+
+\begin{itemize}
+\item \texttt{IndisputableMonolith/Foundation/CostAxioms.lean}: Defines the three 
+primitive axioms (A1), (A2), (A3) as type classes.
+
+\item \texttt{IndisputableMonolith/Cost/FunctionalEquation.lean}: Proves that the 
+d'Alembert equation in log coordinates reduces to the ODE $H'' = H$, whose unique 
+solution with $H(0) = 1$, $H'(0) = 0$ is $\cosh$.
+
+\item \texttt{IndisputableMonolith/CostUniqueness.lean}: The main theorem 
+\texttt{T5\_uniqueness\_complete} requiring the \texttt{CoshAddIdentity} (d'Alembert) 
+hypothesis.
+\end{itemize}
+
+\section{Required Corrections to the Manuscript}
+
+Based on the referee's critique, the following corrections must be made:
+
+\begin{enumerate}
+\item \textbf{Theorem T5 Statement:} Replace the five conditions (1)--(5) with the 
+three primitive axioms (A1)--(A3) plus continuity.
+
+\item \textbf{Remove Misleading Claims:} The current text suggests that reciprocity, 
+convexity, and minimality are \emph{axioms}. They should be presented as 
+\emph{consequences} of the Recognition Composition Law.
+
+\item \textbf{Clarify the Forcing Chain:} The Recognition Composition Law is the 
+\emph{primitive} constraint. The derivation should read:
+\[
+\text{d'Alembert (A2)} + \text{Normalization (A1)} + \text{Calibration (A3)} 
+\implies J \text{ unique}.
+\]
+
+\item \textbf{Update Proof Sketch:} The proof sketch should explicitly invoke the 
+reduction to the ODE $H'' = H$ via d'Alembert, not merely cite the conditions.
+\end{enumerate}
+
+\section{Physical Interpretation}
+
+The Recognition Composition Law has a clear physical interpretation: it encodes 
+\textbf{multiplicative consistency} of costs. If we compare $x$ to $y$ and $x$ to 
+$1/y$, the total ``information'' should combine coherently. This is analogous to 
+the composition of Lorentz boosts or the addition formula for hyperbolic functions.
+
+The referee's counterexamples $J_\varepsilon$ for $\varepsilon > 0$ have 
+``extra curvature'' that violates this multiplicative consistency. Only the 
+$\cosh$-based solution maintains the algebraic structure required for a coherent 
+cost theory.
+
+\section{Conclusion}
+
+We thank the referee for this careful and constructive critique. The error in 
+the manuscript was a \emph{presentation} error, not a foundational one: the Lean 4 
+proofs use the correct Recognition Composition axiom (A2), but the manuscript incorrectly 
+stated weaker conditions. The corrected Theorem~\ref{thm:T5-corrected} is sound 
+and machine-verified.
+
+The key lesson: the d'Alembert functional equation
+\[
+F(xy) + F(x/y) = 2F(x)F(y) + 2F(x) + 2F(y)
+\]
+is a \emph{much stronger} constraint than reciprocity, convexity, and normalization 
+combined. It is this constraint---not the weaker conditions (1)--(5)---that forces 
+uniqueness.
+
+\bibliographystyle{plain}
+
+\end{document}
+

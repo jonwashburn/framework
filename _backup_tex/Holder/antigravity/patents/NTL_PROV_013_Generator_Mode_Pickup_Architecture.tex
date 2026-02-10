@@ -1,0 +1,294 @@
+\documentclass[11pt]{article}
+
+% Keep packages minimal for TeX Live "basic" installs.
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{array}
+
+\geometry{margin=1in}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue
+}
+
+% ---------------------------------------------------------------------------
+% Convenience macros
+% ---------------------------------------------------------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\phival}{\varphi}
+
+\newcommand{\PatentTitle}{Generator-Mode Pickup Architectures for Rotating-Field Systems with Rectification, Buffering, Load Interfaces, and Load-Stabilized Operation}
+\newcommand{\Docket}{NTL-PROV-013}
+\newcommand{\Inventors}{[Inventor Names]}
+\newcommand{\Assignee}{[Assignee / Organization]}
+\newcommand{\FilingDate}{February 1, 2026}
+
+\begin{document}
+
+\begin{center}
+{\LARGE \textbf{\PatentTitle}}\\[0.75em]
+{\large \textbf{Docket:} \Docket}\\[0.25em]
+{\large \textbf{Inventors:} \Inventors}\\[0.25em]
+{\large \textbf{Assignee:} \Assignee}\\[0.25em]
+{\large \textbf{Date:} \FilingDate}\\[0.75em]
+\end{center}
+
+\vspace{-0.5em}
+\hrule
+\vspace{0.75em}
+
+% ===========================================================================
+% ABSTRACT (PATENT)
+% ===========================================================================
+\section*{Abstract}
+
+Disclosed are apparatus, systems, methods, and non-transitory computer-readable media for operating rotating-field systems in a generator mode using a pickup architecture that converts a rotating magnetic field (or rotating-field pattern) into harvested electrical output. In various embodiments, a system comprises: a rotating-field generator core (mechanical rotor or solid-state virtual rotor), one or more pickup subsystems (secondary coils or conductive loops) electromagnetically coupled to the core, a rectification subsystem, a buffering subsystem (capacitor/battery), and a load interface subsystem. The system further includes control logic for safe startup, resonance search and lock, controlled transition to load-stabilized operation, and detection/mitigation of loss-of-load and runaway scenarios.
+
+In one embodiment, the pickup subsystem provides stabilizing back-action on the rotating-field core via controllable load extraction, and the system uses dynamic load management to maintain stable operation while maximizing usable output. The disclosed architecture supports integration with strict energy accounting, metrology, and safety governors and provides a practical pathway for evaluating and operating high-gain rotating-field devices under safe envelopes.
+
+% ===========================================================================
+% TECHNICAL FIELD
+% ===========================================================================
+\section*{Technical Field}
+
+The present disclosure relates to power generation and energy harvesting in rotating-field systems, and more particularly to pickup, rectification, buffering, load interfacing, and control architectures for operating a rotating-field generator in a stable generator mode.
+
+% ===========================================================================
+% BACKGROUND
+% ===========================================================================
+\section*{Background}
+
+Rotating magnetic fields induce electromotive force (EMF) in nearby conductors and coils. Conventional generators use mechanical rotation to induce voltage in stator windings. Solid-state phased arrays can synthesize rotating fields without moving mass. In both cases, practical power generation requires not only a field source and a pickup, but also rectification, buffering, load interfacing, and safe control.
+
+In high-Q or narrowband systems, stability can depend on load conditions. A sudden loss of load can cause unsafe voltage excursions, thermal stress, or unstable behavior. In addition, experiments that explore generator-mode behavior require strict instrumentation, repeatable control, and auditable run artifacts.
+
+Accordingly, there is a need for a generator-mode pickup architecture that explicitly integrates pickup geometry, rectification, buffering, load management, loss-of-load protection, and safe control transitions.
+
+% ===========================================================================
+% SUMMARY
+% ===========================================================================
+\section*{Summary}
+
+This disclosure provides a generator-mode architecture for rotating-field systems.
+
+In one aspect, a rotating-field core generates a time-varying magnetic flux. A pickup subsystem is arranged to couple to the flux and produce an induced EMF. A rectification subsystem converts the induced signal into a DC bus. A buffer subsystem stores energy and stabilizes the bus. A load interface subsystem delivers energy to a load (resistive, battery, inverter, or grid-tie). A controller monitors operating state and performs safe startup, resonance lock, load connection, and loss-of-load mitigation.
+
+In another aspect, the pickup/load subsystem is used as a stabilizer by providing controllable electromagnetic braking/back-action on the core and by shaping the effective impedance presented to the pickup.
+
+% ===========================================================================
+% BRIEF DESCRIPTION OF DRAWINGS
+% ===========================================================================
+\section*{Brief Description of the Drawings}
+
+Drawings may be provided later. For purposes of this specification:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{FIG. 1} depicts a generator-mode architecture: core $\rightarrow$ pickup $\rightarrow$ rectifier $\rightarrow$ buffer $\rightarrow$ load interface.
+  \item \textbf{FIG. 2} depicts alternative pickup geometries (axial pickup, radial pickup, multi-stage pickups).
+  \item \textbf{FIG. 3} depicts a control state machine: startup, resonance search, lock, load-stabilized mode, fault states.
+  \item \textbf{FIG. 4} depicts loss-of-load detection and mitigation using dump loads and detune commands.
+  \item \textbf{FIG. 5} depicts optional self-power loop where a portion of output powers the driver subsystem.
+\end{itemize}
+
+% ===========================================================================
+% DEFINITIONS
+% ===========================================================================
+\section*{Definitions and Notation}
+
+Unless otherwise indicated:
+\begin{itemize}[leftmargin=*]
+  \item A \emph{rotating-field core} refers to a device that produces a rotating magnetic field or rotating-field pattern.
+  \item A \emph{pickup} refers to a conductive loop, coil, or winding coupled to the rotating field to produce an induced EMF.
+  \item A \emph{rectifier} refers to circuitry converting AC or pulsed induced voltage to a DC bus.
+  \item A \emph{buffer} refers to energy storage stabilizing the DC bus (capacitors, batteries, supercapacitors).
+  \item A \emph{load interface} refers to circuitry delivering output to a load (DC load, charger, inverter, grid-tie).
+  \item A \emph{load} refers to a device consuming electrical energy (resistor bank, battery, grid, motor).
+  \item A \emph{loss-of-load} event refers to a load becoming disconnected or becoming high impedance.
+  \item A \emph{dump load} refers to a protective load switched in to absorb energy under fault conditions.
+\end{itemize}
+
+% ===========================================================================
+% DETAILED DESCRIPTION
+% ===========================================================================
+\section*{Detailed Description}
+
+\subsection*{1. System Block Architecture}
+
+In one embodiment, a generator-mode system comprises:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Core:} rotating-field generator (mechanical rotor or solid-state phased array);
+  \item \textbf{Pickup:} one or more pickup coils/loops coupled to the rotating field;
+  \item \textbf{Rectification:} diode bridge, synchronous rectifier, or active rectifier;
+  \item \textbf{Buffer:} DC bus capacitor bank and/or battery;
+  \item \textbf{Load interface:} DC-DC conversion, charger, inverter, or grid-tie interface;
+  \item \textbf{Controller:} monitors sensors and manages mode transitions;
+  \item \textbf{Protection:} dump load, crowbar, interlocks, and detune/shutdown commands.
+\end{itemize}
+
+\subsection*{2. Rotating-Field Core Embodiments}
+
+\paragraph{2.1 Mechanical rotor core.}
+In one embodiment, the core comprises a rotating magnetic structure that generates a time-varying magnetic flux in a stationary pickup.
+
+\paragraph{2.2 Solid-state phased array core.}
+In one embodiment, the core comprises a stationary electromagnetic array driven by commutation schedules to synthesize a rotating field pattern.
+
+\subsection*{3. Pickup Subsystem}
+
+\paragraph{3.1 Induced EMF model (non-limiting).}
+The induced voltage in a pickup coil is:
+\[
+V_{\text{ind}}(t) = -N_p \frac{d\Phi(t)}{dt},
+\]
+where \(N_p\) is the number of turns and \(\Phi(t)\) is magnetic flux linking the pickup.
+
+\paragraph{3.2 Pickup geometries.}
+Pickup geometries include (non-limiting):
+\begin{itemize}[leftmargin=*]
+  \item axial pickup coils above/below the core;
+  \item radial pickup coils surrounding the core;
+  \item multi-stage pickups at different radii;
+  \item segmented pickup rings with series/parallel combination.
+\end{itemize}
+
+\paragraph{3.3 Coupling control.}
+In one embodiment, coupling between core and pickup is adjustable by:
+\begin{itemize}[leftmargin=*]
+  \item changing pickup position or orientation;
+  \item switching pickup segments in/out (effective turns);
+  \item switching between series/parallel configurations.
+\end{itemize}
+
+\subsection*{4. Rectification and DC Bus}
+
+\paragraph{4.1 Rectifier types.}
+Rectification may be performed using:
+\begin{itemize}[leftmargin=*]
+  \item passive diode bridges;
+  \item synchronous rectifiers;
+  \item active rectifiers controlled to shape pickup impedance.
+\end{itemize}
+
+\paragraph{4.2 Bus stabilization.}
+In one embodiment, a DC bus capacitor bank stabilizes voltage and provides transient energy buffering. In one embodiment, the bus includes overvoltage protection and a crowbar circuit.
+
+\subsection*{5. Buffer and Load Interface}
+
+\paragraph{5.1 Buffer subsystem.}
+Buffers include batteries, supercapacitors, and hybrid storage. The buffer may be connected through a DC-DC converter for isolation and regulation.
+
+\paragraph{5.2 Load interface.}
+Load interfaces include:
+\begin{itemize}[leftmargin=*]
+  \item regulated DC output;
+  \item battery charger profiles;
+  \item inverter outputs (AC);
+  \item grid-tie conversion with anti-islanding protection.
+\end{itemize}
+
+\subsection*{6. Load as Stabilizer and Dynamic Load Management}
+
+\paragraph{6.1 Back-action and damping.}
+When current is drawn from the pickup, electromagnetic back-action can oppose the rotating field (e.g., Lenz-law braking), providing damping. In one embodiment, load extraction is used as a stabilizer.
+
+\paragraph{6.2 Dynamic impedance shaping.}
+In one embodiment, the load interface dynamically changes the effective impedance seen by the pickup to:
+\begin{itemize}[leftmargin=*]
+  \item maximize output subject to thermal/current constraints;
+  \item maintain stable operation and avoid runaway;
+  \item enforce safe envelope constraints.
+\end{itemize}
+
+\subsection*{7. Control State Machine and Transitions}
+
+In one embodiment, the controller executes:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Startup:} initialize sensors, verify interlocks, precharge bus.
+  \item \textbf{Search:} sweep candidate setpoints to find stable operating region.
+  \item \textbf{Lock:} maintain operating point using closed-loop control.
+  \item \textbf{Load-connect:} connect load gradually with ramped impedance.
+  \item \textbf{Load-stabilized:} operate while monitoring safety limits and output.
+  \item \textbf{Fault:} detune, dump-load, or shutdown upon violation.
+\end{itemize}
+
+\subsection*{8. Loss-of-Load Detection and Protection}
+
+\paragraph{8.1 Detection.}
+In one embodiment, loss-of-load is detected by:
+\begin{itemize}[leftmargin=*]
+  \item drop in load current while bus voltage rises;
+  \item open-circuit detection in load interface;
+  \item divergence between expected and measured damping.
+\end{itemize}
+
+\paragraph{8.2 Mitigation actions.}
+Upon loss-of-load, the system performs one or more actions:
+\begin{itemize}[leftmargin=*]
+  \item connect a dump load to absorb energy;
+  \item command detune/phase slip injection to collapse efficiency;
+  \item ramp down drive amplitude and shut down.
+\end{itemize}
+
+\subsection*{9. Optional Self-Power Loop (Data-Gated)}
+
+In one embodiment, a portion of output power is routed to power the driver/controller system after stable operation is established. In one embodiment, the system transitions between external supply and internal supply using an OR-ing network and pre-charge logic. This mode is optional and is gated by energy accounting and safety checks.
+
+% ===========================================================================
+% CLAIMS (DRAFT / PROVISIONAL-STYLE)
+% ===========================================================================
+\section*{Claims (Draft)}
+
+\textbf{Note:} The following claims are an initial, non-limiting claim set intended to preserve multiple fallback positions. Final claim strategy should be reviewed by counsel.
+
+\subsection*{Independent Claims}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{(System)} A generator-mode rotating-field system comprising: a rotating-field core configured to generate a time-varying magnetic flux; a pickup subsystem electromagnetically coupled to the rotating-field core; a rectification subsystem coupled to the pickup subsystem to provide a DC bus; a buffer subsystem coupled to the DC bus; and a load interface subsystem coupled to the buffer subsystem to deliver electrical output to a load.
+
+  \item \textbf{(Method)} A method of operating a rotating-field system in a generator mode, the method comprising: operating a rotating-field core to generate a time-varying magnetic field; inducing an electrical signal in a pickup subsystem coupled to the rotating-field core; rectifying the electrical signal to a DC bus; buffering the DC bus; and supplying output power from the DC bus to a load through a load interface.
+
+  \item \textbf{(Non-transitory medium)} A non-transitory computer-readable medium storing instructions that, when executed by one or more processors, cause the one or more processors to: control a rotating-field core; monitor bus voltage and load current; detect a loss-of-load condition; and responsive to detecting the loss-of-load condition, perform a mitigation action comprising connecting a dump load and/or detuning the rotating-field core.
+\end{enumerate}
+
+\subsection*{Dependent Claims (Examples; Non-Limiting)}
+
+\begin{enumerate}[leftmargin=*]
+  \setcounter{enumi}{3}
+  \item The system of claim 1, wherein the rotating-field core comprises a solid-state phased electromagnetic array.
+  \item The system of claim 1, wherein the pickup subsystem comprises a plurality of pickup coils arranged axially and/or radially around the rotating-field core.
+  \item The system of claim 1, wherein the rectification subsystem comprises a synchronous rectifier configured to shape an effective pickup impedance.
+  \item The system of claim 1, wherein the load interface subsystem comprises a grid-tie inverter.
+  \item The system of claim 1, further comprising a controller configured to gradually connect the load by ramping an effective impedance.
+  \item The non-transitory medium of claim 3, wherein detuning comprises injecting a phase slip into a commutation schedule.
+  \item The method of claim 2, further comprising routing a portion of output power to power at least a portion of a driver subsystem after a stability condition is satisfied.
+  \item The system of claim 1, further comprising a crowbar or overvoltage protection circuit coupled to the DC bus.
+\end{enumerate}
+
+% ===========================================================================
+% FALLBACK POSITIONS / ADDITIONAL EMBODIMENTS
+% ===========================================================================
+\section*{Additional Embodiments and Fallback Positions (Non-Limiting)}
+
+\begin{itemize}[leftmargin=*]
+  \item Pickup subsystems may include adjustable coupling via movable positioning or via switchable coil segments.
+  \item Rectification may include multi-stage conversion and may include active control to stabilize the bus.
+  \item Buffer subsystems may include batteries, supercapacitors, or hybrid storage.
+  \item Load interfaces may include DC-DC conversion, charging, resistive dumps, and grid-tie interfaces with anti-islanding protection.
+  \item The controller may integrate metrology and energy accounting and may produce deterministic replay bundles and signed manifests (filed separately).
+\end{itemize}
+
+\vspace{1em}
+\hrule
+\vspace{0.75em}
+\noindent \textbf{End of Specification (Draft)}
+
+\end{document}
+

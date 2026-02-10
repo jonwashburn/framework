@@ -1,0 +1,262 @@
+\documentclass[11pt]{article}
+
+% Keep packages minimal for TeX Live "basic" installs.
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{array}
+
+\geometry{margin=1in}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue
+}
+
+% ---------------------------------------------------------------------------
+% Convenience macros
+% ---------------------------------------------------------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+
+\newcommand{\PatentTitle}{Thermal and Heat-Flux Diagnostics as Control Variables with Data-Gated Operation for Rotating-Field Systems}
+\newcommand{\Docket}{NTL-PROV-016}
+\newcommand{\Inventors}{[Inventor Names]}
+\newcommand{\Assignee}{[Assignee / Organization]}
+\newcommand{\FilingDate}{February 1, 2026}
+
+\begin{document}
+
+\begin{center}
+{\LARGE \textbf{\PatentTitle}}\\[0.75em]
+{\large \textbf{Docket:} \Docket}\\[0.25em]
+{\large \textbf{Inventors:} \Inventors}\\[0.25em]
+{\large \textbf{Assignee:} \Assignee}\\[0.25em]
+{\large \textbf{Date:} \FilingDate}\\[0.75em]
+\end{center}
+
+\vspace{-0.5em}
+\hrule
+\vspace{0.75em}
+
+% ===========================================================================
+% ABSTRACT (PATENT)
+% ===========================================================================
+\section*{Abstract}
+
+Disclosed are systems, methods, and non-transitory computer-readable media for operating rotating-field and resonant electromagnetic systems using thermal and heat-flux diagnostics as control variables. In various embodiments, a system includes one or more thermal sensors (e.g., thermocouples, RTDs, infrared imaging, heat-flux sensors, coolant inlet/outlet sensors) coupled to a rotating-field device and one or more processors configured to compute one or more thermal features (e.g., temperature derivatives, spatial gradients, heat-flux estimates, and/or thermal time constants). The processors are further configured to use the thermal features as inputs to control logic that adjusts one or more operational control surfaces (e.g., drive frequency, phase, amplitude, duty cycle, and/or load impedance) to maintain stable operation, to mitigate runaway or unsafe conditions, and/or to improve repeatability of experimental regimes.
+
+In one embodiment, the system enforces data-gated operation in which control actions and reports explicitly record gating conditions and reject or quarantine runs that fail thermal instrumentation integrity checks (e.g., sensor saturation, detachment, drift, or calibration faults). The disclosure improves stability, safety, and auditability of high-sensitivity rotating-field platforms by elevating thermal observables into a first-class control loop.
+
+% ===========================================================================
+% TECHNICAL FIELD
+% ===========================================================================
+\section*{Technical Field}
+
+The present disclosure relates to control and instrumentation of rotating-field systems, and more particularly to thermal and heat-flux diagnostics used as control variables, stability signals, and safety gates in resonant electromagnetic devices and generator-mode platforms.
+
+% ===========================================================================
+% BACKGROUND
+% ===========================================================================
+\section*{Background}
+
+In high-power electromagnetic systems, thermal behavior is both a constraint (preventing damage) and a signal (indicating operating state). Typical systems treat thermal monitoring as a slow safety interlock (e.g., shut down when temperature exceeds a limit). However, in narrowband or high-Q operating regimes, thermal dynamics can provide early indicators of drift, loss of resonance, instability, and/or changes in effective coupling.
+
+Moreover, credible evaluation of generator-mode behavior often requires demonstrating that thermal measurement is intact and that thermal transients are understood. Temperature, heat flux, and coolant differentials can provide important observables for both stability control and quality gating.
+
+Accordingly, there is a need for a system that uses thermal/heat-flux diagnostics not merely as fail-safe limits but as \emph{active control variables} integrated into resonance lock, load management, and safety governors, with data-gated auditability.
+
+% ===========================================================================
+% SUMMARY
+% ===========================================================================
+\section*{Summary}
+
+This disclosure provides:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Thermal feature extraction:} computing features such as \(dT/dt\), \(\Delta T\) across components, heat-flux estimates, and thermal time constants.
+  \item \textbf{Thermal-in-the-loop control:} using thermal features to adjust one or more control surfaces (drive parameters and/or load impedance).
+  \item \textbf{Data-gated operation:} enforcing quality gates on thermal instrumentation integrity and recording gate outcomes in run artifacts.
+  \item \textbf{Safety enhancement:} early detection of runaway conditions using thermal derivatives and heat-flux signatures.
+\end{itemize}
+
+% ===========================================================================
+% BRIEF DESCRIPTION OF DRAWINGS
+% ===========================================================================
+\section*{Brief Description of the Drawings}
+
+Drawings may be provided later. For purposes of this specification:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{FIG. 1} depicts thermal sensor placement on a rotating-field core, driver electronics, and pickup/load stage.
+  \item \textbf{FIG. 2} depicts a thermal feature extraction pipeline (raw sensors $\rightarrow$ features $\rightarrow$ gates).
+  \item \textbf{FIG. 3} depicts a controller using thermal features to adjust drive parameters and/or load impedance.
+  \item \textbf{FIG. 4} depicts runaway detection based on temperature derivatives and heat flux, triggering detune and dump-load actions.
+  \item \textbf{FIG. 5} depicts data-gated run classification and report generation.
+\end{itemize}
+
+% ===========================================================================
+% DEFINITIONS
+% ===========================================================================
+\section*{Definitions and Notation}
+
+Unless otherwise indicated:
+\begin{itemize}[leftmargin=*]
+  \item \(T_k(t)\) denotes the temperature measured by sensor \(k\) as a function of time.
+  \item A thermal derivative feature may be \(dT_k/dt\) computed from sampled \(T_k(t)\).
+  \item A thermal gradient feature may be \(\Delta T_{a,b}(t) = T_a(t) - T_b(t)\).
+  \item A heat-flux feature may be an estimate \(\hat{q}(t)\) based on a heat-flux sensor or on a thermal model.
+  \item A \emph{control surface} refers to an adjustable operational parameter (frequency, phase, amplitude, duty cycle, load impedance, coolant flow).
+  \item A \emph{data gate} refers to a quality condition that must pass for a run segment to be accepted for analysis or for enabling certain operating modes.
+\end{itemize}
+
+% ===========================================================================
+% DETAILED DESCRIPTION
+% ===========================================================================
+\section*{Detailed Description}
+
+\subsection*{1. Thermal Instrumentation Stack}
+
+\paragraph{1.1 Sensor modalities.}
+Thermal instrumentation may include (non-limiting):
+\begin{itemize}[leftmargin=*]
+  \item thermocouples, RTDs, thermistors on coils, power devices, structural members;
+  \item infrared sensors or infrared cameras observing surface temperature fields;
+  \item heat-flux sensors mounted on thermal interfaces;
+  \item coolant inlet/outlet temperature and flow sensors;
+  \item ambient temperature and humidity sensors for environmental compensation.
+\end{itemize}
+
+\paragraph{1.2 Placement and redundancy.}
+In one embodiment, sensors are placed to monitor:
+\begin{itemize}[leftmargin=*]
+  \item hotspot-prone components (switches, bus bars, coil corners);
+  \item representative bulk temperature of the rotating-field core;
+  \item thermal gradients across key interfaces.
+\end{itemize}
+Redundant sensors may be used to detect detachment, drift, or failure.
+
+\subsection*{2. Thermal Feature Extraction}
+
+In one embodiment, the system computes features from sampled temperature signals:
+\[
+\dot{T}_k(t) \approx \frac{T_k(t) - T_k(t-\Delta t)}{\Delta t},
+\quad
+\Delta T_{a,b}(t) = T_a(t) - T_b(t).
+\]
+
+In one embodiment, the system estimates a thermal time constant by fitting a first-order model:
+\[
+\frac{dT}{dt} = -\frac{1}{\tau}\left(T - T_{\text{amb}}\right) + \frac{1}{C}P_{\text{loss}},
+\]
+where \(\tau\) is a time constant, \(C\) is an effective heat capacity, and \(P_{\text{loss}}\) is a power-loss estimate.
+
+\subsection*{3. Thermal Integrity Gates (Data-Gated Operation)}
+
+In one embodiment, a run segment is rejected or quarantined if:
+\begin{itemize}[leftmargin=*]
+  \item a sensor saturates, clips, or reports implausible values;
+  \item sensor readings diverge beyond a redundancy threshold;
+  \item calibration drift exceeds a bound (e.g., inferred from baseline segments);
+  \item physical attachment is inferred to be compromised (e.g., sudden step changes inconsistent with system thermal inertia).
+\end{itemize}
+
+In one embodiment, the system records gate outcomes and reasons into a run artifact and prevents enabling certain modes unless gates pass for a dwell time.
+
+\subsection*{4. Thermal-in-the-Loop Control}
+
+\paragraph{4.1 Control surfaces.}
+The controller may adjust one or more control surfaces (non-limiting):
+\begin{itemize}[leftmargin=*]
+  \item drive frequency or phase (PLL-like resonance lock);
+  \item drive amplitude or duty cycle;
+  \item load impedance (generator-mode damping);
+  \item coolant flow rate or fan speed.
+\end{itemize}
+
+\paragraph{4.2 Thermal stabilization objective.}
+In one embodiment, a controller uses an objective such as:
+\[
+J = w_1 (T - T_{\text{set}})^2 + w_2 \dot{T}^2 + w_3 (\Delta T)^2,
+\]
+and adjusts control surfaces to reduce \(J\) while maintaining other stability and safety constraints.
+
+\paragraph{4.3 Thermal signatures as resonance/stability indicators.}
+In one embodiment, the controller uses thermal features as part of a resonance score or stability score. For example, a stable operating point may correspond to bounded \(\dot{T}\) and bounded ripple in temperature gradients, while instability may correspond to growing \(\dot{T}\) or abnormal gradient patterns.
+
+\subsection*{5. Runaway Detection and Safety Actions}
+
+In one embodiment, runaway is detected when a thermal derivative exceeds a threshold:
+\[
+\dot{T}_k(t) > \gamma,
+\]
+for a threshold \(\gamma\). Upon detection, the system may:
+\begin{itemize}[leftmargin=*]
+  \item command detuning or shutdown of the rotating-field drive;
+  \item engage a dump load or reduce output extraction;
+  \item reduce drive amplitude;
+  \item enter a latched safe state requiring operator intervention.
+\end{itemize}
+
+\subsection*{6. Example Use Cases (Non-Limiting)}
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Repeatable tuning:} using thermal signatures to detect when an operating point is stable enough to begin data collection.
+  \item \textbf{Adaptive envelope:} automatically derating drive power when thermal time constant estimates indicate reduced cooling capacity.
+  \item \textbf{Evidence gating:} rejecting segments where thermal sensors are compromised to preserve credibility of subsequent analysis.
+\end{itemize}
+
+% ===========================================================================
+% CLAIMS (DRAFT / PROVISIONAL-STYLE)
+% ===========================================================================
+\section*{Claims (Draft)}
+
+\textbf{Note:} The following claims are an initial, non-limiting claim set intended to preserve multiple fallback positions. Final claim strategy should be reviewed by counsel.
+
+\subsection*{Independent Claims}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{(System)} A rotating-field system comprising: a rotating-field core; one or more thermal sensors coupled to the rotating-field system; one or more processors and memory storing instructions that, when executed, cause the one or more processors to: compute one or more thermal features from the one or more thermal sensors; and control one or more operating control surfaces of the rotating-field system based at least in part on the one or more thermal features to maintain stable operation.
+
+  \item \textbf{(Method)} A method of operating a rotating-field system, the method comprising: measuring temperature data from one or more thermal sensors associated with the rotating-field system; computing a thermal feature comprising at least one of a temperature derivative, a temperature gradient, a heat-flux estimate, or a thermal time constant; and adjusting at least one operating parameter of the rotating-field system based at least in part on the thermal feature.
+
+  \item \textbf{(Non-transitory medium)} A non-transitory computer-readable medium storing instructions that, when executed by one or more processors, cause the one or more processors to: apply one or more thermal integrity gates to determine whether a run segment is accepted; and based on an outcome of the one or more thermal integrity gates, enable or disable an operating mode of the rotating-field system.
+\end{enumerate}
+
+\subsection*{Dependent Claims (Examples; Non-Limiting)}
+
+\begin{enumerate}[leftmargin=*]
+  \setcounter{enumi}{3}
+  \item The system of claim 1, wherein the one or more thermal sensors comprise a heat-flux sensor.
+  \item The system of claim 1, wherein controlling the one or more operating control surfaces comprises adjusting a drive frequency, phase, amplitude, or duty cycle.
+  \item The system of claim 1, wherein controlling the one or more operating control surfaces comprises adjusting a load impedance presented to a pickup subsystem.
+  \item The method of claim 2, wherein computing the thermal feature comprises computing a temperature derivative \(\dot{T}\) and comparing \(\dot{T}\) to a runaway threshold.
+  \item The non-transitory medium of claim 3, wherein applying the one or more thermal integrity gates comprises detecting sensor detachment or drift using redundant sensors.
+  \item The system of claim 1, further comprising requiring the one or more thermal integrity gates to pass for a dwell time prior to enabling generator-mode export.
+  \item The method of claim 2, further comprising estimating a thermal time constant by fitting a first-order model to measured temperature data.
+  \item The system of claim 1, wherein the one or more thermal features are incorporated into a resonance score used by a controller.
+\end{enumerate}
+
+% ===========================================================================
+% FALLBACK POSITIONS / ADDITIONAL EMBODIMENTS
+% ===========================================================================
+\section*{Additional Embodiments and Fallback Positions (Non-Limiting)}
+
+\begin{itemize}[leftmargin=*]
+  \item Thermal sensors may be integrated into PCBs, flexible circuits, or embedded in structural components.
+  \item Heat-flux may be measured directly or estimated using thermal models with identified parameters.
+  \item Data-gated logic may quarantine segments rather than discarding, to allow later review while preventing the use of compromised data for claims.
+  \item Control may be multi-loop, with a fast electrical loop and a slower thermal supervisory loop.
+\end{itemize}
+
+\vspace{1em}
+\hrule
+\vspace{0.75em}
+\noindent \textbf{End of Specification (Draft)}
+
+\end{document}
+

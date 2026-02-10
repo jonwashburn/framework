@@ -1,0 +1,221 @@
+\documentclass[11pt]{article}
+
+% --- Preamble ---------------------------------------------------------------
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs,longtable}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{graphicx}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  citecolor=blue
+}
+
+% --- Notation ---------------------------------------------------------------
+\newcommand{\J}{\mathcal{J}}
+\newcommand{\phiG}{\varphi}
+
+% --- Metadata --------------------------------------------------------------
+\newcommand{\DocTitle}{Resonant Control}
+\newcommand{\DocSubtitle}{Real-Time Dissonance Feedback as a General Optimization Primitive}
+\newcommand{\DocVersion}{0.1}
+\newcommand{\DocDate}{2025-12-18}
+
+\title{\DocTitle\\\large \DocSubtitle}
+\author{Reality Science Team (Draft)}
+\date{\DocDate\ (\DocVersion)}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We introduce \emph{Resonant Control}, an engineering pattern for optimization in which a global objective (or constraint violation field) is mapped to an \emph{auditory} signal, and the solver is biased to ``tune'' toward consonance. We motivate the approach using protein folding as a canonical rugged, partially observed search problem and define a concrete sonification protocol that maps structure and constraint signals to pitch, detuning, and roughness. We present the \emph{Marco Polo} algorithm: (Marco) attribute dissonance to the worst local contributor; (Polo) apply a targeted perturbation to reduce that contributor under a fixed compute budget. This draft is intentionally claim-hygienic: it specifies protocol, ablations, and falsifiers, but does not assert performance improvements without logged benchmark runs. The intended contribution is a reproducible control primitive and evaluation harness that can be tested on proteins, constraint satisfaction, and learning systems.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% ===========================================================================
+\section{Reader Contract (Engineering Framing)}
+
+This paper stands or falls on measurable improvements under controlled conditions:
+\begin{itemize}
+  \item \textbf{No mysticism}: audio is treated as an engineered observation channel for a compressed global error signal.
+  \item \textbf{No cherry-picking}: all claims of ``speedup'' require preregistered metrics, seeds, and compute budgets.
+  \item \textbf{Safety boundary}: no biological irradiation/``jamming'' claims are made here; those belong to Paper~1’s preregistered experimental registry.
+\end{itemize}
+
+% ===========================================================================
+\section{Background}
+
+\subsection{Optimization on rugged landscapes}
+Many scientific search problems exhibit high-dimensional rugged landscapes with abundant local minima (protein folding is a canonical example). Standard methods (simulated annealing, MCMC variants, heuristic local search) frequently struggle when the objective provides only weak global guidance.
+
+\subsection{Sonification: from visualization to control}
+Sonification has a long history as a \emph{visualization} aid \cite{sonification_handbook_2011}. Resonant Control treats sonification as a \emph{control interface}: the audio stream is not only human-interpretable but also provides a scalar/attribution signal that can bias an algorithmic optimizer.
+
+\subsection{Consonance, roughness, and critical bands}
+We adopt a psychoacoustic notion of consonance in which near-frequency components within critical bandwidths generate roughness/dissonance \cite{plomp_levelt_1965}. In practice, a computable proxy for roughness is used as an objective-shaped signal.
+
+% ===========================================================================
+\section{System Overview}
+
+\subsection{Architecture (dataflow)}
+At each optimization step:
+\[
+  \text{state} \;\to\; \text{features} \;\to\; \text{audio parameters} \;\to\; \text{roughness metric} \;\to\; \text{bias/selection}.
+\]
+The design goal is \emph{replayability}: given a logged trajectory and mapping version, the audio and roughness metric are regenerated exactly.
+
+\subsection{Determinism and logging}
+All evaluations must log:
+\begin{itemize}
+  \item RNG seeds and acceptance decisions,
+  \item per-step objective terms (e.g., strain/contact components),
+  \item the derived audio event stream (MIDI-like), and
+  \item the derived roughness metric over time.
+\end{itemize}
+
+% ===========================================================================
+\section{Sonification Protocol (Bio-Audio Mapping)}
+
+This section specifies a mapping that is \emph{ablation-ready}: each component can be toggled independently for controlled comparisons.
+
+\subsection{Inputs}
+For a protein folding state \(S\), define:
+\begin{itemize}
+  \item backbone angles \((\phi_i,\psi_i)\) per residue \(i\),
+  \item a constraint/strain decomposition \(\J(S)=\sum_k \J_k(S)\),
+  \item optional secondary-structure labels (helix/sheet/coil).
+\end{itemize}
+
+\subsection{Pitch mapping}
+We require a deterministic mapping from geometry to frequencies. Define a wrapped angle feature
+\[
+  \theta_i \;:=\; \mathrm{wrap}(\phi_i+\psi_i)\in[-\pi,\pi),
+  \qquad
+  u_i \;:=\; \frac{\theta_i+\pi}{2\pi}\in[0,1).
+\]
+Fix an integer rung range \([r_{\min},r_{\max}]\subset\mathbb{Z}\) and define the pitch rung:
+\[
+  r_i \;:=\; \mathrm{round}\!\bigl(r_{\min} + u_i\,(r_{\max}-r_{\min})\bigr)\in\mathbb{Z}.
+\]
+We support two \emph{ablation-ready} pitch modes:
+\begin{itemize}
+  \item \textbf{ET12 (control)}: \(f_i = f_0\cdot 2^{r_i/12}\) (equal temperament).
+  \item \textbf{$\phi$-rung (hypothesis)}: \(f_i = f_0\cdot \phiG^{r_i}\) (geometric ladder).
+\end{itemize}
+All parameters (including \(f_0,r_{\min},r_{\max}\) and mode) must be frozen in a machine-readable mapping artifact before reporting results; we use \texttt{docs/paper3\_sonification\_mapping\_v0.json} as the v0 spec.
+
+\subsection{Detuning mapping}
+Map constraint violation to detuning:
+\[
+  \Delta f_i \;=\; g\big(\text{local violation at } i\big),
+\]
+where \(g\) is monotone and capped to prevent pathological audio.
+
+\paragraph{Concrete v0 choice (cents, bounded).}
+Let \(s_i\ge 0\) be a \emph{local strain proxy} (e.g., a per-residue attribution of \(\J\)). Define a detune value in cents:
+\[
+  \Delta c_i \;:=\; c_{\max}\,\tanh\!\Bigl(\frac{s_i}{s_0}\Bigr),
+\]
+and apply it multiplicatively:
+\[
+  f_i' \;=\; f_i\cdot 2^{\Delta c_i/1200}.
+\]
+The purpose of detuning is \emph{not} to be musically perfect; it is to create a smoothly varying dissonance signal proportional to constraint violation while remaining bounded.
+
+\subsection{Timbre and spatialization}
+Use timbre to encode coarse structure class and stereo position to encode residue index (left-to-right).
+
+\paragraph{Polyphony cap (required).}
+To avoid \(\mathcal{O}(N^2)\) auditory clutter for long sequences, we cap polyphony at \(K\) notes by selecting the top-\(K\) residues under a declared selection rule (e.g., top-\(K\) by \(s_i\)). The cap \(K\) and selection rule are part of the frozen mapping artifact.
+
+% ===========================================================================
+\section{Consonance as Objective}
+
+\subsection{Roughness metric}
+Define a computable roughness proxy \(R(\text{audio}(S))\) inspired by critical-band interference \cite{plomp_levelt_1965} (and common pairwise roughness approximations \cite{sethares_1993}). The core hypothesis is engineering-only:
+\begin{quote}
+If the audio mapping preserves enough structure, then \(R\) can serve as a \emph{global} error proxy correlated with folding quality (e.g., RMSD/contact satisfaction).
+\end{quote}
+
+\paragraph{Pairwise roughness proxy (v0).}
+For a set of active notes \(\{(f_i',a_i)\}_{i=1}^K\) (frequency and amplitude), define
+\[
+  R \;:=\; \sum_{1\le i<j\le K} a_i a_j\,\Bigl(e^{-\alpha x_{ij}} - e^{-\beta x_{ij}}\Bigr),
+  \qquad
+  x_{ij} := \frac{|f_i'-f_j'|}{B(\tfrac{f_i'+f_j'}{2})},
+\]
+where \(B(\cdot)\) is a critical-bandwidth proxy and \(\alpha,\beta>0\) are fixed constants. This yields a bounded, differentiable ``roughness'' score that increases when frequency components crowd within critical bands.
+
+\subsection{Empirical validation task}
+Given logged trajectories, test correlation between \(R\) and conventional folding metrics (RMSD/contact satisfaction) under preregistered evaluation.
+
+% ===========================================================================
+\section{The Marco Polo Algorithm}
+
+\subsection{Marco: dissonance attribution}
+Compute a per-residue contribution \(r_i\) to overall roughness \(R\). Under a pairwise roughness proxy, a natural attribution is:
+\[
+  r_i \;:=\; \sum_{j\ne i} a_i a_j\,\Bigl(e^{-\alpha x_{ij}} - e^{-\beta x_{ij}}\Bigr),
+\]
+so that \(R = \tfrac12\sum_i r_i\). Any alternative attribution (e.g., via ablations of individual notes or gradient-free sensitivity) must be declared and fixed for the benchmark suite.
+
+\subsection{Polo: targeted perturbation}
+Select \(i^\star=\arg\max_i r_i\) and apply a targeted perturbation (e.g., proposal distribution biased toward residue \(i^\star\)), subject to the same acceptance mechanism and compute budget as baseline.
+
+\subsection{Baselines and ablations (required)}
+\begin{itemize}
+  \item baseline optimizer (no audio),
+  \item audio mapping only (no attribution),
+  \item attribution only (no audio shaping),
+  \item audio + Marco Polo,
+  \item anti-Marco control: random residue targeting with matched compute.
+\end{itemize}
+
+% ===========================================================================
+\section{Experimental Design (Benchmarks and Fairness)}
+
+\subsection{Benchmarks}
+The v2 plan targets a small benchmark suite (e.g., Trp-cage, Villin HP35, BBA5) with sufficient seeds (e.g., \(20\) per condition) and a fixed compute budget.
+
+\subsection{Primary endpoint}
+Primary endpoint (preregistered): median time-to-native at a declared RMSD threshold under fixed budget; report effect sizes and confidence intervals.
+
+\subsection{Failure conditions}
+Resonant Control is falsified (as an improvement) if it fails to outperform baselines under preregistered budgets and ablations, or if any apparent gain disappears under anti-Marco controls.
+
+% ===========================================================================
+\section{Reproducibility Package}
+
+This draft requires a reproducibility bundle before any performance claim:
+\begin{itemize}
+  \item code version + mapping version (hash),
+  \item benchmark manifest and seeds,
+  \item logs sufficient to regenerate audio and plots,
+  \item one-command reproduction instructions.
+\end{itemize}
+
+\appendix
+\section{Supplement: Mapping Specification Checklist}
+To make the mapping independently reproducible, freeze:
+\begin{itemize}
+  \item angle-to-pitch quantization rule,
+  \item violation-to-detuning function \(g\) and caps,
+  \item roughness metric definition,
+  \item MIDI schema + synthesizer/rendering parameters (sample rate, normalization).
+\end{itemize}
+
+\bibliographystyle{unsrt}
+\bibliography{RESONANCE_PAPERS}
+
+\end{document}
+
+
+

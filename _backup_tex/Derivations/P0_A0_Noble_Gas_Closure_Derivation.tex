@@ -1,0 +1,176 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  citecolor=blue
+}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{definition}{Definition}
+
+\title{P0-A0 Noble Gas Closure Theorem\\(Derivation Notes + Lean/Artifact Cross-References)}
+\author{Recognition Science Derivation Campaign}
+\date{2026-01-17}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note documents the \emph{fit-free} periodic-table scaffold used in the repository,
+and derives (from the defining primitives) the Noble Gas Closure facts formalized in Lean:
+(i) noble gases have \texttt{distToNextClosure} equal to zero,
+(ii) noble gases have complete shells (\texttt{valenceElectrons} equals \texttt{periodLength}),
+(iii) the noble-gas gap sequence forces the period lengths $\{2,8,8,18,18,32\}$.
+We also include the preregistered validator output that checks these properties on $Z\le 118$.
+\end{abstract}
+
+\section{Claim (P0-A0)}
+The project’s chemistry layer treats \textbf{noble-gas closure} as the chemical manifestation
+of the RS eight-tick \emph{neutral rest} constraint: closure occurs when the system returns to a
+distinguished equilibrium boundary (a ``rest'' between periods).
+
+In the Lean implementation, this is represented by a deterministic closure map on atomic number $Z$.
+The core theorems proved are listed in \S\ref{sec:lean}.
+
+\section{First principles used in this derivation}
+This document is intentionally \emph{structural}: it does not fit parameters to chemical data.
+The ``first principles'' here are the \emph{deterministic primitives} used by the engine:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Discrete atomic number} $Z\in\mathbb{N}$.
+  \item \textbf{A fixed set of closure boundaries} (noble-gas endpoints) used to define
+    the current period and valence position.
+  \item \textbf{Derived quantities} such as ``distance to closure'', ``valence electrons'',
+    and ``period length'' are defined in terms of the closure boundaries.
+\end{itemize}
+Once these primitives are fixed, the closure theorems are straightforward consequences.
+
+\section{Definitions (mathematical form of the Lean primitives)}
+\label{sec:defs}
+Let the (first-six) noble-gas endpoints be the set
+\[
+  \mathcal{N} := \{2,10,18,36,54,86\}.
+\]
+Define the previous closure function $\mathrm{prev}(Z)$ and next closure function $\mathrm{next}(Z)$
+as piecewise constants that select the adjacent endpoints surrounding $Z$ (with $\mathrm{next}(Z)$
+extended to $118$ for $Z>86$ in the code base).
+
+\begin{definition}[Distance to closure]
+Define
+\[
+  \mathrm{dist}(Z) := \mathrm{next}(Z) - Z.
+\]
+\end{definition}
+
+\begin{definition}[Valence electrons and period length]
+Define
+\[
+  v(Z) := Z - \mathrm{prev}(Z),\qquad
+  L(Z) := \mathrm{next}(Z) - \mathrm{prev}(Z).
+\]
+Intuitively, $v(Z)$ counts electrons beyond the previous closed shell, and $L(Z)$ is the length
+of the period containing $Z$.
+\end{definition}
+
+\section{Derivations}
+
+\subsection{Noble gases are exactly closure points (forward direction)}
+\begin{lemma}
+If $Z\in \mathcal{N}$, then $\mathrm{next}(Z)=Z$ and therefore $\mathrm{dist}(Z)=0$.
+\end{lemma}
+\begin{proof}
+By definition, each $Z\in\{2,10,18,36,54,86\}$ is itself a designated closure endpoint.
+The closure map $\mathrm{next}$ returns the endpoint of the current period; at a designated endpoint,
+that endpoint is $Z$ itself. Thus $\mathrm{next}(Z)=Z$ and $\mathrm{dist}(Z)=\mathrm{next}(Z)-Z=0$.
+\end{proof}
+
+\subsection{Noble gases have complete shells}
+\begin{lemma}
+If $Z\in \mathcal{N}$, then $v(Z)=L(Z)$.
+\end{lemma}
+\begin{proof}
+At a period endpoint $Z$, the next closure equals $Z$ itself, so
+$L(Z)=\mathrm{next}(Z)-\mathrm{prev}(Z)=Z-\mathrm{prev}(Z)=v(Z)$.
+\end{proof}
+
+\subsection{Period lengths from noble-gas gaps}
+Let the sequence of noble-gas endpoints be
+\[
+  (n_0,n_1,n_2,n_3,n_4,n_5)=(2,10,18,36,54,86).
+\]
+Define the derived gap lengths
+\[
+  \Delta_0 := n_0,\qquad \Delta_k := n_k - n_{k-1}\ \ (k=1,\dots,5).
+\]
+Then explicitly,
+\[
+  [\Delta_0,\Delta_1,\Delta_2,\Delta_3,\Delta_4,\Delta_5]
+  = [2, 8, 8, 18, 18, 32].
+\]
+This is the period-length sequence for periods $1$ through $6$.
+
+\section{Validation (prereg script + artifact)}
+The preregistered validator \texttt{scripts/analysis/chem\_noble\_gas\_closure.py}
+writes the artifact \texttt{artifacts/chem\_noble\_gas\_closure.json}.
+The recorded run in the repository reports \textbf{PASS (4/4 tests)}.
+
+\subsection{Test table: \texttt{distToNextClosure} at noble gases}
+\begin{center}
+\begin{tabular}{@{}r l r r@{}}
+\toprule
+$Z$ & Element & $\mathrm{dist}(Z)$ & Pass \\
+\midrule
+2  & He & 0 & true \\
+10 & Ne & 0 & true \\
+18 & Ar & 0 & true \\
+36 & Kr & 0 & true \\
+54 & Xe & 0 & true \\
+86 & Rn & 0 & true \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Test table: complete shell identity $v(Z)=L(Z)$ at noble gases}
+\begin{center}
+\begin{tabular}{@{}r l r r r@{}}
+\toprule
+$Z$ & Element & $v(Z)$ & $L(Z)$ & Pass \\
+\midrule
+2  & He & 2  & 2  & true \\
+10 & Ne & 8  & 8  & true \\
+18 & Ar & 8  & 8  & true \\
+36 & Kr & 18 & 18 & true \\
+54 & Xe & 18 & 18 & true \\
+86 & Rn & 32 & 32 & true \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Lean cross-references}
+\label{sec:lean}
+Lean module:
+\begin{itemize}[leftmargin=*]
+  \item \texttt{IndisputableMonolith/Chemistry/PeriodicTable.lean}
+\end{itemize}
+
+Key proved theorems (names as exported in the module):
+\begin{itemize}[leftmargin=*]
+  \item \texttt{noble\_gas\_at\_closure}: \texttt{distToNextClosure Z = 0} for \texttt{isNobleGas Z}
+  \item \texttt{noble\_gas\_complete\_shell}: \texttt{valenceElectrons Z = periodLength Z} for \texttt{isNobleGas Z}
+  \item \texttt{shell\_sum\_to\_noble}: the list of (first six) cumulative closures matches \texttt{[2,10,18,36,54,86]}
+  \item \texttt{period\_lengths\_from\_noble\_gaps}: $[2,10{-}2,\dots,86{-}54]=[2,8,8,18,18,32]$
+\end{itemize}
+
+\paragraph{Artifact reference.}
+Validation output: \texttt{artifacts/chem\_noble\_gas\_closure.json}.
+
+\end{document}
+

@@ -1,0 +1,7 @@
+import Mathlib
+
+#check tendsto_zero_iff_norm_tendsto_zero
+#check tendsto_zero_iff_norm_tendsto_zero
+#check tendsto_zero_iff_norm_tendsto_zero
+#check tendsto_iff_norm_tendsto
+#check tendsto_iff_norm_tendsto

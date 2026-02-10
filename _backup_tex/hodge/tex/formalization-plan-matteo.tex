@@ -1,0 +1,273 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+
+\definecolor{done}{RGB}{34,139,34}
+\definecolor{partial}{RGB}{255,140,0}
+\definecolor{missing}{RGB}{178,34,34}
+
+\newcommand{\done}{\textcolor{done}{$\bullet$}}
+\newcommand{\partialdone}{\textcolor{partial}{$\bullet$}}
+\newcommand{\missing}{\textcolor{missing}{$\bullet$}}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Hodge Conjecture Lean Formalization}
+\lhead{Plan Document}
+\rfoot{Page \thepage}
+
+\title{\textbf{Hodge Conjecture Lean 4 Formalization}\\[0.5em]
+\large Status Report \& Path Forward}
+\author{Prepared for discussion with Matteo}
+\date{January 17, 2026}
+
+\begin{document}
+
+\maketitle
+
+\noindent\fbox{\parbox{\textwidth}{
+\textbf{Executive Summary:}
+We have a \textbf{complete logical skeleton} of the Hodge conjecture proof in Lean 4, with no custom axioms on the proof track. However, key mathematical objects are \textbf{stubbed/trivialized}, and our definitions are \textbf{not yet community-reviewed}. This document outlines what exists, what's missing, and a proposed ``pyramidal'' approach aligned with mathlib best practices.
+}}
+
+\section{Current Kernel Status}
+
+Running \texttt{\#print axioms hodge\_conjecture'} returns:
+\begin{verbatim}
+[propext, sorryAx, Classical.choice, Quot.sound]
+\end{verbatim}
+
+\begin{itemize}
+    \item \done\ \textbf{No custom axioms} in the dependency cone
+    \item \missing\ \textbf{sorryAx present} --- proof not yet complete
+    \item \done\ Standard Lean axioms only (propext, Classical.choice, Quot.sound)
+\end{itemize}
+
+\section{What We Have (Solid Foundations)}
+
+\subsection{Proof Architecture}
+\begin{itemize}
+    \item \done\ Main theorem structure: \texttt{Hodge/Kahler/Main.lean}
+    \item \done\ Axiom guard enforcement: \texttt{Hodge/AxiomGuard.lean}
+    \item \done\ Verification scripts: \texttt{scripts/verify\_proof\_track.sh}
+\end{itemize}
+
+\subsection{Algebraic Infrastructure}
+\begin{itemize}
+    \item \done\ Wedge product / alternation: \texttt{Hodge/Analytic/DomCoprod.lean}
+    \item \done\ Leibniz rule machinery: \texttt{Hodge/Analytic/Advanced/LeibnizRule.lean}
+    \item \done\ Cohomology ring: \texttt{Hodge/Cohomology/Basic.lean}
+    \item \done\ $(p,q)$-type decomposition: \texttt{Hodge/Kahler/TypeDecomposition.lean}
+\end{itemize}
+
+\subsection{Proof Pipeline}
+\begin{itemize}
+    \item \done\ Signed decomposition $\gamma = \gamma_+ - \gamma_-$
+    \item \done\ Cone-positive $\Rightarrow$ algebraic representative (logical structure)
+    \item \done\ Harvey--Lawson + GAGA pipeline (wired, but stubbed)
+    \item \done\ Microstructure approximation sequence
+\end{itemize}
+
+\section{Blocking Items (Must Fix for Kernel-Complete)}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{File} & \textbf{Issue} & \textbf{Status} \\
+\midrule
+\texttt{LeibnizRule.lean:1702} & Graded Leibniz sign identity & \missing\ sorry \\
+\texttt{Microstructure.lean:968,984,1002} & Transport of zero current & \missing\ sorry \\
+\bottomrule
+\end{tabular}
+\caption{Remaining \texttt{sorry} statements on the proof track}
+\end{table}
+
+\section{Semantic Gaps (Trivialized Content)}
+
+Even after removing sorries, these are ``true for trivial reasons'':
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{Object} & \textbf{Current Definition} & \textbf{What's Needed} \\
+\midrule
+\texttt{integration\_current} & $:= 0$ & Hausdorff measure, currents \\
+\texttt{topFormIntegral} & $:= 0$ & Integration on manifolds \\
+\texttt{SmoothForm.pairing} & $:= 0$ & Wedge + integration \\
+\texttt{harvey\_lawson\_theorem} & Returns $\emptyset$ & GMT regularity theory \\
+\texttt{pointwiseInner} & $:= 0$ & Riemannian metric \\
+\texttt{L2Inner} & $:= 0$ & Volume integration \\
+\bottomrule
+\end{tabular}
+\caption{Stubbed objects (proof becomes vacuous)}
+\end{table}
+
+\section{Statement Fidelity Concerns}
+
+\subsection{Custom Definitions Not in Mathlib}
+
+These definitions are \textbf{ours}, not community-reviewed:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llp{5.5cm}}
+\toprule
+\textbf{Concept} & \textbf{Location} & \textbf{Risk} \\
+\midrule
+\texttt{KahlerManifold} & \texttt{Cohomology/Basic.lean:893} & Is this the standard definition? (Note: \texttt{omega\_positive} is trivial) \\
+\texttt{isRationalClass} & \texttt{Cohomology/Basic.lean:687} & Inductive definition --- matches $H^*(X,\mathbb{Q}) \to H^*(X,\mathbb{C})$? \\
+\texttt{isPPForm'} & \texttt{TypeDecomposition.lean} & Matches Hodge decomposition? \\
+\texttt{isAlgebraicSubvariety} & \texttt{GAGA.lean:52} & Standard scheme-theoretic? \\
+\texttt{SignedAlgebraicCycle} & \texttt{GAGA.lean:391} & Carries form as data (representation is definitional) \\
+\bottomrule
+\end{tabular}
+\caption{Definitions requiring community review}
+\end{table}
+
+\subsection{The ``Represents'' Shortcut}
+
+Our \texttt{SignedAlgebraicCycle} structure \textbf{stores the representing form directly}:
+\begin{verbatim}
+structure SignedAlgebraicCycle ... where
+  pos : Set X
+  neg : Set X
+  representingForm : SmoothForm n X (2 * p)   -- carried as data
+  representingForm_closed : IsFormClosed representingForm
+\end{verbatim}
+
+This means ``$Z$ represents $[\gamma]$'' is \textbf{true by construction} (just \texttt{rfl}), rather than the classical theorem:
+\begin{quote}
+\textit{The fundamental class of the algebraic cycle $Z$ equals the de Rham class $[\gamma]$.}
+\end{quote}
+
+\section{The Pyramidal Approach (Matteo's Recommendation)}
+
+\subsection{Philosophy}
+Build foundations \textbf{bottom-up} via mathlib PRs, reviewed by domain experts. Then the top-level proof is:
+\begin{enumerate}
+    \item Faithful to the classical statement
+    \item Trusted by the community
+    \item Efficient (reuses existing infrastructure)
+\end{enumerate}
+
+\subsection{Proposed Layers}
+
+\textbf{Layer 1: Analytic Foundations} (mathlib PRs)
+\begin{itemize}
+    \item Integration on manifolds
+    \item Sobolev spaces, elliptic PDEs
+    \item Currents, Stokes' theorem
+\end{itemize}
+
+\textbf{Layer 2: Complex/K\"ahler Geometry} (mathlib PRs)
+\begin{itemize}
+    \item Complex manifolds, holomorphic forms
+    \item K\"ahler manifolds (proper definition)
+    \item Hodge decomposition, $(p,q)$-types
+\end{itemize}
+
+\textbf{Layer 3: Algebraic Geometry} (mathlib PRs)
+\begin{itemize}
+    \item Algebraic varieties / subvarieties
+    \item Algebraic cycles, Chow groups
+    \item Fundamental class construction
+\end{itemize}
+
+\textbf{Layer 4: Bridge Theorems} (new proofs)
+\begin{itemize}
+    \item Harvey--Lawson regularity
+    \item GAGA-type correspondence
+    \item Fundamental class = de Rham class
+\end{itemize}
+
+\textbf{Layer 5: Main Proof} (our current architecture)
+\begin{itemize}
+    \item Signed decomposition
+    \item Microstructure approximation
+    \item Final assembly
+\end{itemize}
+
+\section{Concrete Next Steps}
+
+\subsection{Immediate (Kernel-Complete)}
+\begin{enumerate}
+    \item Eliminate \texttt{sorry} in \texttt{LeibnizRule.lean} (graded sign identity)
+    \item Eliminate \texttt{sorry} in \texttt{Microstructure.lean} (transport lemmas)
+\end{enumerate}
+
+\subsection{Short-Term (Statement Fidelity)}
+\begin{enumerate}
+    \item Review \texttt{KahlerManifold} definition with Matteo
+    \item Review \texttt{isRationalClass} definition against classical notion
+    \item Decide: keep ``represents by construction'' or prove bridge theorem?
+\end{enumerate}
+
+\subsection{Medium-Term (Mathlib Integration)}
+\begin{enumerate}
+    \item Identify which definitions should become mathlib PRs
+    \item Coordinate with mathlib Hodge-theory maintainer
+    \item Submit foundational PRs for review
+\end{enumerate}
+
+\subsection{Long-Term (Full Formalization)}
+\begin{enumerate}
+    \item Replace stubbed objects with real definitions
+    \item Formalize integration on manifolds
+    \item Formalize currents and Stokes' theorem
+    \item (Optional) Formalize Harvey--Lawson as cited theorem or full proof
+\end{enumerate}
+
+\section{What We Can Claim Today}
+
+\noindent\fbox{\parbox{\textwidth}{
+\textbf{Honest Assessment:}
+
+\textbf{Once sorries are eliminated}, we can claim:
+
+\begin{quote}
+``We have a Lean 4 proof that the Hodge conjecture follows from:
+\begin{itemize}
+    \item Standard K\"ahler geometry (assuming our definitions match)
+    \item Integration currents satisfying Stokes' theorem
+    \item Harvey--Lawson regularity for calibrated currents
+    \item GAGA-type algebraization
+\end{itemize}
+The logical architecture is complete and machine-verified.''
+\end{quote}
+
+\textbf{We cannot yet claim}:
+\begin{quote}
+``We have formalized a complete proof of the Hodge conjecture.''
+\end{quote}
+}}
+
+\section{Summary Table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Aspect} & \textbf{Status} & \textbf{Blocking?} \\
+\midrule
+Logical architecture & \done\ Complete & No \\
+Kernel axiom-free & \done\ Yes (no custom axioms) & No \\
+Sorry-free & \missing\ No (4 remaining) & \textbf{Yes} \\
+Semantic content & \missing\ Trivialized & Depends on claim \\
+Community-reviewed definitions & \missing\ Not yet & For full claim \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vfill
+
+\begin{center}
+\textit{Prepared for coordination with Matteo on the pyramidal formalization approach.}
+\end{center}
+
+\end{document}

@@ -1,0 +1,10 @@
+import Mathlib
+open Complex
+#check Complex.normSq
+#check Complex.normSq_eq_conj_mul_self
+#check Complex.mul_conj
+#check Complex.conj_mul
+#check Complex.mul_conj
+#check Complex.mul_conj
+#check Complex.abs
+#check Complex.abs_sq

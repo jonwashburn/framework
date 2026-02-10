@@ -1,0 +1,115 @@
+% Eight-Tick Neutral Scheduler — Family E Patent (Method, System, Medium)
+\documentclass[12pt]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage{xcolor}
+
+\title{Eight-Tick Neutral Scheduler\\Family E Patent (Method, System, Medium)}
+\author{Jonathan Washburn}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{center}
+{\large Camera-Ready Patent Draft}\\[4pt]
+{\normalsize Gray-Aligned 8-Tick Commits; Neutrality Enforcement ($\sum\delta_i=0$); J Block-Sum Minimization for Alias Suppression}
+\end{center}
+
+\section*{Field}
+This disclosure relates to real-time scheduling for instruments and multi-actuator control systems. It provides a method, system, and non-transitory medium for scheduling commits in Gray-aligned \emph{eight-tick} windows, enforcing neutrality ($\sum_{i=1}^{8}\delta_i=0$ with mirrored halves), and minimizing a J-kernel block-sum to suppress alias and phase errors in measurements and control.
+
+\section*{Background}
+Periodic operations (sensing, integration, actuator updates) are susceptible to aliasing and modal cross-interference when update timing aligns with plant resonances or when residuals accumulate. Equal-spaced or co-phased schedules often reinforce low-order modes and produce drift. There is a need for a scheduler that: (i) uses \emph{eight-tick} minimality (in $D=3$) with Gray alignment; (ii) enforces \emph{neutrality} per block; and (iii) \emph{minimizes a J block-sum} objective to reduce aliasing.
+
+\section*{Summary}
+Disclosed is an Eight-Tick Neutral Scheduler that:
+\begin{enumerate}[leftmargin=*]
+  \item partitions each period into eight windows with Gray-aligned commits and mirrored halves (mid-cycle FLIP);
+  \item enforces neutrality per block: $\sum_{i=1}^{8}\delta_i=0$ and $\delta_{i+4}=-\delta_i$ for $i=1,\dots,4$;
+  \item minimizes a block-sum of the convex symmetric J-kernel $J(x)=\tfrac12(x+1/x)-1$ over windowed observables to suppress alias and phase errors; and
+  \item emits compliance logs with timing, neutrality metrics, J block-sums, and signatures.
+\end{enumerate}
+
+\section*{Definitions}
+\noindent\textbf{Eight-tick window.} A block of eight sequential windows $(W_1,\dots,W_8)$ that spans the minimal spatially complete period in $D=3$.
+
+\noindent\textbf{Gray-aligned commits.} Window transitions and commits are arranged to change one timing state at a time, minimizing switching artifacts and ensuring deterministic phase behavior.
+
+\noindent\textbf{Neutrality.} For per-window signed updates $\delta_i$, neutrality requires $\sum_{i=1}^{8}\delta_i=0$ and mirrored halves $\delta_{i+4}=-\delta_i$ ($i=1..4$).
+
+\noindent\textbf{J-kernel block-sum.} For a per-window observable or residual sequence $x_i>0$, the scheduler minimizes $\sum_{i=1}^{8} J(x_i)$, where $J(x)=\tfrac12(x+1/x)-1$, to suppress alias/phase errors.
+
+\noindent\textbf{Compliance API.} Interface exposing timing parameters, neutrality observables, J block-sum metrics, and signed logs for audit.
+
+\section*{Claims}
+\setlist[enumerate]{leftmargin=*,labelsep=0.5em,itemsep=0.6em,topsep=0.4em}
+
+\subsection*{Independent Claims}
+\begin{enumerate}
+\item \textbf{(Method)} A computer-implemented scheduling method for periodic measurement or control, comprising:
+\begin{enumerate}[label=(\alph*)]
+  \item partitioning each period into eight windows with Gray-aligned commits and mirrored halves, including a mid-cycle FLIP;
+  \item enforcing neutrality per block by constraining per-window signed updates $\delta_i$ to satisfy $\sum_{i=1}^{8}\delta_i=0$ and $\delta_{i+4}=-\delta_i$ for $i=1..4$;
+  \item minimizing a J-kernel block-sum $\sum_{i=1}^{8} J(x_i)$ over windowed observables $x_i>0$ with $J(x)=\tfrac12(x+1/x)-1$; and
+  \item emitting signed, hash-addressed logs including timing, neutrality metrics, block-sum values, and configuration.
+\end{enumerate}
+
+\item \textbf{(System)} A scheduling system comprising one or more processors, memory, and timing circuitry configured to: (i) generate eight-window Gray-aligned schedules with mirrored halves; (ii) enforce neutrality constraints per block; (iii) compute and minimize a J block-sum over windowed observables; and (iv) emit compliance logs with signatures.
+
+\item \textbf{(Non-transitory medium)} A non-transitory computer-readable medium storing instructions that, when executed, cause a system to perform the method of claim 1.
+\end{enumerate}
+
+\subsection*{Dependent Claims}
+\begin{enumerate}[resume]
+\item (Method) wherein timing edges use raised-cosine ($C^1$) envelopes to reduce spectral leakage while preserving neutrality constraints.
+\item (Method) wherein jitter is bounded by $\varepsilon_j$ and verified by an external sensor; violations trigger fail-closed behavior.
+\item (Method) wherein per-window observables $x_i$ are derived from canonically factorized, dimensionless displays.
+\item (Method) wherein neutrality is validated from synchronized sensing (e.g., EL/PL, impedance, IR) by a block-sum neutrality observable $Z=\sum_{i=1}^{4}(M_i-M_{i+4})$.
+\item (Method) further comprising per-window aggregation rules (median, trimmed mean) for robust J block-sum computation.
+\item (System) further comprising an FPGA or SoC timing engine generating eight-tick schedules with bounded jitter and a streaming J-kernel core computing $J(e^{u})=\cosh(u)-1$ in log-domain with a block-sum accumulator.
+\item (Method) wherein alias suppression is quantified by reduction in a declared alias/phase error metric relative to an equal-spaced baseline.
+\item (Method) wherein mirrored halves are constructed as exact inverses in signed updates subject to dwell and slew constraints.
+\item (System) wherein compliance logs include timing ratios, jitter statistics, neutrality observables, J block-sum values, and acceptance verdicts.
+\item (Method) further comprising a compliance API exposing schedule state (BeginWindow($\ell$), EndWindow($\ell$), WindowIndex()), neutrality flags, and block-sum metrics with signatures.
+\end{enumerate}
+
+\section*{Brief Description of the Drawings}
+\begin{enumerate}[leftmargin=*]
+  \item Fig. 1: Eight-tick Gray-aligned schedule with mirrored halves and mid-cycle FLIP.
+  \item Fig. 2: Neutrality constraints and block-sum neutrality observable $Z$.
+  \item Fig. 3: J-kernel block-sum computation over windowed observables.
+  \item Fig. 4: Timing engine (FPGA/SoC) and compliance logging interface.
+\end{enumerate}
+
+\section*{Detailed Description}
+\subsection*{Scheduler Core}
+Each period is partitioned into eight windows $(W_1..W_8)$. Gray alignment ensures only one timing state changes at a time. Mirrored halves enforce $\delta_{i+4}=-\delta_i$ with a mid-cycle FLIP. Dwell and slew constraints are enforced to guarantee realizability.
+
+\subsection*{Neutrality Enforcement}
+Per-window signed updates $\delta_i$ (e.g., integrated exposure, actuator postings) satisfy $\sum_{i=1}^{8}\delta_i=0$. Neutrality may be verified from synchronized sensing via a block-sum neutrality observable $Z=\sum_{i=1}^{4}(M_i-M_{i+4})$ expected to be zero-mean within declared bands.
+
+\subsection*{J Block-Sum Minimization}
+For positive per-window observables $x_i$, a convex symmetric cost $J(x)=\tfrac12(x+1/x)-1$ is minimized over the block to reduce alias/phase errors. Robust aggregation (median/trimmed mean) may be used against outliers. Alias suppression is evidenced by improved metrics relative to equal-spaced baselines.
+
+\subsection*{Compliance and Logging}
+The scheduler records timing parameters, jitter, neutrality metrics, J block-sum values, and acceptance verdicts in signed, hash-addressed logs. A compliance API exposes current window state, neutrality flags, and block-sum metrics for audit and downstream gating.
+
+\section*{Technical Effects}
+The scheduler yields: (i) reduced alias/phase error via neutrality and J minimization; (ii) deterministic periodic invariance with mirrored halves; (iii) robustness to timing perturbations through Gray alignment and jitter bounds; and (iv) auditability via signed logs and compliance API.
+
+\section*{Enablement and Best Mode}
+Reference implementations include an FPGA/SoC timing engine, raised-cosine window envelopes, a streaming J-kernel core with a block-sum accumulator, and synchronized sensing for neutrality verification. Benchmarks quantify alias reduction vs equal-spaced schedules.
+
+\section*{Alternative Embodiments}
+Window envelopes may vary (provided $C^1$ smoothness or policy criteria). Jitter budgets, dwell/slew constraints, and aggregation rules can be tuned per modality. Additional windows ($>8$) may be used while preserving mirrored neutrality.
+
+\section*{Legal Notice}
+All embodiments, features, and steps described herein may be combined in any operable permutation. Where means-plus-function is implicated, claims are intended to cover corresponding structures and their equivalents.
+
+\end{document}
+
+

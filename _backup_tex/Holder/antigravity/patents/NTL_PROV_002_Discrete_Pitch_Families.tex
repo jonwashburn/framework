@@ -1,0 +1,340 @@
+\documentclass[11pt]{article}
+
+% Keep packages minimal for TeX Live "basic" installs.
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{enumitem}
+
+\geometry{margin=1in}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue
+}
+
+% ---------------------------------------------------------------------------
+% Convenience macros (avoid Unicode Greek in text; use LaTeX math symbols)
+% ---------------------------------------------------------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\phival}{\varphi}
+
+\newcommand{\PatentTitle}{Methods and Systems for Quantized Pitch-Family Selection and Invariant Control of Golden-Ratio Logarithmic-Spiral Geometries}
+\newcommand{\Docket}{NTL-PROV-002}
+\newcommand{\Inventors}{[Inventor Names]}
+\newcommand{\Assignee}{[Assignee / Organization]}
+\newcommand{\FilingDate}{February 1, 2026}
+
+\begin{document}
+
+\begin{center}
+{\LARGE \textbf{\PatentTitle}}\\[0.75em]
+{\large \textbf{Docket:} \Docket}\\[0.25em]
+{\large \textbf{Inventors:} \Inventors}\\[0.25em]
+{\large \textbf{Assignee:} \Assignee}\\[0.25em]
+{\large \textbf{Date:} \FilingDate}\\[0.75em]
+\end{center}
+
+\vspace{-0.5em}
+\hrule
+\vspace{0.75em}
+
+% ===========================================================================
+% ABSTRACT (PATENT)
+% ===========================================================================
+\section*{Abstract}
+
+Disclosed are methods, systems, and computer-readable media for enforcing \emph{quantized pitch families} and invariant geometric relationships in logarithmic-spiral scaffolds defined using the golden ratio \(\phival\). In various embodiments, a spiral scaffold is defined by
+\[
+r(\theta) = r_0 \cdot \phival^{\kappa \theta/(2\pi)},
+\]
+where \(r_0>0\) is a base radius, \(\theta\) is an angular coordinate, and \(\kappa \in \Z\) is an integer pitch-family parameter. By restricting \(\kappa\) to integers (or otherwise quantized values), a design space is partitioned into discrete pitch families characterized by a per-turn multiplier \(M(\kappa)=\phival^\kappa\). The disclosure provides closed-form invariants including (i) a step ratio \(\phival^{\kappa\Delta\theta/(2\pi)}\) for any angular increment \(\Delta\theta\), (ii) the per-turn multiplier \(M(\kappa)\), and (iii) pitch-family shift relationships \(M(\kappa+d)=M(\kappa)\phival^d\) for integers \(d\). These invariants enable scale-invariant design rules, validation of manufactured geometry, database indexing of geometries by family, and constrained optimization that selects \(\kappa\) from discrete families subject to manufacturing, electrical, and geometric constraints. The disclosure further provides methods for selecting, searching, and validating pitch-family parameters, and for compiling and distributing fabrication artifacts and configuration packages that encode pitch-family invariants.
+
+% ===========================================================================
+% TECHNICAL FIELD
+% ===========================================================================
+\section*{Technical Field}
+
+The present disclosure relates to geometric parameterization and selection of logarithmic-spiral geometries, and more particularly to apparatus and methods for enforcing discrete pitch-family constraints and invariant relationships in golden-ratio logarithmic spirals used in rotors, traces, coil arrays, and associated manufacturing and control workflows.
+
+% ===========================================================================
+% BACKGROUND
+% ===========================================================================
+\section*{Background}
+
+Logarithmic spirals appear in multiple engineering contexts (e.g., antennas, inductors, and mechanical spiral structures). Conventional approaches typically treat the spiral ``growth rate'' as a continuous variable that is curve-fit or adjusted during prototyping. This practice makes it difficult to:
+\begin{itemize}[leftmargin=*]
+  \item reproduce a geometry across scales and manufacturing processes,
+  \item build discrete-element arrays that preserve intended multiplicative spacing,
+  \item index and search design libraries in a compact parameter space,
+  \item enforce cross-run comparability when geometries drift through continuous tuning,
+  \item validate manufactured fidelity beyond basic dimensional checks.
+\end{itemize}
+
+Accordingly, there is a need for a spiral geometry specification that (i) partitions the design space into discrete pitch families and (ii) provides closed-form invariants that are preserved under scaling and discretization.
+
+% ===========================================================================
+% SUMMARY
+% ===========================================================================
+\section*{Summary}
+
+This disclosure provides systems and methods that treat the pitch parameter \(\kappa\) of a golden-ratio logarithmic spiral as a \emph{quantized design variable} (e.g., an integer). This yields discrete pitch families with predictable invariants. In one aspect, a computing system selects \(\kappa\) from a discrete set based on constraints. In another aspect, the system validates manufactured geometry by comparing measured step ratios or per-turn multipliers against closed-form invariants.
+
+The disclosure further provides:
+\begin{itemize}[leftmargin=*]
+  \item a pitch-family index \(F=\kappa\) stored and transmitted as an integer;
+  \item an invariant per-turn multiplier \(M(\kappa)=\phival^\kappa\);
+  \item an invariant step ratio \(S(\kappa,\Delta\theta)=\phival^{\kappa\Delta\theta/(2\pi)}\);
+  \item a pitch-family shift identity \(M(\kappa+d)=M(\kappa)\phival^d\);
+  \item methods to search over discrete pitch families and select a family meeting constraints;
+  \item methods to compile, label, and distribute fabrication files and configuration packages that encode the pitch family.
+\end{itemize}
+
+% ===========================================================================
+% BRIEF DESCRIPTION OF DRAWINGS
+% ===========================================================================
+\section*{Brief Description of the Drawings}
+
+Drawings may be provided in a later filing or as attachments to this disclosure. For purposes of the present specification, the following figures are described:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{FIG. 1} shows discrete pitch families indexed by \(\kappa\) and the associated per-turn multiplier \(M(\kappa)=\phival^\kappa\).
+  \item \textbf{FIG. 2} shows step ratio invariance for multiple base radii \(r_0\).
+  \item \textbf{FIG. 3} shows a constrained search over integer \(\kappa\) subject to geometry bounds and manufacturing constraints.
+  \item \textbf{FIG. 4} shows an example database schema and a family-indexed design library.
+  \item \textbf{FIG. 5} shows manufactured-geometry validation by comparing measured step ratios to invariant predictions.
+  \item \textbf{FIG. 6} shows optional packaging of pitch-family parameters and invariants into signed configuration artifacts.
+\end{itemize}
+
+% ===========================================================================
+% DEFINITIONS
+% ===========================================================================
+\section*{Definitions and Notation}
+
+Unless otherwise indicated:
+\begin{itemize}[leftmargin=*]
+  \item \(\phival\) (golden ratio) is defined as \(\phival = (1+\sqrt{5})/2\).
+  \item \(r_0 \in \R_{>0}\) is a base radius (scale parameter).
+  \item \(\theta \in \R\) is an angular coordinate (radians).
+  \item \(\kappa \in \Z\) is an integer pitch-family parameter.
+  \item A \emph{pitch family} refers to the set of geometries sharing the same integer \(\kappa\) (and thus the same per-turn multiplier).
+  \item A \emph{per-turn multiplier} refers to \(M(\kappa)=\phival^\kappa\).
+  \item A \emph{step ratio} refers to \(S(\kappa,\Delta\theta)=\phival^{\kappa\Delta\theta/(2\pi)}\).
+  \item A \emph{configuration artifact} refers to a file or record encoding \((r_0,\kappa)\) and optional derived invariants.
+\end{itemize}
+
+% ===========================================================================
+% DETAILED DESCRIPTION
+% ===========================================================================
+\section*{Detailed Description}
+
+\subsection*{1. Spiral Scaffold Definition (Context)}
+
+In many embodiments, a spiral scaffold is defined by:
+\begin{equation}
+  r(\theta;r_0,\kappa) = r_0 \cdot \phival^{\kappa\theta/(2\pi)}.
+  \label{eq:spiral}
+\end{equation}
+
+This disclosure focuses on \emph{quantized selection and invariant relationships} of the pitch-family parameter \(\kappa\), including design rules and validation workflows. The scaffold itself may be used for rotors, traces, coil arrays, and other embodiments.
+
+\subsection*{2. Closed-Form Invariants}
+
+\paragraph{2.1 Step ratio (invariant under base-radius scaling).}
+For any \(\Delta\theta \in \R\),
+\begin{align}
+  \frac{r(\theta+\Delta\theta;r_0,\kappa)}{r(\theta;r_0,\kappa)}
+  &= \frac{r_0 \phival^{\kappa(\theta+\Delta\theta)/(2\pi)}}{r_0 \phival^{\kappa\theta/(2\pi)}} \nonumber\\
+  &= \phival^{\kappa\Delta\theta/(2\pi)}.
+  \label{eq:step_ratio}
+\end{align}
+Define \(S(\kappa,\Delta\theta) := \phival^{\kappa\Delta\theta/(2\pi)}\). The step ratio does not depend on \(r_0\) or \(\theta\).
+
+\paragraph{2.2 Per-turn multiplier.}
+For \(\Delta\theta=2\pi\),
+\begin{equation}
+  \frac{r(\theta+2\pi;r_0,\kappa)}{r(\theta;r_0,\kappa)} = \phival^{\kappa}.
+  \label{eq:per_turn}
+\end{equation}
+Define \(M(\kappa) := \phival^\kappa\). The multiplier describes the radial scaling after one full revolution.
+
+\paragraph{2.3 Pitch-family shift identity.}
+For any integer \(d\),
+\begin{equation}
+  M(\kappa+d) = \phival^{\kappa+d} = \phival^\kappa \cdot \phival^d = M(\kappa)\phival^d.
+  \label{eq:shift}
+\end{equation}
+Thus pitch families form a multiplicative lattice.
+
+\paragraph{2.4 Equivalent exponential form.}
+Eq.~\eqref{eq:spiral} may be written:
+\begin{equation}
+  r(\theta) = r_0 \cdot e^{(\kappa \ln\phival)\theta/(2\pi)}.
+  \label{eq:exp_form}
+\end{equation}
+This form is useful for numerical stability and for implementing design-rule solvers.
+
+\subsection*{3. Quantized Pitch-Family Constraint}
+
+The key design constraint is that \(\kappa\) is not treated as an arbitrary real number. Instead, \(\kappa\) is restricted to a discrete set, e.g. integers:
+\[
+\kappa \in \Z \quad \text{(or a discrete subset of integers)}.
+\]
+
+This has multiple technical advantages:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Compact design-space index.} A single integer indexes a family.
+  \item \textbf{Reproducibility across iterations.} Iteration does not drift continuously.
+  \item \textbf{Scale invariance.} Designs can scale via \(r_0\) without changing invariants.
+  \item \textbf{Constraint-friendly search.} Discrete search over \(\kappa\) supports robust optimization under manufacturing constraints.
+\end{itemize}
+
+\subsection*{4. Family Selection under Constraints}
+
+\paragraph{4.1 Constraint examples.}
+Typical constraints include:
+\begin{itemize}[leftmargin=*]
+  \item an outer radius limit \(r(\theta_{\max}) \le r_{\max}\),
+  \item an inner radius limit \(r(\theta_{\min}) \ge r_{\min}\),
+  \item minimum feature size, minimum curvature radius, and spacing constraints for traces,
+  \item target per-turn multiplier bounds \(M_{\min} \le M(\kappa) \le M_{\max}\),
+  \item discretization constraints (e.g., chord length or radius increments per sample).
+\end{itemize}
+
+\paragraph{4.2 Example: bounding radius after \(T\) turns.}
+Let \(\theta_{\max}=2\pi T\) for \(T\in\N\). Then:
+\[
+r(2\pi T) = r_0 \cdot \phival^{\kappa T}.
+\]
+Given \(r(2\pi T)\le r_{\max}\), one obtains:
+\[
+\kappa \le \frac{\ln(r_{\max}/r_0)}{T\ln\phival}.
+\]
+When \(\kappa\) is restricted to integers, the feasible set is \(\kappa \in \{\ldots, \lfloor \ln(r_{\max}/r_0)/(T\ln\phival)\rfloor\}\), enabling discrete search and stable selection.
+
+\paragraph{4.3 Example: selecting sampling density from step ratio.}
+Given a desired multiplicative radial ratio \(q>0\) between successive samples separated by \(\Delta\theta\), solve:
+\[
+q = S(\kappa,\Delta\theta)=\phival^{\kappa\Delta\theta/(2\pi)}.
+\]
+For \(\kappa\ne 0\):
+\[
+\Delta\theta = \frac{2\pi\ln q}{\kappa\ln\phival}.
+\]
+This yields a direct design rule linking pitch-family selection to discretization density.
+
+\paragraph{4.4 Discrete search (non-limiting).}
+In one embodiment, a system searches over a discrete candidate set \(\kappa \in \mathcal{K} \subset \Z\), computes derived invariants \(M(\kappa)\) and \(S(\kappa,\Delta\theta)\), checks constraints, and selects a \(\kappa\) that optimizes an objective (e.g., maximize feasible radius range, minimize curvature error, minimize manufacturing risk).
+
+\subsection*{5. Manufacturing and Metrology Validation Using Invariants}
+
+\paragraph{5.1 Measuring step ratios.}
+Given a manufactured part, measure radii at angles \(\theta\) and \(\theta+\Delta\theta\) (by optical metrology, CMM, or image processing) to obtain an empirical step ratio:
+\[
+\widehat{S}(\Delta\theta) = \frac{\widehat{r}(\theta+\Delta\theta)}{\widehat{r}(\theta)}.
+\]
+Compare against predicted \(S(\kappa,\Delta\theta)\) from Eq.~\eqref{eq:step_ratio}.
+
+\paragraph{5.2 Estimating \(\kappa\) from measurements.}
+Taking logs:
+\[
+\ln \widehat{S}(\Delta\theta) \approx \frac{\kappa\Delta\theta}{2\pi}\ln\phival.
+\]
+Thus:
+\[
+\widehat{\kappa} \approx \frac{2\pi}{\Delta\theta}\cdot\frac{\ln \widehat{S}(\Delta\theta)}{\ln\phival}.
+\]
+In one embodiment, \(\widehat{\kappa}\) is rounded to the nearest integer and compared to the stored design \(\kappa\). Deviations beyond tolerance indicate manufacturing error, mis-scaling, or measurement error.
+
+\paragraph{5.3 Family-indexed quality control.}
+In one embodiment, a quality-control system stores \(\kappa\) as a lot attribute and enforces that measured \(\widehat{\kappa}\) matches the intended family within tolerance. This yields a family-level control chart and lot acceptance criteria.
+
+\subsection*{6. Data Structures, Libraries, and Configuration Artifacts}
+
+\paragraph{6.1 Database indexing.}
+In one embodiment, a design library indexes spiral geometries by:
+\[
+(\kappa,\; r_0,\; T,\; \text{layer id},\; \text{manufacturing profile}).
+\]
+The integer \(\kappa\) enables efficient lookup, de-duplication, and search.
+
+\paragraph{6.2 Configuration artifacts.}
+In one embodiment, a configuration artifact encodes:
+\[
+\mathcal{C} = (r_0,\kappa,n,\theta_{\text{start}},M(\kappa),\text{constraints}),
+\]
+optionally including cryptographic hashes and signatures to prevent unintended drift or tampering in iterative workflows.
+
+\subsection*{7. Example Embodiments (Non-Limiting)}
+
+\paragraph{Embodiment A: family-labeled CAD generation.}
+A CAD tool receives \((r_0,\kappa)\), generates the curve, embeds a label ``FAMILY=\(\kappa\)'' in the drawing metadata, and exports the CAD file. Downstream tooling verifies the family label and derived \(M(\kappa)\).
+
+\paragraph{Embodiment B: constrained selection for PCB spiral.}
+Given trace width and spacing constraints, the system enumerates \(\kappa \in \{-3,-2,-1,0,1,2,3\}\), computes curvature bounds and expected radius ranges, and selects the smallest \(|\kappa|\) meeting spacing constraints while achieving a required outer radius within a board outline.
+
+\paragraph{Embodiment C: manufacturing validation via optical scan.}
+An optical scan estimates \(\widehat{\kappa}\) from measured step ratios and compares it to the stored \(\kappa\). If mismatch is detected, the part is rejected or reworked.
+
+\paragraph{Embodiment D: discrete family sweep.}
+For exploratory work, the system generates a set of coupons with \(\kappa\) in a discrete range and identical \(r_0\), enabling controlled comparison between pitch families.
+
+% ===========================================================================
+% CLAIMS (DRAFT / PROVISIONAL-STYLE)
+% ===========================================================================
+\section*{Claims (Draft)}
+
+\textbf{Note:} The following claims are an initial, non-limiting claim set intended to preserve multiple fallback positions. Final claim strategy should be reviewed by counsel.
+
+\subsection*{Independent Claims}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{(Method)} A method of selecting a pitch family for a golden-ratio logarithmic spiral geometry, the method comprising: receiving a constraint set for a spiral geometry; enumerating candidate pitch-family parameters \(\kappa\) from a discrete set; for each candidate \(\kappa\), computing a per-turn multiplier \(M(\kappa)=\phival^{\kappa}\) and determining whether the candidate satisfies the constraint set; selecting a pitch-family parameter \(\kappa\) that satisfies the constraint set; and generating a fabrication-ready representation of the spiral geometry using the selected \(\kappa\).
+
+  \item \textbf{(System)} A system comprising one or more processors and memory storing instructions that, when executed by the one or more processors, cause the system to: store a pitch-family parameter \(\kappa\) as a quantized value; compute one or more invariants of a golden-ratio logarithmic spiral geometry including at least one of (i) a step ratio \(S(\kappa,\Delta\theta)=\phival^{\kappa\Delta\theta/(2\pi)}\) or (ii) a per-turn multiplier \(M(\kappa)=\phival^\kappa\); and output at least one of (a) a fabrication artifact representing the geometry or (b) a configuration artifact encoding the quantized pitch family.
+
+  \item \textbf{(Non-transitory medium)} A non-transitory computer-readable medium storing instructions that, when executed by one or more processors, cause the one or more processors to: receive measurement data of a manufactured spiral geometry; compute an estimated pitch-family parameter \(\widehat{\kappa}\) from the measurement data using a closed-form relationship between measured step ratios and \(\kappa\); compare the estimated pitch-family parameter to a stored intended pitch-family parameter \(\kappa\); and output a validation result indicating whether the manufactured spiral geometry conforms to the stored pitch family.
+\end{enumerate}
+
+\subsection*{Dependent Claims (Examples; Non-Limiting)}
+
+\begin{enumerate}[leftmargin=*]
+  \setcounter{enumi}{3}
+  \item The method of claim 1, wherein enumerating candidate pitch-family parameters comprises enumerating integer values \(\kappa \in \Z\).
+  \item The method of claim 1, wherein the constraint set comprises an outer radius bound after a specified number of turns.
+  \item The method of claim 1, further comprising selecting a sampling density based on a desired multiplicative radial ratio \(q\) using \(\Delta\theta = 2\pi\ln q/(\kappa\ln\phival)\).
+  \item The system of claim 2, wherein the configuration artifact further includes a cryptographic hash of the pitch-family parameter and derived invariants.
+  \item The system of claim 2, wherein the discrete set of candidate pitch-family parameters comprises a subset of integers authorized by a design policy.
+  \item The non-transitory medium of claim 3, wherein the measurement data is obtained from an optical scan of a manufactured part.
+  \item The non-transitory medium of claim 3, wherein computing the estimated pitch-family parameter comprises computing \(\widehat{\kappa} = (2\pi/\Delta\theta)\cdot (\ln \widehat{S}(\Delta\theta)/\ln\phival)\) and rounding to a nearest integer.
+  \item The non-transitory medium of claim 3, further comprising generating a quality-control report indexed by the stored pitch-family parameter \(\kappa\).
+  \item The method of claim 1, wherein generating the fabrication-ready representation comprises exporting at least one of DXF, SVG, STL, or GERBER files.
+\end{enumerate}
+
+% ===========================================================================
+% FALLBACK POSITIONS / ADDITIONAL EMBODIMENTS
+% ===========================================================================
+\section*{Additional Embodiments and Fallback Positions (Non-Limiting)}
+
+The following are included to maximize optionality for later claim drafting:
+\begin{itemize}[leftmargin=*]
+  \item Quantization of \(\kappa\) may be implemented as integer quantization, half-integer quantization, or membership in a finite approved set (e.g., \(\kappa \in \{-3,-2,-1,0,1,2,3\}\)).
+  \item Pitch-family selection may be performed by brute-force enumeration, constraint programming, integer programming, or mixed-integer optimization.
+  \item Validation may use one or more measured step ratios across multiple \(\Delta\theta\) values and may average or regress to reduce noise.
+  \item Pitch-family parameters and invariants may be used to label and version designs, test coupons, and manufacturing lots, enabling traceability.
+  \item A pitch-family-aware toolchain may reject fabrication jobs where the requested \(\kappa\) deviates from an approved family set or where derived invariants violate constraints.
+\end{itemize}
+
+\vspace{1em}
+\hrule
+\vspace{0.75em}
+\noindent \textbf{End of Specification (Draft)}
+
+\end{document}
+

@@ -1,0 +1,210 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  citecolor=blue
+}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{proposition}{Proposition}
+
+\title{P0-A2 Ionization Energy Sawtooth\\(Mathematical Derivation + NIST Validation Tables)}
+\author{Recognition Science Derivation Campaign}
+\date{2026-01-17}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This document rewrites the P0-A2 ionization ``sawtooth'' result as a full mathematical derivation.
+The repository’s Lean scaffold defines an \emph{ionization proxy} $P(Z)$ from the period boundary maps
+and proves that, within each period, $P(Z)$ increases from the first element (alkali) to the closure
+endpoint (noble gas), and then resets after each closure. We then reproduce the preregistered validator
+tables comparing these ordering predictions to NIST first ionization energies (PASS 3/3 hard tests).
+\end{abstract}
+
+\section{Claim (P0-A2)}
+Let $I_1(Z)$ denote the first ionization energy (in eV) for atomic number $Z$.
+Empirically, $I_1$ exhibits a characteristic sawtooth pattern across periods.
+In this repository, the fit-free content is an \textbf{ordering prediction}:
+\begin{itemize}[leftmargin=*]
+  \item Within each period, the ionization proxy increases from the alkali metal to the noble gas.
+  \item Across a period boundary, the proxy resets downward at the next alkali.
+\end{itemize}
+The validator compares these ordering predictions to NIST data for $Z\le 86$.
+
+\section{Definitions}
+\label{sec:defs}
+We reuse the closure maps $\mathrm{prev}(Z)$ and $\mathrm{next}(Z)$ from P0-A0.
+Define the derived period length and valence position
+\[
+  \mathrm{periodLen}(Z) := \mathrm{next}(Z)-\mathrm{prev}(Z),
+\qquad
+  \mathrm{valence}(Z) := Z-\mathrm{prev}(Z).
+\]
+
+\begin{definition}[Ionization proxy]
+Define the ionization proxy by
+\[
+  P(Z) := \mathrm{valence}(Z).
+\]
+In the Lean file this is \texttt{ionizationProxy Z := valenceElectrons Z}.
+\end{definition}
+
+\begin{definition}[Normalized and $\phi$-scaled display seams]
+The implementation also defines (for display) a normalized value
+\[
+  \mathrm{norm}(Z) := \begin{cases}
+  0 & \mathrm{periodLen}(Z)=0,\\
+  \frac{P(Z)}{\mathrm{periodLen}(Z)} & \mathrm{periodLen}(Z)>0,
+  \end{cases}
+\]
+and a $\phi$-scaled quantity $\mathrm{scaled}(Z)=\phi^{2\cdot \mathrm{period}(Z)}\cdot \mathrm{norm}(Z)$.
+The ordering theorems below are proved at the proxy level $P(Z)$ (fit-free).
+\end{definition}
+
+\section{Derivations (proxy-level ordering)}
+\label{sec:theorems}
+
+\subsection{Alkali metals have minimal proxy within a period}
+\begin{proposition}
+If $Z$ is the first element after a closure, i.e.\ $Z=\mathrm{prev}(Z)+1$, then $P(Z)=1$.
+\end{proposition}
+\begin{proof}
+By definition,
+\[
+P(Z)=Z-\mathrm{prev}(Z)=(\mathrm{prev}(Z)+1)-\mathrm{prev}(Z)=1.
+\]
+\end{proof}
+
+\subsection{Noble gases have maximal proxy within a period}
+\begin{proposition}
+If $Z$ is a closure endpoint (a noble gas in the chemistry scaffold), i.e.\ $\mathrm{next}(Z)=Z$, then
+\[
+  P(Z)=\mathrm{periodLen}(Z).
+\]
+\end{proposition}
+\begin{proof}
+If $\mathrm{next}(Z)=Z$, then
+\[
+\mathrm{periodLen}(Z)=\mathrm{next}(Z)-\mathrm{prev}(Z)=Z-\mathrm{prev}(Z)=P(Z).
+\]
+\end{proof}
+
+\subsection{Monotonicity within a fixed period}
+\begin{theorem}
+If $Z_1<Z_2$ and $\mathrm{prev}(Z_1)=\mathrm{prev}(Z_2)$ (so no boundary is crossed), then $P(Z_1)<P(Z_2)$.
+\end{theorem}
+\begin{proof}
+Let $c:=\mathrm{prev}(Z_1)=\mathrm{prev}(Z_2)$. Then
+\[
+P(Z_1)=Z_1-c < Z_2-c = P(Z_2).
+\]
+\end{proof}
+
+\subsection{Sawtooth reset across a boundary}
+\begin{theorem}
+If $Z_{\mathrm{noble}}$ is a closure endpoint and $Z_{\mathrm{alkali}}=Z_{\mathrm{noble}}+1$, then
+\[
+  P(Z_{\mathrm{alkali}}) < P(Z_{\mathrm{noble}}).
+\]
+\end{theorem}
+\begin{proof}
+Because $Z_{\mathrm{alkali}}$ is the first element of the next period, $\mathrm{prev}(Z_{\mathrm{alkali}})=Z_{\mathrm{noble}}$.
+Hence $P(Z_{\mathrm{alkali}})=1$ by the first proposition. Meanwhile $P(Z_{\mathrm{noble}})=\mathrm{periodLen}(Z_{\mathrm{noble}})$
+by the previous proposition, and in the scaffold $\mathrm{periodLen}(Z_{\mathrm{noble}})\ge 2$, so $1<P(Z_{\mathrm{noble}})$.
+\end{proof}
+
+\section{Validation against NIST first ionization energies}
+The preregistered validator \url{scripts/analysis/chem_ionization_energy_compare.py}
+writes \url{artifacts/chem_ionization_energy_comparison.json}. The committed artifact reports
+\textbf{PASS (3/3 hard tests)} for $Z\le 86$.
+
+\subsection{Hard test 1: alkali minimum within period (main group)}
+\begin{center}
+\begin{tabular}{@{}r l r l l@{}}
+\toprule
+Alkali $Z$ & Element & $I_1$ (eV) & Period & Pass \\
+\midrule
+3  & Li & 5.392 & 3--10  & true \\
+11 & Na & 5.139 & 11--18 & true \\
+19 & K  & 4.341 & 19--36 & true \\
+37 & Rb & 4.177 & 37--54 & true \\
+55 & Cs & 3.894 & 55--86 & true \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Hard test 2: noble maximum within period}
+\begin{center}
+\begin{tabular}{@{}r l r l l@{}}
+\toprule
+Noble $Z$ & Element & $I_1$ (eV) & Period & Pass \\
+\midrule
+2  & He & 24.587 & 1--2   & true \\
+10 & Ne & 21.565 & 3--10  & true \\
+18 & Ar & 15.760 & 11--18 & true \\
+36 & Kr & 14.000 & 19--36 & true \\
+54 & Xe & 12.130 & 37--54 & true \\
+86 & Rn & 10.749 & 55--86 & true \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Hard test 3: sawtooth reset across boundary}
+\begin{center}
+\begin{tabular}{@{}r l r@{\qquad}r l r@{\qquad}l@{}}
+\toprule
+Alkali $Z$ & Element & $I_1$ (eV) &
+Prev. noble $Z$ & Element & $I_1$ (eV) &
+Pass \\
+\midrule
+3  & Li & 5.392 &
+2  & He & 24.587 & true \\
+11 & Na & 5.139 &
+10 & Ne & 21.565 & true \\
+19 & K  & 4.341 &
+18 & Ar & 15.760 & true \\
+37 & Rb & 4.177 &
+36 & Kr & 14.000 & true \\
+55 & Cs & 3.894 &
+54 & Xe & 12.130 & true \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Note on ``proxy ordering'' violations}
+The validator additionally counts local anomalies where the strictly increasing proxy does not match
+strict increase in the NIST values (e.g.\ Be $\to$ B, N $\to$ O). These are recorded as informational
+and are not treated as a hard falsifier in the current prereg.
+
+\section{Repo cross-references}
+Lean modules:
+\begin{itemize}[leftmargin=*]
+  \item \texttt{IndisputableMonolith/Chemistry/IonizationEnergy.lean}
+  \item \texttt{IndisputableMonolith/Chemistry/PeriodicTable.lean} (period/valence primitives)
+\end{itemize}
+
+Key proved theorems (names as exported in the module):
+\begin{itemize}[leftmargin=*]
+  \item \texttt{alkali\_min\_ionization}: if \texttt{valenceElectrons Z = 1} then \texttt{ionizationProxy Z = 1}
+  \item \texttt{noble\_max\_ionization}: if \texttt{isNobleGas Z} then \texttt{ionizationProxy Z = periodLength Z}
+  \item \texttt{ionization\_monotone\_within\_period}: same-period implies strict increase in proxy
+  \item \texttt{sawtooth\_reset}: if \texttt{Zalkali = Znoble + 1} then \texttt{proxy(Zalkali) < proxy(Znoble)}
+\end{itemize}
+
+\paragraph{Artifact reference.}
+Validation output: \url{artifacts/chem_ionization_energy_comparison.json}.
+
+\end{document}
+

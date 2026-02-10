@@ -1,0 +1,835 @@
+\documentclass[11pt,letterpaper]{article}
+
+% ============================================================================
+% RS Fusion Viability Threshold Certificate (Machine-Verified)
+%
+% This paper memorializes the Lean-verified result:
+%   If T ≥ T* and E ≥ E*, then the concrete viability inequality holds.
+%
+% Lean sources (primary):
+%   - IndisputableMonolith/Fusion/ViabilityThresholds.lean
+%   - IndisputableMonolith/Fusion/PowerBalanceBounds.lean
+%   - IndisputableMonolith/Fusion/PowerBalance.lean
+%   - IndisputableMonolith/Fusion/ReactivityProxy.lean
+%
+% Build command (reproducibility):
+%   lake build IndisputableMonolith.Fusion.ViabilityThresholds
+% ============================================================================
+
+% ============================================================================
+% PACKAGES
+% ============================================================================
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{listings}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!70!black,
+  citecolor=green!50!black,
+  urlcolor=blue!70!black
+}
+
+% Better handling of long lines (avoid overfull warnings in most cases)
+\sloppy
+\tolerance=1000
+\emergencystretch=3em
+
+% ============================================================================
+% LISTINGS (Lean formalization excerpts)
+% ============================================================================
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  columns=fullflexible,
+  breaklines=true,
+  breakatwhitespace=false,
+  frame=single,
+  rulecolor=\color{black!20},
+  keepspaces=true,
+  showstringspaces=false,
+  upquote=true,
+  xleftmargin=0.5em,
+  xrightmargin=0.5em,
+  literate=
+    {ℝ}{$\mathbb{R}$}{1}
+    {ℕ}{$\mathbb{N}$}{1}
+    {ℤ}{$\mathbb{Z}$}{1}
+    {ℂ}{$\mathbb{C}$}{1}
+    {≤}{$\le$}{1}
+    {≥}{$\ge$}{1}
+    {≠}{$\neq$}{1}
+    {→}{$\to$}{1}
+    {↔}{$\leftrightarrow$}{1}
+    {∀}{$\forall$}{1}
+    {∃}{$\exists$}{1}
+    {∧}{$\wedge$}{1}
+    {∨}{$\vee$}{1}
+    {⟨}{$\langle$}{1}
+    {⟩}{$\rangle$}{1}
+    {η}{$\eta$}{1}
+    {τ}{$\tau$}{1}
+    {φ}{$\varphi$}{1}
+}
+
+% ============================================================================
+% MACROS
+% ============================================================================
+\newcommand{\Tstar}{T^{\ast}}
+\newcommand{\Estar}{E^{\ast}}
+\newcommand{\gamow}{\eta}
+\newcommand{\sigmav}{\langle \sigma v \rangle}
+\newcommand{\Ltotal}{L_{\mathrm{total}}}
+\newcommand{\Pbrem}{L_{\mathrm{brem}}}
+\newcommand{\Ptr}{L_{\mathrm{tr}}}
+\newcommand{\Pdep}{P_{\mathrm{dep}}}
+
+% ============================================================================
+% TITLE / FRONT MATTER
+% ============================================================================
+\title{\textbf{Machine-Verified Viability Threshold Certificates for Coherence-Controlled Fusion}\\
+\large A Lean 4 Certificate from Explicit Power-Balance Models}
+
+% NOTE: Update author list as desired.
+\author{IndisputableMonolith Project}
+
+\date{2026-01-24}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We formalize and certify a concrete \emph{viability} criterion for fusion power balance in the
+Recognition Science (RS) coherence-controlled fusion program.
+To avoid hidden assumptions, we commit to explicit, auditable proxy models for
+(i) thermally averaged reactivity and (ii) bremsstrahlung + transport losses, together with a
+deposition fraction.
+Within this model layer, we derive two \emph{solvable thresholds}:
+(1) a temperature threshold $\Tstar$ computed directly from the closed-form Gamow-exponent proxy and
+fuel parameters, and (2) an enhancement threshold $\Estar$ obtained by algebraically solving the
+dominance inequality required for net-positive deposited heating.
+We then prove in Lean 4 that if $T \ge \Tstar$ and $E \ge \Estar$ (with explicit side conditions on
+density and coefficients), the viability inequality $\Ltotal(T) < E \cdot \Pdep(T)$ holds.
+The paper is structured to function as a human-readable \emph{certificate excerpt}:
+it records the exact definitions, theorem names, and a reproducibility command that replays the proof.
+As with any certified model, this work does not claim that nature must satisfy the proxy equations;
+instead it cleanly separates what is machine-derived from what remains an empirical seam.
+\end{abstract}
+
+% ============================================================================
+% OUTLINE (to be expanded)
+% ============================================================================
+\section{Introduction and scope}
+
+\subsection{Problem: viability is an inequality, not a slogan}
+In fusion engineering discourse, statements such as ``viability'' or ``net positive power'' are
+often discussed informally.  For deployment-grade rigor, however, viability must be expressed as an
+\emph{inequality} between explicit, auditable functions of operating conditions.
+In this paper we treat \emph{viability} as a concrete power-balance statement of the form
+\begin{equation}
+  \label{eq:viability-informal}
+  \Ltotal(T,n,Z_{\mathrm{eff}},\ldots) \;<\; E \cdot \Pdep(T,n,\ldots),
+\end{equation}
+where $\Ltotal$ is a chosen loss model (here: bremsstrahlung + transport), $\Pdep$ is a deposited
+fusion-heating proxy, and $E$ is an abstract \emph{enhancement factor} representing any mechanism
+that increases effective reactivity relative to a classical baseline.
+
+\subsection{Goal: a Lean-checked implication}
+The central technical goal is to make the viability claim \emph{checkable} and \emph{machine-verifiable}.
+Concretely, we prove a Lean-checked implication of the form
+\begin{equation}
+  \label{eq:main-implication}
+  (T \ge \Tstar)\ \wedge\ (E \ge \Estar)\ \Longrightarrow\ \mathrm{viable},
+\end{equation}
+where the thresholds $\Tstar$ and $\Estar$ are not opaque tuning knobs, but are derived by explicit
+algebra from the committed proxy models.
+
+At the Lean level, the ``$\mathrm{viable}$'' conclusion is a precise predicate over the concrete
+loss and heating functions; the final statement is proved in
+\texttt{IndisputableMonolith/Fusion/ViabilityThresholds.lean} (see
+\texttt{viable\_of\_T\_ge\_T\_star\_and\_E\_ge\_E\_star}).
+This paper is designed so that a reader can:
+(i) understand the definitions used, and
+(ii) replay the proof via a single build command,
+without trusting any informal algebra performed outside the proof assistant.
+
+\subsection{Relationship to \texttt{RS\_Coherence\_Controlled\_Fusion.tex}}
+The companion document \texttt{papers/tex/RS\_Coherence\_Controlled\_Fusion.tex} develops the broader
+Recognition Science (RS) coherence-controlled fusion program: it defines the RS coherence variables,
+the barrier scale, and the operational protocol for computing an enhancement effect from diagnostic
+and scheduling measurements.
+
+This paper is deliberately narrower.  It serves as the \emph{certificate/derivation layer for power
+balance}: given any proposed or measured enhancement factor $E$ (whether computed from RS coherence
+metrics, inferred empirically, or supplied as a conservative bound), we certify that
+viability follows once the explicit thresholds $\Tstar$ and $\Estar$ are met under the committed
+loss and deposition models.
+In this way, the two papers separate concerns:
+\begin{itemize}
+  \setlength{\itemsep}{0.2em}
+  \item \textbf{RS coherence paper:} how to obtain or justify an enhancement factor $E$ from RS control.
+  \item \textbf{This certificate paper:} how to convert $E$ into a formal, replayable viability guarantee.
+\end{itemize}
+
+\subsection{Scope and non-scope}
+\textbf{In scope:}
+\begin{itemize}
+  \setlength{\itemsep}{0.2em}
+  \item Explicit proxy definitions for $\sigmav(T)$, $\Ltotal$, and $\Pdep$ used in the certificate.
+  \item Closed-form, solvable thresholds $\Tstar$ (from the Gamow proxy) and $\Estar$ (from solving the
+    dominance inequality) and a Lean proof of \eqref{eq:main-implication}.
+  \item A reproducibility path that replays the proof in the Lean kernel.
+\end{itemize}
+
+\textbf{Out of scope (future strengthening):}
+\begin{itemize}
+  \setlength{\itemsep}{0.2em}
+  \item Facility-specific calibration of coefficients and unit conversions (kept as explicit parameters).
+  \item Bosch--Hale or tabulated reactivity fits, richer transport/radiation models, and detailed
+    energy-partition/neutronics (these can be swapped in as future model modules while keeping the
+    certificate interface stable).
+  \item ``Ignition is trivial'' style claims beyond the certified model implications; this paper only
+    certifies the stated inequality under explicit assumptions.
+\end{itemize}
+
+\section{Seam policy and unit conventions (RS-native vs CODATA-quarantined)}
+
+\subsection{Certified surface vs.\ empirical seam}
+This paper is written to support a national-lab audit posture: the reader must be able to separate
+what is \emph{kernel-checked} from what is \emph{externally asserted}.
+We therefore adopt the repository-wide calibration seam policy
+(see \texttt{IndisputableMonolith/CALIBRATION\_SEAM\_POLICY.md}), which enforces a strict separation
+between:
+\begin{itemize}
+  \setlength{\itemsep}{0.2em}
+  \item \textbf{Certified surface (cost-first core + explicit model layer):}
+    definitions and theorems proved in Lean, including the statement and proof of the implication
+    \eqref{eq:main-implication} once a model is committed.
+  \item \textbf{Empirical seam (external anchors and calibration inputs):}
+    any mapping to SI units, CODATA numerals, facility calibrations, and any measurement-derived
+    quantities not proved from the model assumptions.
+\end{itemize}
+
+The key point is not to eliminate seams, but to \emph{label them mechanically} and to ensure they are
+the only inputs that can affect numerical conclusions.  The Lean proof itself is invariant under
+facility choices: once the definitions are fixed, only the hypotheses determine applicability.
+
+\subsection{Unit conventions: RS-native core and CODATA-quarantined adapters}
+The certified core is expressed in an RS-native unit system with $\tau_0=1$ tick and $c=1$ (voxel/tick),
+so that theorems do not depend on any empirical values of $c$, $\hbar$, $G$, etc.
+This is formalized in \texttt{IndisputableMonolith/Constants/RSNativeUnits.lean}.
+
+When SI reporting is required, it is routed through an explicit adapter layer that takes an
+\emph{externally supplied} calibration record (e.g.\ seconds per tick, joules per coherence quantum).
+This adapter lives in \texttt{IndisputableMonolith/Measurement/RSNative/Calibration/SI.lean} and is
+intended to be the only place where RS-native quantities are converted for external reporting.
+
+Conversely, SI/CODATA constants are quarantined into explicit anchor modules (e.g.\
+\texttt{IndisputableMonolith/Constants/Codata.lean} and related anchors), which are \emph{not} imported by
+the certified fusion viability proof modules.  This ensures that replaying the viability theorem does
+not depend on any mutable empirical database of constants.
+
+\subsection{Facility-supplied inputs (explicit parameters)}
+The viability certificate proved here is conditional on explicit parameters that must be supplied by a
+facility (or a simulator configured for a facility).  Concretely, the power-balance model is parameterized
+by the coefficients in \texttt{IndisputableMonolith/Fusion/PowerBalance.lean}:
+\begin{itemize}
+  \setlength{\itemsep}{0.2em}
+  \item \textbf{Loss coefficients:} $k_{\mathrm{brem}}$ and $k_{\mathrm{tr}}$ (with nonnegativity assumptions),
+    encoding the selected bremsstrahlung and transport-loss proxy magnitudes in the facility's chosen units.
+  \item \textbf{Heating scale:} $k_{\mathrm{fus}}$ (with positivity/nonnegativity assumptions), absorbing Q-value,
+    geometry, and any baseline scaling choices in the committed proxy.
+  \item \textbf{Deposition fraction:} $f_{\mathrm{dep}} \in [0,1]$ (with positivity used for the threshold theorem),
+    representing the fraction of fusion power that deposits into the plasma.
+  \item \textbf{Operating point / regime constraints:} density $n$ (assumed $n>0$ in the threshold theorem) and
+    effective charge $Z_{\mathrm{eff}}$ (assumed $Z_{\mathrm{eff}}\ge 0$).
+\end{itemize}
+
+These are \emph{not} hidden: the proof exposes them as hypotheses, and the derived enhancement threshold $\Estar$
+is an explicit function of these facility-supplied parameters.  In addition, the enhancement factor $E$ itself
+is treated abstractly: it may be supplied conservatively, inferred empirically, or computed from RS coherence
+metrics as described in the companion paper.
+
+\subsection{Audit posture for national-lab runs}
+We recommend treating every viability claim as a two-layer artifact:
+\begin{enumerate}
+  \setlength{\itemsep}{0.2em}
+  \item \textbf{Kernel-checked certificate core:} the Lean theorem
+    \texttt{viable\_of\_T\_ge\_T\_star\_and\_E\_ge\_E\_star} together with its import closure (the exact definitions
+    of $\Tstar$, $\Estar$, $\Ltotal$, and $\Pdep$).
+  \item \textbf{Externally asserted instantiation record:} the concrete numeric values for $(k_{\mathrm{brem}},
+    k_{\mathrm{tr}}, k_{\mathrm{fus}}, f_{\mathrm{dep}}, n, Z_{\mathrm{eff}}, T, E)$, plus provenance for how they were
+    obtained and (optionally) a separate checkable computation trace showing the inequalities
+    $T \ge \Tstar$ and $E \ge \Estar$ hold for those values.
+\end{enumerate}
+
+In other words:
+\begin{itemize}
+  \setlength{\itemsep}{0.2em}
+  \item \textbf{Lean kernel checks:} the algebraic implication ``assumptions $\Rightarrow$ viability'' for the
+    committed model layer (no shortcuts, no informal steps).
+  \item \textbf{The facility asserts:} the numerical instantiation and calibration choices (including any SI mapping),
+    and the measurement-derived claim that a given shot or design point satisfies the hypotheses.
+\end{itemize}
+
+This separation is not a weakness; it is the audit interface.  It ensures that disagreements can be localized:
+either one disputes the model (by proposing a different $\sigmav$, transport model, or deposition model), or one
+disputes the instantiation (the facility-supplied parameters and their measurement provenance), without ever
+needing to dispute the correctness of the proof itself.
+
+\section{Formal definitions (Lean-aligned)}
+This section fixes notation and records the Lean-aligned definitions used throughout the certificate.
+The guiding rule is: every symbol in the certificate must have a corresponding Lean definition, and
+every nontrivial fact used in the certificate must be either a Lean theorem or an explicitly stated
+hypothesis (seam input).
+
+\subsection{Viability predicate (net-positive deposited heating)}
+We treat viability as a strict power-balance predicate at a given operating point.
+Let $P_{\mathrm{fus}}(T)$ denote a deposited fusion-heating proxy and let $P_{\mathrm{loss}}(T)$ denote a loss proxy.
+Then the viability condition is:
+\begin{equation}
+  \label{eq:viable-def}
+  \mathrm{viable}(T)\ :=\ P_{\mathrm{loss}}(T)\ <\ P_{\mathrm{fus}}(T).
+\end{equation}
+This aligns exactly with the Lean definition
+\texttt{Ignition.viable (P\_fus P\_loss : $\mathbb{R}\to\mathbb{R}$) (T : $\mathbb{R}$) : Prop := P\_loss T < P\_fus T}
+in \texttt{IndisputableMonolith/Fusion/Ignition.lean}.
+
+In our certificate instantiation, $P_{\mathrm{loss}}(T)$ is the concrete loss proxy $\Ltotal$ from
+\texttt{IndisputableMonolith/Fusion/PowerBalance.lean}, while $P_{\mathrm{fus}}(T)$ is an enhanced deposited-heating proxy
+defined as a baseline deposited proxy multiplied by a dimensionless enhancement factor $E$ (defined next).
+
+\subsection{Enhancement factor $E$: meaning and (optional) RS coherence linkage}
+The enhancement factor $E$ is a \emph{dimensionless multiplicative lower bound} on how much larger the deposited-heating
+proxy is compared to a classical baseline proxy at the same operating point.  Concretely, we model:
+\begin{equation}
+  \label{eq:E-multiplies}
+  P_{\mathrm{fus}}(T)\ :=\ E \cdot P_{\mathrm{dep},0}(T),
+\end{equation}
+where $P_{\mathrm{dep},0}(T)$ is a baseline deposited fusion-heating proxy fixed by the committed model layer.
+In the Lean development, $P_{\mathrm{dep},0}$ corresponds to \texttt{PowerBalanceBounds.Pdep\_proxy}.
+
+\paragraph{Optional direct RS linkage.}
+This certificate paper treats $E$ abstractly on purpose: it may come from RS coherence control, from conservative bounds,
+or from empirical inference.  If (and when) we choose to link $E$ directly to the RS coherence/barrier-scaling mechanism,
+there is a canonical Lean definition available:
+\begin{equation}
+  \label{eq:E-ratio}
+  E_{\mathrm{RS}}(T)\ :=\ \frac{\exp(-\gamow_{\mathrm{RS}}(T))}{\exp(-\gamow(T))},
+\end{equation}
+i.e.\ the ratio of the RS tunneling proxy to the classical tunneling proxy at temperature $T$ for a chosen fuel pair.
+In the Lean code this ratio is defined as
+\texttt{PowerBalance.enhancement} in \texttt{IndisputableMonolith/Fusion/PowerBalance.lean}, and it is proved to satisfy
+$E_{\mathrm{RS}}(T)\ge 1$ (theorem \texttt{enhancement\_ge\_one}) because the RS barrier scale satisfies $0<S\le 1$
+and therefore never increases the exponent.
+
+Operationally, the companion coherence paper provides the mechanism to compute the barrier scale $S$ from RS control metrics
+and thereby justify a lower bound on $E$; this certificate then converts that $E$ into a replayable viability guarantee.
+
+\subsection{Parameter bundle and side conditions}
+The certificate is parameterized by an explicit, audited parameter bundle (Lean structure
+\texttt{PowerBalance.Params} in \texttt{IndisputableMonolith/Fusion/PowerBalance.lean}) containing:
+\begin{itemize}
+  \setlength{\itemsep}{0.2em}
+  \item \textbf{Loss coefficients:} $k_{\mathrm{brem}}\ge 0$ and $k_{\mathrm{tr}}\ge 0$.
+  \item \textbf{Fusion heating scale:} $k_{\mathrm{fus}}\ge 0$.
+  \item \textbf{Deposition fraction:} $f_{\mathrm{dep}}\in[0,1]$.
+\end{itemize}
+In addition to these built-in side conditions, the \emph{threshold theorem} that yields explicit $\Tstar$ and $\Estar$
+requires the following regime assumptions at the operating point:
+\begin{itemize}
+  \setlength{\itemsep}{0.2em}
+  \item \textbf{Positivity for divisions:} $n>0$, $f_{\mathrm{dep}}>0$, and $k_{\mathrm{fus}}>0$
+    (so that the derived $\Estar$ is well-defined and physically meaningful).
+  \item \textbf{Effective charge nonnegativity:} $Z_{\mathrm{eff}}\ge 0$.
+  \item \textbf{Temperature positivity:} $T>0$ (encoded in Lean via \texttt{GamowParams}).
+\end{itemize}
+These conditions are explicit inputs in the theorem statement, not implicit assumptions.
+
+\subsection{Notation-to-Lean map (certificate surface)}
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Paper symbol} & \textbf{Meaning} & \textbf{Lean definition (file)} \\
+\midrule
+$\mathrm{viable}$ & net-positive power predicate & \texttt{Ignition.viable} (\texttt{Fusion/Ignition.lean}) \\
+$\Ltotal$ & loss proxy (brems + transport) & \texttt{PowerBalance.L\_total} (\texttt{Fusion/PowerBalance.lean}) \\
+$P_{\mathrm{dep},0}$ & baseline deposited heating proxy & \texttt{PowerBalanceBounds.Pdep\_proxy} (\texttt{Fusion/PowerBalanceBounds.lean}) \\
+$E$ & enhancement factor (dimensionless) & external hypothesis / optional \texttt{PowerBalance.enhancement} \\
+$\Tstar$ & temperature threshold & \texttt{ViabilityThresholds.T\_star} (\texttt{Fusion/ViabilityThresholds.lean}) \\
+$\Estar$ & enhancement threshold & \texttt{ViabilityThresholds.E\_star} (\texttt{Fusion/ViabilityThresholds.lean}) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Committed physics proxies}
+This certificate is only meaningful after we commit to explicit proxy models for
+reactivity, losses, and deposited heating.  The purpose of this section is to state those
+commitments transparently and to map them to the Lean definitions that the kernel checks.
+
+\subsection{Reactivity proxy}
+We define a concrete proxy for thermally averaged reactivity:
+\begin{equation}
+  \label{eq:sigmav-proxy}
+  \sigmav(T)\ :=\ T\,\exp\!\bigl(-\gamow(T)\bigr).
+\end{equation}
+Here $\gamow(T)$ is the Gamow-exponent proxy used in the fusion rate layer.
+In Lean, the corresponding definitions are:
+\begin{itemize}
+  \setlength{\itemsep}{0.2em}
+  \item \texttt{ReactivityProxy.sigmaV} in \texttt{IndisputableMonolith/Fusion/ReactivityProxy.lean}
+    (defined as \texttt{g.temperature * classicalTunneling g cfgA cfgB}).
+  \item \texttt{classicalTunneling} and \texttt{gamowExponent} in \texttt{IndisputableMonolith/Fusion/ReactionNetworkRates.lean}.
+\end{itemize}
+
+\subsection{Loss model (bremsstrahlung + transport)}
+We commit to a two-term loss proxy consisting of bremsstrahlung radiation and a simplified transport loss:
+\begin{align}
+  \label{eq:loss-model}
+  \Pbrem(T,n,Z_{\mathrm{eff}}) &:= k_{\mathrm{brem}}\; Z_{\mathrm{eff}}\; n^2 \sqrt{T},\\
+  \Ptr(T,n) &:= k_{\mathrm{tr}}\; n\, T,\\
+  \Ltotal(T,n,Z_{\mathrm{eff}}) &:= \Pbrem(T,n,Z_{\mathrm{eff}}) + \Ptr(T,n).
+\end{align}
+These correspond to \texttt{PowerBalance.L\_brem}, \texttt{PowerBalance.L\_tr}, and \texttt{PowerBalance.L\_total} in
+\texttt{IndisputableMonolith/Fusion/PowerBalance.lean}.
+
+\subsection{Deposited heating proxy}
+We define deposited heating as a deposition fraction times a baseline fusion heating proxy built from density and reactivity:
+\begin{equation}
+  \label{eq:pdep-proxy}
+  P_{\mathrm{dep},0}(T,n)\ :=\ f_{\mathrm{dep}}\; k_{\mathrm{fus}}\; n^2\;\sigmav(T),
+\end{equation}
+and the enhanced deposited heating used in the viability inequality as:
+\begin{equation}
+  \label{eq:pdep-enhanced}
+  \Pdep(T,n)\ :=\ E \cdot P_{\mathrm{dep},0}(T,n).
+\end{equation}
+In Lean, the baseline deposited proxy is implemented as \texttt{PowerBalanceBounds.Pdep\_proxy} in
+\texttt{IndisputableMonolith/Fusion/PowerBalanceBounds.lean}, with the same parameter bundle \texttt{PowerBalance.Params}.
+
+\subsection{Model commitments, not nature-claims}
+These proxy equations are \emph{model commitments} introduced to make the certificate mathematically explicit and auditable.
+They are not claims that nature must obey the proxies exactly.  The certificate therefore has the following semantics:
+\begin{quote}
+If the facility (or simulator configuration) commits to \eqref{eq:sigmav-proxy}--\eqref{eq:pdep-enhanced} as its
+model layer, and if the facility-supplied instantiation satisfies the theorem hypotheses, then the Lean kernel certifies
+the resulting viability implication.
+\end{quote}
+If a different reactivity fit, transport model, radiation model, or deposition model is desired, the correct procedure is
+to replace the model layer and re-prove the corresponding threshold theorem, preserving the same audit interface.
+
+% \section{Deriving solvable thresholds: T* and E*}
+\section{Main theorem (the certificate theorem)}
+\label{sec:main-theorem}
+
+\subsection{Statement (Lean-certified)}
+Fix a fuel pair (nuclear configurations) and a facility parameter bundle
+$(k_{\mathrm{brem}},k_{\mathrm{tr}},k_{\mathrm{fus}},f_{\mathrm{dep}})$ satisfying the side conditions in
+\texttt{PowerBalance.Params} (including $k_{\mathrm{brem}}\ge 0$, $k_{\mathrm{tr}}\ge 0$, $k_{\mathrm{fus}}\ge 0$,
+and $f_{\mathrm{dep}}\in[0,1]$).  Let $n$ be the operating density and $Z_{\mathrm{eff}}$ the effective charge.
+
+Define the explicit thresholds $\Tstar$ and $\Estar$ as in
+\texttt{IndisputableMonolith/Fusion/ViabilityThresholds.lean}:
+\begin{align}
+  \label{eq:Tstar-def}
+  \Tstar &:= \max\!\bigl(1,\ \mathrm{gamowCoeff}^2\bigr),
+  \quad
+  \mathrm{gamowCoeff} := 31.3\, Z_1 Z_2 \sqrt{\mu},
+  \\
+  \label{eq:Estar-def}
+  \Estar &:= \frac{k_{\mathrm{brem}} Z_{\mathrm{eff}} + k_{\mathrm{tr}}/n}{f_{\mathrm{dep}}\,k_{\mathrm{fus}}\,e^{-1}} + 1.
+\end{align}
+Here $Z_1,Z_2$ and $\mu$ (the reduced mass proxy) are determined by the fuel pair in the nuclear configuration layer.
+
+\medskip
+\noindent\textbf{Certificate theorem (informal math statement).}
+Assume the explicit side conditions
+\begin{equation}
+  \label{eq:main-side-conds}
+  n>0,\quad Z_{\mathrm{eff}}\ge 0,\quad f_{\mathrm{dep}}>0,\quad k_{\mathrm{fus}}>0.
+\end{equation}
+If
+\begin{equation}
+  \label{eq:main-hypotheses}
+  T \ge \Tstar \quad\text{and}\quad E \ge \Estar,
+\end{equation}
+then the viability inequality holds for the committed proxy model:
+\begin{equation}
+  \label{eq:main-viability-ineq}
+  \Ltotal(T,n,Z_{\mathrm{eff}})\ <\ E \cdot P_{\mathrm{dep},0}(T,n).
+\end{equation}
+Equivalently, in the Lean-aligned predicate form (Section~\ref{eq:viable-def}), the operating point is
+\(\mathrm{viable}\).
+
+\medskip
+\noindent\textbf{Lean theorem.}
+This result is proved by the Lean theorem
+\texttt{viable\_of\_T\_ge\_T\_star\_and\_E\_ge\_E\_star} in
+\texttt{IndisputableMonolith/Fusion/ViabilityThresholds.lean}.
+
+\subsection{Short proof roadmap (mirrors the Lean structure)}
+The proof is intentionally structured as a small number of auditable lemmas, each corresponding to a named Lean theorem:
+\begin{enumerate}
+  \setlength{\itemsep}{0.25em}
+  \item \textbf{Derive the ``good exponent'' regime from $T\ge \Tstar$.}
+    Using the closed form $\gamow(T)=\mathrm{gamowCoeff}/\sqrt{T}$ in the Gamow proxy,
+    Lean proves that $T\ge\Tstar$ implies:
+    \begin{itemize}
+      \setlength{\itemsep}{0.1em}
+      \item $T\ge 1$ (so $\sqrt{T}\le T$), and
+      \item $\gamow(T)\le 1$ (so $\exp(-\gamow(T))\ge \exp(-1)$).
+    \end{itemize}
+    This is discharged in Lean by \texttt{gamowExponent\_le\_one\_of\_T\_ge\_T\_star}.
+
+  \item \textbf{Solve the dominance inequality to obtain $\Estar$.}
+    From $E\ge \Estar$ and the positivity assumptions \eqref{eq:main-side-conds}, Lean proves a strict
+    ``margin'' inequality ensuring enhanced deposited heating dominates the loss terms.
+    This is the lemma \texttt{margin\_of\_E\_ge\_E\_star}.
+
+  \item \textbf{Apply the bound-to-viability lemma.}
+    With (i) the regime facts from Step 1 and (ii) the margin inequality from Step 2, Lean applies the
+    core inequality lemma \texttt{PowerBalanceBounds.L\_total\_lt\_E\_Pdep\_proxy}, which combines:
+    \(\sqrt{T}\le T\) and \(\exp(-\gamow(T))\ge \exp(-1)\) with the explicit margin to conclude
+    \eqref{eq:main-viability-ineq}.
+
+  \item \textbf{Conclude the viability predicate.}
+    Finally, Lean unfolds the definition of \texttt{Ignition.viable} and rewrites the inequality into the
+    predicate form \eqref{eq:viable-def}.
+\end{enumerate}
+
+\section{Certificate excerpt: human-readable mirror of the Lean artifact}
+\label{sec:certificate-excerpt}
+
+This section is intentionally written in the style of a ``certificate excerpt'': it records the exact Lean
+artifacts that constitute the certified surface of the viability claim.  A lab can attach this section as
+an appendix to an experimental report, together with an instantiation record of numerical parameters.
+
+\subsection{Lean sources (paths)}
+Primary sources for this certificate:
+\begin{itemize}
+  \setlength{\itemsep}{0.15em}
+  \item \texttt{IndisputableMonolith/Fusion/ViabilityThresholds.lean}
+  \item \texttt{IndisputableMonolith/Fusion/PowerBalanceBounds.lean}
+  \item \texttt{IndisputableMonolith/Fusion/PowerBalance.lean}
+  \item \texttt{IndisputableMonolith/Fusion/ReactivityProxy.lean}
+  \item \texttt{IndisputableMonolith/Fusion/Ignition.lean}
+  \item \texttt{IndisputableMonolith/Fusion/ReactionNetworkRates.lean}
+\end{itemize}
+
+\subsection{Certified theorem name}
+\begin{itemize}
+  \setlength{\itemsep}{0.15em}
+  \item \textbf{Theorem:} \texttt{viable\_of\_T\_ge\_T\_star\_and\_E\_ge\_E\_star}
+  \item \textbf{File:} \texttt{IndisputableMonolith/Fusion/ViabilityThresholds.lean}
+\end{itemize}
+
+\subsection{Key definitions referenced by the theorem}
+\begin{itemize}
+  \setlength{\itemsep}{0.15em}
+  \item \textbf{Viability predicate:} \texttt{Ignition.viable} (\texttt{Fusion/Ignition.lean})
+  \item \textbf{Loss model:} \texttt{PowerBalance.L\_total}, \texttt{L\_brem}, \texttt{L\_tr} (\texttt{Fusion/PowerBalance.lean})
+  \item \textbf{Deposited heating proxy:} \texttt{PowerBalanceBounds.Pdep\_proxy} (\texttt{Fusion/PowerBalanceBounds.lean})
+  \item \textbf{Reactivity proxy:} \texttt{ReactivityProxy.sigmaV} (\texttt{Fusion/ReactivityProxy.lean})
+  \item \textbf{Temperature threshold:} \texttt{ViabilityThresholds.T\_star} (\texttt{Fusion/ViabilityThresholds.lean})
+  \item \textbf{Enhancement threshold:} \texttt{ViabilityThresholds.E\_star} (\texttt{Fusion/ViabilityThresholds.lean})
+\end{itemize}
+
+\subsection{Replay command (reproducibility)}
+To replay the proof from scratch using the project toolchain:
+\begin{quote}
+\texttt{lake build IndisputableMonolith.Fusion.ViabilityThresholds}
+\end{quote}
+
+\subsection{Optional: one-page certificate block (lab appendix)}
+\begin{center}
+\fbox{%
+\begin{minipage}{0.95\linewidth}
+\textbf{RS Fusion Viability Threshold Certificate (Lean 4)}\par
+\vspace{0.4em}
+\textbf{Claim certified (model-layer):}\par
+If \(T \ge \Tstar\) and \(E \ge \Estar\) (with \(n>0\), \(Z_{\mathrm{eff}}\ge 0\), \(f_{\mathrm{dep}}>0\), \(k_{\mathrm{fus}}>0\)),
+then \(\Ltotal(T,n,Z_{\mathrm{eff}}) < E \cdot P_{\mathrm{dep},0}(T,n)\), i.e.\ the operating point is viable.\par
+\vspace{0.4em}
+\textbf{Lean theorem:} \texttt{viable\_of\_T\_ge\_T\_star\_and\_E\_ge\_E\_star}\par
+\textbf{Lean file:} \texttt{IndisputableMonolith/Fusion/ViabilityThresholds.lean}\par
+\textbf{Replay:} \texttt{lake build IndisputableMonolith.Fusion.ViabilityThresholds}\par
+\vspace{0.4em}
+\textbf{Facility instantiation record (to attach):}\par
+\(\{k_{\mathrm{brem}},k_{\mathrm{tr}},k_{\mathrm{fus}},f_{\mathrm{dep}},n,Z_{\mathrm{eff}},T,E\}\) with provenance and a check that
+\(T\ge \Tstar\) and \(E\ge \Estar\).\par
+\end{minipage}}
+\end{center}
+
+% \section{Certificate excerpt: artifacts, theorem references, reproducibility}
+\section{Integration into the RS Native Fusion Simulator (certificate bundles)}
+\label{sec:sim-integration}
+
+This section describes how the RS Native Fusion Simulator operationalizes the Lean certificate as a
+machine-readable artifact.  The guiding design constraint is the national-lab audit posture articulated in
+Section~2: the simulator must emit outputs that (i) are traceable to a specific Lean theorem and (ii) contain
+enough information for an independent reviewer to check that the theorem hypotheses were satisfied for a
+given shot or design point.
+
+\subsection{Computing \texorpdfstring{$\Tstar$}{T*} (fuel-dependent)}
+The temperature threshold $\Tstar$ depends only on the chosen fuel pair (nuclear configurations) through the
+Gamow exponent proxy.  In the Lean development, $\Tstar$ is \texttt{ViabilityThresholds.T\_star}, defined as
+\(\max(1,\mathrm{gamowCoeff}^2)\) where \(\mathrm{gamowCoeff} = 31.3\,Z_1Z_2\sqrt{\mu}\) and
+\(\mu = \frac{A_1A_2}{A_1+A_2}\) is the reduced-mass proxy.
+
+\paragraph{Simulator implementation.}
+Given a reaction selection (e.g.\ D--T, p--B11), the simulator extracts \(Z_1,Z_2,A_1,A_2\) from its internal
+nuclear configuration objects, computes \(\mu\), then computes \(\mathrm{gamowCoeff}\) and finally $\Tstar$.
+The critical engineering rule is that this computation must follow the Lean definition \emph{exactly} (same constant,
+same reduced-mass formula) so that the emitted $\Tstar$ is the Lean $\Tstar$, not a nearby approximation.
+
+\subsection{Computing \texorpdfstring{$\Estar$}{E*} (facility- and regime-dependent)}
+The enhancement threshold $\Estar$ is the minimal enhancement sufficient to overcome the committed loss model at the
+given operating point.  In Lean, $\Estar$ is \texttt{ViabilityThresholds.E\_star} and (for \(n>0\), \(f_{\mathrm{dep}}>0\),
+\(k_{\mathrm{fus}}>0\)) has the closed form \eqref{eq:Estar-def}:
+\[
+  \Estar = \frac{k_{\mathrm{brem}} Z_{\mathrm{eff}} + k_{\mathrm{tr}}/n}{f_{\mathrm{dep}}\,k_{\mathrm{fus}}\,e^{-1}} + 1.
+\]
+
+\paragraph{Simulator implementation.}
+The simulator computes $\Estar$ from the facility-supplied instantiation record:
+\(\{k_{\mathrm{brem}},k_{\mathrm{tr}},k_{\mathrm{fus}},f_{\mathrm{dep}},n,Z_{\mathrm{eff}}\}\).
+These are the explicit seam inputs described in Section~2; the simulator treats them as configuration parameters with
+provenance (calibration source, uncertainty model, timestamp, etc.).
+
+\subsection{Obtaining the enhancement factor \texorpdfstring{$E$}{E}}
+The certificate layer treats \(E\) abstractly, but the simulator must produce (or accept) a concrete value or lower bound.
+There are two supported modes:
+\begin{itemize}
+  \setlength{\itemsep}{0.2em}
+  \item \textbf{RS-derived mode:} compute \(E\) from RS coherence/barrier scaling by evaluating the ratio of tunneling proxies
+    (or reactivity proxies) under RS scaling versus classical scaling at the operating point.
+    This is consistent with the Lean definition \texttt{PowerBalance.enhancement} (ratio of RS tunneling to classical tunneling).
+  \item \textbf{External-bound mode:} accept a conservative \(E\) supplied by the facility (e.g.\ from an empirical bound,
+    a diagnostic inference, or a worst-case analysis), and treat it as an explicit hypothesis.
+\end{itemize}
+In both cases, the certificate emitted by the simulator must record which mode was used and the provenance of the bound.
+
+\subsection{Emitting a viability certificate bundle}
+The simulator emits a \emph{certificate bundle} (JSON) whose core purpose is to tie a particular run to:
+(i) the Lean theorem reference and replay command, and
+(ii) the concrete hypothesis-check that makes the theorem applicable.
+
+\paragraph{Suggested certificate fields.}
+The existing simulator already implements auditable certificate bundles (see
+\texttt{rs\_fusion\_simulator/fusion/certificate.py} and the Lean interface
+\texttt{IndisputableMonolith/Fusion/Executable/Interfaces.lean}).
+For viability, a certificate bundle should minimally include:
+\begin{itemize}
+  \setlength{\itemsep}{0.2em}
+  \item \textbf{Theorem reference:}
+    \texttt{IndisputableMonolith.Fusion.ViabilityThresholds.viable\_of\_T\_ge\_T\_star\_and\_E\_ge\_E\_star}
+  \item \textbf{Replay command:} \texttt{lake build IndisputableMonolith.Fusion.ViabilityThresholds}
+  \item \textbf{Inputs (hashed + optionally embedded):}
+    fuel pair identifiers \((Z_1,A_1),(Z_2,A_2)\), \(T,n,Z_{\mathrm{eff}}\), \(E\),
+    and \(\{k_{\mathrm{brem}},k_{\mathrm{tr}},k_{\mathrm{fus}},f_{\mathrm{dep}}\}\)
+  \item \textbf{Derived values:} \(\Tstar\), \(\Estar\), and boolean checks of \(T\ge \Tstar\) and \(E\ge \Estar\)
+  \item \textbf{Status:} \texttt{passed = true} iff the side conditions and inequalities required by the theorem are satisfied
+\end{itemize}
+
+\paragraph{Certificate semantics.}
+When \texttt{passed = true}, the certificate asserts: ``the hypotheses of the Lean theorem are satisfied for these recorded inputs.''
+The Lean kernel provides the implication from those hypotheses to the viability predicate; the simulator provides the instantiation record.
+When \texttt{passed = false}, the simulator must record which hypothesis failed (e.g.\ \(E<\Estar\) or \(T<\Tstar\)), so the failure is
+diagnostic rather than ambiguous.
+
+\paragraph{National-lab audit workflow.}
+For a live run, the lab can archive:
+(i) the certificate JSON,
+(ii) the raw diagnostic data used to justify \(E\) (and the calibration record for coefficients),
+and (iii) the exact repository/toolchain state needed to replay \texttt{lake build}.
+This yields a full chain: \emph{measurement provenance} $\Rightarrow$ \emph{hypothesis check}
+ $\Rightarrow$ \emph{kernel-checked implication}.
+
+\section{Limitations and next strengthening steps}
+\label{sec:limitations}
+
+The certificate proved in this paper is intentionally conservative and model-layer in nature.
+Its strength is auditability: every dependency is explicit and every inference step is kernel-checked.
+Its limitation is also explicit: the certificate is only as realistic as the committed proxy models.
+This section records the immediate strengthening path while preserving the same audit interface.
+
+\subsection{Upgrade the reactivity proxy to Bosch--Hale (import or formalize)}
+The current certificate commits to the analytic proxy \(\sigmav(T)=T\exp(-\gamow(T))\), which captures the dominant
+exponential barrier structure but does not reproduce high-fidelity, channel-specific reactivity curves.
+
+The next strengthening step is to replace the proxy with a Bosch--Hale type parameterization (or tabulated fit) for
+\(\sigmav(T)\) for each fuel cycle of interest (D--T, D--\(^3\)He, p--B\(^\text{11}\), etc.).
+There are two acceptable routes:
+\begin{itemize}
+  \setlength{\itemsep}{0.2em}
+  \item \textbf{Import route:} ingest a published Bosch--Hale fit into a quarantined ``external fit'' module,
+    with explicit provenance and (optionally) interval bounds, then prove the required inequality lemmas against those bounds.
+  \item \textbf{Formalize route:} encode the Bosch--Hale formula directly in Lean and prove the monotonicity/bounding lemmas
+    needed by the threshold proof.
+\end{itemize}
+In both cases, the goal is not to ``trust Bosch--Hale'' but to make the dependence auditable and to enable certified,
+replayable bounds at the temperatures relevant to a facility's operating envelope.
+
+\subsection{Richer radiation, transport, and deposition physics}
+The present loss/heating layer is intentionally minimal:
+bremsstrahlung scales as \(Z_{\mathrm{eff}}n^2\sqrt{T}\) and transport scales as \(nT\).
+This can be strengthened along three axes:
+\begin{itemize}
+  \setlength{\itemsep}{0.2em}
+  \item \textbf{Radiation:} add line radiation, synchrotron, opacity/self-absorption, and nonequilibrium effects, with
+    explicit regime hypotheses (e.g.\ optically thin vs thick).
+  \item \textbf{Transport:} replace the single \(k_{\mathrm{tr}}nT\) term with a confinement-time model (or a family of models),
+    including temperature and density dependence, geometry scalings, and turbulence proxies where appropriate.
+  \item \textbf{Deposition:} replace constant \(f_{\mathrm{dep}}\) with a physically grounded deposition model depending on
+    areal density, stopping powers, alpha ranges, and (for aneutronic fuels) charged-particle energy partition.
+\end{itemize}
+Each strengthening should be introduced as a new Lean ``model module'' that makes all new assumptions explicit.
+
+\subsection{Preserve the certificate interface (only the model module changes)}
+Crucially, none of the strengthening steps require changing the \emph{certificate interface}:
+we still want a theorem of the same audit shape,
+\[
+  (T \ge \Tstar)\ \wedge\ (E \ge \Estar)\ \Longrightarrow\ \mathrm{viable},
+  \quad\text{with explicit side conditions.}
+\]
+What changes is the definition of \(\sigmav\), \(\Ltotal\), and \(\Pdep\), and therefore the algebra that produces
+the thresholds \(\Tstar\) and \(\Estar\).
+
+Operationally, this means the simulator can keep the same ``viability certificate'' data model (Section~\ref{sec:sim-integration})
+while updating only:
+\begin{itemize}
+  \setlength{\itemsep}{0.2em}
+  \item the model module that computes the proxies and thresholds, and
+  \item the Lean theorem reference it cites (a new theorem proved for the upgraded model).
+\end{itemize}
+This preserves audit continuity: reviewers can compare certificates across model versions by comparing the referenced theorem
+and its import closure, rather than reverse-engineering ad hoc code changes.
+
+\appendix
+
+\section{Lean excerpts (key definitions and theorem statement)}
+\label{app:lean-excerpts}
+
+This appendix provides a compact, human-readable mirror of the key Lean artifacts.
+These excerpts are included for audit convenience; the authoritative sources are the files listed in
+Section~\ref{sec:certificate-excerpt}.  Proof bodies are omitted where lengthy; the intent is to show the exact definitions and
+the theorem statement that the kernel checks.
+
+\subsection{Viability predicate (\texttt{Ignition.viable})}
+\noindent\textbf{File:} \texttt{IndisputableMonolith/Fusion/Ignition.lean}
+\begin{lstlisting}
+def viable (P_fus P_loss : ℝ → ℝ) (T : ℝ) : Prop :=
+  P_loss T < P_fus T
+\end{lstlisting}
+
+\subsection{Reactivity proxy (\texttt{ReactivityProxy.sigmaV})}
+\noindent\textbf{File:} \texttt{IndisputableMonolith/Fusion/ReactivityProxy.lean}
+\begin{lstlisting}
+def sigmaV (g : GamowParams) (cfgA cfgB : NuclearConfig) : ℝ :=
+  g.temperature * classicalTunneling g cfgA cfgB
+\end{lstlisting}
+
+\subsection{Loss model (\texttt{PowerBalance.L\_total})}
+\noindent\textbf{File:} \texttt{IndisputableMonolith/Fusion/PowerBalance.lean}
+\begin{lstlisting}
+def L_brem (P : Params) (T n Zeff : ℝ) : ℝ :=
+  P.k_brem * Zeff * (n ^ 2) * Real.sqrt T
+
+def L_tr (P : Params) (T n : ℝ) : ℝ :=
+  P.k_tr * n * T
+
+def L_total (P : Params) (T n Zeff : ℝ) : ℝ :=
+  L_brem P T n Zeff + L_tr P T n
+\end{lstlisting}
+
+\subsection{Deposited heating proxy (\texttt{PowerBalanceBounds.Pdep\_proxy})}
+\noindent\textbf{File:} \texttt{IndisputableMonolith/Fusion/PowerBalanceBounds.lean}
+\begin{lstlisting}
+def Pdep_proxy (P : PowerBalance.Params) (g : GamowParams)
+    (cfgA cfgB : NuclearConfig) (n : ℝ) : ℝ :=
+  P.f_dep * (P.k_fus * (n ^ 2) * ReactivityProxy.sigmaV g cfgA cfgB)
+\end{lstlisting}
+
+\subsection{Threshold definitions (\texttt{T\_star} and \texttt{E\_star})}
+\noindent\textbf{File:} \texttt{IndisputableMonolith/Fusion/ViabilityThresholds.lean}
+\begin{lstlisting}
+def T_star (cfgA cfgB : NuclearConfig) : ℝ :=
+  max 1 ((gamowCoeff cfgA cfgB) ^ 2)
+
+def E_star (P : PowerBalance.Params) (n Zeff : ℝ) : ℝ :=
+  ((P.k_brem * Zeff) + (P.k_tr / n)) / A P + 1
+\end{lstlisting}
+
+\subsection{Certificate theorem (Lean statement)}
+\noindent\textbf{File:} \texttt{IndisputableMonolith/Fusion/ViabilityThresholds.lean}
+\begin{lstlisting}
+theorem viable_of_T_ge_T_star_and_E_ge_E_star
+    (P : PowerBalance.Params)
+    (cfgA cfgB : NuclearConfig)
+    (T n Zeff E : ℝ)
+    (hT : T_star cfgA cfgB ≤ T)
+    (hn : 0 < n) (hZ : 0 ≤ Zeff)
+    (h_fdep : 0 < P.f_dep) (h_kfus : 0 < P.k_fus)
+    (hE : E_star P n Zeff ≤ E) :
+    viable (fun _ => E * PowerBalanceBounds.Pdep_proxy P
+        ⟨T, T_pos_of_T_ge_T_star cfgA cfgB T hT⟩ cfgA cfgB n)
+      (fun _ => PowerBalance.L_total P T n Zeff) T := by
+  -- proof in Lean file (omitted here)
+\end{lstlisting}
+
+\section{Reproducibility checklist (toolchain, commands, file paths)}
+\label{app:repro-checklist}
+
+This checklist records the minimum information needed to replay the certificate theorem in a clean environment.
+
+\subsection*{Toolchain and packages}
+\begin{itemize}
+  \setlength{\itemsep}{0.2em}
+  \item \textbf{Lean toolchain:} \texttt{leanprover/lean4:v4.27.0-rc1} (from the repository file \texttt{lean-toolchain}).
+  \item \textbf{Dependencies:} pinned by \texttt{lake-manifest.json} (including Mathlib).
+\end{itemize}
+
+\subsection*{Commands to replay the theorem}
+\begin{enumerate}
+  \setlength{\itemsep}{0.25em}
+  \item (Recommended) Fetch the Mathlib cache once:
+    \begin{quote}
+      \texttt{lake exe cache get}
+    \end{quote}
+  \item Replay the certificate theorem build target:
+    \begin{quote}
+      \texttt{lake build IndisputableMonolith.Fusion.ViabilityThresholds}
+    \end{quote}
+  \item (Optional) Replay the bound lemma module explicitly:
+    \begin{quote}
+      \texttt{lake build IndisputableMonolith.Fusion.PowerBalanceBounds}
+    \end{quote}
+\end{enumerate}
+
+\subsection*{File paths (certificate import closure)}
+\begin{itemize}
+  \setlength{\itemsep}{0.15em}
+  \item \texttt{IndisputableMonolith/Fusion/ViabilityThresholds.lean}
+  \item \texttt{IndisputableMonolith/Fusion/PowerBalanceBounds.lean}
+  \item \texttt{IndisputableMonolith/Fusion/PowerBalance.lean}
+  \item \texttt{IndisputableMonolith/Fusion/ReactivityProxy.lean}
+  \item \texttt{IndisputableMonolith/Fusion/Ignition.lean}
+  \item \texttt{IndisputableMonolith/Fusion/ReactionNetworkRates.lean}
+\end{itemize}
+
+\subsection*{Recommended audit metadata to archive with lab runs}
+\begin{itemize}
+  \setlength{\itemsep}{0.2em}
+  \item Repository revision identifier (git commit hash) and any local patch set.
+  \item The emitted simulator certificate JSON (Section~\ref{sec:sim-integration}), including input hash and theorem reference.
+  \item The facility instantiation record and provenance for \(E\), coefficients, and diagnostics.
+\end{itemize}
+
+\end{document}
+

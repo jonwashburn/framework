@@ -1,0 +1,187 @@
+\documentclass[11pt]{article}
+
+% Packages (keep minimal for broad TeX compatibility)
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{microtype}
+
+% Manual definitions for compatibility (avoid siunitx dependency)
+\newcommand{\angstrom}{\text{\normalfont\AA}}
+\newcommand{\SI}[2]{#1\,\text{#2}}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+
+\geometry{margin=1in}
+
+\title{\textbf{PATENT D (Draft): Computation-Guided Selection of Microwave Irradiation}\\
+\textbf{Frequencies for Frequency-Selective Modulation of Protein Folding}\\
+\large (Compute \(\rightarrow\) Apply \(\rightarrow\) Measure \(\rightarrow\) Update)}
+
+\author{
+Jonathan Washburn\\
+\texttt{jon@recognitionphysics.org}
+}
+
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Status:} Technical draft for counsel; \textbf{not legal advice}.\\
+\textbf{Related internal documents:} \code{docs/JAMMING_PATENT_OUTLINES.md}; \code{docs/JAMMING_PROTOCOL.md}; \code{docs/RS_JAMMING_FREQUENCY_PAPER.pdf}; \code{docs/RS_PROTEIN_FOLDING_BASELINE_PAPER.pdf}; \code{run_e41_jamming_calc.py}; \code{docs/paper1_jamming_targets.csv}.\\
+\textbf{Note on examples:} any ``Example'' describing expected outcomes is \textbf{prophetic} unless explicitly stated as experimentally observed.
+
+\section*{Abstract (Patent)}
+Disclosed are methods and associated software for computing candidate microwave irradiation frequencies for modulating protein folding in aqueous samples and for applying irradiation at or near the computed candidates under temperature-controlled conditions. In embodiments, a computation step generates a set of candidate frequencies based on a parameterization of biological timescales and/or ladder rungs, optionally including harmonics, subharmonics, and off-rung controls. The candidates are then tested experimentally via temperature-controlled irradiation while measuring one or more folding metrics. In embodiments, the method iteratively updates the candidate set using measured coupling/heating baselines and observed folding responses, thereby converging on an operating frequency window for a given sample geometry and solvent composition.
+
+\section{Field of the invention}
+The present disclosure relates to computationally guided experimental methods for microwave perturbation of biomolecular folding dynamics, including software-assisted selection of irradiation frequencies, experimental validation via temperature-controlled assays, and iterative calibration to distinguish narrowband effects from dielectric heating.
+
+\section{Background}
+Microwave irradiation of aqueous samples is typically dominated by dielectric heating, which produces broad frequency-dependent temperature changes. Identifying a reproducible, frequency-selective effect on protein folding requires a workflow that provides (i) candidate target frequencies and controls, (ii) a disciplined experimental sweep, and (iii) analysis that accounts for coupling and heating artifacts.
+
+Purely empirical frequency searching can be time-consuming and confounded by apparatus-dependent coupling. A computation-guided approach can narrow the search space, provide principled control frequencies, and standardize the experimental protocol across laboratories and apparatus geometries.
+
+\section{Summary of the invention}
+In one aspect, a method is provided comprising:
+\begin{enumerate}
+    \item computing a set of candidate irradiation frequencies based on one or more input parameters and a frequency-generation rule;
+    \item irradiating an aqueous protein sample at one or more of the candidate frequencies under temperature-controlled conditions;
+    \item measuring a folding metric to obtain a frequency-response curve; and
+    \item selecting an operating frequency window based on the frequency-response curve and one or more controls (e.g., matched-heating controls or off-resonance controls).
+\end{enumerate}
+
+In embodiments, the computation uses a golden-ratio ladder and/or an atomic tick parameter to compute a rung-associated timescale \(\tau_N\) and frequency \(f_N\), including off-rung controls and harmonics/subharmonics. In embodiments, the method repeats the computation and selection using updated parameters inferred from calibration measurements (coupling, heating baseline, or isotope shift), thereby refining the candidate set.
+
+\section{Brief description of drawings}
+Drawings are not included in this draft. Typical filing figures include:
+\begin{itemize}
+    \item Fig. 1: flowchart of compute\(\rightarrow\)apply\(\rightarrow\)measure\(\rightarrow\)update loop.
+    \item Fig. 2: candidate generation (targets, harmonics, subharmonics, off-rung controls).
+    \item Fig. 3: example sweep plan and decision logic for selecting an operating window.
+    \item Fig. 4: example plots of heating baseline vs frequency and residual folding response vs frequency.
+    \item Fig. 5: H\(_2\)O vs D\(_2\)O frequency-shift comparison (optional).
+\end{itemize}
+
+\section{Detailed description}
+
+\subsection{Definitions}
+Unless otherwise stated:
+\begin{itemize}
+    \item \textbf{Candidate frequencies}: a finite set of frequencies proposed for experimental testing, including one or more targets and one or more controls.
+    \item \textbf{Frequency-generation rule}: any algorithm that maps input parameters to candidate frequencies (e.g., closed-form formula; lookup table; iterative update).
+    \item \textbf{Folding metric}: any measurable observable correlated with folded fraction and/or folding kinetics, including CD (e.g., 222 nm), fluorescence, FRET, NMR, or other spectroscopy.
+    \item \textbf{Temperature-controlled}: bulk sample temperature maintained within a tolerance (e.g., \(\pm 0.2\,^{\circ}\mathrm{C}\) or tighter).
+    \item \textbf{Matched-heating control}: control condition in which power/duty cycle is adjusted to match bulk temperature trajectory and/or absorbed power between frequencies.
+    \item \textbf{Off-rung control}: a control frequency generated by a systematic offset from a target rung (e.g., \(N\pm 0.5\)) or any frequency outside an identified resonant window.
+    \item \textbf{Update}: modifying candidate frequencies and/or testing plan using measured calibration data (e.g., coupling, heating baseline, solvent composition, isotope shift).
+\end{itemize}
+
+\subsection{Computation step (candidate generation)}
+In one embodiment, candidate frequencies are generated using a rung-based timescale model:
+\begin{align}
+    \tau_N &= \tau_0 \, \phi^{N},\\
+    f_N &= \frac{1}{\tau_N},
+\end{align}
+where \(\phi\) is the golden ratio and \(\tau_0\) is an atomic-tick parameter mapped to SI seconds. A target rung \(N\) (e.g., \(N=19\)) yields a target frequency \(f_N\) (e.g., \(\approx\SI{14.653}{GHz}\) for one parameterization).
+
+\paragraph{Harmonics and subharmonics.}
+In one embodiment, candidate frequencies include one or more harmonics/subharmonics:
+\[
+\{f_N,\, 2f_N,\, f_N/2,\, f_N/8\}.
+\]
+
+\paragraph{Off-rung controls.}
+In one embodiment, candidate frequencies include off-rung controls at fractional rung offsets:
+\[
+f_{N+\Delta} = \frac{1}{\tau_0 \phi^{N+\Delta}}, \quad \Delta \in \{-0.5, +0.5\}.
+\]
+These provide principled nearby controls that are expected to differ from the on-rung target.
+
+\paragraph{Sweep band construction.}
+In one embodiment, candidate frequencies define a sweep band centered on a target:
+\[
+\mathcal{F}_{\text{sweep}} = \{ f: f_{\min} \le f \le f_{\max} \},
+\]
+with step size \(\delta f\), dwell time \(t_{\mathrm{dwell}}\), and matched-heating control logic for each step.
+
+\paragraph{Solvent/isotope adjustment (optional).}
+In one embodiment, candidate frequencies are adjusted by a solvent-dependent scaling factor. For example, for D\(_2\)O:
+\[
+f^{(\mathrm{D2O})}_N = \frac{f^{(\mathrm{H2O})}_N}{s},
+\]
+where \(s\) is determined by a mass-scaling rule (e.g., \(s=\sqrt{M_{\mathrm{D2O}}/M_{\mathrm{H2O}}}\)) and/or empirically by calibration.
+
+\subsection{Application step (irradiation)}
+In one embodiment, the method irradiates an aqueous protein sample at one or more candidate frequencies using narrowband microwaves, while maintaining bulk temperature constant (or matched) and optionally matching absorbed power. Irradiation can be continuous-wave or pulsed with duty cycle selected to reduce heating.
+
+\subsection{Measurement step (frequency-response curve)}
+In one embodiment, a folding metric \(M\) is measured during or after irradiation, producing a frequency-response curve:
+\[
+M(f_i), \quad f_i \in \mathcal{F}_{\text{tested}}.
+\]
+In embodiments, a residual response \(R(f)\) is computed by subtracting a heating baseline or matched-heating control response (see calibration/verification methods).
+
+\subsection{Update step (iterative refinement)}
+In one embodiment, candidate frequencies and/or sweep parameters are updated based on measured data. Examples:
+\begin{itemize}
+    \item \textbf{Coupling update}: adjust candidate ordering or power schedule using measured coupling/reflection versus frequency.
+    \item \textbf{Heating update}: refine baseline model and adjust duty cycle to better match temperature trajectories.
+    \item \textbf{Peak update}: if a peak/dip is observed, narrow the sweep band around the inferred center and reduce step size.
+    \item \textbf{Isotope update}: if an isotope shift is observed, update solvent scaling \(s\) and regenerate candidate set for that solvent.
+\end{itemize}
+
+\section{Examples (prophetic unless otherwise stated)}
+
+\subsection*{Example 1: Compute rung targets and run a constrained sweep}
+Compute a target frequency for rung \(N=19\) using \(\tau_0\) and \(\phi\), then generate control frequencies at \(N\pm0.5\) and a harmonic at \(2f\). Perform a temperature-controlled sweep around the target and measure a fluorescence folding metric. Select an operating window based on maximum residual effect relative to matched-heating controls.
+
+\subsection*{Example 2: D\(_2\)O shift guided by computed scaling}
+Compute the expected D\(_2\)O-adjusted candidate frequency set using a mass-scaling rule, then run the same sweep in D\(_2\)O buffer and compare the inferred peak to H\(_2\)O.
+
+\subsection*{Example 3: Iterative refinement}
+Run a coarse sweep, identify a candidate peak region, regenerate candidate frequencies with finer step size and narrower band, and repeat until the inferred center frequency stabilizes within a specified tolerance.
+
+\section{Claims (starter set; for counsel refinement)}
+\noindent\textbf{What follows is a technical starter claim set to guide drafting. Counsel should rewrite for jurisdiction, support, and scope.}
+
+\begin{enumerate}
+    \item A method of modulating protein folding using computation-guided microwave irradiation, comprising:
+    \begin{enumerate}
+        \item computing, by one or more processors, a set of candidate irradiation frequencies based on one or more input parameters and a frequency-generation rule;
+        \item irradiating an aqueous sample comprising a protein at one or more of the candidate irradiation frequencies while maintaining a bulk temperature of the aqueous sample within a temperature tolerance; and
+        \item measuring a folding metric to determine an effect of irradiation at the one or more candidate irradiation frequencies.
+    \end{enumerate}
+
+    \item The method of claim 1, further comprising selecting an operating frequency window based on a frequency-response curve of the folding metric.
+
+    \item The method of claim 1, wherein computing the set of candidate irradiation frequencies comprises computing a target frequency \(f_N = 1/(\tau_0 \phi^{N})\) for a rung index \(N\).
+
+    \item The method of claim 3, wherein the rung index \(N\) is 19.
+
+    \item The method of claim 3, wherein computing the set of candidate irradiation frequencies further comprises computing at least one off-rung control frequency corresponding to \(N+\Delta\) where \(\Delta\in\{-0.5,+0.5\}\).
+
+    \item The method of claim 1, wherein computing the set of candidate irradiation frequencies further comprises computing at least one harmonic or subharmonic of a target frequency.
+
+    \item The method of claim 1, further comprising performing a matched-heating control by adjusting microwave power and/or duty cycle such that a bulk temperature trajectory is matched between a test frequency and a control frequency.
+
+    \item The method of claim 1, further comprising computing a residual response by subtracting a heating baseline contribution from the folding metric.
+
+    \item The method of claim 1, further comprising updating the set of candidate irradiation frequencies based on measured coupling or heating calibration data.
+
+    \item The method of claim 1, further comprising repeating the method in an aqueous sample comprising D\(_2\)O and determining an isotope-dependent shift of an operating frequency window.
+
+    \item A non-transitory computer-readable medium comprising instructions that, when executed by one or more processors, cause the one or more processors to:
+    \begin{enumerate}
+        \item generate a candidate frequency set including at least one target frequency and at least one control frequency;
+        \item output a sweep plan comprising step size, dwell times, and matched-heating control parameters; and
+        \item ingest measured folding metrics and temperature data to output an operating frequency window and a confidence score.
+    \end{enumerate}
+\end{enumerate}
+
+\end{document}
+
+

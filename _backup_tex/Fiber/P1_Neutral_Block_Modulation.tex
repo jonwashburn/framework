@@ -1,0 +1,111 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+
+\geometry{margin=1in}
+
+\title{\textbf{PATENT APPLICATION}}
+\author{}
+\date{}
+
+\begin{document}
+
+\begin{center}
+    \Large\textbf{METHOD AND APPARATUS FOR NEUTRAL BLOCK OPTICAL MODULATION}
+\end{center}
+
+\vspace{1cm}
+
+\section*{FIELD OF THE INVENTION}
+The present invention relates generally to optical communication systems, and more particularly to methods and apparatus for modulating optical signals using block codes with intrinsic neutrality constraints to enable zero-latency error detection and mitigation of nonlinear phase noise.
+
+\section*{BACKGROUND OF THE INVENTION}
+Modern coherent optical communication systems operate near the Shannon limit, utilizing advanced modulation formats such as Dual-Polarization Quadrature Amplitude Modulation (DP-QAM). However, as symbol rates increase beyond 100 GBd and transmission distances extend to thousands of kilometers, two critical limitations emerge:
+
+\begin{enumerate}
+    \item \textbf{Nonlinear Phase Noise:} The Kerr effect in optical fibers causes a phase shift proportional to the instantaneous signal power ($|E|^2$). Standard modulation formats with high Peak-to-Average Power Ratio (PAPR) suffer significant degradation from Self-Phase Modulation (SPM) and Cross-Phase Modulation (XPM).
+    \item \textbf{Error Correction Latency:} Current Forward Error Correction (FEC) schemes, such as Low-Density Parity-Check (LDPC) codes, require buffering and decoding large frames of data (often thousands of bits) to detect and correct errors. This introduces significant latency, which is unacceptable for high-frequency trading, real-time control systems, and next-generation AI cluster interconnects.
+\end{enumerate}
+
+There is a need for a modulation technique that inherently suppresses nonlinear noise and provides instantaneous, hardware-level error detection without the latency overhead of deep FEC frames.
+
+\section*{SUMMARY OF THE INVENTION}
+The present invention provides a method and apparatus for "Neutral Block Optical Modulation." The core innovation is the segmentation of the optical signal into discrete blocks of $N$ symbols (where $N$ is preferably 8) and the enforcement of a "Neutrality Constraint," wherein the complex vector sum of the symbols within each block is forced to zero.
+
+In one embodiment, a transmitter maps input data bits to $N-1$ information symbols and computes an $N$-th parity symbol such that $\sum_{k=0}^{N-1} v_k = 0$. This block is then transformed by a unitary mixing matrix (the "BRAID" operator) to spread the energy of the parity symbol across the entire block, ensuring a uniform power profile that mitigates nonlinear effects.
+
+In a corresponding receiver, the received block is processed by a hardware accumulator that computes the sum of the $N$ symbols. A non-zero sum indicates a transmission error (e.g., a bit flip or phase slip) with zero latency, allowing for immediate flagging or retransmission requests before the FEC decoding stage.
+
+\section*{DETAILED DESCRIPTION}
+
+\subsection*{The Neutrality Constraint}
+Let a sequence of complex symbols be denoted by $v = [v_0, v_1, \dots, v_{N-1}]^T$. The invention imposes the constraint:
+\begin{equation}
+    \sum_{k=0}^{N-1} v_k = 0
+\end{equation}
+This restricts the valid signal space to a hyperplane perpendicular to the vector $\mathbf{1} = [1, 1, \dots, 1]^T$. In the preferred embodiment, $N=8$, corresponding to an 8-tick temporal cycle derived from geometric principles.
+
+\subsection*{Transmitter Architecture}
+The transmitter comprises:
+\begin{enumerate}
+    \item \textbf{Mapper:} Maps input bits to 7 complex symbols $d_0, \dots, d_6$ (e.g., 16-QAM).
+    \item \textbf{Balancer:} Computes the 8th symbol $d_7 = -\sum_{i=0}^6 d_i$.
+    \item \textbf{Precoder (BRAID):} Applies a unitary matrix $U$ to the vector $d = [d_0, \dots, d_7]^T$ to generate the transmitted vector $v = U d$. The matrix $U$ is constructed from a sequence of triad rotations designed to maximize entropy across the block while preserving the zero-sum property ($\sum v_k = 0$).
+\end{enumerate}
+
+\subsection*{Receiver Architecture}
+The receiver comprises:
+\begin{enumerate}
+    \item \textbf{Equalizer:} Performs standard chromatic dispersion compensation and MIMO polarization demultiplexing.
+    \item \textbf{Decoder (Inverse BRAID):} Applies $U^\dagger$ to recover the vector $d$.
+    \item \textbf{Accumulator:} A combinatorial logic circuit that computes $S = \sum_{k=0}^7 d_k$.
+    \item \textbf{Error Flag:} A comparator that asserts an error signal if $|S| > \epsilon$, where $\epsilon$ is a noise threshold.
+\end{enumerate}
+
+\subsection*{Nonlinearity Mitigation}
+The unitary mixing (BRAID) ensures that high-amplitude symbols in the input $d$ are "smeared" across the transmitted vector $v$. This reduces the probability of high-power peaks, thereby lowering the effective nonlinear phase shift $\phi_{NL} \propto \gamma L_{eff} |v(t)|^2$.
+
+\section*{CLAIMS}
+
+What is claimed is:
+
+\begin{enumerate}
+    \item A method for transmitting optical data, comprising:
+    \begin{enumerate}
+        \item receiving a stream of input data bits;
+        \item mapping said bits to a set of $N-1$ complex symbols;
+        \item calculating an $N$-th parity symbol such that the sum of all $N$ symbols is substantially zero;
+        \item generating a transmission block comprising said $N$ symbols; and
+        \item modulating an optical carrier with said transmission block.
+    \end{enumerate}
+
+    \item The method of claim 1, wherein $N$ is equal to 8.
+
+    \item The method of claim 1, further comprising applying a unitary mixing transformation to said transmission block prior to modulation, wherein said transformation preserves the zero-sum property of the block.
+
+    \item The method of claim 3, wherein said unitary mixing transformation comprises a sequence of rotation matrices applied to subsets of three symbols (triads).
+
+    \item An optical receiver apparatus comprising:
+    \begin{enumerate}
+        \item a coherent frontend for converting an optical signal into a digital complex symbol stream;
+        \item a block framer for segmenting said stream into blocks of $N$ symbols;
+        \item a hardware accumulator configured to compute the complex sum of symbols within each block; and
+        \item an error detection logic circuit configured to generate an error flag when the magnitude of said sum exceeds a predetermined threshold.
+    \end{enumerate}
+
+    \item The apparatus of claim 5, wherein said error detection logic operates with a latency of less than $N$ symbol periods.
+
+    \item A system for nonlinearity-tolerant optical communication, comprising:
+    \begin{enumerate}
+        \item a transmitter configured to encode data into zero-mean symbol blocks spread by a unitary matrix; and
+        \item a receiver configured to invert said unitary matrix and verify the zero-mean property of the recovered blocks.
+    \end{enumerate}
+\end{enumerate}
+
+\end{document}

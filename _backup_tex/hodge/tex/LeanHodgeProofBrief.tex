@@ -1,0 +1,334 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}
+\usepackage{fontspec}
+\usepackage{hyperref}
+\usepackage{microtype}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+\newtheorem{theorem}{Theorem}
+
+\newcommand{\Lean}{\texttt{Lean}}
+\newcommand{\Lake}{\texttt{lake}}
+
+% Use a mono font with broad Unicode coverage for Lean snippets.
+% (This document is intended to be built with XeLaTeX or LuaLaTeX.)
+\setmonofont{DejaVuSansMono.ttf}[
+  Path=/Users/jonathanwashburn/Library/texmf/fonts/truetype/public/dejavu/
+]
+
+\title{A Lean 4 Proof Artifact for the Hodge Conjecture\\(Faithful Modulo an Explicit Axiom Set)}
+\author{Internal circulation draft (Hodge formalization repository)}
+\date{December 2025}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note summarizes a \Lean{} 4 proof artifact in the repository \texttt{hodge} proving a theorem named
+\verb|hodge_conjecture'|.  The theorem matches the classical ``Hodge Conjecture'' shape:
+given a smooth projective complex manifold \(X\), every rational Hodge \((p,p)\)-class in de~Rham cohomology is represented by a signed algebraic cycle.
+
+The key point for team review is \emph{auditability}:
+\begin{itemize}
+  \item the proof is machine-checked (no \verb|sorry|/\verb|admit|),
+  \item the dependency on nonconstructive or external mathematics is made explicit by \verb|#print axioms hodge_conjecture'|,
+  \item and the core bridges are stated at the correct mathematical level (equality in de~Rham cohomology, not equality of chosen form representatives).
+\end{itemize}
+\end{abstract}
+
+\section{Reproducibility and mechanical verification}
+
+\paragraph{Build.}
+From the repository root:
+\begin{verbatim}
+lake build
+\end{verbatim}
+
+\paragraph{No holes.}
+Search (expected: none) within \texttt{Hodge/**/*.lean}:
+\begin{verbatim}
+rg -n "\b(sorry|admit)\b" Hodge
+\end{verbatim}
+
+\paragraph{Exact axiom dependency list.}
+The file \texttt{DependencyCheck.lean} is:
+\begin{verbatim}
+import Hodge.Kahler.Main
+#print axioms hodge_conjecture'
+\end{verbatim}
+Run:
+\begin{verbatim}
+lake env lean DependencyCheck.lean
+\end{verbatim}
+This prints the exact list of axioms (in the \Lean{} sense) that the theorem \verb|hodge_conjecture'| depends on, plus standard \Lean{} classical axioms used (e.g.\ \verb|Classical.choice|, \verb|propext|).
+
+\section{What is proved (theorem statement and intended translation)}
+
+The main theorem is in \texttt{Hodge/Kahler/Main.lean}:
+
+\begin{theorem}[\texttt{hodge\_conjecture'} in \Lean{}]
+For a smooth projective complex manifold \(X\) and \(p\in\mathbb{N}\), given:
+\begin{itemize}
+  \item a smooth \(2p\)-form \(\gamma\),
+  \item a proof that \(\gamma\) is \(d\)-closed (\verb|IsFormClosed γ|),
+  \item a proof that its de~Rham cohomology class is rational (\verb|isRationalClass (ofForm γ h_closed)|),
+  \item a proof that \(\gamma\) is of Hodge type \((p,p)\) (\verb|isPPForm' ... γ|),
+\end{itemize}
+then there exists a signed algebraic cycle \(Z\) such that \(Z\) represents the de~Rham class \([\gamma]\).
+\end{theorem}
+
+Concretely (verbatim from the file):
+\begin{verbatim}
+theorem hodge_conjecture' {p : ℕ} (γ : SmoothForm n X (2 * p)) (h_closed : IsFormClosed γ)
+    (h_rational : isRationalClass (DeRhamCohomologyClass.ofForm γ h_closed)) (h_p_p : isPPForm' n X p γ) :
+    ∃ (Z : SignedAlgebraicCycle n X), Z.RepresentsClass (DeRhamCohomologyClass.ofForm γ h_closed) := by
+  ...
+\end{verbatim}
+
+\paragraph{Faithfulness-critical point.}
+Representation is \emph{equality in de~Rham cohomology} (not equality of forms):
+\begin{verbatim}
+def SignedAlgebraicCycle.RepresentsClass ... (η : DeRhamCohomologyClass n X (2 * p)) : Prop :=
+  Z.cycleClass p = η
+\end{verbatim}
+This is in \texttt{Hodge/Classical/GAGA.lean}.
+
+\section{Core notions: closedness, exactness, and cohomology}
+
+The repository uses a small API for smooth forms on complex manifolds.
+The core semantics are concentrated in \texttt{Hodge/Basic.lean}.
+
+\subsection{Smooth forms}
+\verb|SmoothForm n X k| is a pointwise alternating \(k\)-form with an (opaque) smoothness witness:
+\begin{verbatim}
+structure SmoothForm ... where
+  as_alternating :
+    X → (k-ary alternating complex-linear form on tangent spaces)
+  is_smooth :
+    IsSmoothAlternating n X k as_alternating
+\end{verbatim}
+Smoothness closure under basic algebraic operations (\(0,+,-,\cdot\)) is handled via explicit axioms
+\verb|isSmoothAlternating_zero/add/neg/sub/smul|.
+
+\subsection{Exterior derivative and closed forms}
+\verb|IsFormClosed ω| means \(d\omega=0\), using an exterior derivative operator \verb|smoothExtDeriv|:
+\begin{verbatim}
+def IsFormClosed ... (ω : SmoothForm n X k) : Prop := smoothExtDeriv ω = 0
+\end{verbatim}
+Linearity of \verb|smoothExtDeriv| is axiomatized by \verb|smoothExtDeriv_add| and \verb|smoothExtDeriv_smul|.
+
+\subsection{Exact forms and cohomology classes}
+Exactness is nontrivial:
+\begin{verbatim}
+def IsExact ... (ω : SmoothForm n X k) : Prop :=
+  match k with
+  | 0 => ω = 0
+  | k' + 1 => ∃ (η : SmoothForm n X k'), smoothExtDeriv η = ω
+\end{verbatim}
+
+De~Rham cohomology is implemented as a quotient of closed forms modulo exactness of differences:
+\begin{verbatim}
+def Cohomologous (ω₁ ω₂ : ClosedForm n X k) : Prop := IsExact (ω₁.val - ω₂.val)
+abbrev DeRhamCohomologyClass ... := Quotient (DeRhamSetoid n k X)
+\end{verbatim}
+Thus \verb|DeRhamCohomologyClass| is not a ``quotient-by-True'' and the conclusion
+\(\,Z.cycleClass=[\gamma]\,\) is genuinely cohomological.
+
+\section{Proof outline (high level)}
+
+The proof of \verb|hodge_conjecture'| (in \texttt{Hodge/Kahler/Main.lean}) is organized in the expected classical pattern:
+\begin{enumerate}
+  \item \textbf{Hard Lefschetz reduction:} reduce to the range \(p \le \tfrac{n}{2}\) using an inverse Lefschetz operator (axiom \verb|hard_lefschetz_inverse_form| plus a lift axiom \verb|lefschetz_lift_signed_cycle|).
+  \item \textbf{Signed decomposition:} decompose a rational \((p,p)\)-class as a difference of a cone-positive class and a positive rational multiple of \(\omega^p\) (axiom \verb|signed_decomposition|).
+  \item \textbf{Cone-positive implies algebraic:} approximate the cone-positive piece by integral cycles via a microstructure sequence and take a calibrated limit; apply Harvey--Lawson to obtain analytic subvarieties; use GAGA to conclude algebraicity; finally connect the limit current to a fundamental class in cohomology (axioms \verb|microstructureSequence_*|, \verb|limit_is_calibrated|, \verb|harvey_lawson_theorem|, \verb|serre_gaga|, and the bridge axiom \verb|harvey_lawson_fundamental_class|).
+  \item \textbf{\(\omega^p\) term is algebraic:} use a separate classical axiom asserting a positive rational multiple of \(\omega^p\) is represented by an algebraic cycle (\verb|omega_pow_represents_multiple|).
+  \item \textbf{Assemble a signed algebraic cycle} representing the target class by taking the difference of the two representing cycles and using cohomological equalities.
+\end{enumerate}
+
+\section{Explicit axiom dependency set for \texttt{hodge\_conjecture'}}
+
+\subsection{Verbatim list from \texttt{\#print axioms}}
+
+Running \verb|lake env lean DependencyCheck.lean| prints:
+\begin{verbatim}
+'hodge_conjecture'' depends on axioms: [FundamentalClassSet_isClosed,
+ IsAlgebraicSet,
+ IsAlgebraicSet_empty,
+ IsAlgebraicSet_union,
+ calibration_inequality,
+ exists_volume_form_of_submodule_axiom,
+ flat_limit_of_cycles_is_cycle,
+ hard_lefschetz_inverse_form,
+ harvey_lawson_fundamental_class,
+ harvey_lawson_represents,
+ harvey_lawson_theorem,
+ instAddCommGroupDeRhamCohomologyClass,
+ instModuleRealDeRhamCohomologyClass,
+ isClosed_omegaPow_scaled,
+ isIntegral_zero_current,
+ isSmoothAlternating_add,
+ isSmoothAlternating_neg,
+ isSmoothAlternating_smul,
+ isSmoothAlternating_sub,
+ isSmoothAlternating_zero,
+ lefschetz_lift_signed_cycle,
+ limit_is_calibrated,
+ microstructureSequence_are_cycles,
+ microstructureSequence_defect_bound,
+ microstructureSequence_flat_limit_exists,
+ ofForm_smul_real,
+ ofForm_sub,
+ omega_pow_isClosed,
+ omega_pow_represents_multiple,
+ propext,
+ serre_gaga,
+ signed_decomposition,
+ simpleCalibratedForm_is_smooth,
+ smoothExtDeriv_add,
+ smoothExtDeriv_smul,
+ wirtinger_comass_bound,
+ Classical.choice,
+ Quot.sound,
+ SignedAlgebraicCycle.fundamentalClass_isClosed]
+\end{verbatim}
+
+\subsection{Discussion of each axiom (meaning, role, and provenance)}
+
+For ease of review, we group the axioms into three categories:
+\begin{itemize}
+  \item \textbf{Classical mathematical inputs} (named theorems or standard deep results),
+  \item \textbf{Interface/API axioms} (structure laws for abstract objects: forms, currents, cohomology operations),
+  \item \textbf{\Lean{} foundations} (classical logic and quotient soundness).
+\end{itemize}
+
+\subsubsection{Classical mathematical inputs}
+
+\paragraph{\texttt{hard\_lefschetz\_inverse\_form} (\texttt{Hodge/Classical/Lefschetz.lean}).}
+Mathematical meaning: a Hard Lefschetz inverse operator at the level of representatives (a form \(\eta\) whose Lefschetz image has the desired cohomology class).
+Role: enables the reduction from large degree \(p>n/2\) to the middle-range case via Lefschetz isomorphisms.
+
+\paragraph{\texttt{lefschetz\_lift\_signed\_cycle} (\texttt{Hodge/Kahler/Main.lean}).}
+Meaning: a cycle-level lifting statement compatible with Lefschetz reduction (roughly: if a class \([\eta]\) is algebraic then a related class \([\gamma]\) is algebraic).
+Role: completes Hard Lefschetz reduction by transferring algebraicity from the reduced class back to the original.
+
+\paragraph{\texttt{signed\_decomposition} (\texttt{Hodge/Kahler/SignedDecomp.lean}).}
+Meaning: a decomposition of a rational \((p,p)\)-class into a cone-positive class and a positive rational multiple of \(\omega^p\).
+Role: reduces the Hodge conjecture to two representability problems, one for a cone-positive class and one for \(\omega^p\).
+
+\paragraph{\texttt{omega\_pow\_represents\_multiple} (\texttt{Hodge/Kahler/Main.lean}).}
+Meaning: asserts that a positive rational multiple of \([\omega^p]\) is represented by an algebraic cycle.
+Role: supplies the algebraic cycle for the ``\(\omega^p\)'' term produced by the signed decomposition.
+
+\paragraph{\texttt{microstructureSequence\_flat\_limit\_exists} (\texttt{Hodge/Kahler/Microstructure.lean}).}
+Meaning: a Federer--Fleming type compactness statement: the microstructure sequence has a flat-norm convergent subsequence with a limit current.
+Role: produces the candidate limit current whose calibration will be used to invoke Harvey--Lawson.
+
+\paragraph{\texttt{microstructureSequence\_are\_cycles} (\texttt{Hodge/Kahler/Microstructure.lean}).}
+Meaning: each element of the microstructure sequence is a cycle (boundary zero).
+Role: ensures the limiting object is cycle-like and eligible for Harvey--Lawson.
+
+\paragraph{\texttt{microstructureSequence\_defect\_bound} (\texttt{Hodge/Kahler/Microstructure.lean}).}
+Meaning: quantitative control of calibration defect along the microstructure sequence.
+Role: used to conclude the limit is calibrated.
+
+\paragraph{\texttt{limit\_is\_calibrated} (\texttt{Hodge/Analytic/Calibration.lean}).}
+Meaning: if calibration defect tends to zero and there is flat convergence, then the limit current is calibrated.
+Role: bridges the analytic approximation (microstructure) to a calibrated limiting current.
+
+\paragraph{\texttt{flat\_limit\_of\_cycles\_is\_cycle} (\texttt{Hodge/Classical/HarveyLawson.lean}).}
+Meaning: closure of the class of cycles under flat limits.
+Role: provides the ``is a cycle'' hypothesis for Harvey--Lawson on the limiting current.
+
+\paragraph{\texttt{harvey\_lawson\_theorem} and \texttt{harvey\_lawson\_represents} (\texttt{Hodge/Classical/HarveyLawson.lean}).}
+Meaning: Harvey--Lawson structure theorem for calibrated integral currents: a calibrated cycle determines analytic subvarieties and a representation statement.
+Role: produces analytic varieties from the calibrated limit and supplies the representation witness used in the next bridge.
+
+\paragraph{\texttt{serre\_gaga} (\texttt{Hodge/Classical/GAGA.lean}).}
+Meaning: Serre's GAGA: analytic subvarieties of a projective complex variety are algebraic.
+Role: turns the analytic varieties from Harvey--Lawson into algebraic subvarieties.
+
+\paragraph{\texttt{harvey\_lawson\_fundamental\_class} (\texttt{Hodge/Kahler/Main.lean}).}
+Meaning: a bridge axiom connecting the Harvey--Lawson representation of the limiting current to equality in de~Rham cohomology with a (union of) fundamental class(es).
+Role: the final cohomological identification \([\gamma^+]=[\mathrm{FundClass}(Z)]\) for the cone-positive component.
+
+\subsubsection{Interface/API axioms}
+
+These axioms specify minimal, standard laws for abstract APIs (forms, currents, cohomology operations). They are not ``deep theorems'' but represent missing concrete implementations.
+
+\paragraph{\texttt{smoothExtDeriv\_add}, \texttt{smoothExtDeriv\_smul} (\texttt{Hodge/Basic.lean}).}
+Meaning: \(d(\omega+\eta)=d\omega+d\eta\) and \(d(c\omega)=c\,d\omega\).
+Role: used to prove basic facts such as \(d0=0\), stability of closedness under linear combinations, and closure lemmas for exactness.
+
+\paragraph{\texttt{isSmoothAlternating\_zero/add/neg/sub/smul} (\texttt{Hodge/Basic.lean}).}
+Meaning: smoothness of pointwise alternating forms is preserved under basic algebraic operations.
+Role: needed so that form-level algebra (addition, subtraction, scalar multiplication) stays inside \verb|SmoothForm|.
+
+\paragraph{\texttt{instAddCommGroupDeRhamCohomologyClass}, \texttt{instModuleRealDeRhamCohomologyClass} (\texttt{Hodge/Basic.lean}).}
+Meaning: provides the additive group and real scalar module structures on de~Rham cohomology.
+Role: used for algebraic manipulations of cohomology classes in the proof (e.g.\ combining equalities, forming signed differences).
+Note: these are currently axiomatized interfaces rather than a fully built quotient-algebra structure.
+
+\paragraph{\texttt{ofForm\_sub}, \texttt{ofForm\_smul\_real} (\texttt{Hodge/Basic.lean}).}
+Meaning: functoriality of the \verb|ofForm| map with respect to subtraction and real scaling.
+Role: used to relate cohomology classes of constructed form expressions to combinations of input classes.
+
+\paragraph{\texttt{IsAlgebraicSet}, \texttt{IsAlgebraicSet\_empty}, \texttt{IsAlgebraicSet\_union} (\texttt{Hodge/Classical/GAGA.lean}).}
+Meaning: an abstract predicate for ``algebraic subset'' with closure under empty set and finite unions.
+Role: used to state that unions arising from Harvey--Lawson (after GAGA) are algebraic, enabling the use of \verb|FundamentalClassSet|.
+
+\paragraph{\texttt{FundamentalClassSet\_isClosed} and \texttt{SignedAlgebraicCycle.fundamentalClass\_isClosed} (\texttt{Hodge/Classical/GAGA.lean}).}
+Meaning: fundamental class forms attached to algebraic sets (and signed cycles) are \(d\)-closed.
+Role: ensures the fundamental class yields a well-defined de~Rham cohomology class \(\langle\mathrm{FundClass},h\rangle\).
+
+\paragraph{\texttt{omega\_pow\_isClosed}, \texttt{isClosed\_omegaPow\_scaled} (\texttt{Hodge/Kahler/TypeDecomposition.lean}).}
+Meaning: closedness of \(\omega^p\) and its positive scalings.
+Role: required to form the de~Rham class \([\omega^p]\) and use it inside rationality / representability statements.
+
+\paragraph{\texttt{simpleCalibratedForm\_is\_smooth} and \texttt{exists\_volume\_form\_of\_submodule\_axiom} (\texttt{Hodge/Analytic/Grassmannian.lean}).}
+Meaning: smoothness of certain calibration forms and existence of a volume form associated to a submodule (a Grassmannian/linear algebra input).
+Role: used in the calibrated cone / Kähler calibration infrastructure.
+
+\paragraph{\texttt{wirtinger\_comass\_bound} and \texttt{calibration\_inequality} (\texttt{Hodge/Analytic/Calibration.lean}).}
+Meaning: standard calibration inequalities (Wirtinger-type comass bounds and the mass--calibration comparison).
+Role: used to connect cone-positivity/calibrations to bounds needed for the microstructure/limit arguments.
+
+\paragraph{\texttt{isIntegral\_zero\_current} (\texttt{Hodge/Analytic/IntegralCurrents.lean}).}
+Meaning: the zero current is integral.
+Role: a base-case / sanity axiom in the integral-current interface, used in constructions and closure proofs.
+
+\subsubsection{\Lean{} foundations}
+
+\paragraph{\texttt{Classical.choice} and \texttt{propext}.}
+These are standard classical axioms (choice and propositional extensionality) used by \Lean{}'s classical reasoning and rewriting.
+
+\paragraph{\texttt{Quot.sound}.}
+This is a kernel principle for quotient types: if \(a\sim b\) then \(\langle a\rangle=\langle b\rangle\) in the quotient.
+It is not a domain-specific mathematical assumption but a foundational ingredient in using quotient constructions (e.g.\ de~Rham cohomology as a quotient).
+
+\section{Status and interpretation}
+
+\paragraph{What the artifact is (and is not).}
+The repository provides a mechanically checked proof term for \verb|hodge_conjecture'|
+in a framework where several deep inputs are treated as axioms and several foundational APIs (forms/currents/cohomology operations) are axiomatized at the law level.
+
+\paragraph{Faithfulness claim (precise).}
+The proof is \emph{faithful modulo its axiom set} in the sense that:
+\begin{itemize}
+  \item the statement has the classical shape (rational \((p,p)\) de~Rham class \(\Rightarrow\) algebraic cycle),
+  \item representation is asserted at the cohomology level,
+  \item de~Rham cohomology is a nontrivial quotient by exactness (not a vacuous equivalence),
+  \item and the only nontrivial external dependencies are exactly those enumerated by \verb|#print axioms hodge_conjecture'|.
+\end{itemize}
+
+\end{document}
+
+

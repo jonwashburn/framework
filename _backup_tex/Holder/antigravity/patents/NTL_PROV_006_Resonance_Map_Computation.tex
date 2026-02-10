@@ -1,0 +1,323 @@
+\documentclass[11pt]{article}
+
+% Keep packages minimal for TeX Live "basic" installs.
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{array}
+
+\geometry{margin=1in}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue
+}
+
+% ---------------------------------------------------------------------------
+% Convenience macros (avoid Unicode Greek in text; use LaTeX math symbols)
+% ---------------------------------------------------------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\phival}{\varphi}
+
+\newcommand{\PatentTitle}{Computer-Implemented Resonance-Map Computation and Operation of Rotating-Field Systems Using Geometry-Derived Candidate Setpoints and Safety Envelopes}
+\newcommand{\Docket}{NTL-PROV-006}
+\newcommand{\Inventors}{[Inventor Names]}
+\newcommand{\Assignee}{[Assignee / Organization]}
+\newcommand{\FilingDate}{February 1, 2026}
+
+\begin{document}
+
+\begin{center}
+{\LARGE \textbf{\PatentTitle}}\\[0.75em]
+{\large \textbf{Docket:} \Docket}\\[0.25em]
+{\large \textbf{Inventors:} \Inventors}\\[0.25em]
+{\large \textbf{Assignee:} \Assignee}\\[0.25em]
+{\large \textbf{Date:} \FilingDate}\\[0.75em]
+\end{center}
+
+\vspace{-0.5em}
+\hrule
+\vspace{0.75em}
+
+% ===========================================================================
+% ABSTRACT (PATENT)
+% ===========================================================================
+\section*{Abstract}
+
+Disclosed are methods, systems, and non-transitory computer-readable media for computing and operating a \emph{resonance map} for rotating-field systems, including mechanical rotors and solid-state phased electromagnetic arrays. In various embodiments, a computing system receives geometry inputs (e.g., rotor diameter, effective radius, element count, and optional pitch-family parameters), operating constraints (e.g., maximum rotational speed, maximum switching rate, thermal limits), and safety constraints, and outputs a ranked set of candidate drive setpoints (e.g., frequencies, RPM values, pulse widths, phase tables) computed from closed-form relationships.
+
+In one embodiment, candidate setpoints are generated from a velocity-matching family \(v = c\cdot \phival^{-N}\) for integers \(N\), where \(c\) is the speed of light and \(\phival\) is the golden ratio. For a mechanical rotor of diameter \(D\), candidate rotational frequencies are computed as \(f_N = (c\cdot \phival^{-N})/(\pi D)\) and RPM values as \(60f_N\). For a phased array of \(n\) commutation elements and pulse width \(\tau\), candidate pulse widths are computed as \(\tau_N = (2\pi r)/(n\,c\,\phival^{-N})\). The system further computes safety envelopes and generates sweep protocols (coarse-to-fine scans) and optional calibration updates based on measured band peaks.
+
+The disclosed resonance-map computation provides deterministic, geometry-driven setpoint selection and reduces trial-and-error tuning, enabling reproducible operation and rigorous experimental protocols.
+
+% ===========================================================================
+% TECHNICAL FIELD
+% ===========================================================================
+\section*{Technical Field}
+
+The present disclosure relates to computer-implemented control and tuning of rotating-field systems, and more particularly to generating and using geometry-derived candidate setpoints and safety envelopes for frequency sweeps, resonance search, and resonance maintenance in mechanical and solid-state rotating-field devices.
+
+% ===========================================================================
+% BACKGROUND
+% ===========================================================================
+\section*{Background}
+
+Rotating-field systems are often tuned by iterative trial-and-error due to uncertainty about which operating points (e.g., frequencies, pulse widths, RPM values) are most relevant to the system's behavior. This practice reduces reproducibility and makes it difficult to compare results across builds and scales. In addition, safety hazards can arise when experimental sweeps approach mechanical, thermal, or electrical limits without a precomputed envelope.
+
+Accordingly, there is a need for a deterministic computational method to generate candidate setpoints and safety envelopes from geometry inputs and operating constraints, and to output a sweep plan suitable for controlled experimentation and deployment.
+
+% ===========================================================================
+% SUMMARY
+% ===========================================================================
+\section*{Summary}
+
+This disclosure provides a resonance-map computation that, given a geometry model and constraints, produces a set of candidate setpoints (drive frequencies, RPM values, pulse widths, timing tables) to guide operation.
+
+In one aspect, a resonance-map algorithm enumerates integer indices \(N\) defining a candidate velocity family \(v_N = c\cdot \phival^{-N}\) and computes corresponding setpoints for (i) mechanical rotors and (ii) phased arrays. The algorithm also produces safety envelopes derived from constraints and provides a sweep protocol ordering (coarse to fine).
+
+In another aspect, the algorithm optionally incorporates measured peak data (banding) to refine or re-parameterize the mapping between geometry and candidate setpoints, without overfitting to noise.
+
+% ===========================================================================
+% BRIEF DESCRIPTION OF DRAWINGS
+% ===========================================================================
+\section*{Brief Description of the Drawings}
+
+Drawings may be provided later. For purposes of this specification:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{FIG. 1} depicts an input-output architecture of a resonance-map computation system.
+  \item \textbf{FIG. 2} depicts candidate setpoint generation for a mechanical rotor from a velocity family.
+  \item \textbf{FIG. 3} depicts candidate pulse width generation for a phased array from a velocity family.
+  \item \textbf{FIG. 4} depicts safety envelope computation and a sweep ordering (coarse-to-fine).
+  \item \textbf{FIG. 5} depicts an optional calibration update using measured peak data.
+\end{itemize}
+
+% ===========================================================================
+% DEFINITIONS
+% ===========================================================================
+\section*{Definitions and Notation}
+
+Unless otherwise indicated:
+\begin{itemize}[leftmargin=*]
+  \item \(\phival := (1+\sqrt{5})/2\) is the golden ratio.
+  \item \(c\) is a characteristic velocity constant (e.g., speed of light) used to scale the candidate family.
+  \item \(N\in\Z\) (or \(N\in\N\)) is an integer harmonic index.
+  \item \(v_N := c\cdot \phival^{-N}\) is a candidate velocity in the family.
+  \item For a mechanical rotor: \(D>0\) is diameter, \(r=D/2\) is radius.
+  \item For a phased array: \(n\in\N\) is number of commutation elements (e.g., coils), and \(\tau>0\) is pulse width per element.
+  \item A \emph{safety envelope} refers to bounds on operating parameters derived from constraints.
+  \item A \emph{sweep protocol} refers to an ordered set of setpoints with dwell times and measurement steps.
+\end{itemize}
+
+% ===========================================================================
+% DETAILED DESCRIPTION
+% ===========================================================================
+\section*{Detailed Description}
+
+\subsection*{1. Candidate Velocity Family}
+
+In one embodiment, candidate setpoints are derived from an indexed velocity family:
+\begin{equation}
+  v_N = c \cdot \phival^{-N},
+  \label{eq:vN}
+\end{equation}
+where \(N\) is an integer index. The family produces a logarithmic (geometric) ladder of candidate velocities separated by multiplicative factors of \(\phival\).
+
+\subsection*{2. Mechanical Rotor Resonance Map}
+
+\paragraph{2.1 Tip speed and rotational frequency.}
+For a rotor with diameter \(D\), the tip speed \(v_{\text{tip}}\) relates to rotational frequency \(f\) (Hz) by:
+\begin{equation}
+  v_{\text{tip}} = \pi D f.
+  \label{eq:v_tip}
+\end{equation}
+
+\paragraph{2.2 Candidate frequencies.}
+Setting \(v_{\text{tip}}=v_N\) yields:
+\begin{equation}
+  f_N = \frac{c\cdot \phival^{-N}}{\pi D}.
+  \label{eq:fN_rotor}
+\end{equation}
+The corresponding RPM is:
+\begin{equation}
+  \mathrm{RPM}_N = 60 f_N.
+  \label{eq:rpmN}
+\end{equation}
+
+\paragraph{2.3 Selecting a feasible index range from constraints.}
+Given a maximum allowable RPM \(R_{\max}\), compute the corresponding maximum allowable tip speed:
+\begin{equation}
+  v_{\max} = \frac{R_{\max}}{60}\,\pi D.
+  \label{eq:vmax}
+\end{equation}
+Require \(v_N \le v_{\max}\). From Eq.~\eqref{eq:vN}, this yields:
+\[
+c\,\phival^{-N} \le v_{\max}
+\quad\Rightarrow\quad
+N \ge \frac{-\ln(v_{\max}/c)}{\ln \phival}.
+\]
+In one embodiment, the algorithm chooses:
+\begin{equation}
+  N_{\min} := \left\lfloor \frac{-\ln(v_{\max}/c)}{\ln \phival} \right\rfloor - m,
+  \label{eq:Nmin}
+\end{equation}
+for a margin \(m\) (e.g., \(m=2\)) to include near-limit candidates, and enumerates \(N=N_{\min},\dots,N_{\min}+K\) for a configured count \(K\).
+
+\subsection*{3. Solid-State Phased Array Resonance Map}
+
+\paragraph{3.1 Rotating-field velocity.}
+For an array with \(n\) commutation elements around an effective radius \(r\), pulsed sequentially with per-element pulse width \(\tau\), the time to complete one revolution is \(T = n\tau\). The effective field-pattern velocity is:
+\begin{equation}
+  v_{\text{field}} = \frac{2\pi r}{n\tau}.
+  \label{eq:v_field}
+\end{equation}
+
+\paragraph{3.2 Candidate pulse widths and switching frequencies.}
+Setting \(v_{\text{field}}=v_N\) yields:
+\begin{equation}
+  \tau_N = \frac{2\pi r}{n\,c\,\phival^{-N}}.
+  \label{eq:tauN}
+\end{equation}
+Equivalently, switching frequency \(f_{\text{sw},N}=1/\tau_N\) is:
+\begin{equation}
+  f_{\text{sw},N} = \frac{n\,c\,\phival^{-N}}{2\pi r}.
+  \label{eq:fsw}
+\end{equation}
+
+\paragraph{3.3 Constraints and feasible index range.}
+Given a maximum switching frequency \(f_{\text{sw,max}}\), require \(f_{\text{sw},N}\le f_{\text{sw,max}}\), yielding a lower bound on \(N\) similar to Eq.~\eqref{eq:Nmin}. In one embodiment, the algorithm enumerates feasible \(N\) values and outputs \(\tau_N\) and \(f_{\text{sw},N}\) with safety margins.
+
+\subsection*{4. Safety Envelope Computation}
+
+\paragraph{4.1 Constraint inputs.}
+Constraint inputs include (non-limiting):
+\begin{itemize}[leftmargin=*]
+  \item mechanical: maximum RPM, maximum tip speed, maximum stress proxy;
+  \item electrical: maximum switching rate, maximum current, maximum voltage;
+  \item thermal: maximum coil temperature, maximum driver temperature, maximum duty;
+  \item facility: EMI emission limits, vibration limits.
+\end{itemize}
+
+\paragraph{4.2 Envelope output.}
+In one embodiment, each candidate setpoint is accompanied by an envelope record including:
+\begin{itemize}[leftmargin=*]
+  \item maximum allowable dwell time at that setpoint,
+  \item ramp rates for approaching and leaving the setpoint,
+  \item required sensor thresholds (stop criteria),
+  \item safe fallback setpoints (e.g., detuned neutral schedule).
+\end{itemize}
+
+\subsection*{5. Ranking and Sweep Protocol Generation}
+
+\paragraph{5.1 Ranking.}
+In one embodiment, candidates are ranked by a scoring function combining:
+\begin{itemize}[leftmargin=*]
+  \item proximity to constraints (prefer safe margin),
+  \item coverage of index range (spread across families),
+  \item predicted ease-of-drive (e.g., achievable duty, driver capability).
+\end{itemize}
+
+\paragraph{5.2 Sweep ordering.}
+In one embodiment, the resonance map outputs a sweep protocol:
+\begin{itemize}[leftmargin=*]
+  \item coarse sweep across ranked candidates with short dwell;
+  \item fine sweep around candidates showing peaks in measured proxies;
+  \item replication sweeps in reverse order to check hysteresis.
+\end{itemize}
+
+\paragraph{5.3 Data products (optional).}
+In one embodiment, the system outputs machine-readable tables (CSV/JSON) encoding setpoints, envelopes, and protocol steps, enabling deterministic replay.
+
+\subsection*{6. Optional Calibration Update from Measured Peaks}
+
+\paragraph{6.1 Peak data.}
+Let measured peak setpoints be \(\{\hat{f}_i\}\) or \(\{\widehat{\tau}_i\}\). In one embodiment, the system matches peaks to candidate indices \(N_i\) by nearest neighbor in log-space.
+
+\paragraph{6.2 Effective geometry calibration.}
+In one embodiment, the system updates an effective diameter \(D_{\text{eff}}\) (for mechanical) or effective radius \(r_{\text{eff}}\) (for arrays) by solving Eq.~\eqref{eq:fN_rotor} or Eq.~\eqref{eq:tauN} for the effective geometry parameter using observed peaks.
+
+\paragraph{6.3 Regularization (avoid overfitting).}
+In one embodiment, calibration updates are regularized by:
+\begin{itemize}[leftmargin=*]
+  \item requiring multiple replicates across days,
+  \item limiting update magnitude per iteration,
+  \item rejecting updates that violate safety constraints.
+\end{itemize}
+
+% ===========================================================================
+% EXAMPLE OUTPUT TABLE (NON-LIMITING)
+% ===========================================================================
+\section*{Example Output (Non-Limiting)}
+
+The following table illustrates an example resonance-map output format (values shown are placeholders; the computation uses the formulas above):
+
+\begin{center}
+\begin{tabular}{>{\raggedleft}p{1.2cm} p{2.0cm} p{2.0cm} p{2.2cm}}
+\toprule
+Index $N$ & $v_N$ (m/s) & $f_N$ (Hz) & $\mathrm{RPM}_N$ \\
+\midrule
+37 & $c\phival^{-37}$ & $c\phival^{-37}/(\pi D)$ & $60 f_N$ \\
+38 & $c\phival^{-38}$ & $c\phival^{-38}/(\pi D)$ & $60 f_N$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% ===========================================================================
+% CLAIMS (DRAFT / PROVISIONAL-STYLE)
+% ===========================================================================
+\section*{Claims (Draft)}
+
+\textbf{Note:} The following claims are an initial, non-limiting claim set intended to preserve multiple fallback positions. Final claim strategy should be reviewed by counsel.
+
+\subsection*{Independent Claims}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{(Method)} A computer-implemented method of operating a rotating-field system, the method comprising: receiving geometry parameters of the rotating-field system; receiving one or more operating constraints; computing a set of candidate drive setpoints from the geometry parameters using a closed-form relationship; computing a safety envelope for each candidate drive setpoint based on the operating constraints; and outputting an ordered sweep protocol including at least a subset of the candidate drive setpoints.
+
+  \item \textbf{(System)} A system comprising one or more processors and memory storing instructions that, when executed, cause the system to: enumerate integer indices defining a candidate velocity family \(v_N=c\phival^{-N}\); compute, for a mechanical rotor having diameter \(D\), a candidate rotational frequency \(f_N=(c\phival^{-N})/(\pi D)\); and output a resonance map comprising at least one of candidate frequencies, candidate RPM values, or safety envelope records.
+
+  \item \textbf{(Non-transitory medium)} A non-transitory computer-readable medium storing instructions that, when executed by one or more processors, cause the one or more processors to: compute, for a phased array having an effective radius \(r\) and an element count \(n\), candidate pulse widths \(\tau_N = (2\pi r)/(n\,c\,\phival^{-N})\); compare the candidate pulse widths against a maximum switching-rate constraint; and output a list of feasible candidate pulse widths for operating the phased array.
+\end{enumerate}
+
+\subsection*{Dependent Claims (Examples; Non-Limiting)}
+
+\begin{enumerate}[leftmargin=*]
+  \setcounter{enumi}{3}
+  \item The method of claim 1, wherein computing the set of candidate drive setpoints comprises selecting an index range based on a maximum RPM constraint.
+  \item The method of claim 1, wherein outputting the ordered sweep protocol comprises outputting a coarse-to-fine sweep.
+  \item The system of claim 2, further comprising generating a ranked list of candidate setpoints based on proximity to constraints and coverage of index range.
+  \item The non-transitory medium of claim 3, wherein the instructions further cause the one or more processors to compute a switching frequency \(f_{\text{sw},N}=1/\tau_N\).
+  \item The method of claim 1, further comprising receiving measured peak data and updating an effective geometry parameter based on the measured peak data.
+  \item The method of claim 8, wherein updating is regularized by limiting an update magnitude per iteration and requiring replicate measurements.
+  \item The method of claim 1, wherein outputting comprises outputting a machine-readable table in CSV or JSON format.
+  \item The method of claim 1, wherein the safety envelope includes stop criteria based on at least one of temperature, current, voltage, vibration, or EMI thresholds.
+\end{enumerate}
+
+% ===========================================================================
+% FALLBACK POSITIONS / ADDITIONAL EMBODIMENTS
+% ===========================================================================
+\section*{Additional Embodiments and Fallback Positions (Non-Limiting)}
+
+\begin{itemize}[leftmargin=*]
+  \item The constant \(c\) may be any selected characteristic velocity constant; the speed of light is one non-limiting example.
+  \item The velocity family may be multiplied by integer or rational factors to generate harmonic and subharmonic families.
+  \item Candidate indices \(N\) may be enumerated over positive and/or negative ranges depending on constraints.
+  \item Safety envelopes may include maximum dwell time, ramp rate limits, and required sensor confirmations.
+  \item Calibration updates may adjust effective geometry parameters, effective scaling constants, or mapping offsets in index space.
+  \item The resonance map may be integrated into a closed-loop controller that maintains lock at a candidate setpoint by phase/frequency nudging.
+\end{itemize}
+
+\vspace{1em}
+\hrule
+\vspace{0.75em}
+\noindent \textbf{End of Specification (Draft)}
+
+\end{document}
+

@@ -1,0 +1,312 @@
+\documentclass[11pt]{article}
+
+% Keep packages minimal for TeX Live "basic" installs.
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{array}
+
+\geometry{margin=1in}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue
+}
+
+% ---------------------------------------------------------------------------
+% Convenience macros
+% ---------------------------------------------------------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+
+\newcommand{\PatentTitle}{Load-as-Stabilizer Control and Power-Electronics Architectures with Dynamic Impedance Shaping for Generator-Mode Rotating-Field Systems}
+\newcommand{\Docket}{NTL-PROV-014}
+\newcommand{\Inventors}{[Inventor Names]}
+\newcommand{\Assignee}{[Assignee / Organization]}
+\newcommand{\FilingDate}{February 1, 2026}
+
+\begin{document}
+
+\begin{center}
+{\LARGE \textbf{\PatentTitle}}\\[0.75em]
+{\large \textbf{Docket:} \Docket}\\[0.25em]
+{\large \textbf{Inventors:} \Inventors}\\[0.25em]
+{\large \textbf{Assignee:} \Assignee}\\[0.25em]
+{\large \textbf{Date:} \FilingDate}\\[0.75em]
+\end{center}
+
+\vspace{-0.5em}
+\hrule
+\vspace{0.75em}
+
+% ===========================================================================
+% ABSTRACT (PATENT)
+% ===========================================================================
+\section*{Abstract}
+
+Disclosed are apparatus, systems, methods, and non-transitory computer-readable media for operating rotating-field systems in a generator mode using \emph{load extraction as a stabilizing control surface}. In various embodiments, a rotating-field core induces an electrical signal in one or more pickup subsystems. A power-electronics stage (including one or more of rectification, DC-DC conversion, inversion, and/or electronically controlled loads) is configured to present a \emph{dynamic effective impedance} to the pickup subsystem. A controller measures one or more stability signals (including bus voltage, pickup current, harmonic content, temperature, vibration, and/or other observables) and adjusts the effective impedance to (i) maximize usable output subject to constraints, (ii) maintain stable operation in a narrowband regime, and (iii) mitigate runaway and loss-of-load hazards.
+
+In one embodiment, the system transitions from a search/lock mode to a load-stabilized generator mode by gradually increasing extracted power via impedance ramps, and the system includes fast dump-load and/or detuning commands to respond to fault conditions. The disclosed architectures enable safe and repeatable operation of generator-mode rotating-field devices and provide robust, enforceable claim hooks around practical load engineering that is not captured by generic generator prior art.
+
+% ===========================================================================
+% TECHNICAL FIELD
+% ===========================================================================
+\section*{Technical Field}
+
+The present disclosure relates to power conversion and control for rotating-field systems, and more particularly to load shaping, impedance matching, and load-stabilized operation in generator-mode rotating-field devices (including mechanical rotors and solid-state rotating-field generators).
+
+% ===========================================================================
+% BACKGROUND
+% ===========================================================================
+\section*{Background}
+
+Generators couple a field source to a pickup to produce electrical output. In conventional alternators, the load is often treated as an external consumer; the generator is designed to tolerate load variation within a defined envelope. In high-Q, narrowband, or strongly coupled rotating-field systems, output extraction can materially affect stability, and the \emph{load itself} can act as a stabilizing or destabilizing element.
+
+Furthermore, practical systems require controlled ramping, safe startup, protection against load disconnect, and the ability to regulate a DC bus under varying conditions. Conventional power electronics techniques exist, but they are typically not tailored to rotating-field systems where (a) the operating point can be narrowband, (b) stability may depend on controlled damping/back-action, and (c) hazards from loss-of-load can be unusually severe.
+
+Accordingly, there is a need for a generator-mode architecture that treats \emph{load extraction as a primary control surface} and provides methods and apparatus for dynamic impedance shaping, stability monitoring, and rapid protective actions.
+
+% ===========================================================================
+% SUMMARY
+% ===========================================================================
+\section*{Summary}
+
+This disclosure provides systems and methods for \emph{load-stabilized generator-mode operation}.
+
+In one aspect, a system comprises a rotating-field core, a pickup subsystem, and a power-electronics stage configured to present a controllable effective impedance to the pickup. A controller uses measured signals to compute a stability objective and adjusts the impedance to maintain stable operation while delivering regulated output.
+
+In another aspect, the system implements a state machine that performs: (i) precharge and interlock checks, (ii) operating-point search/lock, (iii) controlled load engagement via impedance ramps, (iv) steady generator operation, and (v) fault mitigation including dump loads and/or detuning/shutdown.
+
+In another aspect, the system uses a controlled electronic load or converter to produce \emph{programmable damping} (electromagnetic braking/back-action) that stabilizes the rotating-field core.
+
+% ===========================================================================
+% BRIEF DESCRIPTION OF DRAWINGS
+% ===========================================================================
+\section*{Brief Description of the Drawings}
+
+Drawings may be provided later. For purposes of this specification:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{FIG. 1} depicts a generator-mode rotating-field system with pickup, rectification, DC bus, buffer storage, and load interface.
+  \item \textbf{FIG. 2} depicts an impedance-shaping power stage that presents an effective impedance to a pickup via controlled rectification and DC-DC conversion.
+  \item \textbf{FIG. 3} depicts a state machine for load-stabilized operation (precharge, search/lock, soft-connect load, steady output, fault).
+  \item \textbf{FIG. 4} depicts loss-of-load detection and rapid dump-load/crowbar mitigation.
+  \item \textbf{FIG. 5} depicts multi-pickup embodiments with per-pickup impedance control and coordinated load sharing.
+  \item \textbf{FIG. 6} depicts example stability metrics based on bus voltage slope, harmonic ratios, and temperature derivatives.
+\end{itemize}
+
+% ===========================================================================
+% DEFINITIONS
+% ===========================================================================
+\section*{Definitions and Notation}
+
+Unless otherwise indicated:
+\begin{itemize}[leftmargin=*]
+  \item A \emph{rotating-field core} refers to a device producing a time-varying magnetic field, including a mechanical rotor or a solid-state phased array.
+  \item A \emph{pickup subsystem} refers to conductive loops/coils/windings coupled to the rotating field to generate an induced signal.
+  \item An \emph{effective impedance} refers to the impedance presented to the pickup by downstream power electronics and loads, including resistive and reactive components.
+  \item \emph{Impedance shaping} refers to actively controlling the effective impedance to achieve a target behavior (e.g., bus regulation, stability, maximum power).
+  \item A \emph{dump load} refers to a protective load switched in to absorb energy during fault conditions.
+  \item A \emph{soft-connect} refers to gradually engaging a load to avoid transients by ramping effective impedance.
+  \item A \emph{stability objective} refers to a cost function or objective used for control, based on measured signals.
+\end{itemize}
+
+% ===========================================================================
+% DETAILED DESCRIPTION
+% ===========================================================================
+\section*{Detailed Description}
+
+\subsection*{1. Overview: Load as a Control Surface}
+
+In one embodiment, the system explicitly treats output extraction as a control surface. The controller does not merely regulate output voltage; it intentionally selects an effective impedance to influence the dynamics of the rotating-field core via electromagnetic back-action.
+
+Non-limiting motivations include:
+\begin{itemize}[leftmargin=*]
+  \item high-Q or narrowband behavior where small changes in load alter the operating point;
+  \item safety: rapid damping is achievable through load engagement (dump loads) without relying on mechanical braking;
+  \item performance: maximum steady output may require maintaining an operating point that depends on controlled damping/back-action.
+\end{itemize}
+
+\subsection*{2. Equivalent Model and Control Variables (Non-Limiting)}
+
+\paragraph{2.1 Pickup model.}
+In one simplified representation, the pickup can be modeled as a source with internal impedance:
+\[
+V_s(t) \rightarrow Z_s = R_s + j\omega L_s,
+\]
+driving a load represented by an effective impedance \(Z_{\text{eff}}\).
+
+\paragraph{2.2 Effective impedance via power electronics.}
+In one embodiment, a controlled rectifier and converter stage is operated such that the pickup ``sees'' a programmable impedance:
+\[
+Z_{\text{eff}} = f(u,\theta),
+\]
+where \(u\) is a control input (e.g., duty cycle, phase angle, PWM pattern, synchronous rectifier timing) and \(\theta\) represents measured operating state (bus voltage, currents, temperature).
+
+\paragraph{2.3 Control goal.}
+In one embodiment, the controller selects \(u\) to minimize a stability objective:
+\[
+J = w_V \cdot e_V^2 + w_I \cdot e_I^2 + w_S \cdot e_S^2 + w_T \cdot e_T^2,
+\]
+where \(e_V\) is bus voltage error, \(e_I\) is current-limit error, \(e_S\) is a stability metric error (e.g., harmonic instability), and \(e_T\) is a thermal constraint term. The particular form is non-limiting.
+
+\subsection*{3. Power Stage Embodiments}
+
+\paragraph{3.1 Passive rectifier + DC bus.}
+In one embodiment, a diode bridge feeds a DC bus capacitor bank. A downstream DC-DC converter shapes the effective load seen by the pickup by controlling bus draw.
+
+\paragraph{3.2 Synchronous/active rectification.}
+In one embodiment, synchronous rectification is used to reduce losses and to modulate effective impedance by controlling conduction timing and phase.
+
+\paragraph{3.3 Bidirectional conversion and programmable electronic load.}
+In one embodiment, a bidirectional converter (buck/boost) is used to:
+\begin{itemize}[leftmargin=*]
+  \item regulate a bus voltage;
+  \item present a programmable load to the pickup;
+  \item recharge a buffer (battery/supercap) under controlled current.
+\end{itemize}
+
+\paragraph{3.4 Multi-rail and dump-load network.}
+In one embodiment, the system includes a dump-load rail switched by a fast electronic switch. In one embodiment, the dump load is engaged upon detected loss-of-load or bus overvoltage.
+
+\subsection*{4. Soft-Connect Load Engagement}
+
+In one embodiment, the system performs a controlled transition to generator mode by ramping extracted power. Non-limiting implementations include:
+\begin{itemize}[leftmargin=*]
+  \item ramping converter current setpoint from \(0\) to \(I_{\max}\);
+  \item ramping an effective impedance \(Z_{\text{eff}}\) from high to target value;
+  \item staged engagement: connect buffer first, then external load.
+\end{itemize}
+
+In one embodiment, the ramp rate is chosen based on measured bus dynamics:
+\[
+\left|\frac{dV_{\text{bus}}}{dt}\right| < \alpha, \quad \left|\frac{dI_{\text{bus}}}{dt}\right| < \beta,
+\]
+for safety thresholds \(\alpha,\beta\).
+
+\subsection*{5. Load-Shaping Control Algorithms (Examples)}
+
+\paragraph{5.1 Maximum power point tracking (MPPT-like) variant.}
+In one embodiment, the controller adjusts \(Z_{\text{eff}}\) to maximize delivered power while maintaining stability and safety constraints:
+\[
+P_{\text{out}} = V_{\text{bus}} I_{\text{bus}}.
+\]
+The controller may use perturb-and-observe, incremental conductance, or model-predictive approaches. The use of MPPT-like logic is illustrative and non-limiting.
+
+\paragraph{5.2 Stability-first variant.}
+In one embodiment, the controller prioritizes stability, selecting \(Z_{\text{eff}}\) to maintain a stability metric within bounds and only then maximizing output.
+
+\paragraph{5.3 Multi-input control.}
+In one embodiment, the stability metric uses multiple sensor channels, including one or more of:
+\begin{itemize}[leftmargin=*]
+  \item spectral ratios of pickup current harmonics;
+  \item vibration amplitude (accelerometer);
+  \item temperature derivative \(dT/dt\) in coils, switches, or core components;
+  \item bus voltage ripple or slope;
+  \item EMI probes or magnetic sensors.
+\end{itemize}
+
+\subsection*{6. Loss-of-Load and Runaway Mitigation}
+
+\paragraph{6.1 Loss-of-load detection (non-limiting).}
+Loss-of-load may be detected by, for example:
+\begin{itemize}[leftmargin=*]
+  \item \(I_{\text{load}}\) falling below a threshold while \(V_{\text{bus}}\) rises;
+  \item converter duty cycle saturating without achieving expected current draw;
+  \item discrepancy between expected and measured damping effect.
+\end{itemize}
+
+\paragraph{6.2 Protective actions.}
+Upon a detected fault, the system may:
+\begin{itemize}[leftmargin=*]
+  \item engage a dump load;
+  \item enable a crowbar circuit;
+  \item command a drive detune/disable (if coupled to the core driver subsystem);
+  \item open contactors and enter a safe state.
+\end{itemize}
+
+\subsection*{7. Multi-Pickup and Multi-Channel Embodiments}
+
+In one embodiment, the system includes multiple pickup subsystems and independently controls the effective impedance for each pickup channel. In one embodiment, the controller balances loading among channels to:
+\begin{itemize}[leftmargin=*]
+  \item reduce hot spots;
+  \item reduce ripple;
+  \item improve stability by distributing damping.
+\end{itemize}
+
+\subsection*{8. Integration with Instrumentation and Auditability}
+
+In one embodiment, the controller logs load state, duty cycles, measured currents/voltages, and fault events with timestamps. In one embodiment, the log is included in a run bundle suitable for deterministic replay and audit (filed separately).
+
+\subsection*{9. Example Embodiments (Non-Limiting)}
+
+\paragraph{9.1 Laboratory evaluation platform.}
+In one embodiment, the load interface comprises an electronically controlled load bank capable of sweeping \(Z_{\text{eff}}\) while recording stability signals.
+
+\paragraph{9.2 Battery-buffered generator.}
+In one embodiment, the buffer is a battery charged by controlled current; the load interface includes a regulated DC output and inverter.
+
+\paragraph{9.3 Grid-tie export with stability gating.}
+In one embodiment, the load interface includes a grid-tie inverter that is only enabled after stability metrics remain within bounds for a dwell time.
+
+% ===========================================================================
+% CLAIMS (DRAFT / PROVISIONAL-STYLE)
+% ===========================================================================
+\section*{Claims (Draft)}
+
+\textbf{Note:} The following claims are an initial, non-limiting claim set intended to preserve multiple fallback positions. Final claim strategy should be reviewed by counsel.
+
+\subsection*{Independent Claims}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{(System)} A generator-mode rotating-field system comprising: a rotating-field core configured to generate a time-varying magnetic field; a pickup subsystem electromagnetically coupled to the rotating-field core; a power-electronics stage coupled to the pickup subsystem and configured to deliver electrical output to a load; and a controller configured to control the power-electronics stage to present a dynamic effective impedance to the pickup subsystem based at least in part on one or more measured signals, wherein the dynamic effective impedance is controlled to stabilize operation of the rotating-field system.
+
+  \item \textbf{(Method)} A method of operating a rotating-field system in a generator mode, the method comprising: inducing, via a rotating-field core, an electrical signal in a pickup subsystem; converting the electrical signal to deliver output power to a load through a power-electronics stage; measuring one or more signals indicative of system stability; and controlling the power-electronics stage to change an effective impedance presented to the pickup subsystem based at least in part on the one or more signals to maintain stable operation while delivering output power.
+
+  \item \textbf{(Non-transitory medium)} A non-transitory computer-readable medium storing instructions that, when executed by one or more processors, cause the one or more processors to: compute, from sensor data, a stability metric; control a converter or electronic load to present a selected effective impedance to a pickup subsystem of a rotating-field generator; detect a loss-of-load event; and in response to the loss-of-load event, engage a dump load and/or initiate a shutdown or detune command.
+\end{enumerate}
+
+\subsection*{Dependent Claims (Examples; Non-Limiting)}
+
+\begin{enumerate}[leftmargin=*]
+  \setcounter{enumi}{3}
+  \item The system of claim 1, wherein the power-electronics stage comprises a rectifier and a DC bus capacitor bank.
+  \item The system of claim 1, wherein the power-electronics stage comprises a synchronous rectifier configured to modulate conduction timing to shape the effective impedance.
+  \item The system of claim 1, wherein the power-electronics stage comprises a DC-DC converter configured to regulate a bus voltage while presenting the effective impedance to the pickup subsystem.
+  \item The system of claim 1, wherein the controller is configured to perform a soft-connect by ramping a load current setpoint or an impedance setpoint.
+  \item The method of claim 2, wherein the one or more signals comprise a bus voltage slope and a load current.
+  \item The method of claim 2, wherein the one or more signals comprise harmonic content of a pickup current.
+  \item The method of claim 2, wherein measuring comprises measuring a temperature derivative \(dT/dt\) of a component, and controlling comprises reducing extracted power when \(dT/dt\) exceeds a threshold.
+  \item The non-transitory medium of claim 3, wherein detecting the loss-of-load event comprises detecting rising bus voltage with falling load current.
+  \item The system of claim 1, further comprising a dump load coupled to a DC bus and configured to be switched in by the controller or a watchdog.
+  \item The system of claim 1, wherein the controller performs a maximum-power-point-tracking-like search to maximize delivered power subject to stability constraints.
+  \item The system of claim 1, wherein the pickup subsystem comprises a plurality of pickup coils, and the controller independently controls effective impedance for at least two pickup channels.
+  \item The system of claim 1, further comprising a grid-tie inverter, wherein the controller enables the grid-tie inverter only after the stability metric remains within bounds for a dwell time.
+  \item The system of claim 1, further comprising logging of impedance setpoints, duty cycles, and fault events with timestamps.
+\end{enumerate}
+
+% ===========================================================================
+% FALLBACK POSITIONS / ADDITIONAL EMBODIMENTS
+% ===========================================================================
+\section*{Additional Embodiments and Fallback Positions (Non-Limiting)}
+
+\begin{itemize}[leftmargin=*]
+  \item The effective impedance may be resistive, reactive, or complex, and may be implemented by actively controlled switching networks.
+  \item The system may include multiple stages: first regulate a buffer (battery/supercap), then supply external loads through a second regulated stage.
+  \item A separate independent watchdog may engage a dump load if the main controller fails or becomes unresponsive.
+  \item The controller may coordinate load shaping with drive-side control (frequency/phase) via an inter-controller interface.
+  \item The system may include pre-charge resistors/contactors for safely energizing the DC bus and buffer.
+\end{itemize}
+
+\vspace{1em}
+\hrule
+\vspace{0.75em}
+\noindent \textbf{End of Specification (Draft)}
+
+\end{document}
+

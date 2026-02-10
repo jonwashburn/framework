@@ -1,0 +1,121 @@
+% Dual-Route Invariant Equalization + Single-Inequality Audit — Family C Patent
+\documentclass[12pt]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage{xcolor}
+
+\title{Dual-Route Invariant Equalization and Single-Inequality Audit\\Family C Patent (Method, System, Medium)}
+\author{Jonathan Washburn}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{center}
+{\large Camera-Ready Patent Draft}\\[4pt]
+{\normalsize Computing $\lambda_{\mathrm{kin}}$, $\lambda_{\mathrm{rec}}$ with Combined Uncertainty; Single-Inequality Acceptance; Fail-Closed Signaling}
+\end{center}
+
+\section*{Field}
+This disclosure relates to computer-implemented acceptance auditing of calibration invariants. It provides a method, system, and non-transitory medium for computing independent, dimensionless route invariants and their combined uncertainty (with correlation), applying a single-inequality acceptance test, and emitting fail-closed accept/reject signals and signed logs.
+
+\section*{Background}
+Calibration acceptance often relies on multi-threshold heuristics or post-hoc statistics that are difficult to audit and tune across devices. There is a need for a \emph{single}, interpretable inequality that (i) compares independent routes to the same invariant, (ii) accounts for uncertainty and correlation, (iii) yields a deterministic accept/reject outcome, and (iv) generates machine-verifiable evidence for audit and enforcement.
+
+\section*{Summary}
+Disclosed is an acceptance audit that:
+\begin{enumerate}[leftmargin=*]
+  \item computes independent route invariants $\lambda_{\mathrm{kin}}$ and $\lambda_{\mathrm{rec}}$ (dimensionless);
+  \item computes combined uncertainty with correlation,
+  \[
+    u_{\mathrm{comb}}\;=\;\sqrt{\,u(\lambda_{\mathrm{kin}})^2 + u(\lambda_{\mathrm{rec}})^2 - 2\,\rho\,u(\lambda_{\mathrm{kin}})\,u(\lambda_{\mathrm{rec}})\,}\,;\]
+  \item applies a single acceptance inequality,
+  \[
+    \frac{\,\lvert\lambda_{\mathrm{kin}}-\lambda_{\mathrm{rec}}\rvert\,}{\lambda_{\mathrm{rec}}}\;\le\;k\,u_{\mathrm{comb}}\,;
+  \]
+  \item emits fail-closed accept/reject signals and logs with signatures.
+\end{enumerate}
+
+\section*{Definitions}
+\noindent\textbf{Route invariants.} $\lambda_{\mathrm{kin}}$ and $\lambda_{\mathrm{rec}}$ are independent, dimensionless derivations of the same physical invariant (e.g., kinematic vs recognition routes) computed from factorized displays.
+
+\noindent\textbf{Uncertainty model.} $u(\cdot)$ denotes standard uncertainty; $\rho\in[-1,1]$ is the correlation coefficient between route estimates; $u_{\mathrm{comb}}$ is the combined uncertainty per the above expression.
+
+\noindent\textbf{Acceptance threshold.} $k>0$ is a declared scalar (risk/tier dependent). The inequality compares normalized route discrepancy to combined uncertainty.
+
+\noindent\textbf{Fail-closed signaling.} A control policy that denies acceptance if the inequality is not satisfied or if uncertainty/correlation cannot be established within declared bounds.
+
+\noindent\textbf{Compliance artifacts.} Signed, hash-addressed logs that include route values, uncertainties, correlation estimate, threshold $k$, verdict, and metadata.
+
+\section*{Claims}
+\setlist[enumerate]{leftmargin=*,labelsep=0.5em,itemsep=0.6em,topsep=0.4em}
+
+\subsection*{Independent Claims}
+\begin{enumerate}
+\item \textbf{(Method)} A computer-implemented method for acceptance auditing of calibration invariants, comprising:
+\begin{enumerate}[label=(\alph*)]
+  \item computing first and second dimensionless route invariants $\lambda_{\mathrm{kin}}$ and $\lambda_{\mathrm{rec}}$ for a common physical invariant;
+  \item computing standard uncertainties $u(\lambda_{\mathrm{kin}})$, $u(\lambda_{\mathrm{rec}})$ and a correlation coefficient $\rho$;
+  \item computing a combined uncertainty $u_{\mathrm{comb}}=\sqrt{u(\lambda_{\mathrm{kin}})^2 + u(\lambda_{\mathrm{rec}})^2 - 2\rho\,u(\lambda_{\mathrm{kin}})u(\lambda_{\mathrm{rec}})}$;
+  \item testing an acceptance inequality $\lvert\lambda_{\mathrm{kin}}-\lambda_{\mathrm{rec}}\rvert/\lambda_{\mathrm{rec}} \le k\,u_{\mathrm{comb}}$ with a declared threshold $k>0$; and
+  \item emitting a fail-closed accept/reject signal and a signed, hash-addressed log including route values, uncertainties, correlation, $k$, and the verdict.
+\end{enumerate}
+
+\item \textbf{(System)} A system comprising one or more processors and memory configured to: (i) compute route invariants $\lambda_{\mathrm{kin}}$, $\lambda_{\mathrm{rec}}$; (ii) compute uncertainties and correlation; (iii) compute $u_{\mathrm{comb}}$; (iv) test the acceptance inequality; and (v) emit fail-closed verdicts and signed logs.
+
+\item \textbf{(Non-transitory medium)} A non-transitory computer-readable medium storing instructions that, when executed, cause a system to perform the method of claim 1.
+\end{enumerate}
+
+\subsection*{Dependent Claims}
+\begin{enumerate}[resume]
+\item (Method) wherein the uncertainties and correlation are estimated from windowed samples, bootstrapped replicates, or spectral cross-estimators with declared confidence bounds.
+\item (Method) wherein $k$ is selected from a policy tier: safety-critical, regulated, or research, each with predefined numeric values.
+\item (Method) wherein acceptance requires $u(\lambda_{\mathrm{kin}})$, $u(\lambda_{\mathrm{rec}})$, and $\rho$ to be within declared bounds; otherwise the verdict is reject.
+\item (Method) further comprising equalization by adjusting internal displays or parameters to minimize $\lvert\lambda_{\mathrm{kin}}-\lambda_{\mathrm{rec}}\rvert$ subject to constraints, followed by re-testing the inequality.
+\item (Method) wherein logs include timestamps, device IDs, run identifiers, masks or regions-of-interest, and the acceptance decision signed with an instrument key.
+\item (System) further comprising a compliance API that exposes route values, uncertainties, $\rho$, $k$, inequality residual, and verdict, with cryptographic signatures.
+\item (Method) wherein the decision may be computed per-window and aggregated over blocks with a declared aggregation rule (e.g., worst-case, median, or bounded mean) before final verdict.
+\item (Method) further comprising certificate integration, wherein acceptance logs are included in a calibration certificate for gating downstream operation or data ingestion.
+\item (Method) wherein correlation $\rho$ is bounded by priors or physical constraints and is clamped to a declared range if estimation uncertainty exceeds a threshold.
+\item (System) wherein failure cases emit structured diagnostics indicating dominant contributors to inequality violation and recommended adjustments.
+\end{enumerate}
+
+\section*{Brief Description of the Drawings}
+\begin{enumerate}[leftmargin=*]
+  \item Fig. 1: Route computation of $\lambda_{\mathrm{kin}}$ and $\lambda_{\mathrm{rec}}$.
+  \item Fig. 2: Uncertainty and correlation estimation pipeline.
+  \item Fig. 3: Acceptance inequality test and decision logic.
+  \item Fig. 4: Fail-closed signaling and signed log emission.
+\end{enumerate}
+
+\section*{Detailed Description}
+\subsection*{Route Invariants}
+Two independent routes derive the same dimensionless invariant: a kinematic route ($\lambda_{\mathrm{kin}}$) and a recognition route ($\lambda_{\mathrm{rec}}$). Routes are computed from factorized, unit-invariant displays; masks and regions-of-interest are held constant per policy.
+
+\subsection*{Uncertainty and Correlation}
+Standard uncertainties $u(\lambda_{\mathrm{kin}})$ and $u(\lambda_{\mathrm{rec}})$ are estimated from repeated or windowed measurements; correlation $\rho$ accounts for common-mode contributions. Estimation uses bootstraps, cross-spectral estimators, or model-based variance propagation with declared confidence bounds.
+
+\subsection*{Acceptance Inequality}
+The inequality compares normalized discrepancy to combined uncertainty. If $\lvert\lambda_{\mathrm{kin}}-\lambda_{\mathrm{rec}}\rvert/\lambda_{\mathrm{rec}} \le k\,u_{\mathrm{comb}}$ holds, acceptance is granted; otherwise the verdict is reject. Policies may require re-test after equalization adjustments; failure to meet bounds remains reject.
+
+\subsection*{Fail-Closed Policy and Logging}
+If inputs are missing or uncertainty/correlation cannot be established within bounds, the verdict is reject. Logs include all decision inputs and are signed and hash-addressed; optional registry publication supports audit.
+
+\section*{Technical Effects}
+The method yields deterministic acceptance with a single interpretable inequality; improved robustness by accounting for correlation; reproducibility via unit-invariant route computation and fixed masks; and audit-ready, signed logs for compliance and enforcement.
+
+\section*{Enablement and Best Mode}
+Implementations include route-computation modules, uncertainty/correlation estimators (bootstrap and cross-spectrum), an inequality test engine with policy-tier $k$ values, and a compliance API with signed logging. Benchmarks report true/false acceptance rates and sensitivity to $k$.
+
+\section*{Alternative Embodiments}
+Extensions include more than two routes aggregated by a generalized inequality; dynamic $k$ based on operating regime; per-window vs aggregated decisions. Certificates can embed acceptance logs for downstream gating.
+
+\section*{Legal Notice}
+All embodiments, features, and steps described herein may be combined in any operable permutation. Where means-plus-function is implicated, claims are intended to cover corresponding structures and their equivalents.
+
+\end{document}
+
+

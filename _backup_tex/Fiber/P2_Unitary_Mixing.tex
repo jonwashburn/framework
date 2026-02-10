@@ -1,0 +1,104 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+
+\geometry{margin=1in}
+
+\title{\textbf{PATENT APPLICATION}}
+\author{}
+\date{}
+
+\begin{document}
+
+\begin{center}
+    \Large\textbf{UNITARY MIXING TRANSFORMS FOR NONLINEARITY MITIGATION IN COHERENT SYSTEMS}
+\end{center}
+
+\vspace{1cm}
+
+\section*{FIELD OF THE INVENTION}
+The present invention relates to digital signal processing (DSP) for coherent optical communication systems, and specifically to unitary precoding matrices designed to mitigate nonlinear phase noise (Kerr effect) by maximizing the entropy of the instantaneous power distribution across a multi-dimensional signal block.
+
+\section*{BACKGROUND OF THE INVENTION}
+In long-haul fiber optic transmission, the capacity is limited by the nonlinear Shannon limit. As signal power increases, the refractive index of the fiber changes (Kerr effect), causing Self-Phase Modulation (SPM) and Cross-Phase Modulation (XPM). These nonlinear impairments are proportional to the instantaneous power $|E(t)|^2$ of the signal.
+
+Standard modulation formats like QAM transmit symbols independently. This leads to a high Peak-to-Average Power Ratio (PAPR), as certain symbol combinations can constructively interfere to create high-power spikes that trigger strong nonlinear phase shifts. While digital back-propagation (DBP) can compensate for these effects, it is computationally expensive ($O(N^2)$ or $O(N \log N)$ per step) and power-hungry.
+
+There is a need for a computationally efficient, linear precoding scheme that "whitens" the short-term power statistics of the signal, making it more resistant to nonlinear accumulation without increasing the complexity of the receiver equalizer.
+
+\section*{SUMMARY OF THE INVENTION}
+The present invention provides a method for "Unitary Mixing" using a specific class of matrices called "BRAID" operators. These operators are constructed from sequences of triad rotations that mix information across time, frequency, or polarization modes.
+
+By applying a BRAID transform at the transmitter, the energy of any single high-amplitude symbol is spread (delocalized) across the entire block. This reduces the probability of high-power excursions (lowering PAPR) and ensures that the nonlinear phase shift accumulated during transmission is averaged across the block, making it deterministic and reversible at the receiver.
+
+The BRAID operator is unitary ($U^\dagger U = I$), meaning it preserves the total energy of the block and does not amplify additive noise (ASE).
+
+\section*{DETAILED DESCRIPTION}
+
+\subsection*{The Triad Rotation}
+The fundamental building block of the BRAID operator is the rotation of a triad of complex symbols $(v_i, v_j, v_k)$. We define the rotation matrix $R_\theta$ acting on the subspace spanned by indices $\{i, j, k\}$:
+
+\begin{equation}
+    \begin{bmatrix} v'_i \\ v'_j \\ v'_k \end{bmatrix} = 
+    \begin{bmatrix} 
+    \cos\theta & -\sin\theta & 0 \\
+    \sin\theta & \cos\theta & 0 \\
+    0 & 0 & 1
+    \end{bmatrix} 
+    \begin{bmatrix} v_i \\ v_j \\ v_k \end{bmatrix}
+\end{equation}
+(Note: The actual implementation may use a full $3 \times 3$ mixing matrix, such as a localized DFT or a specific Euler angle rotation sequence, to ensure mixing across all three components).
+
+\subsection*{The BRAID Operator Structure}
+For a block of size $N=8$, the BRAID operator $U$ is constructed as a product of sparse triad rotations:
+\begin{equation}
+    U = \prod_{m=1}^{M} R_{\theta_m}^{(i_m, j_m, k_m)}
+\end{equation}
+In a preferred embodiment, the mixing pattern follows a "loom" structure where indices are permuted between layers to ensure that every input symbol $v_n$ influences every output symbol $v'_m$ after a finite number of layers.
+
+\subsection*{Nonlinearity Mitigation Mechanism}
+Let the transmitted signal be $x = U d$. The nonlinear phase shift acquired over a fiber span $L$ is approximately:
+\begin{equation}
+    \phi_{NL}(t) \approx \gamma L |x(t)|^2
+\end{equation}
+Because $x$ is a "smeared" version of $d$, the variance of $|x(t)|^2$ is lower than the variance of $|d(t)|^2$. This reduces the effective nonlinear penalty. At the receiver, the inverse operation $d = U^\dagger y$ coherently recombines the signal energy while incoherently adding the noise, preserving SNR.
+
+\section*{CLAIMS}
+
+What is claimed is:
+
+\begin{enumerate}
+    \item A method for precoding optical signals to mitigate nonlinear impairments, comprising:
+    \begin{enumerate}
+        \item grouping a stream of data symbols into blocks of size $N$;
+        \item applying a unitary mixing matrix to each block to generate a spread signal vector, wherein said matrix is constructed from a sequence of elementary rotation sub-matrices; and
+        \item modulating an optical carrier with said spread signal vector.
+    \end{enumerate}
+
+    \item The method of claim 1, wherein said elementary rotation sub-matrices operate on disjoint subsets of three symbols (triads).
+
+    \item The method of claim 1, wherein the unitary mixing matrix is configured to minimize the fourth-order moment (kurtosis) of the signal amplitude distribution.
+
+    \item A digital signal processor (DSP) for an optical transmitter, comprising:
+    \begin{enumerate}
+        \item a framer configured to assemble input symbols into parallel vectors;
+        \item a matrix multiplication logic block configured to apply a fixed unitary transform to said vectors; and
+        \item a digital-to-analog converter interface for outputting the transformed vectors.
+    \end{enumerate}
+
+    \item The DSP of claim 4, wherein the matrix multiplication logic implements a sparse factorization of the unitary transform to reduce computational complexity.
+
+    \item A system for coherent optical communication, comprising:
+    \begin{enumerate}
+        \item a transmitter configured to apply a BRAID unitary transform to symbol blocks; and
+        \item a receiver configured to apply the conjugate transpose of said BRAID transform to recovered signal blocks.
+    \end{enumerate}
+\end{enumerate}
+
+\end{document}

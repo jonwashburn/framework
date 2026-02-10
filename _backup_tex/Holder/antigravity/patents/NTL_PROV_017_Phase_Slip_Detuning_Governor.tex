@@ -1,0 +1,233 @@
+\documentclass[11pt]{article}
+
+% Keep packages minimal for TeX Live "basic" installs.
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{array}
+
+\geometry{margin=1in}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue
+}
+
+% ---------------------------------------------------------------------------
+% Convenience macros
+% ---------------------------------------------------------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+
+\newcommand{\PatentTitle}{Active Detuning Governors via Phase-Slip Injection and De-Q Braking for Resonant Rotating-Field Systems}
+\newcommand{\Docket}{NTL-PROV-017}
+\newcommand{\Inventors}{[Inventor Names]}
+\newcommand{\Assignee}{[Assignee / Organization]}
+\newcommand{\FilingDate}{February 1, 2026}
+
+\begin{document}
+
+\begin{center}
+{\LARGE \textbf{\PatentTitle}}\\[0.75em]
+{\large \textbf{Docket:} \Docket}\\[0.25em]
+{\large \textbf{Inventors:} \Inventors}\\[0.25em]
+{\large \textbf{Assignee:} \Assignee}\\[0.25em]
+{\large \textbf{Date:} \FilingDate}\\[0.75em]
+\end{center}
+
+\vspace{-0.5em}
+\hrule
+\vspace{0.75em}
+
+% ===========================================================================
+% ABSTRACT (PATENT)
+% ===========================================================================
+\section*{Abstract}
+
+Disclosed are apparatus, systems, methods, and non-transitory computer-readable media for safety governors in resonant rotating-field systems that mitigate runaway and overspeed conditions by \emph{actively detuning} the system rather than mechanically braking it. In various embodiments, a rotating-field core is driven by a commutation schedule or drive waveform to operate near a narrowband regime. A governor controller monitors one or more hazard indicators (e.g., overspeed, bus overvoltage, loss-of-load, instability metrics, or thermal derivatives) and, upon satisfying a trigger condition, injects a controlled phase perturbation (phase slip) and/or phase noise into the drive schedule. The injected phase perturbation reduces effective quality factor (de-Q), collapses coupling efficiency, and rapidly reduces the hazardous state while avoiding damage modes associated with mechanical braking or abrupt current interruption.
+
+In one embodiment, phase slip is applied as a deterministic offset to a multi-phase schedule; in another embodiment, phase slip is applied as a time-varying or randomized perturbation that breaks phase coherence. In one embodiment, the governor is implemented as an independent safety layer that can override a primary resonance controller. The disclosed governors provide fast, robust, and enforceable safety mechanisms suitable for high-gain or high-Q resonant operation.
+
+% ===========================================================================
+% TECHNICAL FIELD
+% ===========================================================================
+\section*{Technical Field}
+
+The present disclosure relates to safety and control of resonant electromagnetic systems, and more particularly to active detuning governors for rotating-field devices, including phase-slip injection, phase noise injection, de-Q braking, and detune-on-fault architectures.
+
+% ===========================================================================
+% BACKGROUND
+% ===========================================================================
+\section*{Background}
+
+Rotating-field systems and resonant electromagnetic devices can exhibit narrowband operating regions. When a device is operated near such a region, small disturbances can lead to rapid changes in system behavior. In generator-mode systems, loss-of-load or other faults can cause bus overvoltage, overspeed, and unsafe transients. Conventional mitigation approaches rely on mechanical braking, abrupt shutdown, or current interruption, which can themselves be unsafe due to stored energy, arcing, mechanical stress, and thermal shock.
+
+There is a need for a fast safety mechanism that reduces hazardous behavior by \emph{reducing effective coupling} and \emph{collapsing resonance} rather than by brute-force braking. Active detuning through controlled phase perturbation provides a path to rapidly reduce effective quality factor while keeping the system within a controlled electrical envelope.
+
+% ===========================================================================
+% SUMMARY
+% ===========================================================================
+\section*{Summary}
+
+This disclosure provides an \emph{active detuning governor} comprising:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Monitoring:} observing one or more hazard indicators (overspeed, voltage, current, instability, temperature derivatives).
+  \item \textbf{Triggering:} determining when a hazard threshold is exceeded.
+  \item \textbf{Detuning action:} injecting phase slip and/or phase noise into a commutation schedule or waveform to reduce coupling and de-Q the system.
+  \item \textbf{Recovery logic:} optionally returning to normal operation after a dwell time and a revalidation procedure.
+\end{itemize}
+
+% ===========================================================================
+% BRIEF DESCRIPTION OF DRAWINGS
+% ===========================================================================
+\section*{Brief Description of the Drawings}
+
+Drawings may be provided later. For purposes of this specification:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{FIG. 1} depicts a rotating-field system with a primary controller and an independent detuning governor.
+  \item \textbf{FIG. 2} depicts phase-slip injection into a multi-phase commutation schedule.
+  \item \textbf{FIG. 3} depicts phase noise injection to break coherence and de-Q a resonant condition.
+  \item \textbf{FIG. 4} depicts a hazard trigger ladder using overspeed, bus overvoltage, and loss-of-load.
+  \item \textbf{FIG. 5} depicts recovery logic and re-lock after detuning.
+\end{itemize}
+
+% ===========================================================================
+% DEFINITIONS
+% ===========================================================================
+\section*{Definitions and Notation}
+
+Unless otherwise indicated:
+\begin{itemize}[leftmargin=*]
+  \item A \emph{commutation schedule} refers to a multi-phase sequence controlling a rotating-field driver.
+  \item A \emph{phase slip} refers to a change in phase alignment of the schedule relative to a nominal reference, including a deterministic offset and/or a time-varying perturbation.
+  \item \emph{Phase noise} refers to randomized or pseudo-random perturbations to phase or timing intended to break coherence.
+  \item \emph{De-Q braking} refers to reducing an effective quality factor by intentionally detuning from a narrowband regime, thereby reducing coupling efficiency.
+  \item A \emph{hazard indicator} refers to a measured signal used to trigger detuning (overspeed, overvoltage, instability, thermal derivative).
+\end{itemize}
+
+% ===========================================================================
+% DETAILED DESCRIPTION
+% ===========================================================================
+\section*{Detailed Description}
+
+\subsection*{1. System Overview}
+
+In one embodiment, a rotating-field device is controlled by a primary controller that performs resonance search and lock. A separate governor controller (implemented in hardware, firmware, software, or any combination) monitors hazard indicators and can override or modify the drive schedule to detune the system.
+
+\subsection*{2. Hazard Indicators and Trigger Conditions}
+
+Non-limiting hazard indicators include:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Overspeed:} measured rotor RPM or inferred field velocity exceeding a limit.
+  \item \textbf{Bus overvoltage:} DC bus voltage exceeding a threshold or rising too fast.
+  \item \textbf{Loss-of-load:} falling load current with rising bus voltage.
+  \item \textbf{Instability metric:} divergence in a resonance score, harmonic ratio changes, or jitter growth.
+  \item \textbf{Thermal derivative:} \(dT/dt\) exceeding a threshold.
+\end{itemize}
+
+In one embodiment, the governor uses a trigger ladder (e.g., warning, detune, emergency detune) with escalating actions based on severity.
+
+\subsection*{3. Phase-Slip Injection (Deterministic)}
+
+In one embodiment, a multi-phase schedule has a nominal phase index \(\phi_n\). The governor applies a slip \(\Delta\phi\) such that:
+\[
+\phi_n' = \phi_n + \Delta\phi \pmod{2\pi},
+\]
+or equivalently applies a timing offset \(\Delta t\) per cycle.
+
+In one embodiment, \(\Delta\phi\) is selected as a function of hazard severity. Larger hazards produce larger slips, producing faster de-Q.
+
+\subsection*{4. Phase-Slip Injection (Time-Varying)}
+
+In one embodiment, slip is time-varying:
+\[
+\phi_n' = \phi_n + \Delta\phi(t_n),
+\]
+where \(\Delta\phi(t)\) may be ramped, stepped, or modulated to avoid re-locking into resonance. Non-limiting examples include sinusoidal modulation or triangular ramps.
+
+\subsection*{5. Phase Noise Injection (Randomized Detune)}
+
+In one embodiment, the governor injects pseudo-random phase noise:
+\[
+\phi_n' = \phi_n + \eta_n,
+\]
+where \(\eta_n\) is a pseudo-random sequence with bounded amplitude. The injected noise breaks coherence and collapses narrowband coupling.
+
+\subsection*{6. De-Q Braking Effect (Conceptual)}
+
+While the physics interpretation is non-limiting, the governor is designed to reduce effective coupling by breaking phase coherence and/or shifting away from a narrowband region. In practice this may manifest as reduced pickup output, reduced mechanical acceleration, reduced bus rise rate, and reduced harmonic amplification.
+
+\subsection*{7. Recovery Logic}
+
+In one embodiment, after detuning, the system enters a recovery state. Recovery may require:
+\begin{itemize}[leftmargin=*]
+  \item hazard indicators returning below thresholds for a dwell time;
+  \item explicit operator acknowledgement;
+  \item rerunning interlock checks and optionally a resonance search sequence.
+\end{itemize}
+
+\subsection*{8. Embodiments}
+
+Non-limiting embodiments include:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Virtual rotor embodiment:} detuning by altering a commutation schedule (phase slip/noise).
+  \item \textbf{Mechanical rotor embodiment:} detuning by altering drive phase or by injecting off-resonant fields that reduce acceleration.
+  \item \textbf{Hybrid embodiment:} detuning combined with engaging dump loads to absorb energy.
+\end{itemize}
+
+% ===========================================================================
+% CLAIMS (DRAFT / PROVISIONAL-STYLE)
+% ===========================================================================
+\section*{Claims (Draft)}
+
+\textbf{Note:} The following claims are an initial, non-limiting claim set intended to preserve multiple fallback positions. Final claim strategy should be reviewed by counsel.
+
+\subsection*{Independent Claims}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{(System)} A rotating-field system comprising: a rotating-field device; a driver subsystem configured to generate a rotating field using a commutation schedule; one or more sensors configured to produce at least one hazard indicator; and a governor controller configured to, in response to the at least one hazard indicator satisfying a trigger condition, inject a phase perturbation into the commutation schedule to detune the rotating-field device and reduce an effective coupling.
+
+  \item \textbf{(Method)} A method of mitigating a runaway condition in a rotating-field system, the method comprising: monitoring at least one hazard indicator; determining that the at least one hazard indicator satisfies a trigger condition; and injecting phase slip and/or phase noise into a drive waveform or commutation schedule to reduce an effective quality factor of a resonant operating regime.
+
+  \item \textbf{(Non-transitory medium)} A non-transitory computer-readable medium storing instructions that, when executed by one or more processors, cause the one or more processors to: monitor a bus voltage and a load current; detect a loss-of-load condition; and in response to detecting the loss-of-load condition, apply a phase-slip detune command to a rotating-field driver and optionally engage a dump load.
+\end{enumerate}
+
+\subsection*{Dependent Claims (Examples; Non-Limiting)}
+
+\begin{enumerate}[leftmargin=*]
+  \setcounter{enumi}{3}
+  \item The system of claim 1, wherein the phase perturbation comprises a deterministic phase offset applied to a multi-phase schedule.
+  \item The system of claim 1, wherein the phase perturbation comprises a time-varying phase modulation.
+  \item The system of claim 1, wherein the phase perturbation comprises pseudo-random phase noise.
+  \item The system of claim 1, wherein the hazard indicator comprises an overspeed condition.
+  \item The system of claim 1, wherein the hazard indicator comprises bus overvoltage.
+  \item The system of claim 1, wherein the hazard indicator comprises a thermal derivative exceeding a threshold.
+  \item The method of claim 2, further comprising returning to a normal operation state only after a dwell time and a revalidation procedure.
+  \item The system of claim 1, wherein the governor controller is implemented as an independent safety layer that overrides a primary resonance controller.
+  \item The non-transitory medium of claim 3, wherein detecting the loss-of-load condition comprises detecting rising bus voltage concurrent with falling load current.
+\end{enumerate}
+
+% ===========================================================================
+% FALLBACK POSITIONS / ADDITIONAL EMBODIMENTS
+% ===========================================================================
+\section*{Additional Embodiments and Fallback Positions (Non-Limiting)}
+
+\begin{itemize}[leftmargin=*]
+  \item The governor may combine detuning with controlled load engagement (dump loads) to absorb energy.
+  \item The governor may implement multiple levels of detuning severity based on hazard magnitude.
+  \item The governor may store detune events and hazard indicators into a signed run log for auditability.
+\end{itemize}
+
+\vspace{1em}
+\hrule
+\vspace{0.75em}
+\noindent \textbf{End of Specification (Draft)}
+
+\end{document}
+

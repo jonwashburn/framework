@@ -1,0 +1,9 @@
+import Mathlib
+#check Real.exp_pos
+#check Real.exp_le_one_iff
+#check Real.exp_le_one_iff
+#check Real.exp_le_one_iff
+#check Real.exp_neg
+#check Real.exp_neg_one_lt
+#check Real.exp_neg_le_one
+#check Real.exp_lt_one_iff

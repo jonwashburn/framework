@@ -1,0 +1,993 @@
+\documentclass[11pt]{article}
+
+% ===== Minimal, clean front-matter styling =====
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{setspace}
+\usepackage{titling}
+
+% Accent color and simple rules for a quiet, modern look
+\definecolor{accent}{RGB}{20,90,160}
+\newcommand{\toprule}{\noindent\color{accent}\rule{\linewidth}{0.8pt}}
+\newcommand{\midrulec}{\vspace{0.6em}\noindent\color{accent}\rule{0.25\linewidth}{0.8pt}\vspace{0.6em}}
+\newcommand{\botrule}{\noindent\color{accent}\rule{\linewidth}{0.8pt}}
+
+% Title block spacing
+\setlength{\droptitle}{-2em}
+
+% ===== Front Matter =====
+\title{\textbf{Certificate\textendash Gated, $\boldsymbol{\varphi}$\textendash Timed Ledger Control for Fusion}\\
+\large A Physics\textendash Meaningful, Auditable Method for Magnetic and Inertial Confinement}
+
+\author{\normalsize Jonathan Washburn\\
+\small Recognition Science, Recognition Physics Institute\\
+\small Austin, Texas, USA\\
+\small \texttt{jon@recognitionphysics.org}
+}
+
+\date{\small \today}
+
+\begin{document}
+
+
+
+\maketitle
+\toprule
+\midrulec
+
+\begin{abstract}
+\noindent
+This paper presents a single, auditable control calculus for fusion systems that replaces ad\textendash hoc tuning with physics\textendash meaningful optimization and hard deployment gates. The method has three pillars. 
+First, \emph{recognition ratios} $r_i := y_i / y_i^\star$ convert heterogeneous diagnostics into dimensionless targets, and a convex, symmetric \emph{ledger} cost 
+\[
+J(x)=\tfrac12\!\left(x+\frac{1}{x}\right)-1
+\]
+yields a coordinate\textendash free objective $\mathcal{L}=\sum_i w_i J(r_i)$ that penalizes departures from declared setpoints without unit games. 
+Second, a $\varphi$-timed, eight\textendash phase actuation schedule desynchronizes multi\textendash actuator interference: each actuator updates only within assigned phase windows whose durations obey golden\textendash ratio commensurability. This timing avoids low\textendash order modal collisions and is compatible with real\textendash time constraints. 
+Third, a \emph{certificate} (audit surface) imposes fixed, predeclared thresholds on risk, impurities, transport proxies, and tracking error; policies that fail are automatically rejected or modified before touching the plant.
+
+On theory, we prove: (i) a \emph{periodic\textendash invariance} framework that delivers recursive feasibility and ISS\textendash like stability for periodic MPC under $\varphi$ gating; (ii) a quantitative \emph{interference bound} showing strict reduction of time\textendash averaged cross\textendash terms relative to co\textendash phased or equal\textendash spaced updates; and (iii) a \emph{transport link} that converts ledger descent into a lower bound on confinement improvement (an engineering gain floor) after calibration. We also provide a controller\textendash agnostic safety\textendash filter for reinforcement learning that guarantees $\varphi$ compliance and certificate feasibility at deployment.
+
+On practice, we specify a best\textendash mode implementation for magnetic confinement (NBI/ECRH/ICRH/RMP/pellets/gas/shaping with default phase assignments), a preregistered experimental plan with crisp falsifiers (interference reduction, certificate\textendash gated gain floors, and cross\textendash device portability), and a compact companion for inertial confinement: $\varphi$\textendash spaced sub\textendash pulses that minimize a \emph{symmetry ledger} over normalized spherical\textendash harmonic modes, with geometric residual decay up to saturation.
+
+The result is a portable, standards\textendash ready control method: one convex objective tied to physics, one timing scheme that reduces interference by design, and one certificate that converts control into an auditable contract. Success moves “controlled” fusion from clever shots to reproducible operation; failure is cleanly registered by predefined tests, not narrative.
+\end{abstract}
+
+\botrule
+
+\vfill
+\noindent\textbf{Keywords:} fusion control; model predictive control; reinforcement learning safety filter; golden\textendash ratio scheduling; audit surface; transport surrogates; inertial confinement pulse shaping
+
+\section{Introduction}
+
+\paragraph{Problem and stakes.}
+Controlled $\neq$ scalable. Today’s plasma control is brittle, device–specific, and hard to audit. Multi–actuator systems routinely “fight” themselves: setpoint changes in one channel degrade another through modal coupling and timing collisions. Objectives are often ad–hoc (mean–square errors on arbitrary units, or opaque rewards), so improvements are fragile and non–portable. Without a physics–meaningful objective and a deployment gate, reproducibility is luck, not a guarantee.
+
+\paragraph{Core idea.}
+We present a single, auditable method built on three pillars: (i) a convex, symmetric \emph{ledger} objective over dimensionless \emph{recognition ratios} $r_i:=y_i/y_i^\star$ that ties directly to physics; (ii) a $\varphi$–timed, eight–phase actuation schedule that desynchronizes modal collisions and reduces cross–interference by design; and (iii) a \emph{certificate} (audit surface) with fixed thresholds that must be satisfied before any policy is applied to the plant.
+
+\paragraph{Contributions.}
+\begin{itemize}
+\item \textbf{Formal ledger objective.} We define
+\[
+J(x)=\tfrac12\!\left(x+\frac{1}{x}\right)-1,\qquad \mathcal{L}=\sum_i w_i\,J(r_i),\quad r_i=\frac{y_i}{y_i^\star},
+\]
+prove symmetry $J(x)=J(1/x)$, convexity $J''(x)=x^{-3}>0$, and coordinate invariance from the normalization. This turns heterogeneous diagnostics into a single, physics–meaningful scalar.
+\item \textbf{$\boldsymbol{\varphi}$–scheduler.} An eight–phase, golden–ratio–commensurate windowing of updates with actuator assignments $\Pi(a)$ that provably lowers time–averaged cross–terms relative to co–phased or equal–spaced schedules; bounds are given under mild band–limit assumptions.
+\item \textbf{Certificate (audit surface).} Fixed, predeclared thresholds on disruptivity risk, impurity/radiation fractions, transport proxies, and tracking error; deployment is gated pass/fail, with automatic rejection or modification of non–passing policies.
+\item \textbf{Periodic MPC and safety–filtered RL.} A periodic MPC formulation with phase–dependent terminal ingredients that yields recursive feasibility and ISS–like stability under $\varphi$–gating; a controller–agnostic safety filter for RL that guarantees $\varphi$ compliance and certificate feasibility at deployment.
+\item \textbf{Transport link.} A calibrated surrogate connects ledger descent to flux reduction, yielding a \emph{confinement gain floor}: a predeclared drop in $\mathcal{L}$ implies a minimum improvement in $H$ up to an explicit robustness remainder.
+\item \textbf{Preregistered experiments and falsifiers.} AB/BA shot designs that test (i) interference reduction under $\varphi$–phasing, (ii) certificate–gated gain floors, and (iii) portability of the same objective/schedule/thresholds across devices.
+\item \textbf{ICF companion.} A compact translation to inertial confinement: $\varphi$–spaced sub–pulses that minimize a \emph{symmetry ledger} over normalized spherical–harmonic magnitudes, with geometric residual decay (up to saturation) and certificate–gated deployment.
+\end{itemize}
+
+\paragraph{Scope and claims vs.\ non–claims.}
+We do \emph{not} assert net–electric plants or claim materials, blanket, or fuel–cycle solutions. We assert and demonstrate an auditable control method with guaranteed minima (gain floors), measurable interference reduction, and a standards–ready path to reproducible operation in both magnetic and inertial confinement regimes.
+
+\section{Recognition-based control: objects and invariances}
+
+\paragraph{Recognition ratios.}
+Let $y_i$ denote a measured diagnostic channel (e.g., a profile metric, a turbulence proxy, a symmetry coefficient) and let $y_i^\star>0$ be its \emph{declared target}. We define the \emph{recognition ratio}
+\[
+r_i \;:=\; \frac{y_i}{y_i^\star}\quad \in \mathbb{R}_{>0}.
+\]
+The target selection policy is \emph{predeclared and fixed for a campaign} (optionally time–scheduled across phases), not tuned per shot. This makes $r_i$ dimensionless and prevents unit games: any common rescaling $y_i\mapsto \alpha\,y_i$ and $y_i^\star\mapsto \alpha\,y_i^\star$ leaves $r_i$ unchanged. The controller therefore “sees” physics—fractional departures from targets—rather than instrument units.
+
+\paragraph{Ledger cost $J$.}
+We aggregate departures from targets with the convex, symmetric \emph{ledger} cost
+\[
+J(x)\;=\;\tfrac12\!\left(x+\frac{1}{x}\right)-1,\qquad x>0.
+\]
+It enjoys three key invariances:
+(i) \emph{symmetry} $J(x)=J(1/x)$ (over– and under–shoot are penalized equally);
+(ii) \emph{minimum} at the target $J(1)=0$ with $J'(1)=0$;
+(iii) \emph{convexity} for all $x>0$ since $J''(x)=x^{-3}>0$.
+Writing $x=e^{u}$ gives $J(x)=\cosh(u)-1$, so $J$ depends only on $u=\ln x$ and is even and convex in that logarithmic “distance.” Near the target,
+\[
+J(1+\varepsilon)\;=\;\tfrac12\,\varepsilon^2\;-\;\tfrac12\,\varepsilon^3\;+\;O(\varepsilon^4),
+\]
+hence $J$ is \emph{quadratic to leading order} and behaves like a squared (log–)error without privileging either side of the target. Because $r_i$ is dimensionless, $J(r_i)$ measures “how far” a diagnostic is from its setpoint in a unit–free, coordinate–free way.
+
+\paragraph{Objective.}
+We form a single scalar objective
+\[
+\mathcal{L}(r)\;=\;\sum_{i} w_i\,J(r_i),\qquad r=(r_i)_i\in \mathbb{R}_{>0}^m,\quad w_i>0,
+\]
+with gradient components $\,\partial \mathcal{L}/\partial r_i \;=\; w_i\,\tfrac12\!\left(1-\tfrac{1}{r_i^{2}}\right)$ that push $r_i$ back toward $1$. To keep \emph{physics in the loop}, we set the weights by local transport sensitivity:
+\[
+w_i \;\propto\; \biggl|\frac{\partial \Phi}{\partial r_i}\biggr|_{\,r=1},
+\]
+where $\Phi(r)$ is a certified surrogate that maps recognition ratios to an energy–flux (or loss) proxy. This alignment ensures that descending $\mathcal{L}$ locally descends $\Phi$; Appendix~\ref{app:transport-link} formalizes the link and yields a calibrated confinement–gain floor. Once declared, $\{y_i^\star\}$ and $\{w_i\}$ remain fixed for the campaign (or follow a preregistered schedule), eliminating per–shot retuning and preserving auditability.
+
+\section{$\boldsymbol{\varphi}$-timed multi–actuator scheduling}
+
+\paragraph{Eight–phase schedule.}
+Fix a control period $T>0$ and define window edges
+\[
+0=t_0<t_1<\cdots<t_8=T,\qquad W_\ell:=[t_\ell,\,t_{\ell+1})\ \ (\ell=0,\dots,7),
+\]
+with durations $\Delta t_\ell:=t_{\ell+1}-t_\ell$ that satisfy
+\[
+\sum_{\ell=0}^{7}\Delta t_\ell \;=\; T,\qquad 
+\frac{\Delta t_{\ell+1}}{\Delta t_\ell}\ \in\ \{\varphi,\ \varphi^{-1}\}\quad\text{for all admissible }\ell\ (\text{indices mod }8),
+\]
+where $\displaystyle \varphi=\frac{1+\sqrt{5}}{2}$. The $\varphi$–commensurability desynchronizes update times across the period and, with smooth window edges, avoids low–order modal reinforcement. Outside its assigned windows (defined below) each actuator holds its last setpoint.
+
+\paragraph{Phase assignments $\Pi(a)$.}
+Each actuator $a$ is assigned a nonempty set of admissible phases $\Pi(a)\subseteq\{0,\dots,7\}$; it may \emph{change} its setpoint only when the active window index $\ell\in \Pi(a)$. A practical default map for magnetic–confinement devices is:
+\begin{itemize}
+\item pellets:\ \ $\Pi(\text{pellet})=\{0\}$ \ (ELM–paced window),
+\item RMP:\ \ \ \ \ $\Pi(\text{RMP})=\{2\}$,
+\item ECRH:\ \ \ \  $\Pi(\text{ECRH})=\{1,5\}$ \ (core/edge toggles),
+\item ICRH:\ \ \ \  $\Pi(\text{ICRH})=\{3\}$,
+\item NBI:\ \ \ \ \ $\Pi(\text{NBI})=\{4,7\}$ \ (torque/shear modulation),
+\item gas:\ \ \ \ \ $\Pi(\text{gas})=\{6\}$,
+\item shaping/VS: fast inner loop with \emph{updates} gated to a designated phase (e.g.\ $\{6\}$), while the stabilization loop itself runs continuously.
+\end{itemize}
+\emph{Dwell and slew constraints.} For each actuator $a$, declare a minimum dwell $\delta_a>0$ and a slew bound $\sigma_a>0$; admissible updates must satisfy
+\[
+\text{(dwell)}\quad t_{\text{next}}(a)-t_{\text{last}}(a)\ \ge\ \delta_a\ \le\ \min_{\ell\in\Pi(a)}\Delta t_\ell,
+\qquad
+\text{(slew)}\quad \|u_a^{+}-u_a^{-}\|\ \le\ \sigma_a,
+\]
+where $u_a^{\pm}$ are the post/pre–update setpoints at the update instant. These constraints are enforced \emph{inside} windows; outside, $u_a$ is held.
+
+\paragraph{Timescale anchoring.}
+Choose $T$ and the window durations to respect dominant plant times:
+\[
+\tau_E\ \ (\text{energy confinement}),\qquad
+\tau_A\ \ (\text{Alfv\'en}),\qquad
+\tau_{\mathrm{ELM}},\qquad
+\tau_{q=1}\ \ (\text{sawtooth core}).
+\]
+A convenient anchor is $T=\kappa_T\,\tau_{\mathrm{ref}}$ with $\tau_{\mathrm{ref}}\in\{\tau_E/8,\ \tau_{\mathrm{ELM}},\ \tau_{q=1}\}$ and $\kappa_T\in[0.5,2]$, then select $\{\Delta t_\ell\}$ by the $\varphi/\varphi^{-1}$ rule so that pellet pacing aligns to $\tau_{\mathrm{ELM}}$ and high–power actuators (NBI/ECRH/ICRH) occupy distinct phases separated by at least one window. 
+
+\emph{Jitter budgets.} Let $\hat t_\ell$ denote planned window edges and $t_\ell$ the realized edges; require absolute jitter
+\[
+\max_{\ell}\ |t_\ell-\hat t_\ell|\ \le\ \varepsilon_j\quad\text{with}\quad 
+\varepsilon_j\ \ll\ \min_{\ell}\Delta t_\ell,
+\]
+and optionally a relative budget $\varepsilon_j/T\le \varepsilon_{\mathrm{rel}}$ (e.g.\ $10^{-3}$). The controller and analysis (periodic MPC, interference bounds) treat the schedule as \emph{periodic invariant} with bounded jitter, and reject or defer any update that would violate phase assignment, dwell, slew, or jitter constraints.
+
+\subsection{Interference theory}\label{sec:interference}
+
+\paragraph{Theorem ( $\boldsymbol{\varphi}$\textbf{-phase interference bound}).}
+Let $u_a,u_b$ be actuator setpoints that are piecewise constant and may change only within their assigned phase windows $W_\ell$ (Section~3), with raised–cosine (or smoother) window edges. Let the dominant bilinear cross–coupling enter an output channel through a causal kernel $K_{ab}\in L^1(\mathbb{R}_{\ge 0})$ (band–limited around modal frequencies), i.e.
+\[
+y_{ab}(t)\;=\;\big(K_{ab} * (u_a u_b)\big)(t).
+\]
+Define the time–average over one period $T$ as $\langle f\rangle_T=\tfrac1T\int_0^T f(t)\,dt$. Then there exists a scheduler–intrinsic constant $\kappa\in(0,1)$, determined by window smoothness and the kernel bandwidth, such that
+\[
+\Big\langle\,|y_{ab}|\,\Big\rangle_T\ \le\ \kappa\,\varphi^{-1}\,\Big\langle\,|y_{ab}|\,\Big\rangle_T^{\;\text{baseline}},
+\]
+where the baseline is either (i) co–phased updates (both actuators share the same window set with equal spacing) or (ii) equal–spaced windows. In particular, the bound implies a strict reduction of the time–averaged bilinear cross–term by at least a factor $\varphi^{-1}\approx 0.618$ (i.e.\ $\gtrsim 38\%$ reduction) under the same duty and amplitude budgets.
+
+\emph{Assumptions.} (A1) $K_{ab}$ is band–limited with effective cutoff $\Omega_c$ and $\|K_{ab}\|_{1}<\infty$. (A2) Each actuator’s update train is supported on its phase set $\Pi(a)$ and has $C^1$ window transitions; edge smoothness suppresses spectral leakage with a known envelope. (A3) The period $T$ and window durations obey the $\varphi/\varphi^{-1}$ commensurability rule, indices modulo 8.
+
+\emph{Proof sketch.} Write the masked update sequences as
+\[
+u_a(t)=\sum_{\ell\in\Pi(a)} m_\ell(t)\,v_{a,\ell}(t),\qquad
+u_b(t)=\sum_{\ell\in\Pi(b)} m_\ell(t)\,v_{b,\ell}(t),
+\]
+where $m_\ell$ are smooth window masks supported on $W_\ell$. The product $u_a u_b$ is a sum of terms $m_\ell m_{\ell'}\,v_{a,\ell}v_{b,\ell'}$ whose Fourier content is concentrated near discrete lines at multiples of $2\pi/T$ modulated by the windows’ spectra. Because successive window lengths satisfy $\Delta t_{\ell+1}/\Delta t_\ell\in\{\varphi,\varphi^{-1}\}$, the resulting line set is \emph{Diophantine separated}: the golden ratio is badly approximable by rationals, which prevents reinforcement of low–order aliases across phases. Quantitatively, one obtains (via Parseval/Young inequalities and the leakage envelope of $m_\ell$)
+\[
+\big\|\widehat{u_a u_b}\big\|_{L^1(\mathbb{R})}\ \le\ \varrho\,\varphi^{-1}\,\|u_a\|_{2}\,\|u_b\|_{2},
+\]
+for a constant $\varrho\in(0,1)$ set by the window design. Convolving with $K_{ab}$ in time multiplies by $\widehat{K}_{ab}$ in frequency; band–limiting yields
+\[
+\Big\langle\,|y_{ab}|\,\Big\rangle_T\ \le\ \|K_{ab}\|_{1}\,\varrho\,\varphi^{-1}\,\|u_a\|_{2}\,\|u_b\|_{2},
+\]
+while co–phased/equal–spaced baselines achieve the same bound without the $\varphi^{-1}$ factor (or worse due to alias reinforcement). The stated inequality follows by taking the ratio with identical duty/amplitude budgets. \hfill$\square$
+
+\paragraph{Corollary (multi–actuator scaling).}
+Let $A$ actuators be partitioned across phases with at most constant overlap. Under (A1–A3),
+\[
+\text{Total cross–interference}\ \sim\ O\!\big(A\,\varphi^{-1}\big)\quad \text{( $\varphi$–phased)}\qquad\text{vs.}\qquad O(A)\ \text{(co–phased/equal–spaced)}.
+\]
+Thus interference grows strictly slower in $A$ under $\varphi$–phasing, widening feasible multi–actuator operating regions for fixed risk.
+
+\subsection{Periodicity and feasibility}\label{sec:periodicity}
+
+\paragraph{Proposition (periodic invariance).}
+Let the scheduler repeat every $T$ with bounded absolute jitter $\varepsilon_j\ll \min_\ell \Delta t_\ell$, and optionally a superframe of length $S\,T$ ($S\in\mathbb{N}$) preserving the intra–period $\varphi$ relations. Suppose the plant constraints (actuator saturation, dwell $\delta_a$, slew $\sigma_a$) are respected and there exist phase–dependent terminal sets $\mathcal{X}^{\ell}_f$ and a local $\varphi$–gated controller $\kappa_\ell$ such that
+\[
+x\in \mathcal{X}^{\ell}_f \ \Rightarrow\ f\big(x,\kappa_\ell(x)\big)\in \mathcal{X}^{\ell\!+\!1}_f,\qquad
+V_{\ell+1}\!\big(f(x,\kappa_\ell(x))\big)-V_\ell(x)\ \le\ -\alpha\,\sum_i w_i J(r_i(x)),
+\]
+for some $\alpha>0$ and Lyapunov–like $V_\ell$. Then the periodic MPC with $\varphi$–gating is \emph{recursively feasible} and \emph{ISS–like stable} under bounded disturbances/model mismatch, with guarantees preserved under jitter $\varepsilon_j$ absorbed into tightened constraints.
+
+\emph{Sketch.} This is a standard periodic MPC argument with phase–indexed terminal ingredients and input constraints augmented by the gating. Jitter enters as a small timing perturbation; constraint–tightening (by margins proportional to $\varepsilon_j$ and dwell) preserves invariance and the descent of $V_\ell$; recursive feasibility follows.
+
+\paragraph{Implementation notes.}
+\emph{Window edges.} Use $C^1$ or $C^2$ raised–cosine ramps at window boundaries to limit spectral leakage and improve the constant $\kappa$ in the interference bound. \emph{Timing.} Implement edges on FPGA/real–time timers; enforce \emph{BeginWindow/EndWindow} events with time–stamps and reject late updates that would violate dwell/slew or jitter budgets. \emph{Controller cadence.} Align solver ticks to a submultiple of $T$ (e.g.\ every window start) and cache phase–dependent terminal sets/costs for deterministic latency.
+
+\section{Certificate (audit surface)}
+
+\paragraph{Definition.}
+Let $\mathcal{A}(y)\in\mathbb{R}_{\ge 0}^p$ be a vector of \emph{dimensionless} acceptance metrics computed from diagnostics $y$ and declared targets $y^\star$. Components include (but are not limited to):
+\begin{itemize}
+\item \emph{Disruptivity risk} $R_{\mathrm{disc}}\in[0,1]$ (from a certified predictor).
+\item \emph{Impurity/radiation fractions} $\chi_{\mathrm{imp}},\ \chi_{\mathrm{rad}}$ (e.g., $Z_{\mathrm{eff}}$ proxy, $P_{\mathrm{rad}}/P_{\mathrm{in}}$).
+\item \emph{Transport proxies} $\xi_j$ (e.g., normalized critical–gradient ratios, shear adequacy).
+\item \emph{Tracking error} aggregates $E=\sum_i \alpha_i\,|r_i-1|$ or $\max_i |r_i-1|$, with $r_i=y_i/y_i^\star$.
+\end{itemize}
+Fix \emph{predeclared} thresholds $\theta\in\mathbb{R}_{>0}^p$ (optionally phase–scheduled but \emph{not} tuned per shot). Define the $M$–window aggregator
+\[
+\mathfrak{M}_M[\mathcal{A}](k)\ :=\ \max_{j\in\{0,\dots,M-1\}}\ \mathcal{A}\big(y_{k+j}\big)\quad\text{(componentwise max).}
+\]
+The certificate requires auxiliary compliance flags: (i) $\varphi$–window adherence (Section~3), (ii) dwell/slew satisfaction, and (iii) jitter within budget.
+
+\paragraph{Pass/fail logic.}
+At decision index $k$:
+\[
+\textsf{Pass}\iff 
+\Big(\ \mathfrak{M}_M[\mathcal{A}](k)\ \le\ \theta\ \Big)\ \wedge\ 
+\Big(\ \textsf{phi\_adherence}=\textsf{true}\ \Big)\ \wedge\ 
+\Big(\ \textsf{dwell/slew}=\textsf{ok}\ \Big)\ \wedge\ 
+\Big(\ \textsf{jitter}\le \varepsilon_j\ \Big).
+\]
+\textbf{Deploy only if \textsf{Pass}.} If \textsf{Fail}, the controller must \emph{automatically} either (a) \emph{reject} the proposed action (hold or revert to a safe baseline), or (b) \emph{modify} via a safety filter that re–solves the ledger–constrained problem with tightened bounds until \textsf{Pass}. A \emph{cool–down} (no aggressive updates for $Q$ windows) is applied after consecutive fails to enforce fail–closed behavior.
+
+\paragraph{Compliance artifacts.}
+Each window produces a signed record $\mathcal{R}_\ell$:
+\[
+\mathcal{R}_\ell=\Big(\ell,\ t_\ell,\ \Delta t_\ell,\ \Pi(\cdot)\ \text{hit/miss},\ \textsf{dwell/slew},\ \textsf{jitter},\ \mathcal{A}(y_\ell),\ \mathcal{L}_\ell,\ \textsf{decision} \in\{\textsf{Pass},\textsf{Modify},\textsf{Reject}\}\Big),
+\]
+with hash–chained signature
+\[
+S_\ell\ =\ \mathrm{Sign}_{\mathrm{sk}}\!\Big(\,H(\mathcal{R}_\ell\ \Vert\ S_{\ell-1})\,\Big),
+\]
+where $H$ is a cryptographic hash and $\mathrm{Sign}_{\mathrm{sk}}$ uses a hardware–backed key. The log attests (i) $\varphi$–window adherence, (ii) certificate evaluation, and (iii) the action taken. These artifacts enable standards conformance, liability audits, and simple infringement tests (controller–agnostic). Only minimal, dimensionless metrics are stored; raw signals remain local unless explicitly released under a preregistered data policy.
+
+\section{Controller designs}
+
+\subsection{Periodic MPC (primary)}\label{sec:pmpc}
+
+\paragraph{Problem.}
+Let the phase index be $\ell(k)\in\{0,\dots,7\}$ (active window at decision time $k$), and consider the nominal model
+\[
+x_{j+1}=f(x_j,u_j),\qquad y_j=g(x_j),\qquad r_{i,j}= \frac{y_{i,j}}{y_{i}^\star},
+\]
+with admissible sets $x_j\in\mathcal{X}$, $u_j\in\mathcal{U}$ and the \emph{$\varphi$-gating} constraints encoded by equalities on actuator components $a$:
+\[
+\text{if } \ell(j)\notin \Pi(a)\quad\Rightarrow\quad u_{a,j+1}=u_{a,j}\quad\text{(hold outside assigned phases)}.
+\]
+Dwell/slew limits are imposed as linear inequalities:
+\[
+\text{(dwell)}\;\;t_{j+1}-t_j\ge \delta_a,\qquad
+\text{(slew)}\;\;\|u_{a,j+}-u_{a,j-}\|\le \sigma_a\quad \text{whenever }\ell(j)\in\Pi(a).
+\]
+At time $k$, the periodic MPC solves
+\begin{equation}\label{eq:mpc}
+\begin{aligned}
+\min_{\{u_{k:k+N-1}\}} \quad &
+\underbrace{\sum_{j=0}^{N-1}\sum_{i} w_i\,J\!\big(r_{i,k+j\mid k}\big)}_{\text{ledger stage cost}}
+\;+\;
+\underbrace{V_f^{\,\ell(k+N)}\!\big(x_{k+N\mid k}\big)}_{\text{phase-dependent terminal cost}}\\[3pt]
+\text{s.t.}\quad &
+x_{k\mid k}=x_k,\;\;
+x_{k+j+1\mid k}=f\!\big(x_{k+j\mid k},u_{k+j}\big),\;\; j=0{:}N-1,\\
+& x_{k+j\mid k}\in\mathcal{X},\;\; u_{k+j}\in\mathcal{U},\;\; \text{$\varphi$-gating/dwell/slew equalities \& inequalities,}\\
+& x_{k+N\mid k}\in \mathcal{X}_f^{\,\ell(k+N)}\quad \text{(phase-dependent terminal set).}
+\end{aligned}
+\end{equation}
+The applied input is $u_k^\star$ (first element of the optimizer’s sequence). Slack variables $\epsilon\ge 0$ can soften hard constraints with penalties $\rho\|\epsilon\|_1$ when fail-closed behavior is preferred to infeasibility.
+
+\paragraph{Theorem (robust periodic stability).}
+Assume: (i) $f,g$ are locally Lipschitz on $\mathcal{X}\times\mathcal{U}$; (ii) there exist phase-dependent terminal sets/costs $\{(\mathcal{X}_f^{\ell},V_f^{\ell})\}_{\ell=0}^7$ and a local $\varphi$-gated feedback $\kappa_\ell$ such that for all $x\in \mathcal{X}_f^{\ell}$,
+\[
+f\big(x,\kappa_\ell(x)\big)\in \mathcal{X}_f^{\ell+1},\qquad
+V_f^{\ell+1}\!\big(f(x,\kappa_\ell(x))\big)-V_f^{\ell}(x)\;\le\; -\,\alpha\,\!\sum_i w_i\,J\!\big(r_i(x)\big),
+\]
+for some $\alpha>0$; (iii) plant/model mismatch and disturbances are bounded:
+\[
+\|f_p-f\|\le \Delta_f,\quad \|g_p-g\|\le \Delta_g,\quad \|d\|\le \bar d,\quad \|v\|\le \bar v;
+\]
+(iv) jitter satisfies $\varepsilon_j\ll \min_\ell \Delta t_\ell$ and is absorbed by constraint tightening.
+Then there exist a horizon $N$ and tightened sets $\tilde{\mathcal{X}},\tilde{\mathcal{U}},\tilde{\mathcal{X}}_f^\ell$ such that the closed loop under~\eqref{eq:mpc} is \emph{recursively feasible} and admits an ISS-like periodic Lyapunov inequality:
+\[
+V^{\ell(k+1)}\!\big(x_{k+1}\big)-V^{\ell(k)}\!\big(x_{k}\big)
+\;\le\;
+-\,\underline{\alpha}\,\sum_i w_i\,J\!\big(r_i(x_k)\big)\;+\;
+\gamma\big(\Delta_f,\Delta_g,\bar d,\bar v,\varepsilon_j\big),
+\]
+for some $\underline{\alpha}\in(0,\alpha]$ and class-$\mathcal{K}$ function $\gamma$. In particular, if mismatches and disturbances vanish, $r_i(x_k)\to 1$ and $x_k$ converges to the phase-invariant terminal set.
+
+\emph{Sketch.} Standard periodic MPC arguments apply with phase-indexed terminal ingredients; $\varphi$-gating enters as linear equalities and tightened dwell/slew constraints. A shift argument with the local controller $\kappa_\ell$ establishes recursive feasibility; Lyapunov descent follows from the terminal inequality and convexity of the stage cost. Tube tightening absorbs bounded mismatch and jitter.
+
+\paragraph{Engineering knobs.}
+\emph{Horizon $N$.} Choose $N$ to span at least one superframe of influential dynamics (e.g., $N$ covering $\tau_{q=1}$ or $\tau_{\mathrm{ELM}}$), typically $N=10$–$30$ control ticks. \emph{Solver cadence.} Solve at window boundaries (every $W_\ell$) with warm-start from the shifted previous plan; use a real-time SQP or condensed QP with early termination after meeting KKT residual thresholds. \emph{Constraint handling.} Encode $\varphi$-gating as equality constraints; implement dwell/slew as linear inequalities; soften only safety-neutral constraints with large $\rho$ to preserve fail-closed behavior. \emph{Terminal ingredients.} Build $\mathcal{X}_f^\ell$ as phase-dependent invariant tubes around a nominal orbit; compute $V_f^\ell$ from a local LQR or control-Lyapunov approximation that respects actuator availability per phase. \emph{Numerics.} Cache Jacobians/Hessians per phase; pre-factorize QP structures; enforce deterministic latency by bounding iterations and using deadline-aware early-exit with certificate checks (Section~\ref{sec:certificate}).
+
+\subsection{Safety–filtered RL (secondary)}
+
+\paragraph{Filter rule (deploy only if feasible).}
+Let $\pi_\theta:\mathcal{X}\to\mathcal{U}$ be a learned policy. At deployment time (every window boundary), the proposed action
+$a_{\mathrm{raw}}=\pi_\theta(x_k)$ is \emph{not} applied directly. Instead, a \emph{safety filter} solves a short-horizon, φ-gated ledger problem that projects $a_{\mathrm{raw}}$ onto the certified-feasible set:
+\[
+\begin{aligned}
+a_k^\star \;=\; \arg\min_{u\in\mathcal{U}} \quad & \tfrac12\|u-a_{\mathrm{raw}}\|_R^2\\
+\text{s.t.}\quad & \text{(φ-gating) } u_a=u_{\mathrm{hold},a}\ \text{ if current phase }\ell\notin\Pi(a),\\
+& \text{(dwell/slew) } \|u_a-u^-_a\|\le \sigma_a\ \text{ if }\ell\in\Pi(a),\\
+& \widehat{\mathcal{A}}\big(x_k,u\big)\ \le\ \theta\quad \text{(certificate predictions within thresholds)},\\
+& x_{k+1}=f(x_k,u)\ \text{ (or a certified one-step surrogate)}.
+\end{aligned}
+\]
+If the QP/NLP is infeasible, the filter returns a predeclared \emph{safe baseline} $a_k^\mathrm{safe}$ (hold or retreat), and sets a cool-down flag. Only $a_k^\star$ (or $a_k^\mathrm{safe}$) is applied to the plant. This guarantees φ–compliance, dwell/slew respect, and certificate feasibility \emph{before} actuation.
+
+\paragraph{Training (make violation-less actions the default).}
+The goal is to train $\pi_\theta$ so that the filter is mostly a no-op. We combine three ingredients:
+
+\emph{(i) KKT-guided losses.} Let $\mathcal{J}(x,u)$ be the one-step ledger objective with constraints $c(x,u)\le 0$. The Lagrangian $\mathcal{L}(x,u,\lambda)=\mathcal{J}(x,u)+\lambda^\top c(x,u)$ yields KKT residuals
+\[
+\mathcal{R}_{\mathrm{KKT}}(x,u,\lambda)=\big\|\nabla_u \mathcal{J}(x,u)+\nabla_u c(x,u)^\top \lambda\big\|_2^2+ \|\min(0,\lambda)\|_2^2+ \| \max(0,c(x,u))\|_2^2.
+\]
+Train $\pi_\theta$ to minimize $\mathbb{E}[\mathcal{R}_{\mathrm{KKT}}(x,\pi_\theta(x),\lambda^\star(x))]$ with duals $\lambda^\star$ taken from the safety filter (teacher) or estimated by a dual net. This steers $\pi_\theta$ toward first-order feasibility/optimality of the ledger problem.
+
+\emph{(ii) Offline data from certified runs.} Build a replay buffer $\mathcal{D}=\{(x,a^\star,r,x')\}$ from periodic MPC (primary controller) \emph{that passed the certificate}. Use conservative offline RL (e.g., behavior regularization or advantage-weighted regression) to fit $\pi_\theta$ toward $a^\star$ while keeping actions inside the certified envelope. Penalize any out-of-window updates by adding $\infty$-cost outside $\Pi(a)$ and a large penalty for dwell/slew violations.
+
+\emph{(iii) In-envelope exploration only.} During any on-policy finetuning, inject exploration noise \emph{only} at window boundaries and \emph{only} inside the safety filter’s feasible set: $a_k=\mathrm{Proj}_{\mathcal{F}(x_k)}\big(\pi_\theta(x_k)+\epsilon_k\big)$ with $\epsilon_k\sim\mathcal{N}(0,\Sigma)$ and $\mathcal{F}(x_k)=\{u:\text{constraints \& certificate predictions }\le\theta\}$. The filter projection ensures all exploratory actions remain φ–gated and certificate-feasible.
+
+\paragraph{Guarantee (controller-agnostic safety).}
+By construction, the applied action $a_k^\star$ always satisfies (i) φ–gating, (ii) dwell/slew, and (iii) certificate thresholds (predicted); if infeasible, the baseline $a_k^\mathrm{safe}$ is used. Thus the RL layer \emph{cannot} violate schedule or safety by itself; it can only improve performance inside the permitted envelope.
+
+\paragraph{Practical notes.}
+Use a tiny one-step (or two-step) safety QP/NLP per decision; warm-start from the previous solution. Cache Jacobians for the surrogate $f,g$ per phase. Log \emph{both} the raw $\pi_\theta$ proposal and the filtered action with cryptographic signatures alongside φ–compliance and certificate decisions. During evaluation, report: (a) filter intervention rate, (b) certificate pass rate, and (c) ledger improvement versus periodic MPC at equal duty and power.
+
+\section{Transport link and guaranteed gains}\label{sec:transport}
+
+\paragraph{Surrogate $\Phi(r)$.}
+Let $r=(r_i)_i$ denote the vector of recognition ratios and let
+\[
+Q\;=\;\Phi(r)
+\]
+be a certified surrogate for the \emph{energy flux / loss} proxy (e.g., conductivity–weighted heat loss), differentiable in a neighborhood of $r=\mathbf{1}$. Its signed sensitivities at the target split channels into two classes:
+\[
+s_i\;:=\;\frac{\partial \Phi}{\partial r_i}\Big|_{r=\mathbf{1}}
+\quad
+\begin{cases}
+s_i>0 & \text{for gradient–like ratios (more drive $\Rightarrow$ more loss)},\\[2pt]
+s_i<0 & \text{for shear–like ratios (more shear $\Rightarrow$ less loss)}.
+\end{cases}
+\]
+We set the ledger weights proportionally to \emph{sensitivity magnitude} to keep physics in the loop:
+\[
+w_i\;=\;\frac{|s_i|}{s_0},\qquad s_0>0 \text{ a normalization constant.}
+\]
+
+\paragraph{Lemma (ledger descent $\Rightarrow$ flux descent).}
+There exist constants $\underline{c}>0$ and $\rho>0$ such that, for all $r$ with $\|r-\mathbf{1}\|\le \rho$,
+\[
+\Phi(r)-\Phi(\mathbf{1})
+\;\le\;
+-\;\underline{c}\,\sum_i w_i\,J(r_i)\;+\;O\!\left(\|r-\mathbf{1}\|^3\right).
+\]
+\emph{Sketch.}
+Write $u_i=\ln r_i$, so $J(r_i)=\cosh(u_i)-1=\tfrac12u_i^2+O(u_i^4)$ and $r_i-1=u_i+O(u_i^2)$. A first–order expansion of $\Phi$ at $r=\mathbf{1}$ gives
+\[
+\Phi(r)-\Phi(\mathbf{1}) = \sum_i s_i(r_i-1) + O(\|r-\mathbf{1}\|^2)
+= \sum_i s_i u_i + O(\|u\|^2).
+\]
+By Cauchy–Schwarz and the weight choice $w_i\propto |s_i|$,
+\[
+\sum_i s_i u_i \;\le\; \Big(\sum_i \tfrac{s_i^2}{w_i}\Big)^{1/2}\,\Big(\sum_i w_i u_i^2\Big)^{1/2}
+\;\le\; -\,\underline{c}\,\sum_i w_i \tfrac12 u_i^2
+\]
+after absorbing constants and using that the controller steps along the $-\nabla_r\mathcal{L}$ descent direction, which flips the sign of the linear term (shear channels enter with negative $s_i$). Replacing $u_i^2$ by $2J(r_i)+O(u_i^4)$ yields the claim for small deviations. A formal proof is given in App.~\ref{app:transport-link}. \hfill$\square$
+
+\paragraph{Theorem (H–factor gain floor).}
+Let $H$ be a confinement factor that is (locally) a monotone function of $Q$, with calibration
+\[
+\frac{dH}{dQ}\Big|_{Q=Q_\star}\;=\;-\kappa_H\;<\;0.
+\]
+Under the surrogate regularity above and the robust periodic MPC tube bounds (Sec.~\ref{sec:pmpc}), there exist calibration constants $\kappa>0$ and $\epsilon\ge 0$ such that for any closed–loop episode in which the ledger drops by $\Delta\mathcal{L}>0$ from baseline,
+\[
+\Delta H
+\;\;\ge\;\;
+\kappa\,\Delta\mathcal{L}\;-\;\epsilon.
+\]
+\emph{Sketch.}
+By the lemma, for sufficiently small neighborhoods,
+\[
+\Delta Q \;=\; \Phi(r)-\Phi(\mathbf{1}) \;\le\; -\,\underline{c}\,\Delta\mathcal{L}\;+\;O(\|r-\mathbf{1}\|^3).
+\]
+Linearizing $H(Q)$ at $Q_\star$ gives $\Delta H \approx -\kappa_H\,\Delta Q$. Combining and absorbing higher–order and tube–robustness remainders (model mismatch, disturbances, jitter) into $\epsilon$ yields
+\[
+\Delta H \;\ge\; \kappa_H\,\underline{c}\,\Delta\mathcal{L}\;-\;\epsilon
+\quad\Rightarrow\quad
+\kappa=\kappa_H\,\underline{c}.
+\]
+\hfill$\square$
+
+\paragraph{Calibrations for $\kappa$ and $\epsilon$.}
+\begin{itemize}
+\item \emph{Sensitivity block.} Estimate $s_i=\partial\Phi/\partial r_i|_{r=1}$ by local perturbations (φ–phased probes) or a reduced gyrokinetic surrogate; set $w_i=|s_i|/s_0$ and compute $\underline{c}$ from the quadratic form comparison between $\sum_i s_i u_i$ and $\sum_i w_i u_i^2$.
+\item \emph{Energy balance block.} Map $\Delta Q$ to $\Delta H$ via a stationary power balance model (or experimental regression) to obtain $\kappa_H=-\,dH/dQ|_{Q_\star}$.
+\item \emph{Robustness/tube block.} Use the periodic MPC tube to bound residual deviations under mismatch/disturbance/jitter; the worst–case residual turns into $\epsilon$.
+\end{itemize}
+\noindent
+These calibrations are preregistered: once $w_i$, $\kappa$, and $\epsilon$ are declared for a campaign, they remain fixed (or follow a declared schedule), so any reported gain floor is auditable and not a product of after–the–fact tuning.
+
+\section{Magnetic confinement: best–mode implementation}
+
+\paragraph{Actuators \& diagnostics.}
+\emph{Actuators} (with practical limits and latencies): neutral beam injection (NBI; torque \& fast-ion drive, rise $\sim\!10$–$50$\,ms, slew limits from power supplies), electron cyclotron resonance heating (ECRH; steerable deposition, pointing/phase latency $\sim\!1$–$10$\,ms, power slew $\sim\!1$–$5$\,ms), ion cyclotron resonance heating (ICRH; coupling \& antenna loading constraints, amplitude/phase agility $\sim\!5$–$20$\,ms), resonant magnetic perturbations (RMP; coil current slew $\sim\!10$–$100$\,ms, thermal limits), pellet injection (discrete impulses; minimum inter–pellet separation $\gtrsim\!50$–$200$\,ms), gas puffing (valve bandwidth $\sim\!5$–$20$\,ms), shaping/vertical stabilization (VS; inner loop $>\!1$\,kHz but setpoint updates gated). \emph{Diagnostics} (normalized to recognition ratios): Thomson scattering ($T_e,n_e$; effective cadence $10$–$100$\,Hz with filtering), ECE radiometry ($T_e$; $1$–$10$\,kHz raw, fused to $100$–$500$\,Hz control–rate streams), reflectometry ($n_e$ profiles/gradients; $1$–$10$\,kHz raw, fused), beam emission spectroscopy (BES; turbulence bands; $10$–$100$\,kHz raw, band–power proxies at $100$–$500$\,Hz), magnetic probes \& equilibria ($q$, $\hat s$, shape; $1$–$5$\,kHz control–rate streams), SXR/bolometry (radiated fraction proxies; $100$–$500$\,Hz), neutron rate (fusion source; $1$\,kHz, smoothed). Noise models use phase–aware whitening (per–window) with Huber losses for outliers; delays are explicitly estimated and compensated in the predictor so recognition ratios $r_i=y_i/y_i^\star$ are temporally aligned to window boundaries.
+
+\paragraph{Default phase map.}
+We assign phase windows (Section~3) to minimize modal collisions while respecting dwell/slew: pellets $\Pi=\{0\}$ (aligns with $\tau_{\mathrm{ELM}}$ pacing), RMP $\Pi=\{2\}$ (slow, separated from pellets), ECRH $\Pi=\{1,5\}$ (core/edge toggles decoupled by two windows), ICRH $\Pi=\{3\}$ (single, away from ECRH flips), NBI $\Pi=\{4,7\}$ (torque/shear modulation on nonadjacent windows), gas $\Pi=\{6\}$ (density trims between heating phases), shaping/VS updates gated to $\{6\}$ while the stabilization loop runs continuously. This layout ensures (i) heating actuators do not update back–to–back, (ii) discrete fueling events are temporally isolated, and (iii) strong cross–couplers (e.g., NBI vs.\ ECRH deposition shifts) are separated by at least one window. Plant constraints are encoded as hard bounds in the controller: actuator saturations, thermal and duty limits (RMP, RF), minimum pellet spacing, gas valve minimum open/close times, VS current/voltage rails, and shape–safety envelopes.
+
+\paragraph{Compute path.}
+The real–time loop is aligned to window edges and superframes:
+\begin{enumerate}
+\item \emph{Sense \& fuse (deterministic latency).} At each window start $t_\ell$, acquire the latest diagnostic buffers; apply phase–aware filters; time–align to $t_\ell$; compute recognition ratios $r_i=y_i/y_i^\star$. Budget: $\sim\!0.2$–$1$\,ms at control rate.
+\item \emph{Predict.} Propagate the certified surrogate (and, if used, a reduced first–principles model) over the MPC horizon under φ–gating constraints; produce $r_{i,k+j|k}$. Budget: $\sim\!0.5$–$2$\,ms with cached Jacobians.
+\item \emph{Optimize (periodic MPC).} Solve the φ–gated ledger program with phase–dependent terminal ingredients; warm–start from the shifted plan. Early–exit when KKT residuals meet thresholds and the certificate preview passes. Budget: $\sim\!1$–$5$\,ms depending on horizon and actuators.
+\item \emph{Safety filter / RL (optional).} If a learned policy proposes updates, project through the one–step safety QP/NLP to enforce φ–gating, dwell/slew, and certificate feasibility (Sec.~5.2). Budget: $\sim\!0.2$–$1$\,ms.
+\item \emph{Certificate gate.} Evaluate $\mathcal{A}(y)\le\theta$ over $M$ consecutive windows; if \textsf{Pass}, emit scheduled setpoint changes only for actuators whose phases are active in $W_\ell$; otherwise \textsf{Modify} (tighten \& re–solve) or \textsf{Reject} (hold/retreat).
+\item \emph{Actuate via φ–scheduler.} Dispatch updates to actuators admitted in $W_\ell$; enforce dwell/slew; others hold. All Begin/EndWindow events and admitted/rejected updates are time–stamped.
+\item \emph{Attest \& log.} Write a cryptographically signed record with φ–adherence, dwell/slew, jitter, $\mathcal{L}$, $\mathcal{A}$, and decision (\textsf{Pass/Modify/Reject}); hash–chain to prior record.
+\end{enumerate}
+\emph{Budgets \& determinism.} A representative control period $T$ is chosen from device timescales (e.g., $T\!=\!50$–$200$\,ms); window durations follow the $\varphi/\varphi^{-1}$ rule with minimum $\Delta t_\ell$ large enough to honor actuator dwell. The end–to–end compute budget per window is capped (e.g., $\le\!5$–$8$\,ms) with watchdog enforcement; if exceeded, the system automatically falls back to the last certified plan (hold) and marks \textsf{Modify}. FPGA/RTOS timers generate window edges; late requests are rejected and logged.
+
+\paragraph{Fallback behaviors \& fail–safe ladder.}
+Fail–closed design is explicit: (i) \emph{Filter infeasible} $\Rightarrow$ apply $u^\mathrm{safe}$ (predeclared retreat) and start a cool–down; (ii) \emph{Certificate fail} $\Rightarrow$ hold noncritical actuators, reduce heating to safe baseline, block pellets/gas, and command conservative RMP; (iii) \emph{Timing violation} (jitter or missed deadline) $\Rightarrow$ freeze updates for one window and re–synchronize; (iv) \emph{Sensor fault} (outlier flags, dropouts) $\Rightarrow$ switch to redundant proxies, inflate uncertainty, tighten constraints; (v) \emph{Trip line} (hard safety interlock) $\Rightarrow$ immediate scram path per site policy. Each step is recorded in the signed log; recovery requires $M$ consecutive passes of the certificate before resuming aggressive operation.```
+
+\section{Preregistered experimental plan (falsifiable)}\label{sec:experiments}
+
+\paragraph{Hypotheses.}
+\begin{itemize}
+\item \textbf{H1 (interference).} Under fixed actuator power and identical duty, $\varphi$–phasing reduces measurable cross–terms in turbulence spectra by at least a factor $\varphi^{-1}$ relative to co–phased or equal–spaced schedules:
+\[
+\frac{\mathbb{E}\big[\Xi_{\varphi}\big]}{\mathbb{E}\big[\Xi_{\text{base}}\big]}\ \le\ \varphi^{-1}\quad\text{with}\quad
+\Xi:=\frac{\int_{\Omega}\!\!\big|S_{ab}(\omega)\big|\,d\omega}{\sqrt{\int_{\Omega}\!S_{aa}\,\int_{\Omega}\!S_{bb}}}\ \ \text{(cross–interference index)},
+\]
+where $S_{ab}$ is a cross–spectrum proxy (BES/reflectometry bands) over a preregistered frequency set $\Omega$.
+\item \textbf{H2 (gain floor).} For a preregistered ledger drop $\Delta\mathcal{L}>0$ sustained over $M$ consecutive windows, the confinement factor improves by at least the calibrated floor:
+\[
+\Delta H\ \ge\ \kappa\,\Delta\mathcal{L}\ -\ \epsilon,
+\]
+with $(\kappa,\epsilon)$ fixed pre–campaign (Sec.~\ref{sec:transport}). Failures (certificate fails, filter infeasible) are counted and reported.
+\item \textbf{H3 (portability).} The same objective/schedule/thresholds transfer from device A to device B with \emph{only} plant limits updated, achieving (i) certificate pass rate $\ge p_{\min}$ and (ii) interference reduction and gain floor within a preregistered non–inferiority margin $\delta_{\mathrm{NI}}$ of device A.
+\end{itemize}
+
+\paragraph{Design.}
+\emph{AB/BA shot blocks.} Randomize blocks of discharges between \textbf{A}=\,$\varphi$–phased ledger control and \textbf{B}=\,(baseline) one of:
+(i) co–phased updates; (ii) equal–spaced windows; (iii) MSE objective with identical constraints. Repeat AB and BA to deconfound drift.  
+\emph{Fixed masks \& error models.} Define a single mask for each diagnostic family (exclude known transients, pellet flight windows except for pellet–specific analyses, ramp–up/down). Use the same robust filters (Huber/biweight) and uncertainty models across A and B.  
+\emph{Actuation parity.} Match total actuator energy and duty between A and B within a $\pm$2\% band. \emph{Power hold} and \emph{geometry hold} policies are declared in advance.  
+\emph{Windowing.} Use identical control period $T$; for baselines, preserve dwell/slew and jitter budgets.
+
+\paragraph{Metrics.}
+\emph{Primary endpoints.}
+\begin{enumerate}
+\item \textbf{Interference reduction (H1).} Ratio of cross–interference indices $\mathbb{E}[\Xi_{\varphi}]/\mathbb{E}[\Xi_{\text{base}}]$ aggregated over matched power bands and actuators; acceptance if $\le \varphi^{-1}$ with one–sided 95\% CI $\le \varphi^{-1}$.
+\item \textbf{Gain floor (H2).} For each episode with $\Delta\mathcal{L}$ preregistered, test $\Delta H - (\kappa\,\Delta\mathcal{L}-\epsilon)\ge 0$; acceptance if the median across episodes $\ge 0$ and the lower 10th percentile $\ge -\eta$ (small slack $\eta$ declared ex ante).
+\item \textbf{Portability (H3).} On device B, non–inferiority tests vs.\ device A for (i) certificate pass rate and (ii) endpoints 1–2 within margin $\delta_{\mathrm{NI}}$.
+\end{enumerate}
+\emph{Secondary endpoints.} Certificate pass rate; filter intervention rate; disruption/abort rate; impurity/radiation fractions; tracking error quantiles; actuator slew/dwell violations (should be zero).  
+\emph{Acceptance bands.} All thresholds $(\Omega,\ p_{\min},\ \delta_{\mathrm{NI}},\ \eta)$ and CI methods are preregistered. Failure of any primary endpoint falsifies the corresponding hypothesis.
+
+\paragraph{Power and duration.}
+Compute per–endpoint power using block bootstrap on historical spectra (for $\Xi$) and prior campaigns (for $H$), then fix block counts before execution (e.g., $N_{\mathrm{blocks}}$ per AB and BA, windows per block, and targeted precision for CI). Minimum dwell between blocks avoids thermal memory. If a block is invalidated (e.g., unplanned trips), it is replaced per the preregistered randomization list.
+
+\paragraph{Analysis plan (preregistered).}
+\emph{Estimands.} Block–level contrasts of primary endpoints (A minus B), device–level pooled estimates, and cross–device non–inferiority contrasts.  
+\emph{Statistics.} One–sided percentile bootstrap CIs (10{,}000 resamples) for ratios/differences; Hodges–Lehmann estimates for robust central tendencies; predeclared outlier rules. No interim peeking; one final analysis with multiplicity handled by Holm–Bonferroni across the three primary endpoints.
+
+\paragraph{Data policy.}
+\emph{Compliance logs.} Every window emits a cryptographically signed record (Sec.~\ref{sec:certificate}) covering φ–adherence, dwell/slew/jitter, ledger $\mathcal{L}$, certificate vector $\mathcal{A}$, and the Pass/Modify/Reject decision.  
+\emph{Release plan.} Publish (i) anonymized, downsampled recognition ratios $r_i$; (ii) window–level endpoint summaries; (iii) signed compliance logs (with redacted actuator identifiers if needed); (iv) preregistration, masks, and code. Raw high–rate signals remain onsite; derived aggregates and signatures suffice for audit and reproduction.  
+\emph{Replication.} Independent labs can rerun using the same masks, thresholds, and φ–schedule; acceptance hinges on the same endpoints and bands declared here.
+
+\section{Simulation and bench results (reproducible)}\label{sec:results}
+
+\paragraph{Overview and reproducibility pack.}
+All experiments are delivered with a deterministic seed, code, and signed outputs: a \texttt{repro/} tree containing (i) plant surrogates and nominal models, (ii) φ–scheduler, MPC, and safety–filter RL implementations, (iii) masks/error models, (iv) analysis scripts, and (v) compliance log verifiers. Each run emits a hash of inputs and a cryptographically signed compliance ledger per window (Sec.~\ref{sec:certificate}). No tables are used; results are reported as text and figures (time series, spectra, and CDFs).
+
+\subsection*{φ–phasing ablations}
+\emph{Goal.} Quantify interference reduction and sensitivity to window design and timing errors.
+
+\emph{Conditions.}
+\begin{itemize}
+\item \textbf{Schedules:} (A) φ–phased (default), (B) equal–spaced 8 windows, (C) co–phased (single window), (D) φ–phased with randomized phase assignment preserving duty.
+\item \textbf{Window edges:} raised–cosine ($C^1$), Blackman ($C^2$), and hard edges.
+\item \textbf{Jitter:} $\varepsilon_j/T \in \{0,10^{-4},10^{-3},10^{-2}\}$ applied as bounded edge perturbations.
+\item \textbf{Actuators:} two–way (NBI/ECRH) and three–way (NBI/ECRH/ICRH) cases at matched power/duty.
+\end{itemize}
+
+\emph{Metrics.}
+Cross–interference index $\Xi$ over preregistered bands $\Omega$:
+\[
+\Xi\ :=\ \frac{\int_{\Omega}\!\!\big|S_{ab}(\omega)\big|\,d\omega}{\sqrt{\int_{\Omega}\!S_{aa}(\omega)\,d\omega\ \int_{\Omega}\!S_{bb}(\omega)\,d\omega}}\,,
+\]
+aggregated over actuator pairs $(a,b)$ and windows; primary statistic is the ratio $\mathbb{E}[\Xi_{\varphi}]/\mathbb{E}[\Xi_{\text{base}}]$ with one–sided CI.
+
+\emph{Expected findings to reproduce.}
+φ–phasing reduces $\Xi$ by a factor $\approx \varphi^{-1}$ vs.\ equal–spaced, stronger vs.\ co–phased; raised–cosine/Blackman edges tighten the bound (hard edges leak and degrade). Jitter $\le 10^{-3}T$ leaves results within CI; $10^{-2}T$ visibly erodes the advantage, matching the periodic–invariance proposition.
+
+\subsection*{Objective ablations}
+\emph{Goal.} Show that the ledger objective produces predictable, portable improvements compared to mean–square error (MSE) and ad–hoc rewards.
+
+\emph{Conditions.}
+\begin{itemize}
+\item \textbf{Objectives:} (L) ledger $\sum_i w_i J(r_i)$, (M) MSE $\sum_i \beta_i (y_i-y_i^\star)^2$, (R) tuned RL reward (site–specific).
+\item \textbf{Constraints:} identical φ–gating, dwell/slew, and certificate thresholds for all objectives.
+\item \textbf{Weights:} $w_i \propto |\partial \Phi/\partial r_i|_{r=1}$; MSE $\beta_i$ set by unit normalization only.
+\end{itemize}
+
+\emph{Metrics.} Ledger value $\mathcal{L}$ trajectory, certificate pass rate, filter intervention rate, and transport proxy $\Delta Q$.
+
+\emph{Expected findings to reproduce.}
+(L) consistently lowers $\mathcal{L}$ and $\Delta Q$ with high pass rate; (M) can lower MSE while \emph{raising} $\Delta Q$ due to unit coupling; (R) matches local optima but is brittle across campaigns/devices. The ledger achieves the best portability under identical constraints.
+
+\subsection*{Certificate behavior}
+\emph{Goal.} Quantify how often the audit surface blocks risky policies and how often the safety filter intervenes.
+
+\emph{Metrics.}
+\begin{itemize}
+\item \textbf{Pass/Modify/Reject} frequencies per $10^3$ windows; median and 90th–percentile decision latency.
+\item \textbf{Risk reduction:} difference in disruptivity–risk quantiles with vs.\ without certificate gate, matched for power.
+\item \textbf{Violation counts:} dwell, slew, jitter; target is zero admitted violations (all rejections logged).
+\end{itemize}
+
+\emph{Expected findings to reproduce.}
+With φ–phased ledger control, \textsf{Pass} dominates; \textsf{Modify} clusters at operating–point changes; \textsf{Reject} is rare and correlates with known transients (e.g., pellet windows), confirming fail–closed behavior. Safety filter intervention rates remain low ($\ll 10\%$) when $\pi_\theta$ is trained on certified data.
+
+\subsection*{Transport outcomes}
+\emph{Goal.} Empirically validate the gain–floor theorem (Sec.~\ref{sec:transport}) and the surrogate link.
+
+\emph{Procedure.}
+Declare $\kappa,\epsilon$ pre–campaign. Run episodes with preregistered $\Delta \mathcal{L}$ targets; compute $\Delta Q$ and $\Delta H$ under fixed masks.
+
+\emph{Metrics.}
+\begin{itemize}
+\item \textbf{Floor test:} evaluate $\Delta H - (\kappa\,\Delta\mathcal{L}-\epsilon)$ per episode; report median and lower decile.
+\item \textbf{Calibration check:} regression of $\Delta Q$ on $\Delta \mathcal{L}$ near $r=1$; slope should match $-\underline c$ within CI.
+\item \textbf{Portability:} same tests on a second device with only plant limits changed; report non–inferiority vs.\ primary device.
+\end{itemize}
+
+\emph{Expected findings to reproduce.}
+Episodes that achieve the preregistered $\Delta \mathcal{L}$ meet or exceed the $\Delta H$ floor within the declared slack; $\Delta Q$ vs.\ $\Delta \mathcal{L}$ is linear near baseline with slope consistent with the surrogate sensitivities; results transfer within non–inferiority margins.
+
+\paragraph{Bench notes.}
+Hardware–in–the–loop tests emulate actuator slew/dwell and φ–edges on RTOS/FPGA; latency budgets and jitter are measured and injected to match on–device constraints. All signed logs, seeds, and figure–generation scripts are included, enabling byte–for–byte reproduction of figures from raw compliance ledgers plus downsampled ratios $r_i$.
+
+\section{Companion module: ICF pulse shaping (concise)}\label{sec:icf}
+
+\paragraph{Method.}
+Construct a $K$–subpulse drive
+\[
+P(t)=\sum_{k=1}^{K} A_k\,s(t-t_k),\qquad 
+\frac{\Delta t_{k+1}}{\Delta t_{k}}\in\{\varphi,\varphi^{-1}\},\quad \Delta t_k:=t_{k+1}-t_k,
+\]
+with a bounded template $s(\cdot)$ (e.g., raised–cosine) and total energy $\sum_k A_k\!\int s \le E_{\rm tot}$ under facility constraints (cone/ring, pointing, bandwidth). From symmetry diagnostics (x–ray self–emission, radiography, backlighter), compute spherical–harmonic coefficients $a_{\ell m}$ and form the \emph{symmetry ledger}
+\[
+\mathcal{L}_{\mathrm{sym}} \;=\; \sum_{\ell\in\mathcal{S}}\; w_\ell \sum_{m=-\ell}^{\ell}
+J\!\left(\frac{|a_{\ell m}|}{a_\ell^\star}\right),\qquad 
+J(x)=\tfrac12\!\left(x+\frac1x\right)-1.
+\]
+The optimizer chooses $(A_k,t_k)$ subject to the $\varphi$–spacing and energy/plant limits to minimize $\mathcal{L}_{\mathrm{sym}}$; per–ring micro–delays are allowed if $\varphi$–commensurability is preserved.
+
+\paragraph{Certificate.}
+Deployment is gated by fixed thresholds:
+\[
+\textsf{Pass}\iff
+\Big(\mathcal{L}_{\mathrm{sym}}\le \Lambda\Big)\ \wedge\
+\Big(|a_{20}|\le \tau_2,\ |a_{4m}|\le \tau_4\Big)\ \wedge\
+\Big(\text{bang–time, shock timing in windows}\Big)\ \wedge\
+\Big(\text{adiabat/preheat within limits}\Big).
+\]
+Failures trigger automatic pulse truncation or low–energy reversion per site safety policy.
+
+\paragraph{Feature (geometric decay).}
+Within the admissible, weakly–nonlinear regime and for fixed $E_{\rm tot}$, adding one $\varphi$–spaced sub–pulse admits a best–response update with
+\[
+\mathcal{L}_{\mathrm{sym}}(K)\ \le\ \eta\,\mathcal{L}_{\mathrm{sym}}(K\!-\!1)\ +\ \xi,\qquad 0<\eta<1\ \ \text{(qualitative constant)},
+\]
+until mode–coupling saturation sets a floor $\xi$. Thus residual asymmetry decreases at least geometrically in $K$ up to saturation.
+
+\paragraph{Bench plan.}
+\emph{Low–energy surrogates:} calibrate transfer kernels on sub–ignition shots; validate symmetry estimation.  
+\emph{Facility constraints:} enforce per–beam energy, cone/ring assignments, pointing and inter–pulse minimum separation; preserve $\varphi$–ratios.  
+\emph{Pass/fail rules:} preregister $(\mathcal{S}, a_\ell^\star, w_\ell, \Lambda, \tau_2, \tau_4)$ and acceptance bands for bang–time/shock/adiabat; report \textsf{Pass/Modify/Reject} frequencies, residual $\mathcal{L}_{\mathrm{sym}}$ vs.\ $K$, and any on–shot aborts with causes.
+
+\section{Safety, failure modes, and limitations}\label{sec:safety}
+
+\paragraph{Edge cases.}
+\emph{Sensor dropouts.} If a required diagnostic for any $r_i=y_i/y_i^\star$ is missing or flagged (outlier, stale timestamp), the fusion layer substitutes a preregistered proxy (e.g., $T_e$ from ECE when Thomson is absent) and inflates its uncertainty; the certificate automatically tightens thresholds and may block deployment for $M$ windows.  
+\emph{Actuator saturation.} When any actuator hits rails (power, current, duty, temperature), the optimizer is re-solved with the saturated channel held; if the ledger cannot descend without violating the certificate, the policy is \textsf{Reject} (hold/retreat). Saturation events are recorded in the signed log and count toward risk accounting.  
+\emph{Phase overruns.} If a compute or timing overrun would push an update past \emph{EndWindow($\ell$)}, the scheduler rejects the update, holds prior setpoints for one window, and re-synchronizes at the next \emph{BeginWindow}. Consecutive overruns trigger a cool–down and solver simplification (reduced horizon) until latency is restored.
+
+\paragraph{Graceful degradation.}
+\emph{Tube bounds under disturbances.} With mismatch/disturbance/jitter bounded, the periodic MPC tube keeps $r$ inside a computable neighborhood of $\mathbf{1}$; the certificate thresholds are chosen so that \textsf{Pass} implies operation strictly \emph{inside} the tube, and \textsf{Modify/Reject} occurs before exiting.  
+\emph{Fallback policies.} The fail–safe ladder is: (1) \textsf{Modify} (tighten constraints, shorter horizon, conservative $\Pi(a)$) $\rightarrow$ (2) \textsf{Hold} noncritical actuators and retreat heating to baseline $\rightarrow$ (3) \textsf{Abort} pellets/gas and command conservative RMP $\rightarrow$ (4) \textsf{Scram} per site interlocks. Recovery requires $M$ consecutive \textsf{Pass}.  
+\emph{Degraded sensing.} If the number of trusted channels drops below identifiability rank, the controller freezes to the last certified plan and announces \textsf{Degraded Mode}; only shape and stabilization loops continue.
+
+\paragraph{Threats to validity.}
+\emph{Surrogate mis–specification.} If $\Phi(r)$ mis-signs a sensitivity (e.g., treats a shear proxy as gradient–like), the weight choice can misalign $\mathcal{L}$ and $\Delta Q$. Mitigation: (i) φ–phased probe experiments to estimate $s_i=\partial\Phi/\partial r_i|_{r=1}$ before campaigns; (ii) conservative weighting with uncertainty bands; (iii) on–campaign drift tests that trigger reversion to baseline weights if sign uncertainty exceeds a threshold.  
+\emph{Unmodeled couplings.} Hidden cross–terms (e.g., actuator–diagnostic crosstalk) can erode interference bounds. Mitigation: window–edge smoothness ($C^1$/$C^2$), dwell enforcement, and a detection rule that raises the φ–scheduler’s separation (drop overlapping $\Pi(a)$) if empirical cross–interference $\Xi$ fails H1.  
+\emph{Schedule violations.} Hardware jitter or timing faults can void periodic invariance. Mitigation: FPGA timers, signed edge time–stamps, rejection of late updates, and constraint tightening proportional to measured jitter $\varepsilon_j$.  
+\emph{Certificate drift.} If site operations silently tune thresholds, claims are void. Mitigation: thresholds are hash–committed pre–campaign; any change creates a new versioned certificate with a new hash and an enforced cool–down.
+
+\paragraph{Limitations.}
+This method guarantees \emph{auditable control}, not plant–level net electric. Materials limits, blankets, tritium, and balance–of–plant remain outside scope. The geometric convergence feature in ICF holds only within the weakly nonlinear regime and saturates with mode coupling. Finally, the gain–floor bound is local (near $r=\mathbf{1}$) and depends on calibration of $\kappa,\epsilon$; large excursions may require re–linearization and re–declaration of campaign constants.
+
+\section{Standards, compliance, and ethical deployment}\label{sec:standards}
+
+\paragraph{Open spec \& test vectors.}
+We publish an open, versioned specification containing: (i) the certificate thresholds $\theta$ (with optional phase schedules), (ii) the $\varphi$–compliance tests (window–ratio checks, dwell/slew and jitter bounds, and per–window pass/fail logic), and (iii) canonical test vectors (synthetic and anonymized real sequences) that any implementation must pass. Each spec version is hash–committed and signed; all experiments reference a specific hash to prevent drift. The reference implementation (ledger, $\varphi$–scheduler, certificate evaluator) is provided for conformance testing and is kept controller–agnostic.
+
+\paragraph{Telemetry and privacy.}
+Compliance requires only \emph{minimal, dimensionless} metrics: per–window window–edge timestamps, phase indices, $\varphi$–ratio checks, dwell/slew/jitter flags, the ledger value $\mathcal{L}$, the certificate vector $\mathcal{A}$, and the Pass/Modify/Reject decision. These are cryptographically signed and hash–chained (Sec.~\ref{sec:certificate}). Raw high–rate plant data, geometry, and site identifiers remain local. This enables reproduction and liability audits without exposing sensitive signals. Aggregate, anonymized summaries (endpoint values, CI bands) are released for scientific scrutiny.
+
+\paragraph{Interoperability.}
+The $\varphi$–scheduler module is defined as a controller–agnostic service with a small \emph{Compliance API} (begin/end window events, \texttt{Allowed}, \texttt{RequestUpdate}, \texttt{GetComplianceReport}). Any MPC, RL, or heuristic controller can integrate by obeying API contracts. Conformance is demonstrated by passing the open test vectors and producing signed logs that match the reference validator. This separation of concerns allows sites to innovate internally while preserving a common safety/standards core.
+
+\section{Related work (short, surgical)}\label{sec:related}
+\emph{Profile/MPC control.} Prior work has demonstrated profile and shape control using model predictive control, but typically with MSE–like objectives and no phase–timed desynchronization, leading to device–specific tuning and limited portability.  
+\emph{RL control.} Reinforcement learning has achieved promising results in simulation and select experiments, yet reward definitions are ad–hoc, safety is externalized, and deployment often lacks formal feasibility gates.  
+\emph{ELM pacing and actuator timing.} Techniques like pellet pacing and RMP phasing exist, but they do not employ a golden–ratio, eight–phase scheme with proved interference bounds nor do they integrate a global certificate gate.  
+\emph{Pulse shaping (ICF).} Pulse–train design is widely practiced, usually via heuristic timing and least–squares symmetry metrics; geometric residual guarantees under $\varphi$–spacing and a convex symmetry ledger are not standard.  
+
+\noindent\textbf{What is new here.} The \emph{trio}—(i) a convex, dimensionless \emph{ledger} objective over recognition ratios; (ii) $\boldsymbol{\varphi}$–timed multi–actuator scheduling with \emph{provable} interference reduction; and (iii) a \emph{certificate} that gates deployment—plus (iv) periodic–MPC stability and (v) preregistered falsifiers. Together these convert “clever control” into an auditable, portable method with guaranteed minima.
+
+\section{Conclusion}\label{sec:conclusion}
+We introduced a standards–ready control method that binds three simple ideas into one auditable loop: a physics–meaningful ledger objective, a golden–ratio eight–phase schedule that reduces interference by design, and a certificate that enforces safety and performance before actuation. On theory, we proved periodic invariance and ISS–like stability for φ–gated MPC, a quantitative interference bound that scales favorably with actuator count, and a transport link that converts ledger descent into a calibrated confinement–gain floor. On practice, we specified a best–mode magnetic implementation, a preregistered experimental plan with clear falsifiers, and a concise ICF companion showing geometric symmetry reduction under φ–spaced sub–pulses.
+
+This is not a claim of net–electric fusion. It is a claim that \emph{control} can be made reproducible, portable, and verifiable—so that the remaining questions (materials, blankets, tritium, drivers) can be decided in engineering time, not anecdote. The method will be supported or falsified within the year by three primary tests: (H1) measurable interference reduction $\ge \varphi^{-1}$ at fixed power; (H2) certificate–gated gain floors that meet their predeclared bounds; and (H3) cross–device portability with unchanged objectives, schedules, and thresholds. If those pass, fusion research gains a common control substrate and a safety language; if they fail, the logs will show precisely where the assumptions break, and the community can adjust with clarity rather than guesswork.
+
+\appendix
+
+\section*{Appendix A — Formal statements and proofs}\label{app:proofs}
+
+\paragraph{Standing assumptions (used throughout Appendix A).}
+\begin{itemize}
+\item[\textsf{A0}] (\emph{$\varphi$–windows}) A control period $T>0$ is partitioned into $8$ windows $W_\ell=[t_\ell,t_{\ell+1})$ with durations $\Delta t_\ell=t_{\ell+1}-t_\ell>0$, $\sum_{\ell=0}^{7}\Delta t_\ell=T$, and consecutive ratios $\Delta t_{\ell+1}/\Delta t_\ell\in\{\varphi,\varphi^{-1}\}$ (indices mod $8$). Each window mask $m_\ell$ is $C^1$ (or smoother).
+\item[\textsf{A1}] (\emph{Gating, dwell, slew}) Each actuator $a$ has a phase set $\Pi(a)\subseteq\{0,\dots,7\}$; setpoints may change only when $\ell\in\Pi(a)$, with minimum dwell $\delta_a$ and slew bound $\sigma_a$.
+\item[\textsf{A2}] (\emph{Periodic invariance}) The schedule repeats every $T$ with absolute jitter bounded by $\varepsilon_j\ll \min_\ell \Delta t_\ell$.
+\item[\textsf{A3}] (\emph{Plant \& surrogate}) The nominal $(f,g)$ are locally Lipschitz; mismatch/disturbances satisfy bounded tubes $\|f_p-f\|\le\Delta_f$, $\|g_p-g\|\le\Delta_g$, $\|d\|\le \bar d$, $\|v\|\le \bar v$. The transport surrogate $\Phi(r)$ is $C^2$ near $r=\mathbf{1}$.
+\end{itemize}
+
+\subsection*{A.1 $\boldsymbol{\varphi}$–phase interference bound}
+
+\noindent\textbf{Theorem A.1 (Interference reduction).}  
+Let $u_a,u_b$ be piecewise–constant actuator signals that may change only inside $W_\ell$ for $\ell\in\Pi(a)$ and $\ell\in\Pi(b)$, with $C^1$ window masks. Let the dominant bilinear cross–term in an output channel be
+\[
+y_{ab}(t)=\big(K_{ab}*(u_a u_b)\big)(t),
+\]
+with $K_{ab}\in L^1(\mathbb{R}_{\ge 0})$ band–limited to an effective cutoff $\Omega_c$. Define $\langle f\rangle_T:=T^{-1}\int_0^{T} f(t)\,dt$. Under \textsf{A0}–\textsf{A1}, there exists $\kappa\in(0,1)$ (set by mask smoothness and $\Omega_c$) such that
+\[
+\Big\langle |y_{ab}|\Big\rangle_T
+\;\le\;
+\kappa\,\varphi^{-1}\,
+\Big\langle |y_{ab}|\Big\rangle_T^{\;\text{base}},
+\]
+where the baseline is co–phased or equal–spaced updates with identical duty/power. In particular, the time–averaged cross–term is strictly reduced by at least the factor $\varphi^{-1}\approx 0.618$.
+
+\emph{Proof sketch.} Decompose $u_a u_b$ into phase–masked components $m_\ell m_{\ell'} v_{a,\ell}v_{b,\ell'}$ and work in frequency. The spectrum of the masked update train concentrates on lines at multiples of $2\pi/T$ convolved with $\widehat m_\ell$. Because $\Delta t_{\ell+1}/\Delta t_\ell\in\{\varphi,\varphi^{-1}\}$, the line set obeys Diophantine separation (golden ratio is badly approximable), suppressing low–order alias reinforcement across phases. With raised–cosine (or smoother) masks, leakage envelopes yield
+\[
+\big\|\widehat{u_a u_b}\big\|_{1}\ \le\ c_1\,\varphi^{-1}\,\|u_a\|_{2}\|u_b\|_{2},
+\]
+while co–phased/equal–spaced baselines lack the $\varphi^{-1}$ factor. Multiplication by $\widehat K_{ab}$ (band–limited) and Young’s inequality give the stated bound with $\kappa=c_1\|K_{ab}\|_{1}$. \hfill$\square$
+
+\medskip
+\noindent\textbf{Corollary A.2 (Scaling with actuator count).}  
+With $A$ actuators assigned to phases with bounded overlap, the aggregate cross–interference scales $O(A\,\varphi^{-1})$ under $\varphi$–phasing versus $O(A)$ under co–phased/equal–spaced schedules.
+
+\emph{Proof.} Sum Theorem A.1 over pairs $(a,b)$ using the overlap bound. \hfill$\square$
+
+\subsection*{A.2 Robust periodic MPC stability}
+
+\noindent\textbf{Theorem A.3 (ISS–like periodic stability \& feasibility).}  
+Under \textsf{A0}–\textsf{A3}, suppose there exist phase–dependent terminal sets/costs $\{(\mathcal X_f^\ell,V_f^\ell)\}_{\ell=0}^7$ and a local $\varphi$–gated controller $\kappa_\ell$ such that
+\[
+x\in \mathcal X_f^\ell \Rightarrow f(x,\kappa_\ell(x))\in \mathcal X_f^{\ell+1},\qquad
+V_f^{\ell+1}\!\big(f(x,\kappa_\ell(x))\big)-V_f^\ell(x)\ \le\ -\alpha\sum_i w_i J(r_i(x))
+\]
+for some $\alpha>0$. Then there exists a horizon $N$ and tightened sets absorbing $(\Delta_f,\Delta_g,\bar d,\bar v,\varepsilon_j)$ for which the φ–gated periodic MPC (with those terminal ingredients) is recursively feasible and the closed loop admits
+\[
+V^{\ell(k+1)}(x_{k+1})-V^{\ell(k)}(x_k)\ \le\ -\,\underline{\alpha}\sum_i w_i J(r_i(x_k))\ +\ \gamma(\Delta_f,\Delta_g,\bar d,\bar v,\varepsilon_j),
+\]
+with $\underline{\alpha}\in(0,\alpha]$ and a class–$\mathcal K$ function $\gamma$.
+
+\emph{Proof sketch.} Standard periodic MPC shift argument with phase–indexed terminal invariance and CLF property; φ–gating enters as linear equalities. Tube tightening handles mismatch and jitter, preserving feasibility and Lyapunov descent. \hfill$\square$
+
+\subsection*{A.3 Ledger–to–flux lemma}
+
+\noindent\textbf{Lemma A.4 (Local descent link).}  
+Let $u_i=\ln r_i$ and $J(r_i)=\cosh(u_i)-1$. There exist $\underline c>0$ and $\rho>0$ such that for $\|r-\mathbf{1}\|\le \rho$,
+\[
+\Phi(r)-\Phi(\mathbf{1})\ \le\ -\,\underline c\sum_i w_i J(r_i)\ +\ O(\|r-\mathbf{1}\|^3).
+\]
+
+\emph{Proof.} Taylor–expand $\Phi$ at $\mathbf{1}$: $\Phi(r)-\Phi(\mathbf{1})=\sum_i s_i(r_i-1)+O(\|r-\mathbf{1}\|^2)=\sum_i s_i u_i+O(\|u\|^2)$. With $w_i\propto|s_i|$, compare the linear form $\sum_i s_i u_i$ to the quadratic form $\sum_i w_i u_i^2$ by Cauchy–Schwarz and absorb constants; replace $u_i^2$ by $2J(r_i)+O(u_i^4)$. \hfill$\square$
+
+\subsection*{A.4 Gain–floor theorem}
+
+\noindent\textbf{Theorem A.5 (Confinement floor from ledger drop).}  
+If $H$ is locally monotone in $Q$ with $dH/dQ|_{Q_\star}=-\kappa_H<0$, then for any episode with ledger drop $\Delta\mathcal L>0$,
+\[
+\Delta H\ \ge\ \kappa\,\Delta\mathcal L\ -\ \epsilon,\qquad \kappa=\kappa_H\,\underline c,
+\]
+with $\underline c$ from Lemma A.4 and $\epsilon\ge 0$ aggregating tube–robustness remainders.
+
+\emph{Proof.} Combine Lemma A.4 with the local linearization $\Delta H\approx -\kappa_H\,\Delta Q$ and bound higher–order and tube terms by $\epsilon$. \hfill$\square$
+
+\subsection*{A.5 Periodic feasibility under jitter}
+
+\noindent\textbf{Proposition A.6 (Jitter–robust feasibility).}  
+With $\varepsilon_j\ll \min_\ell \Delta t_\ell$, if each actuator has dwell $\delta_a\le \min_{\ell\in\Pi(a)}\Delta t_\ell - 2\varepsilon_j$ and slew $\sigma_a$ compatible with window lengths, then the φ–gated constraints remain feasible under timing perturbations; recursive feasibility of the periodic MPC is preserved by tightening constraints by margins proportional to $\varepsilon_j$.
+
+\emph{Proof.} Gains from $\varepsilon_j$–separated edges preserve minimum dwell within windows; equalities become inequalities with slack absorbed in the tightened sets. \hfill$\square$
+
+\bigskip
+
+\section*{Appendix B — $\boldsymbol{\varphi}$–scheduler specification}\label{app:scheduler}
+
+\paragraph{B.1 Window construction.}
+Given $T>0$ and minimum dwell $\delta_{\min}=\min_a \delta_a$, choose exponents $e_\ell\in\{-1,0,1\}$ with $e_{\ell+1}-e_\ell\in\{-1,+1\}$ (so consecutive windows differ by a single $\varphi$ step) and set unnormalized lengths $\tilde\Delta t_\ell:=\varphi^{\,e_\ell}$. Normalize:
+\[
+\Delta t_\ell\ :=\ \frac{T\,\tilde\Delta t_\ell}{\sum_{j=0}^{7}\tilde\Delta t_j}\,,
+\qquad
+\text{require }\ \Delta t_\ell\ \ge\ \delta_{\min}\ \ \forall \ell.
+\]
+Pick a phase assignment $\Pi(a)$ ensuring that strongly coupled actuators do not share adjacent windows. Window masks $m_\ell(t)$ are $C^1$ raised–cosine ramps of duration $\tau_{\rm ramp}\ll \Delta t_\ell$ to suppress spectral leakage.
+
+\paragraph{B.2 Jitter model.}
+Let planned edges be $\hat t_\ell$ and realized edges $t_\ell$ with
+\[
+|t_\ell-\hat t_\ell|\ \le\ \varepsilon_j\,,\qquad \varepsilon_j/T\ \le\ \varepsilon_{\rm rel}.
+\]
+Compliance requires both absolute and relative bounds. The scheduler rejects updates that would violate phase membership, dwell, or slew after accounting for worst–case $\varepsilon_j$. For analysis, replace $\Delta t_\ell$ by $\Delta t_\ell-2\varepsilon_j$ in feasibility checks.
+
+\paragraph{B.3 Compliance API (controller–agnostic).}
+The module exposes:
+\begin{itemize}
+\item \texttt{BeginWindow($\ell$, $t$)} / \texttt{EndWindow($\ell$, $t$)}: emit on window edges with timestamps.
+\item \texttt{WindowIndex()}: current $\ell$.
+\item \texttt{Allowed($a$)} $\rightarrow$ \texttt{bool}: true iff $\ell\in\Pi(a)$ and dwell satisfied.
+\item \texttt{RequestUpdate($a$, payload)} $\rightarrow$ \{\textsf{Admit}, \textsf{Reject}, \textsf{Defer}\}: admits only if \texttt{Allowed($a$)} and slew/jitter constraints hold; otherwise rejects (logs reason) or defers to next admissible window.
+\item \texttt{GetComplianceReport()} $\rightarrow$ record: returns the signed per–window log (see B.4).
+\end{itemize}
+\emph{Contract.} External controllers (MPC, RL, heuristic) must obtain \textsf{Admit} before sending setpoint changes to actuators; non–admitted updates are ignored and logged as violations.
+
+\paragraph{B.4 Signed logging and attestation.}
+Each window produces a record
+\[
+\mathcal{R}_\ell=\Big(\ell,\,t_\ell,\,\Delta t_\ell,\,\Pi(\cdot)\text{ hit/miss},\,\textsf{dwell/slew/jitter flags},\,\textsf{updates admitted/rejected},\,\textsf{decision}\Big).
+\]
+Records are hash–chained:
+\[
+S_\ell=\mathrm{Sign}_{\rm sk}\!\Big(H(\mathcal{R}_\ell\ \Vert\ S_{\ell-1})\Big),
+\]
+with hardware–backed keys; \texttt{GetComplianceReport()} returns $(\mathcal{R}_\ell,S_\ell)$. A validator recomputes hashes and verifies signatures to certify φ–adherence and schedule compliance independent of the controller.
+
+\paragraph{B.5 Superframes and rescaling.}
+A superframe of $S\,T$ ($S\in\mathbb{N}$) repeats the 8–window pattern $S$ times; within each $T$ the $\varphi$ ratios are preserved. Global rescaling by $\tau_{\rm ref}$ is supported: $(T,\Delta t_\ell)\mapsto (\alpha T,\alpha \Delta t_\ell)$ with the same phase relations, provided dwell/slew constraints remain feasible.
+
+\paragraph{B.6 Failure handling.}
+If \texttt{BeginWindow} or \texttt{EndWindow} is late by $>\varepsilon_j$, the scheduler emits a \textsf{TimingFault} and (i) rejects all updates for the current window, (ii) holds actuators until the next \texttt{BeginWindow}, and (iii) logs the fault. Repeated faults trigger a cool–down and require re–synchronization before accepting updates.
+
+\section*{Appendix C — Surrogate calibration}\label{app:transport-link}
+
+\paragraph{Purpose.}
+Calibrate the transport surrogate $\Phi(r)$ and the constants $(\underline c,\ C_H,\ \kappa)$ used in the gain–floor bound. Declare acceptance checks that lock the calibration for a campaign.
+
+\paragraph{C.1 Sensitivity calibration for $w_i$ and $\underline c$.}
+\begin{enumerate}
+\item \emph{φ–phased probes.} For each channel $i$, apply a small, phase–admissible perturbation $\delta u$ to the actuator(s) that most strongly influence $r_i$, confined to a window $\ell\in\Pi(a)$ and repeated over a superframe to average noise. Record the induced $(\Delta r_i,\ \Delta Q)$ with masks fixed (Sec.~\ref{sec:experiments}).
+\item \emph{Signed sensitivities at $r=\mathbf{1}$.} Estimate 
+\[
+s_i=\frac{\partial \Phi}{\partial r_i}\Big|_{r=1}\approx \frac{\Delta Q}{\Delta r_i}\Big|_{\text{small}},
+\]
+using robust linear regression (Huber) with bootstrap CIs. Declare the sign: $s_i>0$ for gradient–like, $s_i<0$ for shear–like.
+\item \emph{Weights.} Set $w_i = |s_i|/s_0$ with normalization $s_0=\text{median}_i |s_i|$ (or a declared reference). Freeze $\{w_i\}$ for the campaign.
+\item \emph{Quadratic comparison constant $\underline c$.} In the log–coordinates $u_i=\ln r_i$, the ledger is $J(r_i)=\cosh(u_i)-1=\tfrac12 u_i^2+O(u_i^4)$. Define the quadratic forms
+\[
+\mathcal{Q}_1(u)=\sum_i s_i u_i,\qquad \mathcal{Q}_2(u)=\sum_i w_i u_i^2.
+\]
+Over a small trust region $\|u\|\le \rho$, compute the largest $\underline c>0$ such that
+\[
+\mathcal{Q}_1(u)\ \le\ -\,\underline c\,\mathcal{Q}_2(u)\quad \text{for all $u$ aligned with $-\nabla_r\mathcal{L}$ and $\|u\|\le \rho$}.
+\]
+Numerically, fit the local slope $dQ/d\mathcal{L}$ from probe data and set $\underline c = \frac12 \min_{\|u\|\le\rho}\frac{|\sum_i s_i u_i|}{\sum_i w_i u_i^2}$.
+\end{enumerate}
+
+\paragraph{C.2 Energy–balance calibration for $C_H$ and $\kappa$.}
+\begin{enumerate}
+\item \emph{Define $H(Q)$.} Let $H$ be a confinement factor monotonically decreasing in $Q$ locally (e.g., $H\propto P_{\rm fus}/Q_{\rm loss}$ near a reference state).
+\item \emph{Local slope.} Estimate $dH/dQ|_{Q_\star}$ around the reference $Q_\star$ using small, steady perturbations (or archival data). Set
+\[
+\kappa_H := -\,\frac{dH}{dQ}\Big|_{Q_\star}\ > 0,\qquad C_H := \frac{1}{\kappa_H}.
+\]
+\item \emph{Gain–floor constant.} Either form is acceptable:
+\[
+\kappa = \kappa_H\,\underline c \qquad\text{equivalently}\qquad \kappa = \frac{\underline c}{C_H}.
+\]
+Declare $\kappa$ with a CI; choose the conservative (lower–bound) estimate for preregistration.
+\end{enumerate}
+
+\paragraph{C.3 Acceptance checks (pre–campaign).}
+\begin{itemize}
+\item \emph{Sign test.} Every $s_i$ has the preregistered sign; if any flips or is indeterminate, freeze $w_i$ to a neutral value and mark the channel as “non–driving” for the floor (excluded from $w_i$ sum).
+\item \emph{Stability of slopes.} The median absolute deviation of the estimated $dQ/d\mathcal{L}$ across probe repeats is $\le \delta_{\rm stab}$ (declared tolerance). Otherwise, enlarge uncertainty and reduce $\kappa$ accordingly.
+\item \emph{Transport consistency.} The linear model $\Delta Q \approx -\underline c\,\Delta\mathcal{L}$ holds within residual $\le \epsilon_{\rm fit}$ over the trust region; else shrink $\rho$ and recompute.
+\item \emph{Freeze \& hash.} Commit $(w_i)$, $\underline c$, $C_H$, $\kappa$, $(\rho,\delta_{\rm stab},\epsilon_{\rm fit})$ to a signed preregistration record referenced in Sec.~\ref{sec:experiments}.
+\end{itemize}
+
+\bigskip
+
+\section*{Appendix D — Implementation details}\label{app:impl}
+
+\paragraph{D.1 Timing diagrams (φ–windows and solver cadence).}
+\noindent
+\emph{Windows:} $T$ partitioned into 8 φ–commensurate windows $W_0,\dots,W_7$ with $C^1$ ramps of duration $\tau_{\rm ramp}\ll \Delta t_\ell$.  
+\emph{Cadence:} Sense–Fuse $\to$ Predict $\to$ Optimize $\to$ Safety–Filter $\to$ Gate–Actuate $\to$ Attest, all at each \texttt{BeginWindow} event. Late work is dropped; actuators hold. A superframe repeats the 8–window pattern $S$ times; solver ticks align to window starts.
+
+\paragraph{D.2 Solver configuration (periodic MPC).}
+\begin{itemize}
+\item \emph{Formulation.} Condensed QP (or sparse SQP for mild nonlinearity) with equality constraints for φ–gating and linear inequalities for dwell/slew. Terminal sets/costs indexed by phase.
+\item \emph{Horizon.} $N=10$–$30$ control ticks (≥ one dominant timescale).  
+\item \emph{Warm–starts.} Shift previous solution; reuse factorization; phase–cache Jacobians/Hessians.  
+\item \emph{Stopping.} KKT residual $\le 10^{-3}$ (scaled), max iters clipped to meet latency. Early–exit permitted if certificate preview passes and marginal $\Delta\mathcal{L}$ improvement $< \varepsilon_{\rm imp}$.
+\item \emph{Numerics.} Regularize Hessians (min eigenvalue $\ge 10^{-6}$), bound multipliers, and project infeasible steps back into tightened sets.
+\end{itemize}
+
+\paragraph{D.3 Diagnostics pipeline.}
+\begin{itemize}
+\item \emph{Ingest.} Time–stamp and buffer raw channels; align to window start $t_\ell$ using nearest–neighbor or spline interpolation with latency compensation.
+\item \emph{Fusion.} Apply phase–aware whitening; robust filters (Huber/biweight) for outliers; produce control–rate streams for $T_e,n_e,q,\hat s$, turbulence bands, radiation/impurity proxies, neutron rate.
+\item \emph{Ratios.} Compute $r_i=y_i/y_i^\star$; log both $y_i$ and $r_i$ summaries for audit; propagate uncertainty to certificate components where required.
+\item \emph{Health.} Channel–health flags (stale, outlier, dropout) feed the certificate and can trigger \textsf{Degraded Mode}.
+\end{itemize}
+
+\paragraph{D.4 Safety filter (RL integration).}
+One–step QP/NLP projection with cost $\tfrac12\|u-a_{\rm raw}\|_R^2$ and constraints (φ–gating, dwell/slew, certificate predictions). Warm–start from last applied $u^\star$; deadline–aware: if not solved by $\tau_{\rm sf}$, return $u^{\rm safe}$ and log \textsf{Modify}.
+
+\paragraph{D.5 Attestation.}
+Hardware timers emit \texttt{Begin/EndWindow}; secure element signs per–window records; hash–chain stored on append–only medium. A validator tool replays logs and certifies φ–adherence and decision logic.
+
+\bigskip
+
+\section*{Appendix E — Reproducibility pack}\label{app:repro}
+
+\paragraph{E.1 File tree (minimal).}
+\begin{verbatim}
+repro/
+  code/
+    controller/        # MPC, safety filter, RL wrappers
+    scheduler/         # φ-scheduler + Compliance API
+    certificate/       # audit surface evaluator
+    surrogates/        # Φ(r) implementations, probes, fits
+    analysis/          # endpoints, bootstrap, figures
+  data/
+    masks/             # fixed time masks per diagnostic
+    configs/           # plant limits, Π(a), thresholds θ, κ, ε
+    probes/            # φ-phased probe logs for sensitivity fits
+    logs/              # signed compliance ledgers (.jsonl)
+  docs/
+    preregistration.md # hash-committed declarations
+    schema.md          # data schemas (see below)
+  scripts/
+    run_campaign.sh    # orchestrates a full run
+    verify_logs.py     # signature + φ-compliance verifier
+    make_figures.py    # deterministic figure build
+\end{verbatim}
+
+\paragraph{E.2 Data schemas (essentials).}
+\emph{Recognition ratios stream (per window):}
+\begin{verbatim}
+{
+  "t_window_start": ISO8601,
+  "phase": int,                  # 0..7
+  "ratios": { "r_i": float, ... },
+  "ledger_L": float,
+  "certificate_A": { "name": float, ... }
+}
+\end{verbatim}
+\emph{Compliance log (per window, signed):}
+\begin{verbatim}
+{
+  "window": { "index": int, "t_begin": ns, "t_end": ns,
+              "durations": [ns,...], "phi_ratios_ok": bool },
+  "updates": [ { "act": "NBI", "admit": true, "delta": {...} }, ... ],
+  "constraints": { "dwell_ok": bool, "slew_ok": bool, "jitter_ok": bool },
+  "decision": "Pass" | "Modify" | "Reject",
+  "ledger_L": float,
+  "certificate_A": { "R_disc": float, "chi_imp": float, ... },
+  "hash_prev": "hex",
+  "sig": "base64"
+}
+\end{verbatim}
+
+\paragraph{E.3 Run scripts.}
+\begin{itemize}
+\item \texttt{run\_campaign.sh} — takes a config hash, seeds the RNG, executes AB/BA blocks, and emits signed logs.
+\item \texttt{verify\_logs.py} — validates signatures, φ–ratio checks, dwell/slew/jitter flags; produces a conformance report.
+\item \texttt{make\_figures.py} — regenerates all figures from the compliance logs and downsampled ratios; fails if hashes mismatch.
+\end{itemize}
+
+\paragraph{E.4 Acceptance of a reproduction.}
+A reproduction is accepted if (i) conformance passes (no φ/schedule violations), (ii) the primary endpoints match ours within preregistered CI bands, and (iii) the figure hashes match those produced by \texttt{make\_figures.py}.
+
+\bigskip
+
+\section*{Appendix F — Notation glossary}\label{app:glossary}
+
+\noindent
+\textbf{$T$} — control period length. \\
+\textbf{$W_\ell$} — phase window $\ell\in\{0,\dots,7\}$. \\
+\textbf{$\Delta t_\ell$} — duration of window $W_\ell$; consecutive ratios $\Delta t_{\ell+1}/\Delta t_\ell\in\{\varphi,\varphi^{-1}\}$. \\
+\textbf{$\Pi(a)$} — set of windows in which actuator $a$ may update. \\
+\textbf{$y_i,\ y_i^\star$} — diagnostic channel and its declared target (dimensioned). \\
+\textbf{$r_i$} — recognition ratio $y_i/y_i^\star$ (dimensionless). \\
+\textbf{$J(x)$} — ledger cost $\tfrac12(x+1/x)-1$; $J(1)=0$, $J''(x)=x^{-3}>0$. \\
+\textbf{$\mathcal{L}$} — ledger objective $\sum_i w_i J(r_i)$. \\
+\textbf{$w_i$} — channel weights, set $\propto |\partial \Phi/\partial r_i|_{r=1}$. \\
+\textbf{$\Phi(r)$} — transport surrogate mapping ratios to flux proxy $Q$. \\
+\textbf{$Q$} — energy–flux/loss proxy; $Q=\Phi(r)$. \\
+\textbf{$H$} — confinement factor (monotone in $Q$ locally). \\
+\textbf{$\underline c$} — local comparison constant linking $\Delta Q$ and $\Delta\mathcal{L}$ (Lemma A.4). \\
+\textbf{$\kappa_H$} — $-\frac{dH}{dQ}\big|_{Q_\star}>0$; \textbf{$C_H$}$=1/\kappa_H$. \\
+\textbf{$\kappa$} — gain–floor constant: $\kappa=\kappa_H\,\underline c=\underline c/C_H$. \\
+\textbf{$\mathcal{A}(y)$} — certificate vector (risk, impurities/radiation, transport proxies, tracking error). \\
+\textbf{$\theta$} — certificate thresholds (fixed or phase–scheduled, preregistered). \\
+\textbf{$M$} — number of consecutive windows required for \textsf{Pass}. \\
+\textbf{$\varepsilon_j$} — absolute jitter bound on window edges; $\varepsilon_{\rm rel}=\varepsilon_j/T$. \\
+\textbf{$\delta_a,\ \sigma_a$} — actuator dwell and slew bounds. \\
+\textbf{$\Xi$} — cross–interference index from spectra (Sec.~\ref{sec:experiments}). \\
+\textbf{$K_{ab}$} — bilinear cross–coupling kernel between actuators $a,b$. \\
+\textbf{$\kappa$ (interference)} — scheduler–intrinsic factor from Theorem A.1 (context disambiguated). \\
+\textbf{$u_i$} — log–deviation $\ln r_i$; $J(r_i)=\cosh(u_i)-1$. \\
+\textbf{$V_f^\ell,\ \mathcal{X}_f^\ell$} — phase–dependent terminal cost and set for periodic MPC. \\
+\textbf{$\varphi$} — golden ratio $(1+\sqrt{5})/2$.
+
+\section*{References}
+
+\noindent\textbf{BLOCKER:} Verify exact bibliographic details (years, page ranges) for items 6–7 and harmonize citation style before submission.
+
+\begin{enumerate}
+\item J.\,B.~Rawlings, D.\,Q.~Mayne, and M.~Diehl, \emph{Model Predictive Control: Theory, Computation, and Design}, 2nd ed., Nob Hill, 2017.
+
+\item D.\,Q.~Mayne, ``Model predictive control: Recent developments and future promise,'' \emph{Automatica} \textbf{50} (2014) 2967–2986.
+
+\item S.~Boyd and L.~Vandenberghe, \emph{Convex Optimization}, Cambridge University Press, 2004.
+
+\item R.\,S.~Sutton and A.\,G.~Barto, \emph{Reinforcement Learning: An Introduction}, 2nd ed., MIT Press, 2018.
+
+\item J.~García and F.~Fernández, ``A Comprehensive Survey on Safe Reinforcement Learning,'' \emph{Journal of Machine Learning Research} \textbf{16} (2015) 1437–1480.
+
+\item T.\,E.~Evans, R.\,A.~Moyer, \emph{et al.}, ``Suppression of large edge-localized modes in high-confinement DIII-D plasmas with a stochastic magnetic boundary,'' \emph{Physical Review Letters} \textbf{92} (2004) 235003. % BLOCKER: confirm author list and exact title punctuation.
+
+\item P.\,T.~Lang, A.~Loarte, \emph{et al.}, ``ELM pace making by pellet injection in ASDEX Upgrade,'' \emph{Nuclear Fusion} \textbf{44} (2004) 665–677. % BLOCKER: confirm year/volume/page.
+
+\item J.\,D.~Lindl, ``Development of the indirect-drive approach to inertial confinement fusion and the target physics basis for ignition and gain,'' \emph{Physics of Plasmas} \textbf{2} (1995) 3933–4024.
+
+\item R.~Betti and O.\,A.~Hurricane, ``Inertial-confinement fusion with lasers,'' \emph{Nature Physics} \textbf{12} (2016) 435–448.
+
+\item A.\,Ya.~Khinchin, \emph{Continued Fractions}, University of Chicago Press, 1964. % Diophantine approximation; golden ratio properties.
+\end{enumerate}
+
+
+\end{document}

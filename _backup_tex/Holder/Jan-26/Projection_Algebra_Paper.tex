@@ -1,0 +1,222 @@
+\documentclass[11pt]{article}
+
+% Minimal, TeXLive-basic-friendly packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% Notation
+\newcommand{\id}{\mathrm{id}}
+\newcommand{\Fix}{\mathrm{Fix}}
+\newcommand{\im}{\mathrm{im}}
+\newcommand{\kerop}{\mathrm{ker}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\N}{\mathbb{N}}
+
+\title{\textbf{Projection Algebra as a Reusable Kernel for Mechanized Proofs:\\
+Idempotence, Spectral Decomposition, and Cost-Ordered Optimization}}
+\author{Recognition Science Collaboration}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Projection operators sit at the interface of algebra, geometry, and optimization. This paper distills a ``projection algebra'' suitable for mechanized mathematics: (i) idempotence (\(\pi^2=\pi\)) as the defining axiom of projection, (ii) spectral decomposition as the source of complete families of orthogonal projectors, and (iii) cost-ordering of projectors as an optimization principle that turns projection into dynamics. We explain how this algebraic kernel supports reusable theorems in coarse-graining, renormalization, and decoherence, and why encoding it explicitly in a proof assistant (e.g.\ Lean) dramatically reduces the marginal cost of future formalizations.
+\end{abstract}
+
+\section{Introduction}
+Projectors appear whenever a system must enforce constraints, select a subspace, or discard degrees of freedom. In physics they formalize measurement and decoherence; in applied mathematics they enforce feasibility (e.g.\ constrained optimization); in information theory they model coarse-graining; and in many mechanized developments they serve as the missing ``glue'' between analytic statements and algebraic composition.
+
+The core observation is that \emph{projection} is an algebraic idea with a surprisingly small axiom set, but enormous leverage. If a library makes projectors first-class objects, then many subsequent constructions become one-line instantiations rather than bespoke proofs.
+
+We focus on three pillars:
+\begin{enumerate}
+  \item \textbf{Idempotence} (\(\pi^2=\pi\)): projection is characterized by stabilization after one application.
+  \item \textbf{Spectral decomposition}: in inner-product settings, orthogonal projectors arise from eigenspace decompositions and provide complete, mutually exclusive outcomes.
+  \item \textbf{Cost-ordering}: attaching a cost functional to a projector turns it into an optimization primitive; composition laws then yield monotone descent guarantees for multi-stage procedures.
+\end{enumerate}
+
+\section{Abstract projector algebra}
+\subsection{Idempotence and fixed points}
+
+\begin{definition}[Abstract projector]
+Let \(\alpha\) be a type (set). A map \(\pi:\alpha\to\alpha\) is a \emph{projector} if it is \emph{idempotent}:
+\begin{equation}
+\pi(\pi(x))=\pi(x)\quad \text{for all }x\in\alpha.
+\end{equation}
+\end{definition}
+
+The fundamental structure induced by idempotence is the fixed-point set.
+
+\begin{definition}[Fixed points]
+For a projector \(\pi\), define \(\Fix(\pi) \coloneqq \{x\in\alpha \mid \pi(x)=x\}\).
+\end{definition}
+
+\begin{lemma}[Image equals fixed points]
+If \(\pi\) is idempotent, then \(\im(\pi)\subseteq \Fix(\pi)\), and \(\pi\) restricts to the identity on \(\Fix(\pi)\).
+\end{lemma}
+\begin{proof}
+If \(y=\pi(x)\), then \(\pi(y)=\pi(\pi(x))=\pi(x)=y\), so \(y\in\Fix(\pi)\). If \(x\in\Fix(\pi)\), then \(\pi(x)=x\) by definition.
+\end{proof}
+
+\begin{remark}
+This lemma is one of the most ``reused'' facts in formal work: any time a proof shows something is a fixed point, the projector disappears.
+\end{remark}
+
+\subsection{Commuting composition}
+
+Composition of projectors is not always a projector, but commutation is enough.
+
+\begin{proposition}[Commuting composition is a projector]
+Let \(\pi_1,\pi_2:\alpha\to\alpha\) be idempotent maps such that \(\pi_1\circ\pi_2=\pi_2\circ\pi_1\). Then \(\pi \coloneqq \pi_1\circ\pi_2\) is idempotent.
+\end{proposition}
+\begin{proof}
+Using commutation and idempotence:
+\[
+\pi\circ\pi
+= (\pi_1\circ\pi_2)\circ(\pi_1\circ\pi_2)
+= \pi_1\circ(\pi_2\circ\pi_1)\circ\pi_2
+= \pi_1\circ(\pi_1\circ\pi_2)\circ\pi_2
+= (\pi_1\circ\pi_1)\circ(\pi_2\circ\pi_2)
+= \pi_1\circ\pi_2
+= \pi.
+\]
+\end{proof}
+
+\begin{remark}
+This single proposition underlies multi-stage constraint enforcement, iterative coarse-graining, and many ``project then project again'' pipelines.
+\end{remark}
+
+\section{Orthogonal projectors and spectral decomposition}
+The preceding section is purely algebraic. In Hilbert spaces, additional structure yields \emph{orthogonal} projectors and complete decompositions.
+
+\begin{definition}[Orthogonal projector]
+Let \(H\) be a (real or complex) Hilbert space. A bounded linear operator \(P:H\to H\) is an \emph{orthogonal projector} if it is idempotent and self-adjoint:
+\begin{equation}
+P^2=P,\qquad P^\ast=P.
+\end{equation}
+\end{definition}
+
+Orthogonal projectors correspond to closed subspaces. Their key spectral fact is elementary:
+
+\begin{lemma}[Spectrum of a projector]
+If \(P\) is a (linear) projector on a vector space, then every eigenvalue \(\lambda\) of \(P\) satisfies \(\lambda\in\{0,1\}\).
+\end{lemma}
+\begin{proof}
+If \(P v = \lambda v\), then applying \(P\) again gives \(P^2 v = \lambda^2 v\), but \(P^2 v = Pv = \lambda v\). Hence \(\lambda^2=\lambda\), so \(\lambda\in\{0,1\}\).
+\end{proof}
+
+\begin{proposition}[Decomposition into range and kernel]
+Let \(P:H\to H\) be an orthogonal projector. Then
+\begin{equation}
+H = \im(P)\ \oplus\ \kerop(P),
+\end{equation}
+with \(\im(P)\perp \kerop(P)\). Moreover, \(P\) is the identity on \(\im(P)\) and zero on \(\kerop(P)\).
+\end{proposition}
+\begin{proof}
+Standard: for any \(x\), write \(x = Px + (x-Px)\). Then \(P(x-Px)=Px-P^2x=0\), so \(x-Px\in\kerop(P)\). Orthogonality follows from self-adjointness: if \(y=Pu\in\im(P)\) and \(z\in\kerop(P)\), then \(\langle y,z\rangle=\langle Pu,z\rangle=\langle u,P^\ast z\rangle=\langle u,Pz\rangle=0\).
+\end{proof}
+
+\subsection{Complete families of orthogonal projectors}
+
+Measurement and coarse-graining use not one projector, but a complete mutually exclusive family.
+
+\begin{definition}[Complete orthogonal projectors]
+Let \(H\) be a Hilbert space. A finite family \(\{P_k\}_{k=1}^m\) of operators on \(H\) is a \emph{complete family of orthogonal projectors} if:
+\begin{align}
+P_k^2 &= P_k,\qquad P_k^\ast=P_k\quad \text{for all }k,\\
+P_iP_j &= 0\quad \text{for }i\neq j,\\
+\sum_{k=1}^m P_k &= I.
+\end{align}
+\end{definition}
+
+\begin{remark}
+The spectral theorem provides such a family for any normal operator with finite spectrum; in quantum mechanics, these are precisely the projectors associated to a projective measurement.
+\end{remark}
+
+\section{Cost-ordered projectors and optimization}
+\subsection{Projectors equipped with a cost}
+
+To turn projection into dynamics, we attach a cost functional and demand monotonic descent.
+
+\begin{definition}[Cost-ordered projector]
+Let \(\alpha\) be a type and \(\pi:\alpha\to\alpha\) an idempotent map. A \emph{cost-ordered projector} is a pair \((\pi,\mathcal{C})\) with \(\mathcal{C}:\alpha\to\R\) such that:
+\begin{align}
+\mathcal{C}(x) &\ge 0 \quad \text{for all }x,\\
+\mathcal{C}(\pi(x)) &\le \mathcal{C}(x)\quad \text{for all }x,\\
+\pi(x)=x &\Rightarrow \mathcal{C}(x)=0.
+\end{align}
+\end{definition}
+
+\begin{remark}
+This structure is the minimal ``optimization payload'' needed to prove global statements like: repeated projection never increases cost, and fixed points are certified minima.
+\end{remark}
+
+\subsection{Sequencing and commuting descent}
+
+If multiple constraints are enforced by commuting projectors, their composition inherits both idempotence and monotone descent.
+
+\begin{proposition}[Monotone descent under commuting composition]
+Let \((\pi_1,\mathcal{C})\) and \((\pi_2,\mathcal{C})\) be cost-ordered projectors sharing the same cost \(\mathcal{C}\). If \(\pi_1\) and \(\pi_2\) commute, then \(\pi=\pi_1\circ\pi_2\) is a projector and satisfies \(\mathcal{C}(\pi(x))\le \mathcal{C}(x)\) for all \(x\).
+\end{proposition}
+\begin{proof}
+Idempotence follows from commuting composition. For monotonicity,
+\[
+\mathcal{C}(\pi(x))=\mathcal{C}(\pi_1(\pi_2(x)))\le \mathcal{C}(\pi_2(x))\le \mathcal{C}(x).
+\]
+\end{proof}
+
+\section{Why this algebra accelerates future formalizations}
+Once a proof assistant library makes the above structures explicit, large families of theorems become ``free'':
+\begin{enumerate}
+  \item \textbf{Coarse-graining}: A coarse-graining map is typically idempotent (applying it twice adds no further information loss). Many theorems reduce to commuting-composition and fixed-point reasoning.
+  \item \textbf{Renormalization}: Renormalization procedures can be expressed as alternating (i) projection onto an effective subspace and (ii) rescaling. Cost-ordering provides a clean way to prove monotone improvement bounds and convergence-to-fixed-point claims.
+  \item \textbf{Decoherence}: Decoherence and projective measurement are naturally encoded by complete orthogonal families \(\{P_k\}\). When these are packaged as reusable objects, normalization and orthogonality lemmas are reusable across all measurement-like arguments.
+\end{enumerate}
+
+\section{Mechanization notes (Lean)}
+In a mechanized setting, the critical design choice is to represent projectors as \emph{structures} (record types) carrying their laws (\(\pi^2=\pi\), cost monotonicity, etc.) as fields. This makes theorems depend only on the interface, not on a concrete implementation.
+
+In practice, such a file (e.g.\ \texttt{Support/Projectors.lean}) typically provides:
+\begin{itemize}
+  \item an \emph{abstract} projector interface (a map plus idempotence);
+  \item a \emph{cost-ordered} refinement (a cost function plus monotonicity);
+  \item reusable lemmas: commuting composition, fixed-point simplification, and sequencing theorems.
+\end{itemize}
+
+These abstractions allow new domain modules (coarse-graining kernels, decoherence models, bridge maps) to import and reuse the same projection theorems, yielding smaller proofs and fewer ad hoc rewrites.
+
+\section{Conclusion}
+Projection algebra is a rare example of a mathematically small interface with outsized downstream impact. Idempotence provides the algebraic core; spectral decomposition supplies complete orthogonal families in inner-product spaces; and cost-ordering turns projectors into optimization primitives that support monotone descent guarantees. Encoding these ideas as reusable interfaces in a proof assistant makes future formalizations (coarse-graining, renormalization, decoherence) substantially easier: proofs become compositions of generic lemmas rather than bespoke arguments.
+
+\begin{thebibliography}{9}
+\bibitem{halmos}
+P.\ R.\ Halmos, \emph{Finite-Dimensional Vector Spaces}, Springer, 1974.
+
+\bibitem{reed_simon}
+M.\ Reed and B.\ Simon, \emph{Methods of Modern Mathematical Physics I: Functional Analysis}, Academic Press, 1980.
+
+\bibitem{vonneumann}
+J.\ von Neumann, \emph{Mathematical Foundations of Quantum Mechanics}, Princeton University Press, 1955.
+
+\bibitem{lean}
+The Lean Community, \emph{Lean 4 Theorem Prover}, \url{https://lean-lang.org/}.
+\end{thebibliography}
+
+\end{document}
+

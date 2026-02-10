@@ -1,0 +1,318 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{array}
+
+% Simple page style
+\pagestyle{plain}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}{Definition}
+
+\begin{document}
+
+\begin{center}
+\textbf{\LARGE PATENT APPLICATION}\\[0.5cm]
+\textbf{\Large Method and System for Jitter-Robust Pulse Scheduling\\Using Golden-Ratio Interval Timing}\\[1cm]
+
+\begin{tabular}{rl}
+\textbf{Application Type:} & Utility Patent \\
+\textbf{Filing Date:} & January 18, 2026 \\
+\textbf{Inventor:} & Jonathan Washburn \\
+\textbf{Technology Field:} & Fusion Energy / Laser Control Systems \\
+\textbf{International Class:} & G21B 1/00; H01S 3/10; G05B 19/00 \\
+\end{tabular}
+\end{center}
+
+\vspace{1cm}
+\hrule
+\vspace{0.5cm}
+
+\section*{ABSTRACT}
+
+A method and system for scheduling pulses in inertial confinement fusion (ICF) and related pulsed-energy applications using Golden Ratio ($\varphi = \frac{1+\sqrt{5}}{2}$) interval timing. The scheduler generates pulse times \(t_k = \tau_0 \cdot \varphi^{k-1}\) for \(k=1,\ldots,n\) and may optionally assign discrete phase ticks (e.g., an 8-tick cycle) to each pulse. The scheduler additionally outputs an auditable schedule artifact and an associated \emph{model-layer degradation proxy} under a declared, dimensionless normalized jitter amplitude \(j\in[0,1]\) (where the normalization scale is a declared seam parameter). In the committed proxy layer used in this repository, the degradation proxy for \(\varphi\)-scheduling is quadratic in \(j\) (e.g., \(D_\varphi(j)=s\cdot j^2\) for a declared sensitivity \(s\ge 0\)), contrasted with a linear proxy \(D_{\text{equal}}(j)=s\cdot j\) for equal-interval schedules. Lean formalizes these proxy degradation forms and proves the inequality \(j^2<j\) for \(0<j<1\); any mapping from the proxy to facility performance, yield, or cost is an explicit empirical seam unless separately validated.
+
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+
+\section{BACKGROUND OF THE INVENTION}
+
+\subsection{Technical Field}
+
+This invention relates generally to pulsed energy systems, and more particularly to methods for scheduling laser pulses in inertial confinement fusion (ICF) systems, laser machining, LIDAR arrays, and other applications where precise multi-pulse timing affects system performance.
+
+\subsection{Description of Related Art}
+
+Inertial confinement fusion relies on the precise delivery of laser energy to compress and heat a fuel pellet. The National Ignition Facility (NIF) and similar installations employ multiple laser beamlines that must be synchronized to within picoseconds to achieve symmetric implosion.
+
+\subsubsection{The Jitter Problem}
+
+All timing systems exhibit random fluctuations known as ``jitter.'' In ICF systems, jitter manifests as:
+\begin{itemize}
+    \item \textbf{Temporal jitter:} Random variations in pulse arrival times
+    \item \textbf{Phase jitter:} Fluctuations in the phase relationship between pulses
+    \item \textbf{Amplitude coupling:} Timing errors that induce intensity variations
+\end{itemize}
+
+Current state-of-the-art requires expensive ultra-stable oscillators and complex feedback systems to minimize jitter. The NIF achieves sub-picosecond synchronization using atomic clocks and fiber-optic distribution networks costing tens of millions of dollars.
+
+\subsubsection{Limitations of Prior Art}
+
+Prior art approaches to jitter mitigation include:
+
+\begin{enumerate}
+    \item \textbf{Hardware solutions:} Ultra-stable oscillators, temperature-controlled enclosures, and vibration isolation. These add significant cost and complexity.
+    
+    \item \textbf{Feedback correction:} Real-time measurement and adjustment of pulse timing. This requires additional sensors and introduces latency.
+    
+    \item \textbf{Statistical averaging:} Using many pulses to average out random errors. This reduces peak power and efficiency.
+    
+    \item \textbf{Equal spacing:} The standard approach of evenly spacing pulses, which provides no inherent jitter immunity.
+\end{enumerate}
+
+None of these approaches exploit the mathematical structure of pulse interference to achieve inherent robustness.
+
+\subsection{Objects of the Invention}
+
+It is therefore an object of this invention to provide a pulse scheduling method that is inherently robust to timing jitter.
+
+It is a further object to enable engineering trade-offs in timing hardware by using deterministic schedule generation and auditable proxy bounds; any facility cost reduction is an empirical seam.
+
+It is a further object to provide a machine-checkable proxy inequality and a hash-based audit artifact for deployment gating under declared jitter assumptions.
+
+It is a further object to enable ``jitter-tolerant'' fusion reactor designs suitable for commercial deployment.
+
+\section{SUMMARY OF THE INVENTION}
+
+The present invention provides a method for generating \(\varphi\)-spaced pulse schedules and associated auditable schedule artifacts.
+
+\subsection{Proxy Quadratic Advantage (Lean-backed inequality)}
+In the committed proxy layer used in this repository, jitter robustness is summarized by a \emph{dimensionless normalized jitter amplitude} \(j := \mathrm{RMS}(\epsilon)/\tau_{\mathrm{scale}}\in[0,1]\), where \(\tau_{\mathrm{scale}}>0\) is declared and logged as a seam parameter. A degradation proxy is computed as \(D_{\text{proxy}}(j)=s\cdot j^p\) for a declared sensitivity \(s\ge 0\) and exponent \(p\in\{1,2\}\).
+
+We use \(p=2\) as the proxy for \(\varphi\)-scheduling and \(p=1\) as the comparison proxy for equal-interval schedules. Lean proves the core inequality underlying this proxy comparison:
+
+\begin{theorem}[Quadratic (proxy) advantage under small normalized jitter]
+Let \(0<j<1\) and \(s>0\). Define \(D_{\mathrm{equal}}(j):=s\cdot j\) and \(D_{\varphi}(j):=s\cdot j^2\). Then \(D_{\varphi}(j) < D_{\mathrm{equal}}(j)\).
+\end{theorem}
+
+For these proxy functions, \(D_{\varphi}(j)/D_{\mathrm{equal}}(j)=j\) (e.g., \(j=0.01\) yields a 100$\times$ smaller proxy bound). Any mapping from this proxy to facility symmetry/yield is an explicit empirical seam.
+
+\subsection{Key Innovations}
+
+\begin{enumerate}
+    \item \textbf{Deterministic \(\varphi\)-schedule generation (implemented):} compute pulse times \(t_k=\tau_0\cdot\varphi^{k-1}\) from declared inputs and optionally assign discrete phase ticks (e.g., an 8-tick cycle) for downstream coordination.
+    
+    \item \textbf{Degradation proxy emission (implemented):} compute and report a quadratic proxy bound \(D_\varphi(j)=s\cdot j^2\) from a declared, normalized jitter amplitude \(j\) (contrasted with a linear proxy \(D_{\text{equal}}(j)=s\cdot j\) for uniform scheduling). The mapping from this proxy to facility performance is an explicit seam.
+    
+    \item \textbf{Auditable certificate artifact (implemented):} emit a hash-based certificate bundle binding inputs and outputs, including references to Lean-verified proxy lemmas and executable-interface definitions (external signing optional integration seam).
+\end{enumerate}
+
+\section{DETAILED DESCRIPTION OF THE INVENTION}
+
+\subsection{Definitions (Committed Proxy Layer)}
+\begin{itemize}
+    \item \textbf{Golden Ratio (\(\varphi\))}: \(\varphi=\frac{1+\sqrt{5}}{2}\).
+    \item \textbf{Base timing (\(\tau_0\))}: positive base interval used to scale the schedule (time units).
+    \item \textbf{Pulse times (\(t_k\))}: scheduled pulse trigger times \(t_k=\tau_0\cdot\varphi^{k-1}\) for \(k=1,\ldots,n\).
+    \item \textbf{Normalized jitter amplitude (\(j\))}: a dimensionless jitter magnitude in \([0,1]\) computed as \(j:=\mathrm{RMS}(\epsilon)/\tau_{\mathrm{scale}}\), where \(\tau_{\mathrm{scale}}>0\) is a declared normalization scale (seam parameter).
+    \item \textbf{Sensitivity (\(s\))}: nonnegative scalar used in the degradation proxy (proxy parameter).
+    \item \textbf{Degradation proxy bounds}: \(D_\varphi(j):=s\cdot j^2\) for \(\varphi\)-scheduling and \(D_{\text{equal}}(j):=s\cdot j\) for equal-interval comparison (proxy forms; physical mapping is a seam).
+    \item \textbf{Proxy threshold (\(D_{\max}\))}: declared bound on acceptable proxy degradation used for gating decisions.
+    \item \textbf{Certificate bundle}: a hash-based auditable artifact binding inputs and outputs, optionally including Lean theorem identifiers (external signing optional integration seam).
+\end{itemize}
+
+\subsection{Theoretical Foundation}
+
+\subsubsection{The Interference Ratio}
+
+Consider a sequence of $n$ pulses with timing $\{t_1, t_2, \ldots, t_n\}$. Each pulse has an envelope function $E(t - t_k)$ representing its temporal profile. The \textbf{total interference} is defined as:
+\begin{equation}
+    I_{\text{total}} = \sum_{i \neq j} \int_{-\infty}^{\infty} E(t - t_i) \cdot E(t - t_j) \, dt
+\end{equation}
+
+This measures the overlap between pulse envelopes. When jitter is present, each $t_k$ becomes $t_k + \epsilon_k$ where $\epsilon_k$ is a random variable with variance $j^2$.
+
+\begin{definition}[Interference Ratio]
+The interference ratio $R$ is defined as:
+\begin{equation}
+    R = \frac{I_{\text{total}}}{I_{\text{self}}}
+\end{equation}
+where $I_{\text{self}} = n \int E(t)^2 \, dt$ is the total self-energy of all pulses.
+\end{definition}
+
+\subsubsection{Golden Ratio Properties}
+
+The Golden Ratio $\varphi = \frac{1+\sqrt{5}}{2} \approx 1.618$ is irrational and satisfies the identity \(\varphi^2=\varphi+1\). These properties enable simple recurrence-based implementations (via Fibonacci-type recurrences) and avoid commensurate interval ratios in \(\varphi\)-spaced schedules. Any claim that a specific physical interference functional is minimized by \(\varphi\)-spacing is treated as a model/empirical seam unless separately validated.
+
+\subsubsection{Illustrative Sensitivity Expansion (Conceptual Background; Seam)}
+The envelope-overlap definitions above provide a conceptual model for how timing jitter can affect a performance functional \(R(t_1,\ldots,t_n)\) built from pairwise overlaps. Under standard smoothness assumptions and zero-mean jitter, a Taylor expansion shows that the first-order term vanishes in expectation, so the leading expected change begins at second order in the jitter amplitude. This observation motivates the committed \emph{quadratic} proxy form \(D_\varphi(j)=s\cdot j^2\) used by the implementation. This disclosure does not assert a facility-independent derivation of the coefficient \(\beta\) for a specific physical pulse envelope; any such derivation and any mapping from the proxy to facility performance is an explicit empirical/model seam unless separately validated.
+
+\subsection{System Architecture}
+
+\subsubsection{Golden-Ratio Scheduler}
+
+The invention provides a \textbf{$\varphi$-Scheduler} module that generates pulse timing sequences according to:
+\begin{equation}
+    t_k = \tau_0 \cdot \varphi^{k-1}, \quad k = 1, 2, \ldots, n
+\end{equation}
+
+The base timing $\tau_0$ is selected based on:
+\begin{itemize}
+    \item Target fusion reaction timescales
+    \item Laser repetition rate constraints
+    \item Fuel pellet compression dynamics
+\end{itemize}
+
+\subsubsection{Hardware Implementation}
+
+The scheduler can be implemented as:
+\begin{enumerate}
+    \item \textbf{Digital timing generator:} An FPGA or ASIC that computes $\varphi^k$ using the recurrence $\varphi^{k+1} = \varphi^k + \varphi^{k-1}$ (exploiting the Fibonacci property).
+    
+    \item \textbf{Lookup table:} Pre-computed timing values stored in memory for rapid retrieval.
+    
+    \item \textbf{Analog delay line:} A transmission line with taps at Golden-ratio positions.
+\end{enumerate}
+
+\subsubsection{Integration with Existing Systems}
+
+The invention integrates with existing ICF infrastructure:
+\begin{itemize}
+    \item Interfaces with existing timing distribution and trigger subsystems (integration seam).
+    \item May reuse existing laser drivers and amplifiers; facility wiring/latency constraints are integration seams.
+    \item Diagnostics integration (measuring timing/phase and normalizing jitter amplitude \(j\)) is facility-specific and treated as a seam.
+\end{itemize}
+
+\subsection{Seams / Assumptions / Calibration Envelope}
+The following items are explicitly treated as seams unless separately validated for a specific facility:
+\begin{itemize}
+    \item The definition of jitter magnitude and the normalization scale \(\tau_{\mathrm{scale}}\) used to produce a dimensionless jitter amplitude \(j\).
+    \item Any mapping from \(\varphi\)-scheduling and the proxy bound \(D_\varphi(j)\) to physical symmetry, yield, energy coupling, or other facility outcomes.
+    \item Any numerical ``$\times$ improvement'' factor or cost-reduction estimate (requires empirical calibration and facility-specific engineering analysis).
+\end{itemize}
+
+\subsection{Formal Verification}
+
+The proxy-layer statements and executable-interface definitions referenced by this disclosure are available in Lean 4 (Mathlib) as:
+
+\begin{enumerate}
+    \item \textbf{Executable schedule interface}: \texttt{IndisputableMonolith/Fusion/Executable/Interfaces.lean} defines \texttt{generatePhiSchedule} (committed schedule generation interface and proxy outputs).
+    
+    \item \textbf{Proxy inequality (quadratic vs.\ linear)}: \texttt{IndisputableMonolith/Fusion/JitterRobustness.lean} proves \texttt{quad\_lt\_linear} (for \(0<j<1\), \(j^2<j\)), supporting the proxy comparison under normalized jitter.
+    
+    \item \textbf{Generalized noise bounds (proxy-level)}: \texttt{IndisputableMonolith/Fusion/GeneralizedJitter.lean} includes \texttt{quadratic\_advantage\_conditions} and related lemmas for correlation/drift/quantization bounds.
+    
+    \item \textbf{Abstract interference-bound witness (placeholder model)}: \texttt{IndisputableMonolith/Fusion/InterferenceBound.lean} includes \texttt{phi\_interference\_bound\_exists} (witness \(\kappa\in(0,1)\) in a simplified overlap model); mapping to physical envelopes is an explicit seam.
+\end{enumerate}
+
+\subsection{Implementation Evidence (Simulator)}
+The committed schedule-generation computation and certificate emission referenced by this disclosure are implemented in:
+\begin{itemize}
+    \item \texttt{fusion/simulator/fusion/pulse\_scheduler.py}: \texttt{generate\_phi\_schedule}, \texttt{generate\_linear\_schedule}
+    \item \texttt{fusion/simulator/fusion/certificate.py}: \texttt{generate\_phi\_schedule\_certificate}, \texttt{CertificateBundle}, \texttt{compute\_input\_hash}
+    \item Self-check: \texttt{cd fusion \&\& python -m simulator.selfcheck} (hash-based verification entrypoint)
+\end{itemize}
+
+\section{CLAIMS}
+
+\begin{enumerate}[label=\textbf{\arabic*.}]
+    \item A method for scheduling pulses in a pulsed energy system, comprising:
+    \begin{enumerate}[label=(\alph*)]
+        \item determining a base timing interval $\tau_0$ based on system requirements;
+        \item computing a sequence of pulse times $\{t_k\}$ where $t_k = \tau_0 \cdot \varphi^{k-1}$ and $\varphi = \frac{1+\sqrt{5}}{2}$ is the Golden Ratio;
+        \item generating trigger signals at said pulse times to activate energy delivery devices.
+    \end{enumerate}
+    
+    \item The method of claim 1, wherein the pulsed energy system is an inertial confinement fusion system comprising multiple laser beamlines.
+    
+    \item The method of claim 1, further comprising receiving a declared, dimensionless normalized jitter amplitude \(j\in[0,1]\) and a sensitivity parameter \(s\ge 0\), and computing a quadratic degradation proxy bound \(D_\varphi(j)=s\cdot j^2\) for the \(\varphi\)-scheduled pulse sequence.
+    
+    \item The method of claim 3, further comprising computing a linear comparison proxy \(D_{\text{equal}}(j)=s\cdot j\) corresponding to an equal-interval schedule, and comparing \(D_\varphi(j)\) to \(D_{\text{equal}}(j)\) under the declared normalized jitter amplitude \(j\).
+    
+    \item The method of claim 1, further comprising:
+    \begin{enumerate}[label=(\alph*)]
+        \item measuring achieved pulse timing via diagnostics;
+        \item computing the deviation from scheduled times;
+        \item computing the normalized jitter amplitude \(j\) using a declared normalization scale \(\tau_{\mathrm{scale}}\); and
+        \item verifying that the computed proxy bound \(D_\varphi(j)\) is within a declared proxy threshold \(D_{\max}\).
+    \end{enumerate}
+    
+    \item A pulse scheduling system comprising:
+    \begin{enumerate}[label=(\alph*)]
+        \item a timing generator configured to output trigger signals at times $t_k = \tau_0 \cdot \varphi^{k-1}$;
+        \item an interface to one or more pulsed energy sources;
+        \item a controller programmed to compute said pulse times using the Fibonacci recurrence $\varphi^{k+1} = \varphi^k + \varphi^{k-1}$.
+    \end{enumerate}
+    
+    \item The system of claim 6, wherein the timing generator is implemented as a field-programmable gate array (FPGA).
+    
+    \item The system of claim 6, wherein the timing generator is implemented as an application-specific integrated circuit (ASIC).
+    
+    \item The system of claim 6, further comprising a lookup table storing pre-computed values of $\varphi^k$ for $k = 1, \ldots, N$ where $N$ is the maximum number of pulses.
+    
+    \item The system of claim 6, wherein the pulsed energy sources are laser amplifiers in an inertial confinement fusion facility.
+    
+    \item A method for designing a jitter-tolerant fusion reactor (proxy-layer), comprising:
+    \begin{enumerate}[label=(\alph*)]
+        \item specifying a maximum acceptable proxy degradation threshold \(D_{\max}\);
+        \item computing the maximum tolerable normalized jitter \(j_{\max} = \sqrt{D_{\max}/s}\) for a declared sensitivity \(s>0\);
+        \item selecting timing hardware and/or timing-control architecture with normalized jitter specification below \(j_{\max}\); and
+        \item implementing Golden-Ratio pulse scheduling as in claim 1.
+    \end{enumerate}
+    
+    \item The method of claim 11, wherein the timing hardware selection is performed from a declared set of available timing devices satisfying \(j \le j_{\max}\).
+    
+    \item A computer-readable medium containing instructions that, when executed by a processor, cause the processor to:
+    \begin{enumerate}[label=(\alph*)]
+        \item receive a base timing parameter $\tau_0$ and pulse count $n$;
+        \item compute pulse times $t_k = \tau_0 \cdot \varphi^{k-1}$ for $k = 1, \ldots, n$;
+        \item output said pulse times for use by a pulse generation system.
+    \end{enumerate}
+    
+    \item The medium of claim 13, further containing references to Lean-verified proxy lemmas (including a lemma implying \(j^2<j\) for \(0<j<1\)) used by the proxy bound comparison.
+    
+    \item A method for retrofitting an existing pulsed energy system, comprising:
+    \begin{enumerate}[label=(\alph*)]
+        \item identifying the existing equal-spacing timing module;
+        \item replacing said module with a Golden-Ratio scheduler as in claim 6;
+        \item optionally selecting a timing subsystem satisfying a declared normalized jitter requirement \(j \le j_{\max}\) based on the proxy-layer design method of claim 11.
+    \end{enumerate}
+    
+    \item The method of claim 1, applied to laser machining systems.
+    
+    \item The method of claim 1, applied to LIDAR pulse sequencing.
+    
+    \item The method of claim 1, applied to medical laser systems including ophthalmology and dermatology devices.
+    
+    \item A pulse timing sequence for energy delivery, characterized by intervals between successive pulses being in Golden Ratio, such that the ratio of consecutive intervals satisfies:
+    \begin{equation*}
+        \frac{t_{k+1} - t_k}{t_k - t_{k-1}} = \varphi = \frac{1+\sqrt{5}}{2}
+    \end{equation*}
+    
+    \item The pulse timing sequence of claim 19, wherein said sequence is stored in non-volatile memory for retrieval by a pulse generation system.
+\end{enumerate}
+
+\section{ABSTRACT OF THE DISCLOSURE}
+
+A method and system for scheduling pulses in inertial confinement fusion and other pulsed energy applications using Golden Ratio ($\varphi$) interval timing. The scheduler computes pulse times \(t_k=\tau_0\cdot\varphi^{k-1}\) and emits an auditable schedule artifact and hash-based certificate bundle. In the committed proxy layer used in this repository, the scheduler reports a quadratic degradation proxy bound in a declared, normalized jitter amplitude \(j\) (e.g., \(D_\varphi(j)=s\cdot j^2\)), contrasted with a linear comparison proxy for equal spacing. Lean provides proxy-layer lemmas (including a lemma implying \(j^2<j\) for \(0<j<1\)) and executable-interface definitions; any mapping from the proxy to facility performance or cost is an explicit seam unless separately validated.
+
+\vspace{1cm}
+\hrule
+\vspace{0.5cm}
+
+\begin{center}
+\textbf{INVENTOR'S DECLARATION}
+\end{center}
+
+I, Jonathan Washburn, declare that I am the original inventor of the subject matter disclosed herein, that the disclosure is accurate to the best of my knowledge, and that I have not omitted any material information that would affect patentability.
+
+\vspace{1cm}
+\noindent\textbf{Signature:} \underline{\hspace{6cm}} \\[0.3cm]
+\noindent\textbf{Date:} January 18, 2026 \\[0.3cm]
+\noindent\textbf{Inventor:} Jonathan Washburn
+
+\end{document}

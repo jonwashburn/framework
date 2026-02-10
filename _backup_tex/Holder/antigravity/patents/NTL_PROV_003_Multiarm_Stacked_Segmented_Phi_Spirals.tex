@@ -1,0 +1,319 @@
+\documentclass[11pt]{article}
+
+% Keep packages minimal for TeX Live "basic" installs.
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{enumitem}
+
+\geometry{margin=1in}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue
+}
+
+% ---------------------------------------------------------------------------
+% Convenience macros (avoid Unicode Greek in text; use LaTeX math symbols)
+% ---------------------------------------------------------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\phival}{\varphi}
+
+\newcommand{\PatentTitle}{Multi-Arm, Stacked-Layer, and Segmented Golden-Ratio Logarithmic-Spiral Layouts for Rotors, Traces, and Electromagnetic Arrays}
+\newcommand{\Docket}{NTL-PROV-003}
+\newcommand{\Inventors}{[Inventor Names]}
+\newcommand{\Assignee}{[Assignee / Organization]}
+\newcommand{\FilingDate}{February 1, 2026}
+
+\begin{document}
+
+\begin{center}
+{\LARGE \textbf{\PatentTitle}}\\[0.75em]
+{\large \textbf{Docket:} \Docket}\\[0.25em]
+{\large \textbf{Inventors:} \Inventors}\\[0.25em]
+{\large \textbf{Assignee:} \Assignee}\\[0.25em]
+{\large \textbf{Date:} \FilingDate}\\[0.75em]
+\end{center}
+
+\vspace{-0.5em}
+\hrule
+\vspace{0.75em}
+
+% ===========================================================================
+% ABSTRACT (PATENT)
+% ===========================================================================
+\section*{Abstract}
+
+Disclosed are apparatus, systems, and methods for implementing golden-ratio (\(\phival\)) logarithmic-spiral spatial scaffolds as (i) multi-arm spirals, (ii) stacked-layer spirals, and (iii) segmented spirals suitable for fabrication, discretization, and integration into mechanical rotors, conductive traces, coil windings, magnet lattices, and electromagnetic arrays. In various embodiments, a base spiral scaffold is defined by
+\[
+r(\theta)=r_0\cdot \phival^{\kappa\theta/(2\pi)},
+\]
+where \(r_0>0\) and \(\kappa\in\Z\). Multi-arm embodiments comprise a plurality of arms having respective angular offsets and/or pitch-family parameters. Stacked-layer embodiments comprise multiple layers each having respective parameter sets and optional inter-layer coupling constraints. Segmented embodiments comprise piecewise approximations of spiral arms with segments defined as lines, arcs, splines, or discrete element placements, optionally subject to manufacturing constraints such as minimum curvature radius, minimum feature size, and minimum spacing.
+
+The disclosure further provides computer-implemented methods for generating multi-arm and stacked-layer layouts, enforcing inter-arm spacing rules, generating offset curves, clipping and windowing spirals to annular regions, and producing fabrication artifacts and assembly documentation. Claim sets are provided covering apparatus embodiments, fabrication methods, and non-transitory computer-readable media.
+
+% ===========================================================================
+% TECHNICAL FIELD
+% ===========================================================================
+\section*{Technical Field}
+
+The present disclosure relates to geometric layouts for rotors and electromagnetic devices, and more particularly to multi-arm, stacked-layer, and segmented implementations of golden-ratio logarithmic-spiral scaffolds for fabrication and integration into mechanical and electromagnetic systems.
+
+% ===========================================================================
+% BACKGROUND
+% ===========================================================================
+\section*{Background}
+
+Spiral geometries are widely used in engineering applications including inductors, antennas, mechanical rotors, and magnetic arrays. However, practical implementations often require one or more of: (i) multiple spiral arms, (ii) stacking across multiple layers, and (iii) segmentation into manufacturable primitives or discretized elements.
+
+Existing spiral designs are typically created with ad hoc methods, bespoke CAD patterns, or manual segmentation. Such approaches often fail to provide:
+\begin{itemize}[leftmargin=*]
+  \item stable and compact parameterization across multi-arm and multi-layer variants,
+  \item explicit inter-arm spacing constraints with manufacturable guarantees,
+  \item reproducible segmentation strategies that preserve intended invariants,
+  \item automated generation of fabrication artifacts for multiple embodiments.
+\end{itemize}
+
+Accordingly, there is a need for a unified, parameterized approach to multi-arm, stacked, and segmented spiral implementations based on a stable base scaffold.
+
+% ===========================================================================
+% SUMMARY
+% ===========================================================================
+\section*{Summary}
+
+This disclosure provides a unified set of constructs for producing manufacturable, multi-embodiment spiral layouts from a golden-ratio logarithmic-spiral scaffold. In one aspect, multiple spiral arms are generated from a base scaffold by applying angular offsets, radial scaling, and/or pitch-family selection. In another aspect, multiple layers are generated (e.g., PCB layers or stacked laminations) each having a defined spiral arm set and constraints governing inter-layer alignment, coupling, and shielding. In another aspect, each arm is segmented into manufacturable primitives (e.g., lines, arcs, splines) and/or discretized placements for coils, vias, magnets, or segment boundaries.
+
+The disclosure also provides computer-implemented procedures to:
+\begin{itemize}[leftmargin=*]
+  \item generate a multi-arm spiral set with guaranteed minimum spacing;
+  \item generate offset curves (parallel curves) suitable for finite-width traces;
+  \item clip/window spirals to annular regions or other boundaries;
+  \item generate multi-layer files (e.g., DXF/SVG/GERBER) with consistent metadata;
+  \item generate segmentation and discretization tables with manufacturing constraints.
+\end{itemize}
+
+% ===========================================================================
+% BRIEF DESCRIPTION OF DRAWINGS
+% ===========================================================================
+\section*{Brief Description of the Drawings}
+
+Drawings may be provided later. For purposes of this specification:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{FIG. 1} illustrates a base golden-ratio logarithmic spiral in polar coordinates.
+  \item \textbf{FIG. 2} illustrates a multi-arm spiral set generated by angular offsets.
+  \item \textbf{FIG. 3} illustrates a stacked-layer implementation with distinct pitch parameters per layer.
+  \item \textbf{FIG. 4} illustrates a segmented spiral approximation using piecewise segments and a discretized element placement table.
+  \item \textbf{FIG. 5} illustrates inter-arm spacing constraints and a spacing verification workflow.
+  \item \textbf{FIG. 6} illustrates clipping/windowing of spiral arms to annular boundaries.
+  \item \textbf{FIG. 7} illustrates an example software pipeline exporting multi-arm and multi-layer fabrication files.
+\end{itemize}
+
+% ===========================================================================
+% DEFINITIONS
+% ===========================================================================
+\section*{Definitions and Notation}
+
+Unless otherwise indicated:
+\begin{itemize}[leftmargin=*]
+  \item \(\phival = (1+\sqrt{5})/2\) is the golden ratio.
+  \item A \emph{base spiral} is defined by \(r(\theta)=r_0\phival^{\kappa\theta/(2\pi)}\) with \(r_0>0\) and \(\kappa\in\Z\).
+  \item An \emph{arm} refers to a curve locus defined by a base spiral with an angular offset and optional parameter changes.
+  \item A \emph{multi-arm set} refers to \(\{r_j(\theta)\}_{j=0}^{m-1}\) for \(m\ge 2\).
+  \item A \emph{layer} refers to a fabrication layer (e.g., PCB copper layer, mechanical lamination layer).
+  \item \emph{Segmentation} refers to representing a curve by piecewise primitives or discrete sample points.
+  \item \emph{Clipping} or \emph{windowing} refers to restricting a curve to a region (e.g., annulus).
+\end{itemize}
+
+% ===========================================================================
+% DETAILED DESCRIPTION
+% ===========================================================================
+\section*{Detailed Description}
+
+\subsection*{1. Base Spiral Scaffold}
+
+In one embodiment, a base spiral scaffold is defined as:
+\begin{equation}
+  r(\theta; r_0,\kappa) = r_0 \cdot \phival^{\kappa\theta/(2\pi)}.
+  \label{eq:base}
+\end{equation}
+
+This disclosure concerns multi-arm, stacked-layer, and segmented implementations derived from the base spiral.
+
+\subsection*{2. Multi-Arm Spiral Sets}
+
+\paragraph{2.1 Angular-offset arm definition.}
+In one embodiment, a multi-arm spiral set comprises \(m\ge 2\) arms indexed by \(j\in\{0,\dots,m-1\}\), each having an angular offset \(\alpha_j\):
+\begin{equation}
+  r_j(\theta) = r_0 \cdot \phival^{\kappa(\theta+\alpha_j)/(2\pi)}.
+  \label{eq:arm_offset}
+\end{equation}
+In a symmetric embodiment, \(\alpha_j = 2\pi j/m\).
+
+\paragraph{2.2 Arm-specific pitch families.}
+In one embodiment, each arm has its own pitch-family parameter \(\kappa_j\in\Z\):
+\begin{equation}
+  r_j(\theta) = r_{0,j} \cdot \phival^{\kappa_j(\theta+\alpha_j)/(2\pi)}.
+  \label{eq:arm_kappa}
+\end{equation}
+This allows, for example, alternating inward/outward arms (\(\kappa_j\) signs differ) or interleaved families.
+
+\paragraph{2.3 Inter-arm spacing constraints.}
+For finite-width traces or physical elements, arms must satisfy spacing constraints. In one embodiment, for a minimum distance \(d_{\min}>0\), a design is accepted only if:
+\[
+\min_{\theta \in \Theta} \operatorname{dist}\bigl(\Gamma_j(\theta),\Gamma_{j'}(\theta)\bigr) \ge d_{\min}
+\quad\text{for all } j\ne j',
+\]
+where \(\Gamma_j(\theta)\) is the Cartesian point corresponding to \(r_j(\theta)\). The system may check spacing over a discretized domain \(\Theta\) and refine sampling until spacing is proven (within tolerance).
+
+\paragraph{2.4 Practical spacing rule (non-limiting).}
+For symmetric arms with common \((r_0,\kappa)\), the angular separation is \(\Delta\alpha = 2\pi/m\). At a given radius \(r\), the approximate arc separation is \(r\Delta\alpha\). A conservative rule for trace width \(w\) and spacing \(s\) is:
+\[
+r\Delta\alpha \ge w+s \quad\Rightarrow\quad r \ge \frac{w+s}{\Delta\alpha}.
+\]
+The system may enforce this inequality over a defined radius window.
+
+\subsection*{3. Stacked-Layer Spiral Layouts}
+
+\paragraph{3.1 Layer parameter sets.}
+In one embodiment, a device comprises \(L\ge 2\) layers, each having parameters:
+\[
+\mathcal{P}_\ell = (r_{0,\ell},\kappa_\ell,m_\ell,\{\alpha_{\ell,j}\}_{j=0}^{m_\ell-1},\text{constraints}_\ell),
+\quad \ell=1,\dots,L.
+\]
+Each layer may implement one or more arms defined by Eq.~\eqref{eq:arm_offset} or Eq.~\eqref{eq:arm_kappa}.
+
+\paragraph{3.2 Inter-layer alignment constraints.}
+In one embodiment, layers satisfy alignment constraints such as:
+\begin{itemize}[leftmargin=*]
+  \item via alignment: projected points between layers within a tolerance,
+  \item rotational offset constraints: fixed relative phase between layers,
+  \item shielding constraints: designated ground planes or guard traces.
+\end{itemize}
+
+\paragraph{3.3 Inter-layer coupling structures.}
+In one embodiment, layers include coupling structures such as vertical interconnects, stitched vias, or laminated conductive bridges that connect arms between layers. The coupling structures may be placed at sample points derived from the spiral arms (e.g., every \(k\)-th sample).
+
+\subsection*{4. Segmented and Discretized Implementations}
+
+\paragraph{4.1 Sampling and discretization.}
+In one embodiment, each arm is discretized into \(n\) samples:
+\begin{align}
+  \theta_i &= \theta_{\text{start}} + \frac{2\pi i}{n}, \quad i=0,\dots,n-1, \label{eq:theta_i}\\
+  r_{j,i} &= r_j(\theta_i), \label{eq:r_ji}\\
+  (x_{j,i},y_{j,i}) &= (r_{j,i}\cos\theta_i,\; r_{j,i}\sin\theta_i). \label{eq:xy_ji}
+\end{align}
+The samples define (without limitation) trace centerlines, segment boundaries, magnet placements, coil centers, or inspection targets.
+
+\paragraph{4.2 Piecewise linear segmentation.}
+In one embodiment, a fabrication path is created by connecting successive points \((x_{j,i},y_{j,i})\) and \((x_{j,i+1},y_{j,i+1})\) with line segments, with optional smoothing.
+
+\paragraph{4.3 Spline segmentation.}
+In one embodiment, a spline curve is fit through sampled points to reduce segmentation artifacts while preserving overall geometry. Spline control points may be derived from the sampled points and constrained to remain within a tolerance band around the true spiral.
+
+\paragraph{4.4 Piecewise pitch parameters (optional).}
+In one embodiment, an arm is segmented into regions each having a constant pitch-family parameter \(\kappa^{(p)}\in\Z\):
+\[
+r(\theta)=r_0 \cdot \phival^{\kappa^{(p)}\theta/(2\pi)} \quad \text{for } \theta\in[\theta_p,\theta_{p+1}),
+\]
+yielding a piecewise spiral that preserves discrete family membership within each segment.
+
+\subsection*{5. Clipping and Windowing}
+
+\paragraph{5.1 Annular clipping.}
+In one embodiment, a spiral arm is restricted to an annular region \(r_{\min}\le r\le r_{\max}\). The system computes the set of \(\theta\) values where the arm intersects \(r_{\min}\) and \(r_{\max}\) and clips the curve accordingly.
+
+\paragraph{5.2 Boundary-window clipping.}
+In one embodiment, a spiral is clipped to an arbitrary boundary (e.g., polygonal board outline). The system computes intersections between the spiral path and the boundary and outputs only the in-bound segments.
+
+\subsection*{6. Offset Curves for Finite Width}
+
+Many embodiments require finite width (trace width, channel width, rotor thickness). In one embodiment, a centerline spiral is converted to offset curves at distance \(\pm w/2\) along the normal direction, producing an inner and outer boundary for the finite-width structure. Offset computations may be performed on the discretized polyline and may include corner fillets subject to minimum curvature constraints.
+
+\subsection*{7. Computer-Implemented Generation and Fabrication Outputs}
+
+In one embodiment, a computer system receives inputs specifying at least:
+\[
+(r_0,\kappa,m,L,n,\{\alpha_{\ell,j}\},\text{constraints}),
+\]
+and outputs:
+\begin{itemize}[leftmargin=*]
+  \item multi-arm CAD paths (e.g., DXF/SVG),
+  \item multi-layer PCB artifacts (e.g., GERBER) with per-layer metadata,
+  \item discretization tables for element placement and assembly,
+  \item validation reports for spacing and manufacturability constraints.
+\end{itemize}
+
+\subsection*{8. Example Embodiments (Non-Limiting)}
+
+\paragraph{Embodiment A: three-arm PCB spiral.}
+Choose \(m=3\), \(\alpha_j=2\pi j/3\), \(\kappa=1\), and generate three arms on a single PCB layer with a guard ring. Enforce minimum trace spacing by checking \(r\Delta\alpha\ge w+s\).
+
+\paragraph{Embodiment B: stacked two-layer counter-wound spiral.}
+Layer 1 uses \(\kappa=+1\) and Layer 2 uses \(\kappa=-1\). Arms are aligned by a fixed rotational offset and connected by vias at sampled points.
+
+\paragraph{Embodiment C: segmented mechanical rotor.}
+A spiral boundary is discretized into \(n=720\) points and approximated by line segments. The result is exported as a CNC toolpath with curvature constraints enforced by adaptive resampling.
+
+% ===========================================================================
+% CLAIMS (DRAFT / PROVISIONAL-STYLE)
+% ===========================================================================
+\section*{Claims (Draft)}
+
+\textbf{Note:} The following claims are an initial, non-limiting claim set intended to preserve multiple fallback positions. Final claim strategy should be reviewed by counsel.
+
+\subsection*{Independent Claims}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{(Apparatus)} A multi-arm spiral structure comprising a plurality of spiral arms, each spiral arm defined by a golden-ratio logarithmic spiral radius profile derived from a base spiral scaffold \(r(\theta)=r_0\phival^{\kappa\theta/(2\pi)}\), wherein the plurality of spiral arms have respective angular offsets.
+
+  \item \textbf{(System)} A system comprising one or more processors and memory storing instructions that, when executed, cause the system to: generate a plurality of spiral arms from a base spiral scaffold by applying respective angular offsets; enforce at least one inter-arm spacing constraint; and export a fabrication artifact representing the plurality of spiral arms.
+
+  \item \textbf{(Method)} A method of fabricating a multi-layer spiral structure, the method comprising: generating, for each of a plurality of layers, at least one spiral arm defined by a golden-ratio logarithmic spiral scaffold; generating an inter-layer alignment plan; and exporting a plurality of layer-specific fabrication files for manufacturing the multi-layer spiral structure.
+
+  \item \textbf{(Non-transitory medium)} A non-transitory computer-readable medium storing instructions that, when executed by one or more processors, cause the one or more processors to: discretize a spiral arm into a plurality of sampled points; generate a segmented representation of the spiral arm using piecewise primitives derived from the sampled points; and output the segmented representation to a fabrication file.
+\end{enumerate}
+
+\subsection*{Dependent Claims (Examples; Non-Limiting)}
+
+\begin{enumerate}[leftmargin=*]
+  \setcounter{enumi}{4}
+  \item The apparatus of claim 1, wherein the angular offsets are uniform and satisfy \(\alpha_j=2\pi j/m\) for an integer \(m\ge 2\).
+  \item The apparatus of claim 1, wherein at least one spiral arm has a pitch-family parameter \(\kappa_j\in\Z\) different from another spiral arm.
+  \item The system of claim 2, wherein enforcing the inter-arm spacing constraint comprises verifying a minimum distance between points on different arms over a discretized angular domain.
+  \item The system of claim 2, wherein exporting the fabrication artifact comprises exporting at least one of DXF, SVG, STL, or GERBER files.
+  \item The method of claim 3, wherein generating the inter-layer alignment plan comprises specifying via locations at sampled points of the spiral arms.
+  \item The method of claim 3, wherein at least one layer comprises a spiral arm having \(\kappa=+1\) and another layer comprises a spiral arm having \(\kappa=-1\).
+  \item The non-transitory medium of claim 4, wherein discretizing comprises sampling \(\theta_i=\theta_{\text{start}}+2\pi i/n\) and computing Cartesian points \((x_i,y_i)\).
+  \item The non-transitory medium of claim 4, wherein generating the segmented representation comprises connecting successive sampled points by line segments and adaptively increasing sampling density to satisfy a curvature constraint.
+  \item The apparatus of claim 1, further comprising clipping the plurality of spiral arms to an annular region defined by \(r_{\min}\le r\le r_{\max}\).
+  \item The apparatus of claim 1, further comprising generating offset curves from at least one spiral arm to define a finite-width trace or channel.
+\end{enumerate}
+
+% ===========================================================================
+% FALLBACK POSITIONS / ADDITIONAL EMBODIMENTS
+% ===========================================================================
+\section*{Additional Embodiments and Fallback Positions (Non-Limiting)}
+
+\begin{itemize}[leftmargin=*]
+  \item Multi-arm offsets may be chosen to intentionally break symmetry (non-uniform \(\alpha_j\)) to satisfy spacing constraints or to fit a boundary.
+  \item Arms may be clipped to arbitrary boundaries (board outlines, rotor outlines) and may include bridges, spokes, or supports.
+  \item Stacked-layer embodiments may include dedicated shielding layers, ground planes, or guard traces and may include via stitching patterns derived from the spiral geometry.
+  \item Segmentation may use polylines, circular arcs, splines, or combinations thereof, and may use adaptive sampling based on chord-error tolerances.
+  \item Piecewise pitch-family parameters may be used to create composite spirals while preserving discrete families within each region.
+  \item Offset-curve generation may include mitering, rounding, or filleting to satisfy minimum curvature radius constraints for fabrication.
+\end{itemize}
+
+\vspace{1em}
+\hrule
+\vspace{0.75em}
+\noindent \textbf{End of Specification (Draft)}
+
+\end{document}
+

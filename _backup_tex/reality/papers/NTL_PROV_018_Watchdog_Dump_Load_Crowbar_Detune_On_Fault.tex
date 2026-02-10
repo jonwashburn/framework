@@ -1,0 +1,231 @@
+\documentclass[11pt]{article}
+
+% Keep packages minimal for TeX Live "basic" installs.
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{array}
+
+\geometry{margin=1in}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue
+}
+
+% ---------------------------------------------------------------------------
+% Convenience macros
+% ---------------------------------------------------------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+
+\newcommand{\PatentTitle}{Independent Watchdogs with Dump-Load/Crowbar Protection and Detune-on-Fault Architectures for High-Energy Rotating-Field Systems}
+\newcommand{\Docket}{NTL-PROV-018}
+\newcommand{\Inventors}{[Inventor Names]}
+\newcommand{\Assignee}{[Assignee / Organization]}
+\newcommand{\FilingDate}{February 1, 2026}
+
+\begin{document}
+
+\begin{center}
+{\LARGE \textbf{\PatentTitle}}\\[0.75em]
+{\large \textbf{Docket:} \Docket}\\[0.25em]
+{\large \textbf{Inventors:} \Inventors}\\[0.25em]
+{\large \textbf{Assignee:} \Assignee}\\[0.25em]
+{\large \textbf{Date:} \FilingDate}\\[0.75em]
+\end{center}
+
+\vspace{-0.5em}
+\hrule
+\vspace{0.75em}
+
+% ===========================================================================
+% ABSTRACT (PATENT)
+% ===========================================================================
+\section*{Abstract}
+
+Disclosed are apparatus, systems, methods, and non-transitory computer-readable media for safety hardening of rotating-field and resonant electromagnetic systems using an \emph{independent watchdog} and a fault-mitigation stack comprising one or more of dump loads, crowbar circuits, contactors, and detune-on-fault commands. In various embodiments, a primary controller operates a rotating-field device (including generator-mode operation) and a separate watchdog subsystem independently monitors hazard indicators such as bus overvoltage, overcurrent, overspeed, loss-of-load signatures, and thermal derivatives. Upon detecting a fault or loss of primary controller heartbeat, the watchdog triggers rapid protective actions including engaging a dump load, activating a crowbar, opening a contactor, and/or commanding an active detuning governor to collapse coupling efficiency.
+
+In one embodiment, the watchdog is implemented with independent power, clocking, and threshold comparators, enabling fail-safe response even if the primary controller is compromised. The disclosed architectures provide a layered safety system suitable for high-energy experiments and products requiring rapid response and auditable fault handling.
+
+% ===========================================================================
+% TECHNICAL FIELD
+% ===========================================================================
+\section*{Technical Field}
+
+The present disclosure relates to safety systems for high-energy electromechanical platforms, and more particularly to independent watchdog controllers, dump-load and crowbar protection circuits, contactor management, heartbeat monitoring, and detune-on-fault safety architectures for rotating-field and resonant electromagnetic systems.
+
+% ===========================================================================
+% BACKGROUND
+% ===========================================================================
+\section*{Background}
+
+Rotating-field systems and resonant electromagnetic devices can produce rapid transients in voltage, current, temperature, and mechanical state. Safety mitigations implemented only in a primary controller can fail due to software faults, timing faults, EMI, or component failure. Additionally, certain hazards (e.g., load disconnect in generator mode, bus overvoltage) may require response faster than a typical supervisory control loop.
+
+Conventional safety approaches include fuses, circuit breakers, and thermal cutoffs. While useful, these may not respond optimally to fast transients or may not coordinate safely with a resonant device state. A layered safety architecture that includes an independent watchdog capable of initiating fast protective actions is needed.
+
+% ===========================================================================
+% SUMMARY
+% ===========================================================================
+\section*{Summary}
+
+This disclosure provides a multi-layer safety architecture comprising:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Independent watchdog:} separate monitoring logic and/or hardware with independent power and clocking.
+  \item \textbf{Fast fault detection:} analog comparators and/or digital logic for overvoltage, overcurrent, and heartbeat loss.
+  \item \textbf{Mitigation stack:} dump loads, crowbars, contactors, and detune-on-fault commands to collapse coupling and absorb energy.
+  \item \textbf{Latched safe state:} a safe state requiring explicit recovery procedure, optionally including operator acknowledgement.
+\end{itemize}
+
+% ===========================================================================
+% BRIEF DESCRIPTION OF DRAWINGS
+% ===========================================================================
+\section*{Brief Description of the Drawings}
+
+Drawings may be provided later. For purposes of this specification:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{FIG. 1} depicts a primary controller and an independent watchdog supervising a rotating-field driver and power stage.
+  \item \textbf{FIG. 2} depicts a dump-load network and crowbar coupled to a DC bus.
+  \item \textbf{FIG. 3} depicts heartbeat monitoring and timeout behavior.
+  \item \textbf{FIG. 4} depicts a fault ladder with escalating mitigation (detune, dump load, crowbar, contactor open).
+  \item \textbf{FIG. 5} depicts a recovery procedure and revalidation gates.
+\end{itemize}
+
+% ===========================================================================
+% DEFINITIONS
+% ===========================================================================
+\section*{Definitions and Notation}
+
+Unless otherwise indicated:
+\begin{itemize}[leftmargin=*]
+  \item A \emph{watchdog} refers to an independent subsystem that monitors safety conditions and can initiate protective actions.
+  \item A \emph{heartbeat} refers to a periodic signal from a primary controller indicating normal operation.
+  \item A \emph{dump load} refers to a controllable load configured to absorb electrical energy (e.g., resistor bank).
+  \item A \emph{crowbar} refers to a protection circuit that clamps a bus (e.g., via SCR or MOSFET) to prevent overvoltage.
+  \item A \emph{contactor} refers to a switching element that disconnects energy sources or loads.
+  \item A \emph{detune-on-fault command} refers to a command that collapses coupling by detuning a commutation schedule or drive waveform.
+\end{itemize}
+
+% ===========================================================================
+% DETAILED DESCRIPTION
+% ===========================================================================
+\section*{Detailed Description}
+
+\subsection*{1. Layered Safety Architecture}
+
+In one embodiment, the system includes:
+\begin{itemize}[leftmargin=*]
+  \item a primary controller operating a rotating-field driver and optionally a load interface;
+  \item an independent watchdog that monitors hazard indicators;
+  \item a fault mitigation stack including dump loads, crowbar, contactors, and detune-on-fault.
+\end{itemize}
+
+In one embodiment, the watchdog has independent power and clocking and can function even if the primary controller is reset, hung, or corrupted.
+
+\subsection*{2. Fault Detection}
+
+Non-limiting hazard indicators monitored by the watchdog include:
+\begin{itemize}[leftmargin=*]
+  \item bus overvoltage (absolute threshold or \(dV/dt\));
+  \item overcurrent (absolute threshold or \(dI/dt\));
+  \item loss-of-load signature (falling load current with rising bus voltage);
+  \item overspeed or unsafe acceleration;
+  \item thermal derivative \(dT/dt\) exceeding a threshold;
+  \item heartbeat timeout of the primary controller.
+\end{itemize}
+
+In one embodiment, the watchdog uses analog comparators for fast thresholds and digital logic for pattern-based detection (e.g., loss-of-load).
+
+\subsection*{3. Heartbeat Monitoring}
+
+In one embodiment, the primary controller emits a periodic heartbeat pulse. The watchdog resets a timer on receipt. If the timer exceeds a timeout \(\tau\), the watchdog assumes fault and triggers mitigation.
+
+\subsection*{4. Mitigation Actions}
+
+Upon fault detection, the watchdog may execute one or more actions, alone or in sequence:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Detune-on-fault:} command a detuning governor to inject phase slip/noise and collapse coupling.
+  \item \textbf{Dump-load engagement:} switch a dump load across the DC bus to absorb energy.
+  \item \textbf{Crowbar activation:} clamp the bus voltage to prevent overvoltage.
+  \item \textbf{Contactor open:} disconnect energy sources or isolate the device.
+  \item \textbf{Driver disable:} force gate-disable signals low and/or assert a hardware kill line.
+\end{itemize}
+
+In one embodiment, mitigation is escalated based on severity (e.g., warning detune first, then dump load, then crowbar and contactor open).
+
+\subsection*{5. Latched Safe State and Recovery}
+
+In one embodiment, after mitigation, the watchdog places the system in a latched safe state. Recovery may require:
+\begin{itemize}[leftmargin=*]
+  \item bus voltage below a safe threshold;
+  \item temperatures below safe thresholds;
+  \item operator acknowledgement and a revalidation checklist;
+  \item restarting primary controller and rearming watchdog.
+\end{itemize}
+
+\subsection*{6. Embodiments}
+
+Non-limiting embodiments include:
+\begin{itemize}[leftmargin=*]
+  \item watchdog implemented on a separate microcontroller, FPGA, or analog logic board;
+  \item redundant sensors and comparators for critical thresholds;
+  \item independent battery-backed watchdog supply;
+  \item tamper detection causing immediate detune and dump-load engagement.
+\end{itemize}
+
+% ===========================================================================
+% CLAIMS (DRAFT / PROVISIONAL-STYLE)
+% ===========================================================================
+\section*{Claims (Draft)}
+
+\textbf{Note:} The following claims are an initial, non-limiting claim set intended to preserve multiple fallback positions. Final claim strategy should be reviewed by counsel.
+
+\subsection*{Independent Claims}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{(System)} A safety system for a rotating-field device comprising: a primary controller configured to operate the rotating-field device; an independent watchdog configured to monitor at least one hazard indicator; and a mitigation subsystem comprising at least one of a dump load, a crowbar circuit, a contactor, or a detune-on-fault interface, wherein the independent watchdog is configured to initiate at least one mitigation action in response to the at least one hazard indicator satisfying a trigger condition.
+
+  \item \textbf{(Method)} A method of protecting a rotating-field system, the method comprising: monitoring hazard indicators using a watchdog subsystem; detecting at least one of bus overvoltage, overcurrent, loss-of-load, overspeed, thermal runaway, or loss of heartbeat; and responsive to detecting the hazard, executing a mitigation action comprising engaging a dump load, activating a crowbar, opening a contactor, disabling a driver, and/or issuing a detune-on-fault command.
+
+  \item \textbf{(Non-transitory medium)} A non-transitory computer-readable medium storing instructions that, when executed by one or more processors of a watchdog, cause the watchdog to: monitor a heartbeat signal from a primary controller; detect a heartbeat timeout; and upon the timeout, assert a hardware kill line and engage a dump load and/or detune-on-fault command.
+\end{enumerate}
+
+\subsection*{Dependent Claims (Examples; Non-Limiting)}
+
+\begin{enumerate}[leftmargin=*]
+  \setcounter{enumi}{3}
+  \item The system of claim 1, wherein the independent watchdog has an independent power supply and independent clocking.
+  \item The system of claim 1, wherein monitoring comprises using an analog comparator to detect bus overvoltage.
+  \item The system of claim 1, wherein the mitigation action comprises commanding a phase-slip detuning governor.
+  \item The method of claim 2, wherein executing the mitigation action comprises escalating through a ladder of detune, dump load, crowbar, and contactor open.
+  \item The system of claim 1, wherein the independent watchdog enters a latched safe state until an operator acknowledgement is received.
+  \item The non-transitory medium of claim 3, wherein the watchdog logs a fault event and associated sensor values to a run artifact.
+  \item The system of claim 1, wherein the hazard indicator comprises rising bus voltage concurrent with falling load current.
+  \item The system of claim 1, wherein the mitigation subsystem comprises a pre-charge circuit and a contactor management interface.
+\end{enumerate}
+
+% ===========================================================================
+% FALLBACK POSITIONS / ADDITIONAL EMBODIMENTS
+% ===========================================================================
+\section*{Additional Embodiments and Fallback Positions (Non-Limiting)}
+
+\begin{itemize}[leftmargin=*]
+  \item Dump loads may be implemented as resistor banks, water-cooled loads, or pulsed load absorbers.
+  \item Crowbar circuits may be implemented using SCRs, MOSFET clamps, or other fast clamping devices.
+  \item The watchdog may support periodic self-test routines, including comparator threshold tests and heartbeat validation.
+  \item The watchdog may coordinate with an energy-accounting pipeline by marking fault windows and excluding them from analysis.
+\end{itemize}
+
+\vspace{1em}
+\hrule
+\vspace{0.75em}
+\noindent \textbf{End of Specification (Draft)}
+
+\end{document}
+

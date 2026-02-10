@@ -1,0 +1,187 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{microtype}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=black,citecolor=black,urlcolor=black}
+
+\title{CPM Read-Only Trading Algorithm: Formal Specification}
+\author{Recognition Science Institute}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section*{Executive Summary}
+This specification describes a \emph{read-only} trading engine that uses the Coercive Projection Method (CPM) to detect and exploit \textbf{provable} mispricings from a small set of public observations. The method proves an inequality that bounds a global no-arbitrage defect by a weighted sum of local, observable tests. Online, the engine computes a \emph{mispricing lower bound} $\delta$ and trades only when $\delta$ exceeds conservative costs. Each opportunity is accompanied by a machine-auditable certificate (PMC). No forecasting, no market impact, no private data.
+
+\paragraph{Non-goals.} We do not build predictive models, latency/impact alpha, or use MNPI. The engine avoids sweeping books and operates strictly passively.
+
+\section*{0. Objective}
+Exploit \emph{provable} mispricings discovered via \textbf{sparse observations}, without moving markets.\newline
+Trade only when a Coercive Projection Method (CPM) certificate provides a conservative lower bound $\delta$ on mispricing that exceeds frictions.
+
+\section*{1. Formal Frame}
+\paragraph{Structured set (global property).} For an asset (or family) with latent state $x$ and observables $y=\mathcal O(x)$, define a convex/affine \emph{structured set} $\mathcal S$ (no-arbitrage / fair-value constraints).\\
+\textit{Examples}: option static-arbitrage constraints (monotonicity/convexity), bond fair PV bands, ETF/NAV bands, futures carry bands.
+
+\paragraph{Defect.} Quantify violation of $\mathcal S$ via a nonnegative \emph{defect} $D(x) = \mathrm{dist}(x,\mathcal S)$ or a sum of positive parts of inequality residuals.
+
+\paragraph{Certificate (lower bound).} A \emph{Provable Mispricing Certificate} (PMC) is a family of nonnegative observable tests $s_i(y)\ge 0$ with weights $u_i\ge 0$ and a constant $c>0$ such that, for all admissible $x$ and $y=\mathcal O(x)$,
+\[
+ \boxed{\quad D(x)\;\ge\; c\,\sum_{i} u_i\, s_i(y)\quad}\tag{Cert}
+\]
+This direction yields a tradeable lower bound.
+
+\paragraph{Raw and realized bounds.} Define the raw bound $\delta_{\mathrm{raw}}(y)= c\sum_i u_i s_i(y)$. Convert to a realizable P\&L bound by conservative haircuts and passive-fill scaling:
+\[
+ \delta(y)\;=\; q(y)\,\delta_{\mathrm{raw}}(y)\;-
+ \underbrace{\mathrm{fees}(y)}_{\text{maker/taker, clearing, borrow}}\;-
+ \underbrace{\varepsilon_{\mathrm{stale}}(y)}_{\text{data staleness}}\;-
+ \underbrace{\varepsilon_{\mathrm{hedge}}(y)}_{\text{replication error}},
+\]
+with passive fill fraction $q(y)\in[0,1]$ derived from queue-drain statistics and participation caps.
+
+\paragraph{Trading gate.} Enter only if $\delta(y) \ge \theta$ (safety margin) and the condition holds for $M$ successive event-time samples (anti-flicker).
+
+\paragraph{Stability lemma (optional).} Upper bounds of the form $D(x)\le K\sum_i w_i\,|t_i(y)|$ can be useful to relate defect to an energy gap, but they do not produce tradable lower bounds and are not used in $\delta$.
+
+\paragraph{Assumptions and invariants.}
+\begin{itemize}
+  \item \textbf{Data integrity:} multi-venue aggregation with stale-tick rejection and median-of-$N$ guards.
+  \item \textbf{Cost conservatism:} fees, spread, slippage and borrow modeled as upper bounds.
+  \item \textbf{Proof constants:} coercivity $(K,w_i)$ are pre-computed, versioned, and auditable.
+  \item \textbf{Replication:} hedges neutralize unintended exposures (DV01, vega, beta, FX) so $\delta$ corresponds to realizable P\&L.
+\end{itemize}
+
+\section*{2. Asset Templates (\,$\mathcal S$, tests $T$, bound $\delta$\,)}
+\subsection*{2.A Corporate Bonds (read-only synthetic credit)}
+\textbf{Structured set} $\mathcal S$: fair PV within a band from (i) risk-free curve, (ii) CDS-implied hazard spline, (iii) liquidity premium bounds.\\
+\textbf{Tests $T$ (7 anchors)}: UST nodes (2y, 5y, 10y), issuer/sector CDS (1y, 5y, 10y), equity 30d implied vol.\\
+\textbf{Coercivity (example form)}: $D\le K_{\text{bond}}\,(a_1|\Delta TS|+a_2|\Delta CDS|+a_3|\Delta VOL|)$.\\
+\textbf{Certificate form.} Use an \emph{exogenous} liquidity premium bound $\mathrm{LP}_{\max}$ (explicit constant) or restrict to on-the-run IG credits where $\mathrm{LP}_{\max}\approx 0$. Then define risky PV inner/outer envelopes and set $s_1(y)=\bigl(\mathrm{PV}_{\min}-P\bigr)_+$, $s_2(y)=\bigl(P-\mathrm{PV}_{\max}\bigr)_+$, $\delta_{\mathrm{raw}}=s_1+s_2$ with $c=1$.
+
+\emph{Details.} Let $r(t)$ be the OIS curve and $\lambda(t)$ a piecewise-constant hazard rate calibrated from $(\mathrm{CDS}_{1y},5y,10y)$ under shape constraints. Survival $S(t)=\exp(-\int_0^t\lambda(u)du)$ and discount $\mathrm{DF}(t)=\exp(-\int_0^t r(u)du)$ yield bounds
+\[
+\mathrm{PV}_{\min/\max} = \int_0^T c\,\mathrm{DF}(t)S(t)\,dt + \mathrm{DF}(T)S(T) \pm \mathrm{LP}_{\max}.
+\]
+\textit{Scope:} if $\mathrm{LP}_{\max}$ is not defensible from public data, exclude the name from the certified universe.
+
+\subsection*{2.B Options (static arbitrage)}
+\textbf{Structured set} $\mathcal S$: per maturity, call surface is increasing in strike and \emph{convex}; calendar monotone.\\
+\textbf{Tests $T$ (discrete)}: for strikes $K-\Delta, K, K+\Delta$, enforce $C(K-\Delta)-2C(K)+C(K+\Delta)\ge 0$; monotone checks; adjacent maturity calendar check.\\
+\textbf{Certificate form.} Use \emph{executable} quotes $C^{\mathrm{bid/ask}}(K)$. The long butterfly cost
+\[
+\Pi_{\mathrm{but}}(K)=C^{\mathrm{ask}}(K-\Delta)-2\,C^{\mathrm{bid}}(K)+C^{\mathrm{ask}}(K+\Delta)
+\]
+must satisfy $\Pi_{\mathrm{but}}(K)\ge 0$ under no-arbitrage. Define $s_K(y)=\bigl(-\Pi_{\mathrm{but}}(K)\bigr)_+$ and $\delta_{\mathrm{raw}}=\sum_{K\in\mathcal K_{\mathrm{int}}} s_K$. Add analogous vertical (monotone) and calendar tests. Set $c=1$.
+
+\subsection*{2.C ETF vs NAV}
+\textbf{Structured set}: ETF within AP creation/redemption band of NAV.\\
+\textbf{Tests}: top-constituent NAV snapshot (median-of-N), AP fee schedule.\\
+\textbf{Certificate form.} Use iNAV or a holdings-weighted proxy with stale-tick guards. AP band $[\widehat{\mathrm{NAV}}-f_{\mathrm{AP}}-\eta,\;\widehat{\mathrm{NAV}}+f_{\mathrm{AP}}+\eta]$ with published $f_{\mathrm{AP}}$ and a conservative dispersion $\eta$. Define $s(y)=\bigl(|\mathrm{ETF}-\widehat{\mathrm{NAV}}|-f_{\mathrm{AP}}-\eta\bigr)_+$, $c=1$, and $\delta_{\mathrm{raw}}=s$.
+
+\subsection*{2.D Futures Basis / Carry}
+\textbf{Structured set}: $F = S\,\exp((r-q-c)\,\tau)$ within storage/friction bands.\\
+\textbf{Tests}: spot (median multi-venue), risk-free node, dividend yield proxy, storage proxy.\\
+\textbf{Certificate form.} For financial futures (rates, index, FX) with transparent carry, define band $[F_{\min},F_{\max}]$ using $(r,q)$ and a conservative $c_{\max}$. For commodities, either exclude or include a large convenience-yield haircut. Let $s(y)=\max\{0, F_{\min}-F, F-F_{\max}\}$, $c=1$, and $\delta_{\mathrm{raw}}=s$.
+
+\subsection*{2.E Triangular FX}
+\textbf{Structured set}: cross equals product of legs within spread/fee bounds.\\
+\textbf{Tests}: best bid/ask from multiple venues, latency-robust snapshot.\\
+\textbf{$\delta$}: deterministic cross-venue bound (classic triangular arbitrage).
+
+\section*{3. System Architecture}
+\paragraph{Data layer} low-latency public feeds; snapshot aggregators (median-of-N, staleness guards); fee model.\\
+\paragraph{Certificate engine} evaluate tests $T$, compute $\delta$, emit PMC $=\{\delta,\mathrm{timestamp},\mathrm{inputs},\mathrm{model\_id},\mathrm{audit\_hash}\}$. Require hysteresis: $\delta$ above threshold for $M$ consecutive ticks.
+\\
+\paragraph{Portfolio/risk} sizing $\propto \delta$ with DV01/vega/beta caps; hedging to neutralize systematics; kill-switches on data/model drift.
+\\
+\paragraph{Execution} read-only passive posting, participation caps, randomized clip sizes; exit on $\delta$ decay, time, or liquidity deterioration.
+\\
+\paragraph{Monitoring/audit} log PMCs and realized P\&L vs $\sum \delta$; drift detector on constants; auto-recalibration workflow.
+
+\section*{3.1 Cost and Leakage Model}
+Total cost bound per trade: $\mathrm{costs}=\mathrm{commissions}+\mathrm{exchange\_fees}+\mathrm{half\_spread}+\mathrm{slippage\_budget}+\mathrm{borrow}/\mathrm{carry}+\mathrm{taxes}$. Use safety margin $\sigma$ and require $\delta>\mathrm{costs}+\sigma$. Slippage budget derived from passive impact curves under participation caps.
+
+\section*{3.2 Microstructure and Impact}
+\begin{itemize}
+  \item Queue model per venue (price--time vs pro-rata, iceberg prevalence); estimate passive fill fraction $q$ from observed queue drain rates.
+  \item Maker/taker and rebate schedules in the fee ledger; never cross the spread; enforce per-venue participation caps.
+  \item Impact metric: realized slippage vs passive baseline; monitor and cap; does not affect ex-ante certificate.
+\end{itemize}
+
+\section*{4. Pseudocode}
+\begin{verbatim}
+loop time t:
+  for asset in universe:
+    y = read_observables(asset)           # tests T
+    delta = mispricing_lower_bound(asset, y)
+    if delta > costs(asset) + safety_margin and stable_for(M ticks):
+      trade = synthesize_trade(asset, delta)   # hedged, read-only
+      size  = size_position(asset, delta, risk_limits, liquidity)
+      submit_passive_orders(trade, size)
+  manage_positions():
+    update delta_t; exit if delta_t < exit_thr or max_hold or risk breach
+
+# mispricing_lower_bound examples:
+#  options:  Pi_but = C_ask(K-DELTA) - 2*C_bid(K) + C_ask(K+DELTA)
+#            s_K = max(0, -Pi_but); delta_raw = sum_K s_K
+#  bonds:    s = max(0, PV_min - P, P - PV_max); delta_raw = s
+#  ETF:      s = max(0, abs(ETF - NAV_hat) - f_AP - eta); delta_raw = s
+#  futures:  s = max(0, F_min - F, F - F_max); delta_raw = s
+#  delta = q*delta_raw - fees - eps_stale - eps_hedge
+\end{verbatim}
+
+\section*{4.1 Gating and Backtest Hygiene}
+\begin{itemize}
+  \item Sampling clock: event-time, monotone; align feeds; drop late packets.
+  \item Anti-flicker gate: stability for $M$ successive samples; add min hold time and re-entry cooldown.
+  \item Backtests use LOB-level replay with queue position; avoid mid-fill assumptions.
+\end{itemize}
+
+\section*{5. Calibration and Proofs}
+\paragraph{Offline.} Derive coercivity constants $K$ and weights $a_i$ per template: options via discrete convexity (exact), bonds via robust PV/hazard envelopes (interval arithmetic), ETF/AP (deterministic), futures (storage bands). Stress adversarial data/pathologies; select $\varepsilon$ conservatively.
+\\
+\paragraph{Online.} Track certificate breach rate (realized P\&L $< \delta$). If breach rate $>\alpha$, auto-delist instrument and re-calibrate.
+
+\paragraph{Auditability.} Persist $(\delta, T(y), K, w_i, \varepsilon, \mathrm{costs})$ and PMC hashes. For certified windows, realized P\&L should satisfy $\sum \mathrm{P\&L} \ge \sum(\delta-\mathrm{costs})$ up to noise; repeated breaches trigger re-calibration.
+
+\section*{6. Risk Controls}
+No prediction; trade only on $\delta$-certified opportunities. Footprint caps (participation, impact), exposure caps (DV01/vega/beta), latency guards (stale tick rejection, median-of-N), circuit breakers (volatility surge beyond model envelope).
+
+\paragraph{Replication and hedging.} Hedge instruments must be priced and executable under the same public-data envelope used to compute $\delta$. Include a hedge error bound $\varepsilon_{\mathrm{hedge}}$; include borrow/locate bounds and FX conversion bounds where applicable.
+
+\section*{7. Backtest and Evaluation}
+Replay quote histories; compute $\delta$ time series. Metrics: opportunity count, realized P\&L vs $\sum \delta$ (net frictions), max drawdown, breach rate $\approx 0$, sensitivity to $a_i, K$, liquidity stress, slippage. Benchmark vs naive pairs/ML; expect lower frequency, higher precision and Sharpe.
+
+\section*{8. Compliance and Ethics}
+Read-only execution policy, explicit manipulation avoidance; public-auditable PMC hashes; internal controls for legitimacy; venue fairness and no special information.
+
+\section*{9. Initial Deployment Targets}
+Options static arbitrage on liquid index options; ETF vs NAV on top equity/fixed-income ETFs; FX triangular across venues; futures basis on front contracts; expansion to IG credit where CDS/TS liquid.
+
+\appendix
+\section*{Appendix A: Options Certificate with Executable Quotes}
+Fix expiry and discrete strikes with spacing $\Delta$. Let $C^{\mathrm{bid/ask}}(K)$ be best quotes. The long butterfly $(+1,-2,+1)$ at $(K-\Delta,K,K+\Delta)$ has nonnegative payoff, hence executable cost $\Pi_{\mathrm{but}}(K)=C^{\mathrm{ask}}(K-\Delta)-2\,C^{\mathrm{bid}}(K)+C^{\mathrm{ask}}(K+\Delta)\ge 0$ under no-arbitrage. Define $s_K(y)=\bigl(-\Pi_{\mathrm{but}}(K)\bigr)_+$. Aggregating over interior strikes (optionally disjoint to avoid double counting) gives $\delta_{\mathrm{raw}}=\sum_K s_K$. Subtract fees per leg and apply passive fill fraction $q$ to obtain $\delta$.
+
+\section*{Appendix B: Hazard Envelope for Bonds}
+Calibrate piecewise-constant $\lambda(t)$ to CDS nodes within shape constraints to form inner/outer hazard envelopes; compute risky PV bounds by interval arithmetic. Use an explicit liquidity premium bound $\mathrm{LP}_{\max}$; if not defensible from public data, exclude the name.
+
+\section*{Appendix C: ETF AP Band}
+Authorized participant fees $f_{\mathrm{AP}}$ and tracking dispersion $\eta$ define mechanical bounds around a holdings-weighted NAV proxy with stale-tick guards. The band yields a deterministic lower bound for $\delta$ net of costs.
+
+\section*{Appendix D: Parameter Dictionary}
+\begin{itemize}
+  \item $c$: certificate constant; $u_i$: test weights; $\varepsilon$: conservatism slack.
+  \item $\mathrm{fees}$: commissions $+$ exchange; $\mathrm{slippage\_budget}$: passive impact allowance.
+  \item Exposure caps: DV01/vega/beta per instrument/portfolio.
+  \item $M$: hysteresis length; $\alpha$: acceptable breach rate.
+  \item $q$: passive fill fraction (queue-drain estimate, participation-capped).
+\end{itemize}
+
+\end{document}
+

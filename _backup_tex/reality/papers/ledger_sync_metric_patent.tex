@@ -1,0 +1,203 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{hyperref}
+
+% Simple page style
+\pagestyle{plain}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\begin{document}
+
+\begin{center}
+\textbf{\LARGE PATENT APPLICATION}\\[0.5cm]
+\textbf{\Large Method and System for Quantifying Implosion Symmetry\\Using a Bounded Ledger Synchronization Metric}\\[1cm]
+
+\begin{tabular}{rl}
+\textbf{Application Type:} & Utility Patent \\
+\textbf{Filing Date:} & January 25, 2026 \\
+\textbf{Inventor:} & Jonathan Washburn \\
+\textbf{Technology Field:} & Fusion Energy / Plasma Diagnostics / Control Systems \\
+\textbf{International Class:} & G21B 1/00; G01N 21/00; G05B 19/00 \\
+\end{tabular}
+\end{center}
+
+\vspace{1cm}
+\hrule
+\vspace{0.5cm}
+
+\section*{ABSTRACT}
+
+A method and system for quantifying and controlling the symmetry of fusion fuel implosions using a bounded ``Ledger Synchronization'' metric ($C_\sigma$). The invention transforms diagnostic measurements into a set of positive, dimensionless mode ratios $r_i>0$, computes a nonnegative ``Symmetry Ledger'' cost $L = \sum_i w_i J(r_i)$ with nonnegative weights $w_i\ge 0$ where $J(x) = (x+1/x)/2 - 1$ (for $x>0$), and maps this cost to a bounded synchronization metric $C_\sigma = 1/(1 + L/\Lambda)$ for a strictly positive ledger scale $\Lambda>0$. Under these conditions, $C_\sigma \in (0,1]$ with $C_\sigma=1$ at perfect symmetry ($L=0$). In an executable interface, $C_\sigma$ may additionally be clamped to $[0,1]$ and $\Lambda\le 0$ may be treated as an invalid-input guard. This metric provides a unified, actuator-friendly signal for feedback control, enabling the reactor to optimize implosion symmetry by maximizing $C_\sigma$ (equivalently, minimizing $L$). The method includes a calibration step (e.g., affine) to map facility-specific diagnostic signals to the normalized ratios required by the ledger, with calibration parameters treated as an explicit seam and recorded in emitted artifacts/certificates.
+
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+
+\section{BACKGROUND OF THE INVENTION}
+
+\subsection{Technical Field}
+
+This invention relates generally to nuclear fusion diagnostics and control, and more particularly to methods for quantifying the spatial symmetry of inertial confinement fusion (ICF) implosions to enable precise feedback control.
+
+\subsection{Description of Related Art}
+
+Inertial confinement fusion (ICF) relies on the symmetric compression of a fuel pellet. Asymmetries in the drive pressure or target fabrication lead to hydrodynamic instabilities (Rayleigh-Taylor) that quench the fusion burn.
+
+Diagnosing symmetry is complex. Facilities use various instruments (X-ray framing cameras, neutron imaging) that produce high-dimensional data (images, spectra). Reducing this data to a scalar metric for control is challenging:
+\begin{itemize}
+    \item \textbf{Mode decomposition:} Decomposing images into Legendre modes ($P_2, P_4$) is standard but facility-specific.
+    \item \textbf{Metric fragmentation:} Different diagnostics produce incompatible units and scales.
+    \item \textbf{Control difficulty:} Raw error signals can be unbounded or highly non-linear, making PID or MPC control difficult to tune.
+\end{itemize}
+
+There is a need for a unified, bounded, and physically meaningful symmetry metric that can serve as a universal objective function for fusion reactor control.
+
+\section{SUMMARY OF THE INVENTION}
+
+The present invention provides a method for computing a \textbf{Ledger Synchronization} metric ($C_\sigma$) that quantifies implosion symmetry on a normalized $[0,1]$ scale.
+
+The method comprises:
+\begin{enumerate}
+    \item \textbf{Normalization:} Mapping raw diagnostic measurements $x_i$ to dimensionless mode ratios $r_i$ using an affine calibration $r_i = 1 + g_i x_i$. Ideally, $r_i = 1$ corresponds to perfect symmetry.
+    \item \textbf{Ledger Computation:} Aggregating the ratios into a scalar \textbf{Symmetry Ledger} $L$ using a specific convex cost function $J(r) = \frac{1}{2}(r + r^{-1}) - 1$. This function penalizes deviations from unity symmetrically and convexly.
+    \item \textbf{Synchronization Mapping:} Transforming the unbounded ledger $L$ into the bounded metric $C_\sigma = \frac{1}{1 + L/\Lambda}$, where $\Lambda$ is a scaling parameter.
+\end{enumerate}
+
+This metric $C_\sigma$ has ideal properties for control:
+\begin{itemize}
+    \item \textbf{Bounded:} Always in $[0,1]$.
+    \item \textbf{Monotonic:} Increasing $C_\sigma$ always means improving symmetry (reducing $L$).
+    \item \textbf{Universal:} Abstracts away facility-specific units via the calibration layer.
+    \item \textbf{Actuator-Friendly:} Provides a stable gradient for optimization algorithms.
+\end{itemize}
+
+\section{BRIEF DESCRIPTION OF THE DRAWINGS}
+
+\begin{itemize}
+    \item \textbf{FIG. 1} is a data flow diagram of the Ledger Synchronization computation pipeline.
+    \item \textbf{FIG. 2} plots the J-cost function $J(r)$ vs. the mode ratio $r$.
+    \item \textbf{FIG. 3} plots the Ledger Synchronization $C_\sigma$ vs. the Ledger value $L$.
+    \item \textbf{FIG. 4} illustrates the affine calibration mapping from raw diagnostic error to mode ratio.
+\end{itemize}
+
+\section{DETAILED DESCRIPTION OF EMBODIMENTS}
+
+\subsection{Definitions}
+
+\begin{itemize}
+    \item \textbf{Mode Ratio ($r_i$):} A positive, dimensionless number ($r_i>0$) representing the amplitude of a symmetry mode relative to an ideal baseline. $r_i=1$ implies perfect symmetry.
+    \item \textbf{J-Cost ($J(r)$):} The convex cost function for $r>0$: $J(r) = \frac{1}{2}(r + 1/r) - 1$. Note that $J(1)=0$ and $J(r) > 0$ for $r \ne 1$.
+    \item \textbf{Symmetry Ledger ($L$):} The weighted sum of J-costs for all tracked modes with nonnegative weights ($w_i\ge 0$): $L = \sum_i w_i J(r_i)$.
+    \item \textbf{Ledger Synchronization ($C_\sigma$):} The bounded metric $C_\sigma = 1/(1 + L/\Lambda)$ for $\Lambda>0$.
+    \item \textbf{Ledger Scale ($\Lambda$):} A strictly positive normalization constant ($\Lambda>0$) setting the sensitivity of $C_\sigma$ to $L$.
+\end{itemize}
+
+\subsection{System Pipeline}
+
+The invention is implemented as a computational pipeline within the reactor control system.
+
+\subsubsection{1. Diagnostic Input & Calibration}
+The system receives raw diagnostic values $\mathbf{x} = [x_1, x_2, \dots, x_n]$. These might represent, for example, the $P_2/P_0$ and $P_4/P_0$ Legendre moments of the X-ray hotspot.
+An \textbf{Affine Calibration} is applied:
+\[
+r_i = 1 + g_i \cdot x_i
+\]
+where $g_i$ is a gain factor.
+\begin{itemize}
+    \item If the raw value $x_i$ is a fractional error (e.g., $+0.1$ for $10\%$ asymmetry), then $g_i=1$ yields $r_i = 1.1$.
+    \item If $x_i$ is negative (e.g., $-0.1$), $r_i = 0.9$.
+    \item This mapping ensures that $x_i=0$ (ideal) maps to $r_i=1$.
+    \item \textbf{Domain constraint:} calibration is selected so that $r_i>0$ for the expected diagnostic range; if a computed ratio is nonpositive, the implementation may reject the input (fail certificate) or apply an explicitly logged guard/clamp policy.
+\end{itemize}
+
+\subsubsection{2. Ledger Aggregation}
+The system computes the Symmetry Ledger $L$:
+\[
+L = \sum_{i=1}^n w_i \cdot J(r_i) = \sum_{i=1}^n w_i \left( \frac{r_i + r_i^{-1}}{2} - 1 \right)
+\]
+Weights $w_i$ allow prioritizing certain modes (e.g., low-mode $P_2$ might be weighted higher than $P_4$).
+
+\subsubsection{3. Synchronization Metric}
+The final metric is computed:
+\[
+C_\sigma = \frac{1}{1 + L/\Lambda}
+\]
+If $L=0$ (perfect symmetry), $C_\sigma = 1$. As $L \to \infty$ (gross asymmetry), $C_\sigma \to 0$.
+
+\subsection{Control Application}
+
+The computed $C_\sigma$ is fed to the reactor controller.
+\begin{itemize}
+    \item \textbf{Feedback Loop:} The controller adjusts beam balance or pulse timing to maximize $C_\sigma$.
+    \item \textbf{Thresholding:} A shot can be aborted or a certificate denied if $C_\sigma$ falls below a critical threshold (e.g., $0.9$).
+    \item \textbf{Barrier Scaling:} As described in co-pending application PF-01, $C_\sigma$ is combined with temporal coherence $C_\varphi$ to compute the Barrier Scale $S$, linking symmetry directly to reaction rate.
+\end{itemize}
+
+\subsection{Seams and Assumptions}
+
+The core logic (ratios $\to$ ledger $\to C_\sigma$) is explicit and auditable, with the J-cost properties proved in Lean and an executable interface defined for deployment. The \textbf{Seams} lie in facility integration and calibration:
+\begin{itemize}
+    \item The choice of $g_i$ and the interpretation of raw diagnostics $x_i$ are empirical.
+    \item The system assumes that the raw diagnostics are monotonic with physical asymmetry over the calibration envelope.
+    \item The system assumes ratio-domain validity ($r_i>0$); invalid ratios are treated as an explicit seam/guard condition (reject or clamp, with policy and parameters logged).
+    \item The calibration parameters must be determined by facility characterization shots.
+\end{itemize}
+
+\section{CLAIMS}
+
+\begin{enumerate}
+    \item \textbf{A method for quantifying symmetry in a physical system, comprising:}
+    \begin{enumerate}
+        \item receiving a plurality of raw diagnostic values characterizing asymmetry modes of the system;
+        \item transforming each raw diagnostic value into a positive, dimensionless mode ratio using an affine calibration mapping, wherein a raw value corresponding to perfect symmetry maps to a ratio of unity;
+        \item computing a ledger cost for each mode ratio using a convex function $J(r) = \frac{1}{2}(r + r^{-1}) - 1$ for $r>0$;
+        \item aggregating the ledger costs into a scalar symmetry ledger value $L$ using nonnegative weights; and
+        \item calculating a bounded synchronization metric $C_\sigma$ inversely proportional to the sum of unity and a scaled ledger value.
+    \end{enumerate}
+
+    \item The method of claim 1, wherein the synchronization metric is calculated as $C_\sigma = 1 / (1 + L/\Lambda)$, where $\Lambda$ is a strictly positive scaling parameter.
+
+    \item The method of claim 1, wherein the affine calibration mapping for a raw value $x$ is defined as $r = 1 + g \cdot x$, where $g$ is a gain parameter.
+
+    \item The method of claim 1, further comprising comparing the synchronization metric $C_\sigma$ to a predetermined threshold and generating a pass/fail certificate based on said comparison.
+
+    \item \textbf{A control system for a fusion reactor, comprising:}
+    \begin{enumerate}
+        \item a calibration module configured to map raw symmetry diagnostic signals to normalized mode ratios;
+        \item a ledger engine configured to compute a weighted sum of convex costs of said mode ratios using nonnegative weights;
+        \item a synchronization calculator configured to map the weighted sum to a normalized metric $C_\sigma \in [0,1]$; and
+        \item a feedback controller configured to adjust reactor actuators to maximize $C_\sigma$.
+    \end{enumerate}
+
+    \item The system of claim 5, wherein the convex cost function is $J(r) = \frac{1}{2}(r + 1/r) - 1$.
+
+    \item \textbf{A non-transitory computer-readable medium storing instructions that, when executed by a processor, cause a system to:}
+    \begin{enumerate}
+        \item acquire measurement data representing physical asymmetries;
+        \item convert said data into a vector of ratios relative to an ideal symmetric state;
+        \item compute a scalar cost metric representing the total deviation from unity of said vector using a symmetric convex functional; and
+        \item output a bounded synchronization score derived from said scalar cost metric for use in a control loop.
+    \end{enumerate}
+\end{enumerate}
+
+\section*{APPENDIX: Implementation Evidence}
+
+The core logic of this invention is implemented in the accompanying software artifacts:
+\begin{itemize}
+    \item \textbf{Python Implementation:} \texttt{fusion/simulator/coherence/ledger\_sync.py} implements the \texttt{compute\_ledger\_sync} function and the \texttt{LedgerSyncInput} data structure.
+    \item \textbf{Lean definitions / theorems:}
+    \begin{itemize}
+        \item Executable interface: \texttt{IndisputableMonolith/Fusion/Executable/Interfaces.lean} (\texttt{computeLedgerSync}, \texttt{computeLedger}, \texttt{jCostFloat}, \texttt{clamp01}).
+        \item J-cost properties (nonnegativity, symmetry, convexity): \texttt{IndisputableMonolith/Cost.lean}, \texttt{IndisputableMonolith/Cost/Convexity.lean}.
+    \end{itemize}
+\end{itemize}
+
+\end{document}

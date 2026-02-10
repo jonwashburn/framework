@@ -1,0 +1,12 @@
+import Mathlib.Topology.Algebra.BoundedContinuousFunction
+
+open scoped BoundedContinuousFunction
+
+namespace ScratchBCF
+
+#check BoundedContinuousFunction.postcomp
+#check BoundedContinuousFunction.postcompContinuousLinearMap
+#check BoundedContinuousFunction.compContinuousLinearMap
+#check BoundedContinuousFunction.comp
+
+end ScratchBCF

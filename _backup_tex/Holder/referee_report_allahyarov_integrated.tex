@@ -1,0 +1,371 @@
+% Referee report (internal) for the integrated PRD-style manuscript.
+% Repository: /Users/jonathanwashburn/Projects/reality
+% Reviewer: (generated for internal use)
+%
+% Compile (optional):
+%   pdflatex -interaction=nonstopmode referee_report_allahyarov_integrated.tex
+%
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{longtable}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  citecolor=blue
+}
+
+\urlstyle{tt}
+
+% Use breakable URL-style monospace so long repo paths don't run off the page.
+\newcommand{\file}[1]{\nolinkurl{#1}}
+\newcommand{\lean}[1]{\texttt{#1}}
+\newcommand{\fixme}{\textcolor{red}{\textbf{FIX}}}
+\newcommand{\critical}{\textcolor{red}{\textbf{CRITICAL}}}
+
+\begin{document}
+
+\begin{center}
+{\Large \textbf{Referee Report (Internal)}}
+
+\vspace{0.5em}
+{\large On: \emph{``Charged Fermion Masses from Octave Closure and $\varphi$-Ladder Geometry: A Recognition Science Framework with Single-Anchor Phenomenological Validation''}}
+
+\vspace{0.25em}
+Draft reviewed: \file{Allahyarov-submission-PRD-jan-2026-v-10-INTEGRATED.pdf} (dated Jan 30, 2026)
+\end{center}
+
+\vspace{0.75em}
+\noindent\textbf{Scope of this report.}
+I reviewed the integrated draft line-by-line for internal consistency and for agreement with the project's canonical definitions
+and pinned certificates. Where the manuscript uses phrases like ``certified'' or ``machine-verified,'' I cross-checked the
+corresponding mathematical statements and the repo's pinned artifacts (definitions, proofs about the closed-form maps, and
+numerical certificates used for transport bookkeeping).
+
+For a colleague who does not read Lean: the main text below states the relevant mathematics directly; all repo pointers (Lean
+modules and certificate artifacts) are collected in Appendix~A, along with a zip bundle of the referenced Lean files.
+
+\section*{1. Summary assessment}
+
+The integrated manuscript is \textbf{conceptually faithful} to the three-paper architecture:
+single-anchor framing, the $Z(Q,\mathrm{sector})$ integerization, the closed-form band function $F(Z)$, explicit separation of
+structural vs.\ SM-transport residues, and explicit falsifiers.
+
+\medskip
+\noindent\textbf{However:} the current draft contains \textbf{several substantive numerical inconsistencies} with the project's
+canonical definitions and pinned certificates.
+These are more than rounding differences (notably the sector yardstick exponents and the RG transport ``certificate'' table),
+and they currently undermine reproducibility and the ``machine-verified / certified'' framing.
+I recommend a revision focused on aligning the affected tables and appendix pointers with the pinned repo artifacts before broader circulation.
+
+\section*{2. Strengths}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Excellent claim hygiene intent.} The text distinguishes structural objects from transport bookkeeping.
+  \item \textbf{Referee-facing circularity warning.} Sec.\ II.6 explicitly flags that rungs are currently bookkeeping indices.
+  \item \textbf{Falsifiability culture.} Concrete falsifiers are stated throughout.
+  \item \textbf{Lean integration is directionally strong.} The monotonicity/concavity proofs are genuine.
+\end{itemize}
+
+\section*{3. High-priority issues (recommended fixes before external circulation)}
+
+\subsection*{3.1 \critical: Table II (Sector Yardsticks) does not match the canonical sector exponents}
+\noindent\textbf{Issue.}
+Table~II on page~8 lists sector yardstick exponents that are inconsistent with the canonical counting-layer derivation used elsewhere in the project.
+
+\medskip
+\noindent\textbf{Values as stated in the integrated PDF:}
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+Sector & $B_{\mathrm{pow}}$ & $r_0$ \\
+\midrule
+Leptons & $-22$ & $51$ \\
+Up quarks & $-18$ & $43$ \\
+Down quarks & $-20$ & $39$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent\textbf{Canonical values from the counting-layer derivation:}
+\begin{center}
+\begin{tabular}{lrrl}
+\toprule
+Sector & $B_{\mathrm{pow}}$ & $r_0$ & Derivation \\
+\midrule
+Leptons & $-22$ & $62$ & $r_0 = 4W - 6 = 4(17) - 6 = 62$ \\
+Up quarks & $-1$ & $35$ & $B_{\mathrm{pow}} = -A = -1$; $r_0 = 2W + A = 35$ \\
+Down quarks & $+23$ & $-5$ & $B_{\mathrm{pow}} = 2E_{\mathrm{total}} - 1 = 23$; $r_0 = E_{\mathrm{total}} - W = -5$ \\
+Electroweak & $+1$ & $55$ & $B_{\mathrm{pow}} = A = 1$; $r_0 = 3W + 4 = 55$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent\textbf{Impact.}
+This table is foundational: the anchor law uses
+\[
+m_i(\mu_\star)=A_{\mathrm{sector}(i)}\,\varphi^{\,r_i-8+F(Z_i)},
+\qquad
+A_{\mathrm{sector}} := 2^{B_{\mathrm{pow}}(\mathrm{sector})}\,E_{\mathrm{coh}}\,\varphi^{r_0(\mathrm{sector})}.
+\]
+Changing $(B_{\mathrm{pow}},r_0)$ therefore rescales the sector baselines by large factors, and will propagate into any reported ``predicted mass'' tables.
+
+\medskip
+\noindent\textbf{Requested fix.}
+\begin{enumerate}[leftmargin=2em]
+  \item Replace Table~II with the canonical values shown above.
+  \item Prefer generating the manuscript table from the same pinned source-of-truth artifact used by the repo (see Appendix~A).
+\end{enumerate}
+
+\subsection*{3.2 \critical: Table XI (RG Transport Exponents) does not match the pinned certificate values}
+\noindent\textbf{Issue.}
+Appendix~G, Table~XI (page~47) lists ``certified'' RG transport exponents that differ significantly from the
+project's pinned transport certificate under the canonical policy.
+
+\medskip
+\noindent\textbf{Comparison (paper Table XI vs.\ repo certificate).}
+\begin{center}
+\begin{tabular}{lrrl}
+\toprule
+Fermion & PDF Table XI & Repo certificate & Note \\
+\midrule
+$e$ & 0.049 & 0.04943 & rounding OK \\
+$\mu$ & 0.038 & 0.02879 & mismatch \\
+$\tau$ & 0.026 & 0.01788 & mismatch \\
+$u$ & 0.482 & 0.48219 & rounding OK \\
+$d$ & 0.476 & 0.47639 & rounding OK \\
+$s$ & 0.421 & 0.47639 & should equal $d$ under canonical policy \\
+$c$ & 0.125 & 0.54701 & mismatch \\
+$b$ & 0.073 & 0.38075 & mismatch \\
+$t$ & $-0.008$ & 0.00980 & sign mismatch \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent\textbf{Additional consistency checks.}
+In the repo's canonical certificate, $d$ and $s$ share the same charge and the same target scale (2\,GeV), hence the certificate has identical values $f^{RG}_d=f^{RG}_s$; the integrated PDF violates this in Table~XI (0.476 vs 0.421).
+
+\medskip
+\noindent\textbf{Certificate provenance (mathematical form).}
+The repo also records these pinned values as rationals at $10^{-4}$ resolution (examples):
+\[
+\begin{aligned}
+f^{RG}_{\mu} &= 288/10000, & f^{RG}_{\tau} &= 179/10000,\\
+f^{RG}_{c}  &= 5470/10000, & f^{RG}_{b}  &= 3807/10000,\\
+f^{RG}_{t}  &= 98/10000. &&
+\end{aligned}
+\]
+so mismatches are not attributable merely to floating rounding in the manuscript table.
+
+\medskip
+\noindent\textbf{Policy mismatch.}
+Appendix~G states RK4 step size $\Delta t=0.01$ in $\ln\mu$ units, while the repo certificate records \texttt{rk4\_steps\_per\_ln=10000} (i.e.\ $\Delta t=10^{-4}$). If the manuscript intends a different policy, it must be pinned and shipped with the exact code+data snapshot that generated the reported numbers.
+
+\noindent\textbf{Impact.}
+These exponents are explicitly called ``certified'' in the paper, but they contradict the repo's auditable certificate.
+This undermines the reproducibility claim.
+
+\medskip
+\noindent\textbf{Requested fix.}
+\begin{enumerate}[leftmargin=2em]
+  \item Regenerate Table~XI directly from the pinned transport certificate artifact used by the project (see Appendix~A).
+  \item If a different transport policy is intended, pin and publish it (loop order, thresholds, integrator, SM inputs). Provide the exact code+data snapshot used to generate Table~XI.
+\end{enumerate}
+
+\subsection*{3.3 Appendix E: Lean theorem pointer/name drift}
+\noindent\textbf{Issue.}
+Appendix~E (page~46) cites the no-go theorem as:
+\begin{quote}
+  \lean{MassResidueNoGo.small\_residue\_far\_from\_gap1332}
+\end{quote}
+\textbf{The identifier above does not match this repo.} The underlying mathematical statement that appears to be intended (and that is present in the repo) is:
+\[
+\text{if }|x|\le 0.1,\ \text{then }|x-F(1332)|>10,
+\]
+and in particular no ``small'' residue (e.g.\ $|x|\le 0.1$) can satisfy $|x-F(1332)|<10^{-6}$.
+This looks like a citation/name drift rather than a mathematical disagreement.
+
+\noindent\textbf{Requested fix.}
+Update Appendix~E to cite the actual Lean theorem names used in the repo, or restate the no-go claim directly in the paper without relying on a fragile identifier string (see Appendix~A).
+
+\subsection*{3.4 Appendix E: Lean toolchain should match the pinned repo toolchain}
+\noindent\textbf{Issue.}
+Appendix~E states ``Lean 4 version 4.3.0 or later,'' but the repo pins a specific toolchain (Lean 4 \texttt{v4.27.0-rc1}).
+For reproducibility, the manuscript should cite the pinned toolchain (and ideally the repo commit used to generate tables).
+
+\noindent\textbf{Requested fix.}
+Update Appendix~E to reflect the pinned toolchain (and include a code snapshot identifier).
+
+\subsection*{3.5 Visible placeholder text}
+\noindent\textbf{Issue.}
+The PDF contains visible placeholder sequences:
+\begin{itemize}[leftmargin=1.5em]
+  \item Page 8 (end of Sec.\ II.3): ``?????''
+  \item Page 9 (end of Sec.\ II.5): ``???''
+  \item Page 11 (after Table III reference): a long string of question marks
+\end{itemize}
+
+\noindent\textbf{Requested fix.}
+Remove all placeholder text before circulation.
+
+\subsection*{3.6 Unverified statistical claim (15.6$\sigma$)}
+\noindent\textbf{Issue.}
+The abstract and Sec.\ IV.5 claim a ``15.6$\sigma$-equivalent'' significance.
+I could not locate \file{output/statistics.json} (mentioned in the integrated PDF) or any significance-calculation script in this repository snapshot.
+
+\noindent\textbf{Requested fix.}
+Either:
+\begin{enumerate}[leftmargin=2em]
+  \item Commit the script that computes this number (e.g., \file{scripts/analysis/significance\_calc.py}).
+  \item Or soften the claim to ``order $10\sigma$'' pending audit.
+\end{enumerate}
+
+\section*{4. Additional issues}
+
+\subsection*{4.1 Non-circularity framing vs.\ Table III}
+Table~III (page~12) is titled ``Structural predictions versus PDG experimental masses'' with ``zero per-species tuning.''
+However, the paper itself warns (Sec.\ II.6) that rung assignments are currently bookkeeping indices.
+This tension should be resolved by either:
+\begin{enumerate}[leftmargin=2em]
+  \item Retitling Table~III to ``Anchor display coordinates'' (not ``predictions'').
+  \item Or explicitly adopting a fixed rung-assignment rule (e.g.\ charged leptons $r_e=2$, $r_\mu=13$, $r_\tau=19$; up-type quarks $r_u=4$, $r_c=15$, $r_t=21$; down-type quarks $r_d=4$, $r_s=15$, $r_b=21$) and explaining why that rule is not fit to mass data.
+\end{enumerate}
+
+\subsection*{4.2 Gap function numerical values}
+The approximate values $F(24) \approx 5.74$, $F(276) \approx 10.69$, $F(1332) \approx 13.95$ (Eqs.~18--20) are
+\textbf{consistent} with the interval bounds established in the repo:
+\[
+5.737 < F(24) < 5.74, \quad 10.689 < F(276) < 10.691, \quad 13.953 < F(1332) < 13.954.
+\]
+\textbf{Note:} in the current repo snapshot, these bounds are proved under explicit numerical hypotheses (log/exp bounds) used for interval arithmetic; the manuscript should either state those hypotheses or phrase the bounds as conditional on the declared numerical certificate inputs.
+
+\subsection*{4.3 Notation: $\kappa$ vs.\ $\varphi$}
+Eq.~(40) on page~13 uses $\kappa$ inside the gap function:
+\[
+F(Z_i) = \frac{1}{\lambda} \ln\left(1 + \frac{Z_i}{\kappa}\right).
+\]
+Earlier definitions (Eq.~3) define $\kappa = \varphi$, but the switch is not always signposted.
+Consider using $\varphi$ uniformly.
+
+\section*{5. Minor polish}
+\begin{itemize}[leftmargin=1.5em]
+  \item Add a concrete commit hash or archival DOI for the code snapshot used to generate Tables~II, III, IV, XI.
+  \item In the reproducibility section, verify that the cited scripts (\file{tools/lepton\_chain\_table.py}, etc.) exist and run cleanly.
+\end{itemize}
+
+\section*{6. Recommendation}
+
+\noindent\textbf{Recommendation: Major revision (table alignment + appendix-pointer cleanup).}
+
+The scientific narrative is sound, but \textbf{Tables II and XI currently do not match the project's pinned constants/certificates}.
+These are more than minor rounding issues, and they currently weaken reproducibility and the ``machine-verified / certified'' claims.
+
+\medskip
+\noindent\textbf{Priority fixes before external circulation:}
+\begin{enumerate}
+  \item Align Table II (sector yardsticks) with the canonical sector-exponent formulas used in the project.
+  \item Align Table XI (transport exponents) with the pinned transport certificate under the declared policy.
+  \item Fix Appendix E pointers (Lean theorem names) and cite the pinned Lean toolchain version.
+  \item Remove all placeholder text (``???'').
+  \item Commit the 15.6$\sigma$ calculation script or soften the claim.
+\end{enumerate}
+
+After these fixes, the paper should be internally re-reviewed before submission.
+
+\appendix
+\section*{Appendix A: Repo pointers and the corresponding math (for auditing / reproducibility)}
+
+\subsection*{A.1 Lean bundle}
+A zip bundle containing the Lean modules referenced in this report is saved as
+\file{papers/tex/referee\_report\_lean\_bundle.zip}.
+It contains:
+\begin{itemize}[leftmargin=1.5em]
+  \item \file{IndisputableMonolith/Masses/Anchor.lean}
+  \item \file{IndisputableMonolith/Masses/MassLaw.lean}
+  \item \file{IndisputableMonolith/RSBridge/GapProperties.lean}
+  \item \file{IndisputableMonolith/Physics/ElectronMass/Necessity.lean}
+  \item \file{IndisputableMonolith/Physics/MassResidueNoGo.lean}
+  \item \file{IndisputableMonolith/Physics/RGTransportCertificate.lean}
+\end{itemize}
+
+\subsection*{A.2 Canonical sector yardsticks (Table II)}
+The canonical sector yardstick is
+\[
+A_{\mathrm{sector}} := 2^{B_{\mathrm{pow}}(\mathrm{sector})}\,E_{\mathrm{coh}}\,\varphi^{r_0(\mathrm{sector})},
+\qquad E_{\mathrm{coh}}=\varphi^{-5}.
+\]
+The counting-layer integers used in the project are:
+\[
+E_{\mathrm{total}}=12,\quad E_{\mathrm{passive}}=11,\quad W=17,\quad A=1.
+\]
+The sector-exponent formulas are:
+\[
+\begin{aligned}
+B_{\mathrm{pow}}(\mathrm{Lepton}) &= -2E_{\mathrm{passive}} = -22,
+&\qquad r_0(\mathrm{Lepton}) &= 4W-6 = 62,\\
+B_{\mathrm{pow}}(\mathrm{UpQuark}) &= -A = -1,
+& r_0(\mathrm{UpQuark}) &= 2W+A = 35,\\
+B_{\mathrm{pow}}(\mathrm{DownQuark}) &= 2E_{\mathrm{total}}-1 = 23,
+& r_0(\mathrm{DownQuark}) &= E_{\mathrm{total}}-W = -5,\\
+B_{\mathrm{pow}}(\mathrm{Electroweak}) &= A = 1,
+& r_0(\mathrm{Electroweak}) &= 3W+4 = 55.
+\end{aligned}
+\]
+Repo location: \file{IndisputableMonolith/Masses/Anchor.lean}.
+
+\subsection*{A.3 Master mass law (Eq.\ 22)}
+The repo's master anchor law is:
+\[
+m_i(\mu_\star)=A_{\mathrm{sector}(i)}\,\varphi^{\,r_i-8+F(Z_i)},
+\qquad
+F(Z)=\log_\varphi\!\left(1+\frac{Z}{\varphi}\right)=\frac{\ln(1+Z/\varphi)}{\ln\varphi}.
+\]
+Repo location: \file{IndisputableMonolith/Masses/MassLaw.lean}.
+
+\subsection*{A.4 Pinned RG transport certificate (Table XI)}
+The pinned transport certificate values (canonical policy) are stored as floating values in
+\file{data/certificates/rg\_transport/canonical\_2025\_q4.json},
+and include, for example,
+\[
+\begin{aligned}
+f^{RG}_e &= 0.0494258, & f^{RG}_\mu &= 0.0287906, & f^{RG}_\tau &= 0.0178757,\\
+f^{RG}_u &= 0.482193,  & f^{RG}_d   &= 0.476388,  & f^{RG}_s   &= 0.476388,\\
+f^{RG}_c &= 0.547013,  & f^{RG}_b   &= 0.380746,  & f^{RG}_t   &= 0.00979749.
+\end{aligned}
+\]
+The same values are also exposed in Lean as rationals at $10^{-4}$ resolution (e.g.\ $f^{RG}_\mu=288/10000$), with a declared tolerance $1/10000$.
+
+Repo location: \file{IndisputableMonolith/Physics/RGTransportCertificate.lean}.
+
+\subsection*{A.5 Gap-map properties and bounds (Appendix E)}
+The closed-form band map used throughout is:
+\[
+F(Z)=\frac{\ln(1+Z/\varphi)}{\ln\varphi}.
+\]
+The repo contains machine-checked properties such as strict monotonicity on $\mathbb{N}$ and strict concavity on $[0,\infty)$, as well as interval bounds for $Z\in\{24,276,1332\}$ (in the current snapshot, proved under explicit numerical hypotheses used for interval arithmetic).
+Repo locations:
+\begin{itemize}[leftmargin=1.5em]
+  \item \file{IndisputableMonolith/RSBridge/GapProperties.lean}
+  \item \file{IndisputableMonolith/Physics/ElectronMass/Necessity.lean}
+\end{itemize}
+
+\subsection*{A.6 No-go separation (Appendix E)}
+The numerical separation used to prevent category errors between ``small'' residues and $F(1332)$ is:
+\[
+\text{if }|x|\le 0.1,\ \text{then }|x-F(1332)|>10.
+\]
+Repo location: \file{IndisputableMonolith/Physics/MassResidueNoGo.lean}.
+
+\subsection*{A.7 Lean toolchain (Appendix E)}
+The pinned Lean toolchain for this repo snapshot is in \file{lean-toolchain},
+and currently specifies \texttt{leanprover/lean4:v4.27.0-rc1}.
+
+\end{document}

@@ -1,0 +1,155 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{a4paper, margin=0.8in}
+\usepackage{amsmath, amssymb}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\definecolor{lightgray}{RGB}{245,245,245}
+
+\title{\textbf{Hodge Lean Proof: Axiom Completion Roadmap}\\[0.4em]\large What must be proved vs.\ what can remain assumed}
+\author{Generated from \texttt{DependencyCheck.lean}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\fcolorbox{black}{lightgray}{\parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule}{%
+\textbf{Purpose.} This document lists the \textbf{current axiom dependencies} of \texttt{hodge\_conjecture'} and classifies them into:
+\begin{itemize}
+\item \textbf{Must complete} (strategy-critical),
+\item \textbf{Can leave} (classical pillars + interface glue).
+\end{itemize}
+}}
+
+\section{Current axiom list}
+
+Lean reports the following 38 axioms for \texttt{hodge\_conjecture'}:
+
+{\small
+\begin{verbatim}
+FundamentalClassSet_isClosed, IsAlgebraicSet, IsAlgebraicSet_empty,
+IsAlgebraicSet_union, calibration_inequality, exists_volume_form_of_submodule_axiom,
+flat_limit_of_cycles_is_cycle, hard_lefschetz_inverse_form,
+harvey_lawson_fundamental_class, harvey_lawson_represents, harvey_lawson_theorem,
+instAddCommGroupDeRhamCohomologyClass, instModuleRealDeRhamCohomologyClass,
+isClosed_omegaPow_scaled, isIntegral_zero_current, isSmoothAlternating_add,
+isSmoothAlternating_neg, isSmoothAlternating_smul, isSmoothAlternating_sub,
+isSmoothAlternating_zero, lefschetz_lift_signed_cycle, limit_is_calibrated,
+microstructureSequence_are_cycles, microstructureSequence_defect_bound,
+microstructureSequence_flat_limit_exists, ofForm_smul_real, ofForm_sub,
+omega_pow_isClosed, omega_pow_represents_multiple, propext, serre_gaga,
+signed_decomposition, simpleCalibratedForm_is_smooth, smoothExtDeriv_add,
+smoothExtDeriv_smul, wirtinger_comass_bound, Classical.choice, Quot.sound
+\end{verbatim}
+}
+
+\section{Axioms to complete}
+
+\subsection{P0: Strategy-critical (highest priority)}
+
+These axioms likely encode the conjecture's hard content. Complete them first.
+
+\bigskip
+\noindent\textbf{1.\ \texttt{signed\_decomposition}}\\
+\textit{Location:} \texttt{Hodge/Kahler/SignedDecomp.lean:61}\\
+\textit{Why critical:} This is where rationality is turned into a decomposition used to build algebraic cycles. If axiomatized, it can encode most of the conjecture's content.\\
+\textit{To complete:} Prove as theorem (or replace by a genuinely standard theorem known \emph{not} to imply Hodge).
+
+\bigskip
+\noindent\textbf{2.\ \texttt{microstructureSequence\_are\_cycles}}\\
+\textit{Location:} \texttt{Hodge/Kahler/Microstructure.lean:228}\\
+\textit{Why critical:} Part of the microstructure pipeline; asserts the constructed approximants are genuine cycles. If axiomatized, it hides the geometric construction.\\
+\textit{To complete:} Define the construction and prove $\partial = 0$ for each approximant.
+
+\bigskip
+\noindent\textbf{3.\ \texttt{microstructureSequence\_defect\_bound}}\\
+\textit{Location:} \texttt{Hodge/Kahler/Microstructure.lean:234}\\
+\textit{Why critical:} Controls calibration defect; needed to pass to calibrated limits. If axiomatized, it hides the key analytic estimate.\\
+\textit{To complete:} Prove the defect estimate from concrete norms/currents.
+
+\bigskip
+\noindent\textbf{4.\ \texttt{microstructureSequence\_flat\_limit\_exists}}\\
+\textit{Location:} \texttt{Hodge/Kahler/Microstructure.lean:269}\\
+\textit{Why critical:} Provides the convergent subsequence / limit current. If axiomatized, it assumes the compactness/extraction needed by the strategy.\\
+\textit{To complete:} Prove via a formal Federer--Fleming compactness theorem for your current model.
+
+\bigskip
+\noindent\textbf{5.\ \texttt{harvey\_lawson\_fundamental\_class}}\\
+\textit{Location:} \texttt{Hodge/Kahler/Main.lean:94}\\
+\textit{Why critical:} Cohomology-level bridge equating the fundamental class of the HL/GAGA output to the target class. This is the exact representation step.\\
+\textit{To complete:} Prove the de Rham class identification from the definition of cycle/fundamental class.
+
+\bigskip
+\noindent\textbf{6.\ \texttt{lefschetz\_lift\_signed\_cycle}}\\
+\textit{Location:} \texttt{Hodge/Kahler/Main.lean:150}\\
+\textit{Why critical:} Cycle-level lifting used in the Hard Lefschetz reduction ($p > n/2$). If axiomatized, it assumes compatibility of cycle classes with Lefschetz operator/hyperplane intersection.\\
+\textit{To complete:} Prove via intersection-with-hyperplane compatibility of cycle class maps.
+
+\subsection{P1: Pipeline integrity (GMT facts)}
+
+Standard in GMT once currents/flat topology are fully defined, but still axioms here.
+
+\bigskip
+\noindent\textbf{7.\ \texttt{limit\_is\_calibrated}}\\
+\textit{Location:} \texttt{Hodge/Analytic/Calibration.lean:93}\\
+\textit{Why critical:} Needed to ensure the flat limit current is calibrated, so Harvey--Lawson applies.\\
+\textit{To complete:} Prove from lower semicontinuity of mass + calibration inequality.
+
+\bigskip
+\noindent\textbf{8.\ \texttt{flat\_limit\_of\_cycles\_is\_cycle}}\\
+\textit{Location:} \texttt{Hodge/Classical/HarveyLawson.lean:186}\\
+\textit{Why critical:} Needed to ensure the flat limit remains a cycle ($\partial = 0$).\\
+\textit{To complete:} Prove continuity of boundary in flat norm.
+
+\section{Axioms you can leave}
+
+\subsection{Major classical pillars}
+
+These are deep but standard theorems. Reasonable to leave as axioms for now.
+
+\begin{itemize}
+\item \texttt{hard\_lefschetz\_inverse\_form} --- Hard Lefschetz theorem; large formalization project.
+\item \texttt{serre\_gaga} --- GAGA/Chow (analytic $\Rightarrow$ algebraic); large AG formalization.
+\item \texttt{harvey\_lawson\_theorem} --- HL structure theorem; deep GMT theorem.
+\item \texttt{harvey\_lawson\_represents} --- HL representation statement.
+\item \texttt{omega\_pow\_represents\_multiple} --- $\omega^p$ represented by algebraic cycle; classical AG.
+\end{itemize}
+
+\subsection{Interface axioms (22 total)}
+
+These provide algebraic/smoothness/linearity properties for abstract APIs:
+
+\begin{itemize}
+\item \texttt{IsAlgebraicSet}, \texttt{IsAlgebraicSet\_empty}, \texttt{IsAlgebraicSet\_union}
+\item \texttt{FundamentalClassSet\_isClosed}, \texttt{omega\_pow\_isClosed}, \texttt{isClosed\_omegaPow\_scaled}
+\item \texttt{wirtinger\_comass\_bound}, \texttt{calibration\_inequality}
+\item \texttt{exists\_volume\_form\_of\_submodule\_axiom}, \texttt{simpleCalibratedForm\_is\_smooth}
+\item \texttt{isIntegral\_zero\_current}
+\item \texttt{smoothExtDeriv\_add}, \texttt{smoothExtDeriv\_smul}
+\item \texttt{ofForm\_sub}, \texttt{ofForm\_smul\_real}
+\item \texttt{isSmoothAlternating\_*} (5 axioms)
+\item \texttt{instAddCommGroupDeRhamCohomologyClass}, \texttt{instModuleRealDeRhamCohomologyClass}
+\end{itemize}
+
+\subsection{Lean foundations}
+
+\begin{itemize}
+\item \texttt{Classical.choice} --- Standard classical logic.
+\item \texttt{propext} --- Propositional extensionality.
+\item \texttt{Quot.sound} --- Quotient soundness (Lean core).
+\end{itemize}
+
+\section{Recommended completion order}
+
+\begin{enumerate}
+\item \textbf{Discharge P0 axioms} (strategy-critical) so the proof does not assume the core bridge.
+\item \textbf{Discharge P1 axioms} if you want the analytic limit behavior internal to Lean.
+\item \textbf{Optionally}, formalize the classical pillars (Hard Lefschetz, GAGA, Harvey--Lawson).
+\end{enumerate}
+
+\end{document}

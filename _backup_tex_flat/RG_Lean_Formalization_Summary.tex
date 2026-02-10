@@ -1,0 +1,160 @@
+\documentclass[11pt]{article}
+
+% Minimal dependencies on purpose (easy to compile anywhere).
+
+\title{Recognition Geometry (RG) --- Lean Formalization Summary}
+\author{Jonathan Washburn}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section*{Purpose}
+This note is a collaborator-facing map of the Lean~4 development for Recognition Geometry (RG).
+It lists the modules under \texttt{IndisputableMonolith/RecogGeom/} and summarizes what each module
+defines and what it proves.
+
+\section*{Status tags}
+\begin{itemize}
+\item \textbf{PROVED}: stated and proved in Lean.
+\item \textbf{DEF}: definition/structure only (no substantive theorem claim).
+\item \textbf{MODEL}: a structural bridge or placeholder modeling choice (useful for orientation, not the final RS instantiation).
+\item \textbf{TODO}: explicitly marked incomplete or awaiting a stronger theorem statement.
+\end{itemize}
+
+\section*{High-level coverage (today)}
+\begin{itemize}
+\item \textbf{Core RG spine (PROVED)}: configuration space, event space, locality structure, recognizers, indistinguishability, recognition quotient, and the canonical factorization map on the quotient.
+\item \textbf{Refinement under composition (PROVED)}: combining recognizers refines the quotient; composite indistinguishability is conjunction.
+\item \textbf{Finite local resolution (PROVED)}: formal definition + the ``no injection on infinite neighborhood with finite events'' obstruction.
+\item \textbf{Symmetry / gauge (PROVED)}: event-preserving maps induce quotient actions; automorphisms + gauge-equivalence relation; gauge implies indistinguishable.
+\item \textbf{Comparative recognition (PROVED)}: comparative recognizers induce order-type relations; definition of recognition pseudometric.
+\item \textbf{Charts/dimension layer (MIXED)}: core chart/atlas definitions are in place, but several ``geometry'' claims are currently phrased as hypotheses (see the module notes below).
+\item \textbf{RS bridge (MODEL)}: a structural template showing how ledger states / 8-tick finite resolution / J-cost would instantiate RG.
+\end{itemize}
+
+\section*{Module-by-module map}
+
+\subsection*{\texttt{RecogGeom/Core.lean} (PROVED)}
+\begin{itemize}
+\item \textbf{DEF}: \texttt{ConfigSpace}, \texttt{EventSpace}, \texttt{DecEventSpace}, \texttt{RecognitionTriple}.
+\item \textbf{PROVED}: \texttt{config\_exists}, \texttt{event\_nontrivial}.
+\end{itemize}
+
+\subsection*{\texttt{RecogGeom/Locality.lean} (PROVED)}
+\begin{itemize}
+\item \textbf{DEF}: \texttt{LocalConfigSpace} with neighborhood assignment \texttt{N} and axioms
+(\texttt{mem\_of\_mem\_N}, \texttt{N\_nonempty}, \texttt{intersection\_closed}, \texttt{refinement}).
+\item \textbf{PROVED}: \texttt{has\_neighborhood}, \texttt{self\_mem\_neighborhood}, \texttt{common\_refinement}, \texttt{sub\_neighborhood}.
+\item \textbf{DEF}: neighborhood filter base construction (\texttt{neighborhoodFilterBase}).
+\end{itemize}
+
+\subsection*{\texttt{RecogGeom/Recognizer.lean} (PROVED)}
+\begin{itemize}
+\item \textbf{DEF}: \texttt{Recognizer} (nontrivial function \texttt{R : C $\to$ E}), \texttt{LocalRecognizer}.
+\item \textbf{PROVED}: nontriviality lemmas and basic fiber facts such as \texttt{Recognizer.fiber}, \texttt{Recognizer.fibers\_partition}.
+\end{itemize}
+
+\subsection*{\texttt{RecogGeom/Indistinguishable.lean} (PROVED)}
+\begin{itemize}
+\item \textbf{DEF}: \texttt{Indistinguishable r c$_1$ c$_2$ :\!\!:= (r.R c$_1$ = r.R c$_2$)} and the setoid it induces.
+\item \textbf{PROVED}: \texttt{indistinguishable\_equivalence}; resolution-cell lemmas such as \texttt{resolutionCell\_eq\_fiber} and \texttt{resolutionCells\_partition}.
+\end{itemize}
+
+\subsection*{\texttt{RecogGeom/Quotient.lean} (PROVED)}
+\begin{itemize}
+\item \textbf{DEF}: \texttt{RecognitionQuotient r := Quotient(indistinguishableSetoid r)} (i.e.\ the quotient of $C$ by indistinguishability).
+\item \textbf{PROVED}: \texttt{quotientMk\_eq\_iff}; \texttt{quotientEventMap} and \texttt{quotientEventMap\_injective}.
+\item \textbf{PROVED}: \texttt{quotient\_equiv\_image : C\_R $\simeq$ range(R)}.
+\item \textbf{PROVED}: \texttt{liftToQuotient} + \texttt{liftToQuotient\_spec} (quotient universal mapping property for functions constant on resolution cells).
+\item \textbf{DEF}: induced quotient neighborhoods (\texttt{quotientNeighborhoods}) as a construction-level locality lift.
+\end{itemize}
+
+\subsection*{\texttt{RecogGeom/Composition.lean} (PROVED)}
+\begin{itemize}
+\item \textbf{DEF}: \texttt{CompositeRecognizer} with notation \texttt{r$_1$ $\otimes$ r$_2$}.
+\item \textbf{PROVED}: \texttt{composite\_indistinguishable\_iff} and \texttt{composite\_resolutionCell}.
+\item \textbf{PROVED}: quotient projection maps \texttt{quotientMapLeft}, \texttt{quotientMapRight} and their surjectivity.
+\item \textbf{PROVED}: \texttt{refinement\_theorem} (composite quotient refines both components).
+\end{itemize}
+
+\subsection*{\texttt{RecogGeom/FiniteResolution.lean} (PROVED)}
+\begin{itemize}
+\item \textbf{DEF}: \texttt{HasFiniteLocalResolution} and \texttt{HasFiniteResolution}.
+\item \textbf{PROVED}: \texttt{no\_injection\_on\_infinite\_finite} (finite events on an infinite neighborhood prevents injectivity).
+\end{itemize}
+
+\subsection*{\texttt{RecogGeom/Connectivity.lean} (PROVED)}
+\begin{itemize}
+\item \textbf{DEF}: \texttt{IsRecognitionConnected}, \texttt{IsLocallyRegular}, \texttt{SatisfiesRG5}.
+\item \textbf{PROVED}: basic connectivity lemmas and \texttt{locally\_regular\_cell\_connected}.
+\end{itemize}
+
+\subsection*{\texttt{RecogGeom/Symmetry.lean} (PROVED)}
+\begin{itemize}
+\item \textbf{DEF}: \texttt{RecognitionPreservingMap} (event-preserving map), \texttt{RecognitionAutomorphism} (bijective).
+\item \textbf{PROVED}: symmetry preserves indistinguishability (\texttt{symmetry\_preserves\_indistinguishable}) and induces quotient action (\texttt{symmetryQuotientMap}).
+\item \textbf{DEF+PROVED}: \texttt{GaugeEquivalent} and \texttt{gauge\_implies\_indistinguishable}; gauge equivalence is an equivalence relation.
+\end{itemize}
+
+\subsection*{\texttt{RecogGeom/Comparative.lean} (PROVED, with TODO notes)}
+\begin{itemize}
+\item \textbf{DEF}: \texttt{ComparativeRecognizer}, \texttt{InducesPreorder}, \texttt{InducesPartialOrder}.
+\item \textbf{PROVED}: construction of induced preorder/partial order; supporting lemmas like \texttt{preorder\_refl}, \texttt{metric\_from\_comparisons}.
+\item \textbf{DEF}: \texttt{RecognitionDistance} (pseudometric structure) and \texttt{RecognitionDistance.IsMetric}.
+\item \textbf{TODO (in-module docs)}: the file contains a documentation note about bridging RS J-cost to \texttt{RecognitionDistance}; this bridge is realized structurally in \texttt{RSBridge.lean} (see below).
+\end{itemize}
+
+\subsection*{\texttt{RecogGeom/Charts.lean} (MIXED: DEF + hypothesis-based theorems)}
+\begin{itemize}
+\item \textbf{DEF}: \texttt{RecognitionChart}, \texttt{ChartCompatible}, \texttt{RecognitionAtlas}.
+\item \textbf{PROVED}: chart respects indistinguishability (\texttt{chart\_respects\_equiv}); atlases cover the quotient (\texttt{atlas\_covers\_quotient}).
+\item \textbf{MODEL/TODO}: several ``geometry'' claims are phrased as explicit hypotheses, e.g.
+\texttt{recognition\_dimension\_unique\_hypothesis} and
+\texttt{finite\_resolution\_no\_chart\_hypothesis}. Theorems that use these are conditional.
+\item \textbf{TODO}: \texttt{IsSmoothRecognitionGeometry} is currently a placeholder definition.
+\end{itemize}
+
+\subsection*{\texttt{RecogGeom/Dimension.lean} (PROVED, with interpretive docs)}
+\begin{itemize}
+\item \textbf{DEF}: separating recognizers (\texttt{IsSeparating}), pair separation (\texttt{PairSeparates}), independence (\texttt{IndependentRecognizers}).
+\item \textbf{PROVED}: \texttt{separating\_quotient\_bijective}, \texttt{separating\_singleton\_cells}, \texttt{pairSeparates\_iff}, \texttt{independent\_strict\_refines}.
+\item \textbf{NOTE}: ``spacetime is 4D'' content is currently documentation/TODO, not a proved theorem.
+\end{itemize}
+
+\subsection*{\texttt{RecogGeom/Foundations.lean} (PROVED, with scope notes)}
+\begin{itemize}
+\item \textbf{PROVED}: pillar theorems packaging earlier results; \texttt{fundamental\_theorem} (\texttt{[c$_1$]=[c$_2$] $\leftrightarrow$ R(c$_1$)=R(c$_2$)}).
+\item \textbf{PROVED}: \texttt{universal\_property} in the operational sense used in the paper (surjective projection, injective event map, factorization).
+\item \textbf{NOTE}: full category-theoretic uniqueness statements are explicitly marked as future work.
+\end{itemize}
+
+\subsection*{\texttt{RecogGeom/RSBridge.lean} (MODEL / structural bridge)}
+\begin{itemize}
+\item \textbf{MODEL}: structural interfaces for RS ledger states (\texttt{RSConfigSpace}), locality from an \texttt{RHat}-operator (\texttt{RSLocalityFromRHat}), and measurements (\texttt{RSMeasurement}).
+\item \textbf{MODEL+PROVED}: \texttt{EightTickFiniteResolution} and \texttt{eight\_tick\_implies\_RG4} (RS finite-resolution hypothesis $\Rightarrow$ RG finite resolution).
+\item \textbf{PROVED}: \texttt{physical\_space\_is\_quotient} (specialization of \texttt{quotient\_equiv\_image}).
+\item \textbf{PROVED}: \texttt{toRecognitionDistance} (J-cost axioms packaged as a \texttt{RecognitionDistance}).
+\end{itemize}
+
+\subsection*{\texttt{RecogGeom/Examples.lean} (PROVED)}
+\begin{itemize}
+\item \textbf{PROVED}: small concrete recognizer examples (finite cyclic, sign/magnitude on $\mathbf{Z}$) and a composition-refinement example.
+\end{itemize}
+
+\subsection*{\texttt{RecogGeom/Integration.lean} (DEF + documentation)}
+\begin{itemize}
+\item \textbf{DEF}: an integrated \texttt{RecognitionGeometry} bundle type.
+\item \textbf{NOTE}: provides a human-readable, in-Lean summary of modules and theorem names.
+\end{itemize}
+
+\section*{What is \emph{not} yet claimed as proved (important)}
+\begin{itemize}
+\item A full ``recognition manifold theorem'' (conditions under which the quotient is a smooth manifold) is not presented as a proved Lean theorem in the current library.
+\item Uniqueness of recognition dimension is currently stated via an explicit hypothesis in \texttt{Charts.lean}.
+\item Any fully concrete RS instantiation of locality via an implemented ledger/\texttt{RHat} model is still a modeling bridge rather than an end-to-end physics formalization.
+\end{itemize}
+
+\end{document}
+
+

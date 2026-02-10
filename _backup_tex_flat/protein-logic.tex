@@ -1,0 +1,430 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{hyperref}
+
+\title{Protein Folding From First Principles in the Recognition--CPM Framework}
+\author{(Notes)}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{What Is a Protein in This Universe?}
+
+In a conventional biophysics description, a protein is a linear polymer of amino acids that folds into a three–dimensional structure under the influence of intra– and intermolecular forces. In the recognition--CPM and Masses framework, this description is refined and re–typed:
+
+\subsection{Proteins as Typed Motif Words}
+
+A protein is not merely a chain of atoms but a \emph{typed word} in a finite motif alphabet:
+\begin{itemize}
+  \item At the primary level, the amino–acid sequence is a word in a 20–letter alphabet.
+  \item At higher levels, we pass to an alphabet of \emph{motifs}: local backbone motifs (helical turns, $\beta$-turns, hairpins), sidechain packing motifs, contact motifs, disulfide motifs, and interface motifs (surface patches, binding epitopes, membrane crossings).
+  \item Each motif carries \emph{integer attributes}, analogous to the motif charges in the Masses papers: chirality indices, hydrophobicity classes, charge classes, contact valences, disulfide connectivity counts, etc.
+\end{itemize}
+
+Thus, a protein is a structured word
+\[
+  w = (m_1, m_2, \dots, m_L)
+\]
+in a motif alphabet $\mathcal{M}$, with each $m_i$ carrying integer labels that will determine both its geometric and thermodynamic behaviour.
+
+\subsection{Proteins as Mass-Bearing Objects}
+
+In the Masses framework, a particle's mass is a \emph{word–charge} $Z$ derived from integer counts of motif types in a ribbon/braid word. Continuous kernels (field theories, propagators) read only those integer charges; they do not define them.
+
+By analogy, a protein's ``fold mass'' or ``fold charge'' is an integer functional of its motif word:
+\[
+  Z_{\mathrm{fold}}(w) = \sum_{m\in\mathcal{M}} c(m)\, N_m(w),
+\]
+where $N_m(w)$ counts occurrences of motif $m$ in the word $w$ and $c(m)$ are fixed integers or small rational weights.
+
+Here:
+\begin{itemize}
+  \item $Z_{\mathrm{fold}}$ measures how constrained the native state is: number and strength of required contacts, disulfide bonds, interface anchors, and long–range motifs.
+  \item This is not atomic rest mass, but a \emph{recognition complexity}: the amount of projection work that interfaces must perform to collapse the word into its native three–dimensional pattern.
+\end{itemize}
+
+\subsection{Proteins as Nodes in an Interface Network}
+
+Proteins do not exist in isolation; they are embedded in a network of \emph{interfaces}:
+\begin{itemize}
+  \item The co–translational channel (ribosome and exit tunnel).
+  \item Solvent and hydration shells, ions, and crowding.
+  \item Membranes, chaperones, and binding partners.
+  \item Electromagnetic and spectroscopic channels (IR, optical, etc.).
+\end{itemize}
+
+Each interface defines a measurement channel $(W,K)$ in the sense of entropy-as-interface:
+\begin{itemize}
+  \item $W$: a time or space window (e.g.\ a number of beats, residues, or voxels).
+  \item $K$: a kernel (filter) defining which observables are integrated and how.
+\end{itemize}
+Different interfaces therefore induce different observed folding time distributions, even when the underlying substrate dynamics are the same.
+
+\section{Mass in the Masses Framework and Its Protein Analogue}
+
+\subsection{Mass as Word-Charge}
+
+The Masses papers model elementary particles as ribbon/braid words endowed with a finite motif dictionary. Mass is then a \emph{word–charge} $Z$:
+\begin{itemize}
+  \item A finite set of motif types is fixed.
+  \item Each motif contributes an integer or rational increment to $Z$.
+  \item Continuous field kernels act on $Z$; they do not redefine it.
+\end{itemize}
+Dynamics become: how difficult is it, in a given interface, for the word to change state or traverse a channel, given its $Z$?
+
+\subsection{Fold Mass as Recognition Complexity}
+
+For proteins, the analogous quantity is the \emph{fold mass}:
+\[
+  Z_{\mathrm{fold}} = Z_{\mathrm{fold}}(w; \mathcal{M}_{\mathrm{fold}}),
+\]
+where $\mathcal{M}_{\mathrm{fold}}$ includes:
+\begin{itemize}
+  \item Secondary structure motifs (helices, sheets, turns).
+  \item Tertiary motifs (hydrophobic cores, helix bundles, $\beta$–sandwiches).
+  \item Disulfide connectivity motifs.
+  \item Interface motifs (binding sites, membrane segments).
+\end{itemize}
+
+Then:
+\begin{itemize}
+  \item A high $Z_{\mathrm{fold}}$ corresponds to a fold with many constraints and strong interface commitments.
+  \item A low $Z_{\mathrm{fold}}$ corresponds to flexible or intrinsically disordered proteins.
+  \item Folding difficulty and pathway structure are governed not just by a potential energy landscape but by this integer complexity.
+\end{itemize}
+
+\section{How Should Proteins Fold and Why?}
+
+\subsection{Recognition-Operator Perspective}
+
+The more fundamental statement is the one proved in the Recognition Operator (RO) construction (see \texttt{Recognition-Operator.tex}): folding is a discrete recognition process that minimizes the convex cost
+\[
+  J(x)=\tfrac12(x+x^{-1})-1,\qquad C=\int J(r(t))\,dt,
+\]
+under an eight-tick update $s(t+8\tau_0)=\widehat R(s(t))$ with conserved pattern charges and reciprocity balance. A protein conformation therefore evolves because repeated $\widehat R$ applications lower $C$ while respecting ledger constraints (motif charges, anchors, beat cadence). Collapse or “measurement” is intrinsic: once $C$ accumulated along beats crosses the recognition threshold ($C\ge 1$) the state is forced into a definite motif/phase configuration. In this picture, hydrophobic collapse, hydrogen bonding, and disulfide alignment are simply the channels that contribute most efficiently to $C$ reduction in the relevant interfaces. RSFold inherits this logic: defect components ($\phi$-metrics), guard budgets, and beat metrics are discrete surrogates for $J$ and the eight-tick cadence, so a successful fold is the one that monotonically lowers $C$ (up to stochastic noise) while keeping the conserved pattern charges intact.
+
+\subsection{Classical Thermodynamics as an Emergent Approximation}
+
+The familiar free-energy description is recovered only after linearising $\widehat R$ in the small-deviation regime $r=e^{\varepsilon}$ with $|\varepsilon|\ll1$, where
+\[
+  J(e^{\varepsilon})=\cosh(\varepsilon)-1=\tfrac12\varepsilon^2+\tfrac1{24}\varepsilon^4+\cdots,
+\]
+and the quadratic term dominates. In that limit a single eight-tick update can be written as
+\[
+  \widehat R \approx \exp\!\Bigl(-\frac{i}{\hbar} H_{\mathrm{eff}}\,8\tau_0\Bigr), \qquad H_{\mathrm{eff}}\approx \left.\partial_{\varepsilon}^2\widehat R\right|_{\varepsilon=0},
+\]
+and the continuum $\tau_0\!\to\!0$ limit yields the usual Schrödinger/thermodynamic evolution $i\hbar\,\partial_t s = H_{\mathrm{eff}} s$. The textbook statement “proteins minimize $\Delta G=\Delta H-T\Delta S$” is therefore an emergent approximation valid when interface deviations stay in the quadratic basin and measurement channels average over many beats. Outside this basin (large deviations, short windows, or threshold crossings) the RO description—and the CPM machinery that mirrors it—must be used directly.
+
+\subsection{CPM Coercivity Perspective}
+
+In the CPM framework, folding is cast as a \emph{defect reduction} problem. Fix a structured set $S$ of ``good'' conformations (those satisfying contact, steric, and other constraints). Define:
+\begin{itemize}
+  \item A defect functional $D(\alpha) \geq 0$, measuring distance from a conformation $\alpha$ to the set $S$.
+  \item An energy functional $E(\alpha)$.
+  \item A family of local projections (moves) that reduce $D$ in finite windows.
+\end{itemize}
+
+Under suitable projection and energy control assumptions (net constants $C_{\mathrm{net}}$, projection constant $C_{\mathrm{proj}}$, energy constant $C_{\mathrm{eng}}$), we obtain a coercivity inequality:
+\[
+  E(\alpha) - E(\alpha_0) \;\geq\; c \, D(\alpha), \quad c = (C_{\mathrm{net}} C_{\mathrm{proj}} C_{\mathrm{eng}})^{-1},
+\]
+where $\alpha_0$ is the target (native) structure. Folding in this language is:
+\begin{quote}
+  Repeatedly apply windowed projection moves that save $D$ and invest enough iteration budget so that $D(\alpha)$ is driven to $0$ (or below threshold), guaranteeing that $E(\alpha)$ is correspondingly close to its minimum.
+\end{quote}
+
+\subsection{Eight-Beat and Pattern-Measurement Structure}
+
+The CPM moves are not arbitrary; they follow an eight–beat (or multi–phase) recognition schedule:
+\begin{itemize}
+  \item Computational phases (e.g.\ Collapse, Listen, Lock, ReListen, Balance) approximate discrete beats of a Recognition Operator.
+  \item Within each window, moves are scheduled so that:
+  \begin{itemize}
+    \item No identical phase is re–entered without sufficient decorrelation (no re–entry).
+    \item Projection steps are $\varphi$–damped (golden–ratio scaling) to avoid overshooting the coercive cone.
+    \item Defect savings are aligned with measurement windows $(W,K)$ so that they can be certified by diagnostics.
+  \end{itemize}
+\end{itemize}
+Folding is thus a \emph{scheduled recognition process} on a combinatorial state space, not simply a Brownian search on a continuous energy landscape.
+
+\subsection{Why Folding Occurs}
+
+In this view, proteins fold because the environment---the network of interfaces---is tuned such that:
+\begin{itemize}
+  \item Misfolded conformations are both energetically and combinatorially \emph{expensive} to maintain in all active channels;
+  \item The native motif pattern is \emph{cheap} in those same channels.
+\end{itemize}
+That is, the ambient interfaces are built so that the correct motif word is the unique stable fixed point of repeated recognition by the Recognition Operator.
+
+\section{Interfaces and Entropy}
+
+\subsection{Entropy as Interface Code Length}
+
+The entropy-as-interface perspective defines entropy as the code length for a declared measurement channel $(W,K)$:
+\[
+  S_{W,K} := L(p_Y; W, K),
+\]
+where $L(\cdot)$ is a coding–theoretic length functional for the observed distribution $p_Y$ under window $W$ and kernel $K$.
+
+Key points:
+\begin{itemize}
+  \item Entropy is not an absolute property of the substrate; it is a property of the \emph{channel} through which we observe it.
+  \item Irreversibility arises only at \emph{commits}: moments where the measurement channel records a state and discards alternatives.
+\end{itemize}
+
+\subsection{Interface Thermodynamics}
+
+Interface-Thermodynamics distinguishes:
+\begin{itemize}
+  \item A fast \emph{substrate}: the underlying recognition dynamics operating at beat timescales (CPM iterations, local moves).
+  \item A slow \emph{observer}: a lab measurement channel with large $(W,K)$, integrating over many beats.
+\end{itemize}
+
+Consequently:
+\begin{itemize}
+  \item A 65 ps substrate event can appear microsecond or millisecond in classical experiments, because the measurement window averages over large beat ensembles.
+  \item Apparent folding times are thus determined not only by the substrate dynamics but also by the chosen measurement channel.
+\end{itemize}
+
+\subsection{Implications for Folding}
+
+Different interfaces (ribosome, chaperones, solvent, spectrometer) have different $(W,K)$ and therefore:
+\begin{itemize}
+  \item Different apparent folding time distributions for the same protein.
+  \item Different notions of ``native'' or ``stable'', tied to their specific observable sets.
+\end{itemize}
+
+From a modeling point of view:
+\begin{itemize}
+  \item The ``true'' folding process is that seen by the substrate: defect reductions per beat, as measured by the Recognition Operator.
+  \item Experiments see only \emph{aggregated} histories, summarized via channel-specific entropies $S_{W,K}$ and averaged time traces.
+\end{itemize}
+
+\section{What RSFold/CPM Already Captures}
+
+The RSFold/CPM implementation already embodies several elements of this first–principles picture:
+
+\subsection{Defect and Energy Structure}
+
+\begin{itemize}
+  \item Defect $D$ consists of contributions from contact satisfaction, disulfide satisfaction, steric clashes, dihedral constraints (Rama), landing constraints (A2), and other structural penalties.
+  \item Energy $E$ is a weighted sum aligned with these defects; weights are chosen so that reductions in $D$ usually correspond to increases in $E$ coercivity.
+  \item Local moves are windowed; projection steps (clamps, relax-to-threshold) are designed to stay within a prescribed $\varepsilon$-ball compatible with CPM constants.
+\end{itemize}
+
+\subsection{Multi-Phase Schedule as Discretized Recognition Operator}
+
+The schedule
+\[
+  \text{Collapse} \to \text{Listen} \to \text{Lock} \to \text{ReListen} \to \text{Balance}
+\]
+is a discrete approximation to an eight–beat Recognition Operator:
+\begin{itemize}
+  \item Different phases correspond to different active channels and different projection strengths (temperatures, contact weights, blend factors).
+  \item The ReListen phase re–randomizes clamps to relieve over–constrained configurations before Balance.
+\end{itemize}
+
+\subsection{Instrumentation and Audits}
+
+RSFold exposes:
+\begin{itemize}
+  \item Coercive audits A1--A6 (e.g.\ A2 integer landing, A3 contact/disulfide satisfaction, A4 spillover, A5 acceptance).
+  \item Penalty histories and spillover logs (local vs global defect changes).
+  \item Per–phase acceptance rates and iteration counts.
+  \item Beat metrics and $(W,K)$ metadata in the CPM report, enabling explicit channel-aware analysis.
+  \item Guard events tied to certified iteration budgets, roughly of order $O(n^{1/3} \log n)$.
+\end{itemize}
+
+\subsection{Contact and Disulfide Geometry}
+
+The engine already enforces real geometric invariants:
+\begin{itemize}
+  \item Contact distance and RMSD constraints derived from target structures.
+  \item Disulfide bond distances and connectivity.
+  \item Ledger–based improvements in $\varphi$–scaled defect metrics.
+\end{itemize}
+These act as proto-motif constraints, capturing part of the word–charge structure of the protein.
+
+\section{What Is Missing}
+
+From the first-principles vantage point, several important elements are still absent or only partially realized.
+
+\subsection{Interface Realism}
+
+Currently, RSFold largely assumes a single, homogeneous environment. Real proteins fold:
+\begin{itemize}
+  \item Co–translationally on the ribosome, with a growing chain and a tethered N–terminus.
+  \item In a crowded cytosolic or membrane environment.
+  \item Assisted by chaperones and binding partners.
+\end{itemize}
+What is missing:
+\begin{itemize}
+  \item A model for \emph{co-translational folding} (incremental chain emergence, exit tunnel geometry, tethering).
+  \item Explicit chaperone and membrane interfaces with their own channels and constraints.
+  \item Explicit modelling of binding partners and interface geometry in the native state.
+\end{itemize}
+
+\subsection{Motif Dictionaries and Fold-Charge Invariants}
+
+CPM presently uses contacts and simple structural terms, but does not fully exploit a finite motif dictionary and integer invariants as in the Masses framework.
+
+Missing ingredients:
+\begin{itemize}
+  \item A protein motif dictionary $\mathcal{M}_{\mathrm{fold}}$ including:
+  \begin{itemize}
+    \item Secondary and tertiary motifs (hairpins, helix-turn-helix elements, disulfide knots).
+    \item Packing motifs and interface motifs.
+  \end{itemize}
+  \item A fold-charge functional $Z_{\mathrm{fold}}$ with:
+  \begin{itemize}
+    \item Integer charges preserved along the folding path.
+    \item Constraints like ``equal-motif windows share a common anchor'' (single–anchor principle).
+  \end{itemize}
+  \item Use of $Z_{\mathrm{fold}}$ to guide schedules, budgets, and admissible transitions.
+\end{itemize}
+
+\subsection{Formal Motif Model and Fold-Charge Dynamics}
+
+We now sketch a more concrete mathematical model of motif recognition and fold-charge evolution. Let
+\[
+  \mathcal{X} := (\mathbb{R}^3 \times \mathbb{S}^1 \times \mathbb{S}^1)^L
+\]
+denote the configuration space of backbone atoms and dihedral angles for a protein of length $L$ (suppressing sidechain detail for brevity). A conformation is a point $\alpha \in \mathcal{X}$.
+
+For each motif $m \in \mathcal{M}_{\mathrm{fold}}$, let $\mathcal{I}(m)$ be a finite family of index patterns $I \subset \{1,\dots,L\}$ on which $m$ may be realized. A recognition predicate
+\[
+  R_m(\alpha, I) \in \{0,1\}, \quad I \in \mathcal{I}(m),
+\]
+decides whether $\alpha$ realizes motif $m$ on residues $I$ (e.g.\ via dihedral and distance thresholds). The realized count is
+\[
+  N_m(\alpha) := \sum_{I \in \mathcal{I}(m)} R_m(\alpha,I).
+\]
+Given integer attributes $q_j(m)$, the $j$-th component of the fold-charge is
+\[
+  Z_{\mathrm{fold}}^j(\alpha) = \sum_{m \in \mathcal{M}_{\mathrm{fold}}} q_j(m)\, N_m(\alpha).
+\]
+
+Under a CPM move $\alpha_t \to \alpha_{t+1}$, the fold-charge increment is
+\[
+  \Delta Z_{\mathrm{fold}}^j(t) := Z_{\mathrm{fold}}^j(\alpha_{t+1}) - Z_{\mathrm{fold}}^j(\alpha_t).
+\]
+Interface physics suggests that for most channels we require \emph{locality}:
+\[
+  \Delta Z_{\mathrm{fold}}^j(t) = 0 \quad\text{or}\quad |\Delta Z_{\mathrm{fold}}^j(t)| \leq 1
+\]
+with high probability, and that nonzero increments only occur at beats associated with commits in the interface hierarchy.
+
+The single–anchor principle can be expressed dynamically: for each motif $m$ there is an anchor index $A(m)$ such that any move supported away from $\{A(m) : m \in \mathcal{M}_{\mathrm{fold}}\}$ leaves $Z_{\mathrm{fold}}^j$ invariant for all $j$. This is a geometric conservation law for motif charge.
+
+The neutrino analysis in Recognition Physics illustrates what happens when the ledger encounters a truly neutral object ($Z=0$): the leading linear channel vanishes and only quadratic recognition events remain, forcing a mass-squared ladder (see \texttt{Neurtrinos-z-equals-0.tex}). We should expect the same phenomenon for motif families whose net interface charge is zero (perfectly balanced hydrophobic/polar patches, symmetry-locked disulfide cages, etc.). In those windows CPM must watch not just first-order $\Delta Z_{\mathrm{fold}}$ increments but composite $(\Delta Z)^2$ events, because they may be the only route to cost savings and phase commits—exactly the way quadratic recognition enables neutrino masses.
+
+\subsection{Using $(W,K)$ and Beat Metrics as Active Constraints}
+
+Currently, $(W,K)$ and beat statistics are primarily logged as telemetry. In the entropy-as-interface picture, they should act as \emph{constraints} on admissible schedules, not just observables.
+
+Let $\mathcal{C}$ denote the set of measurement channels, each specified by $(W,K) \in \mathcal{C}$. For a CPM trajectory $(\alpha_t)_{t=0}^T$ and a channel $(W,K)$, the induced observation process is
+\[
+  Y^{(W,K)}_n := K\bigl( \{\alpha_t : t \in W_n\} \bigr),
+\]
+where $(W_n)_n$ is a tiling of $\{0,\dots,T\}$ by overlapping or disjoint windows. The code length
+\[
+  S_{W,K} := L\bigl(p_{Y^{(W,K)}}\bigr)
+\]
+is then a functional of the schedule and of the proposal distribution.
+
+CPM schedule admissibility should include conditions of the form:
+\begin{itemize}
+  \item For selected channels $(W,K)$, the empirical code-length $S_{W,K}$ must remain within a prescribed band compatible with the Law of Existence.
+  \item If, during a phase, the estimated $S_{W,K}$ drifts toward a falsifier (e.g.\ measured SNR falls below a threshold, or circular variance exceeds a bound), then:
+  \begin{itemize}
+    \item step sizes are reduced,
+    \item proposal types are changed (e.g.\ relax-only moves),
+    \item or the phase is forced to transition (e.g.\ early ReListen or Balance).
+  \end{itemize}
+\end{itemize}
+Formally, one can introduce a constraint functional
+\[
+  \Phi_{\mathrm{channel}}(\text{schedule}) := \max_{(W,K) \in \mathcal{C}_0}
+    \left| S_{W,K}^{\mathrm{emp}} - S_{W,K}^{\mathrm{target}} \right|
+\]
+and only accept schedules with $\Phi_{\mathrm{channel}}$ below a fixed tolerance.
+
+\subsection{Calibrated CPM Constants and Law-of-Existence Bands}
+
+CPM theory specifies constants such as $\varepsilon$, $C_{\mathrm{proj}}$, $K_{\mathrm{net}}$, and $C_{\mathrm{eng}}$ which determine the coercivity constant $c$. Implementation-wise, these can be enforced by explicit inequalities on the accepted moves.
+
+Let $\Delta \alpha$ denote a proposed move at beat $t$, with induced defect and energy changes $\Delta D_t$ and $\Delta E_t$. A Law-of-Existence band can be encoded as:
+\begin{align*}
+  \|\Delta \alpha\| &\leq \varepsilon_{\max}, \\
+  \Delta D_t &\leq -\delta_D \quad\text{(minimal defect saving)}, \\
+  \Delta E_t &\geq c_{\min} \, (-\Delta D_t),
+\end{align*}
+where
+\[
+  c_{\min} = (C_{\mathrm{net}} C_{\mathrm{proj}} C_{\mathrm{eng}} K_{\mathrm{net}})^{-1}
+\]
+is fixed in advance. These inequalities restrict:
+\begin{itemize}
+  \item The geometry of proposal kernels (e.g.\ dihedral step sizes, translation/rotation magnitudes).
+  \item The acceptance logic (moves that violate the energy--defect inequality are rejected regardless of Metropolis temperature).
+\end{itemize}
+
+Per-protein calibration can then take the form
+\[
+  c_{\min}(w) = f\bigl(Z_{\mathrm{fold}}(w), L\bigr),
+\]
+where $f$ is a simple algebraic expression derived from theory (e.g.\ scaling like $Z_{\mathrm{fold}}^{-1/3}$), and the implementation checks that empirical $(\Delta D_t,\Delta E_t)$ pairs respect this bound with high probability.
+
+\subsection{Kinetic State Graphs and Path Structure}
+
+Beyond continuous trajectories in conformation space, folding can be represented as a path in a finite state graph.
+Define:
+\begin{itemize}
+  \item A set of motif states $V$, each summarizing which motifs in $\mathcal{M}_{\mathrm{fold}}$ are realized and which interfaces are committed.
+  \item An edge set $E \subset V \times V$, where $(v \to v')$ is allowed only if it corresponds to a small number of local motif changes and respects eight–beat cadence.
+\end{itemize}
+
+The CPM trajectory induces a sequence of states
+\[
+  v_t := \Gamma(\alpha_t) \in V,
+\]
+where $\Gamma$ is a coarse–graining map from conformations to motif states. Folding pathways are then paths
+\[
+  v_0 \to v_1 \to \dots \to v_T
+\]
+in this graph. Coercivity and interface physics can be rephrased as:
+\begin{itemize}
+  \item Certain cycles in $V$ are forbidden (e.g.\ those that violate single–anchor or word-charge invariants).
+  \item Transition probabilities along edges must satisfy inequalities derived from $Z_{\mathrm{fold}}$ and channel constraints.
+\end{itemize}
+Instrumenting RSFold to output $(v_t)_t$ would allow comparison of inferred folding pathways with theoretical motif ladders.
+
+\subsection{Multi-Interface, Multi-Timescale Audits}
+
+Finally, audits such as A2--A5 can be generalized to multiple interfaces. Let $\mathcal{C}_{\mathrm{exp}} \subset \mathcal{C}$ be a family of experiment-like channels (different windows and kernels corresponding to different spectroscopic or single–molecule setups). For each $(W,K) \in \mathcal{C}_{\mathrm{exp}}$, one can define:
+\begin{itemize}
+  \item An apparent folding time $\tau_{W,K}$ extracted from $Y^{(W,K)}$.
+  \item An apparent spillover metric $R_{W,K}$ comparing local vs global defect change under that channel.
+  \item An acceptance profile $A_{W,K}$ summarizing which phases appear frozen or over-clamped.
+\end{itemize}
+
+The audit suite would then require:
+\begin{itemize}
+  \item Substrate-scale coercivity: for channels aligned with CPM beats, spillover ratios remain below threshold and acceptance is above a minimal value.
+  \item Cross-channel consistency: for larger $(W,K)$, the $(\tau_{W,K}, R_{W,K}, A_{W,K})$ must lie in bands derived from Interface Thermodynamics, so that slow apparent folding can be explained as measurement averaging rather than as a failure of recognition.
+\end{itemize}
+
+\section{Summary}
+
+In this first-principles framework:
+\begin{itemize}
+  \item Proteins are typed motif words with mass-like fold charges, embedded in a network of interfaces modelled as measurement channels $(W,K)$.
+  \item Folding is a CPM-style coercive defect-reduction process, orchestrated by an eight-beat Recognition Operator and constrained by channel-dependent entropy.
+  \item RSFold already implements a substantial subset of this structure: defect and energy functionals, a multi-phase schedule, geometric invariants, and channel-aware telemetry.
+  \item The main missing elements are realistic multi-interface models, explicit motif dictionaries and fold-charge invariants, the promotion of $(W,K)$ and beat metrics from telemetry to constraints, calibrated enforcement of CPM constants, explicit kinetic state graphs, and multi-interface audits.
+\end{itemize}
+Closing these gaps would move RSFold from a heuristic folding engine toward a full realization of the recognition--CPM picture, where folding times and pathways are determined by discrete motif structure and interface physics rather than by ad hoc numerical tuning.
+
+\end{document}

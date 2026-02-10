@@ -1,0 +1,623 @@
+\documentclass[11pt,twocolumn]{article}
+
+% --- Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+% \usepackage{cleveref} % Not available; use \ref instead
+\usepackage{geometry}
+% Algorithm packages not available; using enumerate instead
+\usepackage{xcolor}
+% lipsum removed (not needed)
+
+\geometry{margin=1in}
+
+% --- Theorem environments ---
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{remark}{Remark}[section]
+
+% --- Custom commands ---
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\phival}{\varphi}
+\newcommand{\Jcost}{\mathcal{J}}
+
+% --- Title ---
+\title{%
+  $\phival$-Log-Spiral Resonators and Eight-Tick Scheduling:\\
+  A Geometry-and-Control Foundation for Resonant Rotating-Field Experiments%
+}
+
+\author{%
+  Recognition Science Research Institute\\
+  \texttt{[correspondence address]}
+}
+
+\date{February 1, 2026}
+
+\begin{document}
+
+\maketitle
+
+% ============================================================================
+% ABSTRACT
+% ============================================================================
+\begin{abstract}
+Empirical claims of anomalous propulsion or weight modification in rotating-field experiments have historically failed reproducibility tests due to weak geometry specification, imprecise timing discipline, and inadequate falsifier design. This paper presents a rigorous mathematical framework comprising: (i)~a parameterized \emph{$\phival$-log-spiral geometry} defining spatial scaffolds for rotors and phased arrays, (ii)~an \emph{eight-tick neutrality scheduling discipline} for temporal control, and (iii)~a \emph{resonance map computation} that outputs candidate drive bands from geometry inputs.
+
+We derive closed-form invariants for the log-spiral family, prove shift-invariance of the neutrality predicate under 8-periodicity, and specify a minimal set of experimental falsifiers (banding, sign-flip, vacuum persistence). The framework is fully self-contained and does not depend on any specific physical outcome; rather, it provides the reproducible design language and testable predictions required for rigorous experimentation.
+
+\textbf{Keywords:} logarithmic spiral, golden ratio, phased commutation, 8-phase scheduling, resonance mapping, falsifiers
+\end{abstract}
+
+% ============================================================================
+% 1. INTRODUCTION
+% ============================================================================
+\section{Introduction}
+\label{sec:intro}
+
+\subsection{Motivation and Scope}
+
+The history of experimental claims involving rotating fields and anomalous weight or thrust effects---from the Podkletnov experiments~\cite{podkletnov1992} to various replication attempts---is marked by a recurring failure mode: \emph{under-specification}. When the precise geometry of the rotating element, the exact timing of the drive signals, and the expected signatures of success or failure are not mathematically specified in advance, post-hoc interpretations proliferate and reproducibility becomes impossible.
+
+This paper addresses this failure mode by providing a complete mathematical specification for a class of rotating-field experiments. We define:
+\begin{enumerate}
+    \item A \textbf{spatial scaffold} based on the golden-ratio ($\phival$) log-spiral, parameterized by an integer pitch $\kappa \in \Z$.
+    \item A \textbf{temporal discipline} based on 8-tick neutrality, ensuring that drive signals sum to zero over every 8-sample window.
+    \item A \textbf{resonance map algorithm} that computes candidate drive frequencies from geometric inputs.
+    \item A \textbf{falsifier set} specifying what constitutes success, failure, and disqualification.
+\end{enumerate}
+
+\subsection{Scope Boundaries}
+
+This paper does \textbf{not} claim that any physical effect has been observed. It does \textbf{not} predict the magnitude or existence of any propulsion or weight modification. Rather, it establishes a \emph{reproducible definition language} and \emph{test design} that would allow such claims to be rigorously evaluated.
+
+\subsection{Contributions}
+
+The main contributions are:
+\begin{itemize}
+    \item Formal definitions of the $\phival$-log-spiral family with closed-form step-ratio and per-turn-multiplier identities (Section~\ref{sec:geometry}).
+    \item A formal definition of 8-tick neutrality with a proof of shift-invariance under periodicity (Section~\ref{sec:scheduling}).
+    \item A resonance-map algorithm with worked example (Section~\ref{sec:resonance}).
+    \item A minimal experimental falsifier set (Section~\ref{sec:falsifiers}).
+\end{itemize}
+
+\subsection{Document Roadmap}
+
+Section~\ref{sec:notation} establishes notation and conventions. Section~\ref{sec:geometry} develops the $\phival$-log-spiral geometry. Section~\ref{sec:scheduling} develops the 8-tick scheduling discipline. Section~\ref{sec:resonance} presents the resonance-map computation. Section~\ref{sec:falsifiers} specifies experimental falsifiers. Section~\ref{sec:discussion} discusses limitations and future work. Section~\ref{sec:conclusion} concludes.
+
+% ============================================================================
+% 2. NOTATION AND CONVENTIONS
+% ============================================================================
+\section{Notation and Conventions}
+\label{sec:notation}
+
+\subsection{Constants and Symbols}
+
+\begin{definition}[Golden Ratio]
+The golden ratio is defined as
+\begin{equation}
+    \phival \coloneqq \frac{1 + \sqrt{5}}{2} \approx 1.6180339887.
+\end{equation}
+\end{definition}
+
+\noindent Key properties used throughout:
+\begin{itemize}
+    \item $\phival > 0$
+    \item $\phival^2 = \phival + 1$
+    \item $\phival^{-1} = \phival - 1 \approx 0.618$
+\end{itemize}
+
+\noindent Additional notation:
+\begin{itemize}
+    \item $r_0 \in \R_{>0}$: base radius (scale parameter)
+    \item $\theta \in \R$: angular coordinate (radians)
+    \item $\kappa \in \Z$: integer pitch parameter
+    \item $t \in \N$: discrete tick index
+    \item $c \approx 2.998 \times 10^8$ m/s: speed of light
+\end{itemize}
+
+\subsection{Reproducibility Conventions}
+
+All experiments should report parameter sets in the canonical form:
+\begin{equation}
+    \mathcal{P} = (r_0, \kappa, n_{\text{coils}}, f_{\text{max}}, \text{constraints})
+\end{equation}
+where $n_{\text{coils}}$ is the number of discrete elements (coils or magnets) and $f_{\text{max}}$ is the maximum drive frequency.
+
+% ============================================================================
+% 3. SPATIAL SCAFFOLD: φ-LOG-SPIRAL GEOMETRY
+% ============================================================================
+\section{Spatial Scaffold: $\phival$-Log-Spiral Geometry}
+\label{sec:geometry}
+
+\subsection{The Log-Spiral Family}
+
+\begin{definition}[$\phival$-Log-Spiral]
+\label{def:logspiral}
+For base radius $r_0 > 0$, angle $\theta \in \R$, and integer pitch $\kappa \in \Z$, the \emph{$\phival$-log-spiral} is defined by:
+\begin{equation}
+    r(\theta; r_0, \kappa) \coloneqq r_0 \cdot \phival^{\,\kappa \theta / (2\pi)}.
+    \label{eq:logspiral}
+\end{equation}
+\end{definition}
+
+\noindent This is a logarithmic spiral where the growth rate is controlled by powers of the golden ratio. The parameter $\kappa$ determines the ``tightness'' of the spiral:
+\begin{itemize}
+    \item $\kappa = 0$: constant radius (circle)
+    \item $\kappa > 0$: outward spiral
+    \item $\kappa < 0$: inward spiral
+\end{itemize}
+
+\begin{remark}
+The restriction $\kappa \in \Z$ (rather than $\kappa \in \R$) is a design choice that quantizes the space of allowable geometries into discrete ``pitch families.'' This has implications for manufacturability and for the hypothesis that certain discrete configurations may exhibit resonance.
+\end{remark}
+
+\subsection{Closed-Form Step Ratio}
+
+\begin{definition}[Step Ratio]
+\label{def:stepratio}
+For angular increment $\Delta\theta$, the \emph{step ratio} is the ratio of radii at consecutive angular positions:
+\begin{equation}
+    R(\theta, \Delta\theta; r_0, \kappa) \coloneqq \frac{r(\theta + \Delta\theta; r_0, \kappa)}{r(\theta; r_0, \kappa)}.
+\end{equation}
+\end{definition}
+
+\begin{theorem}[Step-Ratio Closed Form]
+\label{thm:stepratio}
+For $r_0 \neq 0$, the step ratio depends only on $\Delta\theta$ and $\kappa$:
+\begin{equation}
+    R(\theta, \Delta\theta; r_0, \kappa) = \phival^{\,\kappa \Delta\theta / (2\pi)}.
+    \label{eq:stepratio}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+By direct computation:
+\begin{align}
+    R &= \frac{r_0 \cdot \phival^{\kappa(\theta + \Delta\theta)/(2\pi)}}{r_0 \cdot \phival^{\kappa\theta/(2\pi)}} \\
+      &= \phival^{\kappa(\theta + \Delta\theta)/(2\pi) - \kappa\theta/(2\pi)} \\
+      &= \phival^{\kappa\Delta\theta/(2\pi)}.
+\end{align}
+The factor $r_0$ cancels, and the base angle $\theta$ drops out.
+\end{proof}
+
+\begin{corollary}[Scale Invariance]
+\label{cor:scale}
+For any $c \neq 0$:
+\begin{equation}
+    R(\theta, \Delta\theta; c \cdot r_0, \kappa) = R(\theta, \Delta\theta; r_0, \kappa).
+\end{equation}
+\end{corollary}
+
+\noindent This means the \emph{shape} of the spiral (as characterized by step ratios) is independent of overall scale.
+
+\subsection{Per-Turn Multiplier}
+
+\begin{definition}[Per-Turn Multiplier]
+\label{def:perturn}
+The \emph{per-turn multiplier} is the step ratio for one complete revolution ($\Delta\theta = 2\pi$):
+\begin{equation}
+    M(\kappa) \coloneqq R(\theta, 2\pi; r_0, \kappa) = \phival^\kappa.
+    \label{eq:perturn}
+\end{equation}
+\end{definition}
+
+\begin{theorem}[Per-Turn Ratio]
+\label{thm:perturn}
+For any $r_0 \neq 0$ and $\theta \in \R$:
+\begin{equation}
+    \frac{r(\theta + 2\pi; r_0, \kappa)}{r(\theta; r_0, \kappa)} = \phival^\kappa.
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+Immediate from Theorem~\ref{thm:stepratio} with $\Delta\theta = 2\pi$, noting that $\kappa \cdot 2\pi / (2\pi) = \kappa$.
+\end{proof}
+
+\subsection{Discrete Pitch Families}
+
+\begin{theorem}[$\kappa$-Discreteness]
+\label{thm:kappa}
+Shifting $\kappa$ by an integer $d \in \Z$ shifts the per-turn multiplier by a $\phival$-power:
+\begin{equation}
+    M(\kappa + d) = M(\kappa) \cdot \phival^d.
+    \label{eq:kappa}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+$M(\kappa + d) = \phival^{\kappa + d} = \phival^\kappa \cdot \phival^d = M(\kappa) \cdot \phival^d$.
+\end{proof}
+
+\noindent This theorem captures the idea that the space of $\phival$-log-spirals is organized into discrete ``pitch families,'' with adjacent families differing by a factor of $\phival$ in their per-turn growth.
+
+\subsection{Tetrahedral Symmetry (Optional)}
+
+For multi-rotor configurations, we note the \emph{tetrahedral angle}:
+\begin{equation}
+    \theta_{\text{tet}} = \arccos\left(-\frac{1}{3}\right) \approx 109.47°.
+\end{equation}
+This angle arises in sp$^3$ hybridization and tetrahedral molecular geometry. It provides a natural symmetry for 4-fold rotor arrangements.
+
+\subsection{Discrete Layout Mapping}
+
+For practical implementation, the continuous spiral~\eqref{eq:logspiral} is sampled at $n$ discrete angles:
+\begin{equation}
+    \theta_k = \frac{2\pi k}{n}, \quad k = 0, 1, \ldots, n-1.
+\end{equation}
+Each sample point yields a radius $r_k = r(\theta_k; r_0, \kappa)$, which specifies a coil position or magnet placement.
+
+% ============================================================================
+% 4. TEMPORAL SCAFFOLD: 8-TICK SCHEDULING
+% ============================================================================
+\section{Temporal Scaffold: Eight-Tick Scheduling Discipline}
+\label{sec:scheduling}
+
+\subsection{Drive Signals and Windows}
+
+Let $w : \N \to \R$ be a discrete-time drive signal, where $w(t)$ represents the drive value (e.g., voltage, current, or logical state) at tick $t$.
+
+\begin{definition}[8-Window Sum]
+\label{def:neutralityscore}
+The \emph{8-window sum} (or \emph{neutrality score}) starting at tick $t_0$ is:
+\begin{equation}
+    S(w, t_0) \coloneqq \sum_{k=0}^{7} w(t_0 + k).
+    \label{eq:neutralityscore}
+\end{equation}
+\end{definition}
+
+\begin{definition}[8-Gate Neutrality]
+\label{def:neutrality}
+A signal $w$ satisfies \emph{8-gate neutrality} at $t_0$ if:
+\begin{equation}
+    S(w, t_0) = 0.
+    \label{eq:neutrality}
+\end{equation}
+\end{definition}
+
+\noindent Intuitively, 8-gate neutrality requires that the drive signal is ``mean-free'' over every 8-tick window. This is analogous to AC coupling in electronics: no DC component accumulates.
+
+\subsection{Periodicity}
+
+\begin{definition}[8-Periodicity]
+\label{def:periodic8}
+A signal $w : \N \to \R$ is \emph{8-periodic} if:
+\begin{equation}
+    \forall\, t \in \N : \quad w(t + 8) = w(t).
+    \label{eq:periodic8}
+\end{equation}
+\end{definition}
+
+\subsection{Shift Invariance}
+
+\begin{lemma}[Neutrality Score Shift]
+\label{lem:shift}
+If $w$ is 8-periodic, then for any $t_0 \in \N$:
+\begin{equation}
+    S(w, t_0 + 1) = S(w, t_0).
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Expand both sums:
+\begin{align}
+    S(w, t_0) &= \sum_{k=0}^{7} w(t_0 + k), \\
+    S(w, t_0 + 1) &= \sum_{k=0}^{7} w(t_0 + 1 + k).
+\end{align}
+Reindex the second sum by $j = k + 1$:
+\begin{equation}
+    S(w, t_0 + 1) = \sum_{j=1}^{8} w(t_0 + j) = \sum_{j=1}^{7} w(t_0 + j) + w(t_0 + 8).
+\end{equation}
+By 8-periodicity, $w(t_0 + 8) = w(t_0)$. Thus:
+\begin{equation}
+    S(w, t_0 + 1) = \sum_{j=1}^{7} w(t_0 + j) + w(t_0) = \sum_{k=0}^{7} w(t_0 + k) = S(w, t_0).
+\end{equation}
+\end{proof}
+
+\begin{theorem}[Shift Invariance of Neutrality]
+\label{thm:shiftinvariance}
+If $w$ is 8-periodic, then 8-gate neutrality is shift-invariant:
+\begin{equation}
+    S(w, t_0) = 0 \iff S(w, t_0 + 1) = 0.
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+Immediate from Lemma~\ref{lem:shift}: $S(w, t_0 + 1) = S(w, t_0)$, so one equals zero if and only if the other does.
+\end{proof}
+
+\noindent This theorem is important for practical implementation: if an 8-periodic signal achieves neutrality at \emph{any} starting tick, it achieves neutrality at \emph{every} starting tick.
+
+\subsection{Coherence and Jitter}
+
+For real implementations, perfect periodicity is unattainable. We define:
+
+\begin{definition}[Phase Jitter]
+Let $\tau_{\text{nom}}$ be the nominal tick period. The \emph{phase jitter} at tick $t$ is:
+\begin{equation}
+    J(t) \coloneqq \left| T_{\text{actual}}(t) - \tau_{\text{nom}} \right|
+\end{equation}
+where $T_{\text{actual}}(t)$ is the measured period at tick $t$.
+\end{definition}
+
+\begin{definition}[Coherence Bound]
+A signal is \emph{coherent} to tolerance $\epsilon$ if:
+\begin{equation}
+    \forall\, t : \quad J(t) < \epsilon \cdot \tau_{\text{nom}}.
+\end{equation}
+\end{definition}
+
+\noindent The specific value of $\epsilon$ is an engineering parameter and is not specified in this document.
+
+% ============================================================================
+% 5. RESONANCE MAP COMPUTATION
+% ============================================================================
+\section{Resonance Map Computation}
+\label{sec:resonance}
+
+\subsection{Physical Hypothesis}
+
+The resonance-map computation is based on a hypothesis (not a proven physical law): that a rotating field may exhibit special behavior when its characteristic velocity matches specific values related to fundamental constants.
+
+\begin{definition}[Tip Speed]
+For a rotating element of diameter $D$ at frequency $f$ (Hz):
+\begin{equation}
+    v_{\text{tip}} = \pi D f.
+    \label{eq:tipspeed}
+\end{equation}
+\end{definition}
+
+\noindent The hypothesis posits that resonance occurs when:
+\begin{equation}
+    v_{\text{tip}} = c \cdot \phival^{-N}
+    \label{eq:resonance}
+\end{equation}
+for integer $N$, where $c$ is the speed of light.
+
+\subsection{Derivation of Candidate Frequencies}
+
+Solving~\eqref{eq:resonance} for frequency:
+\begin{equation}
+    f_N = \frac{c \cdot \phival^{-N}}{\pi D}.
+    \label{eq:freqN}
+\end{equation}
+
+Converting to RPM:
+\begin{equation}
+    \text{RPM}_N = 60 \cdot f_N = \frac{60 c \cdot \phival^{-N}}{\pi D}.
+    \label{eq:rpmN}
+\end{equation}
+
+\subsection{Algorithm}
+
+\noindent\textbf{Algorithm 1: Resonance Map Computation}
+\label{alg:resonance}
+
+\noindent\textbf{Input:} Diameter $D$ (meters), max RPM $R_{\max}$
+
+\noindent\textbf{Output:} Table of $(N, v_{\text{tip}}, f, \text{RPM})$
+
+\begin{enumerate}
+    \item Set $\phival \gets (1 + \sqrt{5})/2$
+    \item Set $c \gets 2.998 \times 10^8$ m/s
+    \item Compute $N_{\min}$ such that $\text{RPM}_{N_{\min}} \leq R_{\max}$
+    \item \textbf{For} $N = N_{\min}$ to $N_{\min} + 50$ \textbf{do}:
+    \begin{enumerate}
+        \item $v_{\text{tip}} \gets c \cdot \phival^{-N}$
+        \item $f \gets v_{\text{tip}} / (\pi D)$
+        \item $\text{RPM} \gets 60 f$
+        \item \textbf{If} $\text{RPM} \geq 1$ \textbf{then} output $(N, v_{\text{tip}}, f, \text{RPM})$
+    \end{enumerate}
+\end{enumerate}
+
+\subsection{Worked Example: 275 mm Disk}
+
+For a disk of diameter $D = 0.275$ m (similar to Podkletnov's reported setup) with max RPM = 10,000:
+
+\begin{table}[h]
+\centering
+\caption{Resonance Map for $D = 275$ mm}
+\label{tab:resonance}
+\begin{tabular}{@{}rrrr@{}}
+\toprule
+$N$ & $v_{\text{tip}}$ (m/s) & $f$ (Hz) & RPM \\
+\midrule
+37 & 61.24 & 70.91 & 4,254.7 \\
+38 & 37.86 & 43.83 & 2,629.7 \\
+39 & 23.40 & 27.09 & 1,625.5 \\
+40 & 14.46 & 16.74 & 1,004.7 \\
+41 & 8.94 & 10.35 & 621.0 \\
+42 & 5.52 & 6.40 & 383.8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent The predicted ``critical speeds'' for this geometry cluster around 4,000--4,300 RPM (near $N = 37$), with harmonics at lower RPMs.
+
+% ============================================================================
+% 6. EXPERIMENTAL FALSIFIERS
+% ============================================================================
+\section{Experimental Falsifiers}
+\label{sec:falsifiers}
+
+A rigorous experiment must specify in advance what constitutes success, failure, and disqualification. We propose the following minimal set.
+
+\subsection{Banding (Frequency Selectivity)}
+
+\textbf{Prediction:} Any effect proxy (force, weight change, thermal signature) should peak at the discrete frequencies predicted by the resonance map, not at arbitrary frequencies.
+
+\textbf{Null Expectation:} The response is smooth across frequencies, with no peaks beyond measurement noise.
+
+\textbf{Test:} Sweep drive frequency through the predicted bands and log the effect proxy at each setpoint.
+
+\subsection{Sign Flip (Directionality)}
+
+\textbf{Prediction:} Reversing the rotation direction (or phase sequence) reverses the sign of the effect proxy.
+
+\textbf{Null Expectation:} The effect is symmetric under reversal.
+
+\textbf{Test:} Run forward and reverse sweeps; compare sign of effect proxy.
+
+\subsection{Vacuum Persistence (Environmental Robustness)}
+
+\textbf{Prediction:} If the effect is not aerodynamic, it persists under reduced atmospheric pressure.
+
+\textbf{Null Expectation:} Effect diminishes proportionally to air density.
+
+\textbf{Test:} Repeat experiments at $\sim$1 mbar pressure.
+
+\subsection{Disqualifiers}
+
+The following confounders, if not controlled, disqualify results:
+\begin{itemize}
+    \item \textbf{Thermal buoyancy:} Heated air rising.
+    \item \textbf{Vibration coupling:} Mechanical transmission to sensor.
+    \item \textbf{EMI coupling:} Electromagnetic interference in sensor electronics.
+    \item \textbf{Magnetic coupling:} Forces on nearby ferromagnetic materials.
+\end{itemize}
+
+\subsection{Required Logged Signals}
+
+At minimum, experiments should log:
+\begin{enumerate}
+    \item Drive: phase, frequency, duty cycle, current, voltage
+    \item Sensors: force (or weight proxy), temperature, vibration, EMI
+    \item Environment: pressure, ambient temperature
+\end{enumerate}
+
+% ============================================================================
+% 7. DISCUSSION
+% ============================================================================
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{What This Paper Does Not Claim}
+
+This paper provides a mathematical framework, not experimental results. It does \textbf{not}:
+\begin{itemize}
+    \item Claim that any propulsion or weight-modification effect exists.
+    \item Predict magnitudes of any effects.
+    \item Validate the resonance hypothesis.
+\end{itemize}
+
+\subsection{What This Paper Does Claim}
+
+This paper \textbf{does}:
+\begin{itemize}
+    \item Provide reproducible geometric and scheduling definitions.
+    \item Derive closed-form invariants (step ratio, per-turn multiplier, shift invariance).
+    \item Specify a computational method for generating candidate drive frequencies.
+    \item Define a minimal falsifier set for rigorous experimentation.
+\end{itemize}
+
+\subsection{Relationship to Prior Work}
+
+The $\phival$-log-spiral family generalizes the Archimedean spiral used in some antenna and inductor designs. The 8-tick neutrality condition is analogous to balanced modulation schemes in communications. The resonance hypothesis, while speculative, provides concrete predictions that can be tested and falsified.
+
+\subsection{Limitations}
+
+\begin{enumerate}
+    \item The resonance hypothesis~\eqref{eq:resonance} is not derived from first principles in this paper; it is posited as a testable claim.
+    \item Manufacturing tolerances and material properties are not addressed.
+    \item Multi-rotor synchronization is mentioned but not fully developed.
+\end{enumerate}
+
+% ============================================================================
+% 8. CONCLUSION
+% ============================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+We have presented a complete mathematical framework for designing and evaluating rotating-field experiments based on $\phival$-log-spiral geometry and 8-tick scheduling. The framework includes:
+
+\begin{enumerate}
+    \item Formal definitions of the $\phival$-log-spiral with closed-form invariants.
+    \item A temporal discipline with provable shift-invariance.
+    \item A resonance-map algorithm for generating candidate frequencies.
+    \item A minimal set of experimental falsifiers.
+\end{enumerate}
+
+This framework enables rigorous, reproducible experimentation. Whether any physical effect exists remains an open empirical question; this paper provides the tools to answer it definitively.
+
+% ============================================================================
+% APPENDICES
+% ============================================================================
+\appendix
+
+\section{Proof Details}
+\label{app:proofs}
+
+\subsection{Positivity of $\phival^x$}
+
+\begin{lemma}
+For all $x \in \R$: $\phival^x > 0$.
+\end{lemma}
+
+\begin{proof}
+Since $\phival > 0$ and the real exponential function preserves positivity, $\phival^x = e^{x \ln \phival} > 0$ for all $x \in \R$.
+\end{proof}
+
+\subsection{Non-Degeneracy of Log-Spiral}
+
+\begin{lemma}
+For $r_0 \neq 0$ and any $\theta, \kappa$: $r(\theta; r_0, \kappa) \neq 0$.
+\end{lemma}
+
+\begin{proof}
+$r(\theta; r_0, \kappa) = r_0 \cdot \phival^{\kappa\theta/(2\pi)}$. Since $r_0 \neq 0$ and $\phival^{\kappa\theta/(2\pi)} > 0$, their product is nonzero.
+\end{proof}
+
+\section{Parameter Schema (JSON)}
+\label{app:schema}
+
+\begin{verbatim}
+{
+  "r0_mm": 137.5,
+  "kappa": 1,
+  "n_coils": 8,
+  "f_max_hz": 1000,
+  "constraints": {
+    "duty_max": 0.5,
+    "v_max": 48
+  }
+}
+\end{verbatim}
+
+\section{Resonance Map Pseudocode}
+\label{app:pseudocode}
+
+See Algorithm~\ref{alg:resonance} in the main text.
+
+% ============================================================================
+% REFERENCES
+% ============================================================================
+\begin{thebibliography}{9}
+
+\bibitem{podkletnov1992}
+E.~Podkletnov and R.~Nieminen,
+``A possibility of gravitational force shielding by bulk YBa$_2$Cu$_3$O$_{7-x}$ superconductor,''
+\textit{Physica C}, vol.~203, pp.~441--444, 1992.
+
+\bibitem{logspiral}
+M.~Livio,
+\textit{The Golden Ratio: The Story of PHI, the World's Most Astonishing Number}.
+Broadway Books, 2002.
+
+\bibitem{pll}
+F.~M.~Gardner,
+\textit{Phaselock Techniques}, 3rd ed.
+Wiley, 2005.
+
+\end{thebibliography}
+
+\end{document}

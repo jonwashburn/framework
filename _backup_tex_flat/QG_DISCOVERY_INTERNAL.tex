@@ -1,0 +1,446 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{bm}
+\geometry{margin=1in}
+
+\title{Information-Limited Gravity (ILG): Internal Discovery Notes}
+\author{ILG Team}
+\date{\today}
+
+\newcommand{\Stotal}{S_{\mathrm{total}}}
+\newcommand{\SEH}{S_{\mathrm{EH}}}
+\newcommand{\Tmunu}{T_{\mu\nu}}
+\newcommand{\ctwo}{c_T^2}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Concise internal summary of ILG discoveries: covariant action and GR limit, weak-field derivation with error control, PPN/lensing/cosmology/GW/compact predictions, quantum substrate consistency, and CI-gated reproducibility. This note aggregates equations, derivations, and the exact Lean certificates and \texttt{\#eval} endpoints.
+\end{abstract}
+
+\section{Introduction}
+This internal memo positions Information-Limited Gravity (ILG) as a covariant, quantum-consistent scaffold whose claims are backed by machine-checked Lean certificates and reproducible endpoints. It is a working reference and a single source of truth for the math, the derivations, and the exact Lean hooks used to verify them.
+
+\paragraph{Audience.} Core ILG contributors, reviewers of mechanized physics artifacts, and collaborators integrating falsifiers/CI.
+
+\paragraph{Thesis and novelty.} Gravity emerges under information constraints while remaining compatible with GR in the appropriate limit. The novelty here is twofold: (i) end-to-end mechanization (statements in text; proofs in Lean; results exposed as \texttt{\#eval} strings) and (ii) continuous-integration gates that block regressions (the \texttt{qg\_harness\_report} and falsifier checks).
+
+\paragraph{Scope.} This memo is not a journal manuscript; it is an engineering-grade catalog of derivations, equations, parameters, and endpoints. For publication-ready exposition, see the PRD draft. For code, see the Lean modules referenced in each section.
+
+\paragraph{Reading guide.} If new to this artifact:
+\begin{enumerate}
+  \item Build the project and run the consolidated harness (Section~\ref{sec:reproducibility}).
+  \item Open `IndisputableMonolith/URCAdapters/Reports.lean` and evaluate a few key endpoints from the quick reference.
+  \item Read Section~\ref{sec:covariant-action} (action/variation), then the weak-field Section and one domain section of interest (PPN, lensing, FRW/growth, GW, compact) to see how claims tie to endpoints.
+  \item Use the appendix tables to navigate claim \(\to\) certificate \(\to\) endpoint.
+\end{enumerate}
+
+\paragraph{Policy.} Parameters are global-only (no per-system tuning); claims must correspond to a passing certificate; CI must show \texttt{QGHarness: PASS} and \texttt{FalsifiersHarnessCert: OK} before results are considered valid.
+
+\section*{Narrative overview}
+The story proceeds from principles to predictions:
+\begin{itemize}
+  \item \emph{From principles to equations:} We write a covariant action, vary to obtain EL equations and \(\Tmunu\), and prove GR compatibility in a clean limit.
+  \item \emph{From equations to regimes:} We linearize to obtain a modified Poisson equation and an effective weight \(w(r)\) with an explicit \(O(\varepsilon^2)\) remainder.
+  \item \emph{From regimes to observables:} We extract PPN parameters, lensing/time-delay relations, FRW/growth equations, GW propagation speed, and compact-object proxies.
+  \item \emph{From observables to gates:} We enforce band predicates and dataset schemas; consolidated harnesses gate pull requests in CI.
+\end{itemize}
+
+\section*{Notation and conventions}
+We work on four-dimensional Lorentzian manifolds with coordinates $x^\mu=(t,\bm{x})$. Greek indices $\mu,\nu,\dots$ run over spacetime components $0\dots 3$ and are raised/lowered by the metric $g_{\mu\nu}$. We adopt the mostly-plus signature $(-,+,+,+)$; covariant derivatives use the Levi--Civita connection of $g_{\mu\nu}$; $R$, $R_{\mu\nu}$, and $R^\rho{}_{\sigma\mu\nu}$ denote the Ricci scalar, Ricci tensor, and Riemann tensor, respectively. The stress--energy tensor is defined by $\Tmunu := -\frac{2}{\sqrt{-g}}\,\frac{\delta S_\psi}{\delta g^{\mu\nu}}$.
+
+Global parameters are fixed once-and-for-all by the recognition spine and are never tuned per-system. Their provenance and default values are enforced in Lean. See the Lean sources `IndisputableMonolith/Relativity/ILG/Action.lean`, `Variation.lean` and the certificate endpoints in `IndisputableMonolith/URCAdapters/Reports.lean`.
+
+\paragraph{Global parameters and provenance.}
+Default ILG parameters are defined and wired in the constants and ILG parameter modules (Lean: `IndisputableMonolith/Constants/ILG.lean`, `IndisputableMonolith/Constants.lean`, `IndisputableMonolith/ILG/ParamsKernel.lean`, `IndisputableMonolith/ILG/NOfRMono.lean`, `IndisputableMonolith/ILG/XiBins.lean`). These are global-only (no local astrophysical tuning) and are referenced by certificates across domains.
+
+\section{Covariant action and variation}\label{sec:covariant-action}
+The ILG total action is written as
+\begin{equation}
+  \Stotal[g,\psi] 
+   = \int \! d^4x\, \sqrt{-g} \Big( \mathcal{L}_{\mathrm{EH}}[g] 
+     + \mathcal{L}_{\mathrm{kin}}[g,\psi]
+     + \mathcal{L}_{\mathrm{mass}}[g,\psi]
+     + \mathcal{L}_{\mathrm{pot}}[\psi]
+     + \mathcal{L}_{\mathrm{coupling}}[g,\psi]\Big),
+  \label{eq:Stotal}
+\end{equation}
+where $\mathcal{L}_{\mathrm{EH}} = \frac{M_P^2}{2} R$ reproduces Einstein gravity in the appropriate limit, and the $\psi$-sector is organized into kinetic, mass, potential, and coupling contributions. Signs and index conventions follow our Notation above.
+
+Variation with respect to $\psi$ yields the Euler--Lagrange equation
+\begin{equation}
+  \frac{\delta \Stotal}{\delta \psi} 
+   = \frac{\partial \mathcal{L}_\psi}{\partial \psi}
+     - \nabla_\mu \Big( \frac{\partial \mathcal{L}_\psi}{\partial (\nabla_\mu \psi)} \Big) = 0, 
+  \qquad \mathcal{L}_\psi := \mathcal{L}_{\mathrm{kin}} + \mathcal{L}_{\mathrm{mass}} + \mathcal{L}_{\mathrm{pot}} + \mathcal{L}_{\mathrm{coupling}}.
+  \label{eq:ELpsi}
+\end{equation}
+Metric variation identifies the stress--energy tensor contributed by the $\psi$-sector,
+\begin{equation}
+  \Tmunu 
+   := -\frac{2}{\sqrt{-g}}\, \frac{\delta S_\psi}{\delta g^{\mu\nu}} 
+   = -2 \frac{\partial \mathcal{L}_\psi}{\partial g^{\mu\nu}} 
+     + g_{\mu\nu} \mathcal{L}_\psi 
+     - 2\, \frac{\partial \mathcal{L}_\psi}{\partial (\nabla_\rho g^{\mu\nu})}\, \nabla_\rho(1) 
+     + \cdots,
+  \label{eq:Tmunu}
+\end{equation}
+with the final form depending on the explicit $g$-dependence of the $\psi$ sector. In the GR limit (vanishing ILG deformations), the total action reduces to Einstein--Hilbert and $\Tmunu$ reduces to the usual matter stress--energy.
+
+Combining metric and field variations, the equations of motion take the Einstein form
+\begin{equation}
+  M_P^2\, G_{\mu\nu} \;=\; 2\, \frac{\delta S_\psi}{\delta g^{\mu\nu}} 
+  \;=\; \Tmunu, \qquad G_{\mu\nu} := R_{\mu\nu} - \tfrac{1}{2} g_{\mu\nu} R,
+\end{equation}
+up to the usual boundary terms removed by the Gibbons--Hawking--York addition in $\mathcal{L}_{\mathrm{EH}}$.
+
+Lean references: `IndisputableMonolith/Relativity/ILG/Action.lean` (action pieces), `IndisputableMonolith/Relativity/ILG/Variation.lean` (variational predicates). Certificates and reports: \texttt{l\_pieces\_units\_report} (units hygiene), \texttt{l\_cov\_identity\_report} (covariance identity), \texttt{gr\_limit\_report} (GR limit), \texttt{el\_limit\_report} (Euler--Lagrange limit).
+
+\section{Weak-field and modified Poisson}
+We work in Newtonian gauge,
+\begin{equation}
+  ds^2 = -(1+2\Phi)\,dt^2 + (1-2\Psi)\,\delta_{ij}\,dx^i dx^j, \qquad |\Phi|,|\Psi| = O(\varepsilon),
+\end{equation}
+and linearize the Euler--Lagrange system \eqref{eq:ELpsi} together with the metric equations. To first order, the $00$-component yields a modified Poisson relation
+\begin{equation}
+  \nabla^2 \Phi = 4\pi G\,\rho_{\mathrm{baryon}} + \delta\rho_\psi[\psi;\,\text{params}] 
+  = 4\pi G\,\rho_{\mathrm{baryon}}\, w(r) + O(\varepsilon^2),
+  \label{eq:poisson}
+\end{equation}
+where the ILG sector induces an effective weight $w(r)$ on baryonic sources. The remainder is controlled at $O(\varepsilon^2)$, exposing an error budget suitable for rotation-curve overlays.
+
+We define the Big-O control predicate in the linearized development and prove the linkage $\Phi\mapsto w(r)$ at $O(\varepsilon)$, with explicit remainder bounds recorded by the reports.
+
+\paragraph{Derivation steps.}
+\begin{enumerate}
+  \item Expand the action \eqref{eq:Stotal} to first order in $(\Phi,\Psi,\delta\psi)$.
+  \item Vary w.r.t. $\delta\psi$ to obtain the linearized field equation and eliminate $\delta\psi$ in favor of metric potentials.
+  \item Use the $00$ Einstein equation to obtain \eqref{eq:poisson} with an induced density $\delta\rho_\psi$.
+  \item Identify $w(r)$ by comparing to the baryonic density and collect $O(\varepsilon^2)$ remainders.
+\end{enumerate}
+
+\paragraph{Error budget (indicative).}
+\begin{center}
+\begin{tabular}{l l}
+\hline
+Contribution & Order \\
+\hline
+Linear baryonic source $4\pi G\,\rho_{\mathrm{b}}$ & $O(\varepsilon)$ \\
+Induced ILG density $\delta\rho_\psi$ & $O(\varepsilon)$ \\
+Quadratic metric terms in EL & $O(\varepsilon^2)$ \\
+Gauge artifacts (Newtonian gauge fixed) & $O(\varepsilon^2)$ \\
+Higher-derivative $\psi$ couplings & $O(\varepsilon^2)$ \\
+\hline
+\end{tabular}
+\end{center}
+
+Lean references: `IndisputableMonolith/Relativity/ILG/WeakField.lean`, `Linearize.lean`. Certificates/reports: \texttt{weakfield\_derive\_report} (derivation), \texttt{w\_link\_O\_report} (weight link at $O(\varepsilon)$), \texttt{weakfield\_eps\_report} (bookkeeping of small parameter).
+
+\section{Post-Newtonian parameters (PPN)}
+At 1PN order, the PPN parameters are read off from the line element in standard form,
+\begin{equation}
+  ds^2 = -(1-2U+2\beta U^2)\,dt^2 - 2(1+\gamma)\,\bm{V}\cdot d\bm{x}\,dt + (1+2\gamma U)\,d\bm{x}^2 + \cdots,
+\end{equation}
+with $U$ the Newtonian potential. For spherically symmetric, static configurations, one finds
+\begin{equation}
+  \gamma = \frac{\Psi}{\Phi} + O(\varepsilon),\qquad 
+  \beta = 1 + c_\beta\,\kappa + O(\kappa^2),
+\end{equation}
+under a small-coupling assumption $\kappa\ll 1$ governing ILG corrections. The current scaffold certifies representative proxy bounds
+\begin{equation}
+  |\gamma-1| \lesssim 0.1\,\kappa,\qquad |\beta-1| \lesssim 0.05\,\kappa,
+\end{equation}
+to be tightened with full 1PN solutions.
+
+The Shapiro time delay probes $\gamma$ directly; bounds are represented in our scaffold by the certificate reports listed below and can be tightened with full 1PN solutions as they are wired.
+
+Lean references: `IndisputableMonolith/Relativity/ILG/PPNDerive.lean`, `PPN.lean`. Certificates/reports: \texttt{ppn\_derive\_report} (mapping), \texttt{ppn\_report} (illustrative bounds), \texttt{ppn\_small\_report} (small-coupling scaffold).
+
+\section{Relativistic lensing and time delays}
+For a spherically symmetric lens, the deflection angle for impact parameter $b$ can be expressed as
+\begin{equation}
+  \alpha(b) = 2 \int_{r_0}^{\infty} \frac{b}{r\sqrt{r^2-b^2}}\,\frac{d}{dr}\big(\Phi+\Psi\big)\,dr + O(\varepsilon^2),
+\end{equation}
+with $r_0=b$ for null geodesics in the weak field. The differential time delay between two images receives a Shapiro contribution
+\begin{equation}
+  \Delta t_{\mathrm{Shapiro}} \propto \int (\Phi+\Psi)\, dl,
+\end{equation}
+and we expose a band inequality of the form
+\begin{equation}
+  |\Delta\mathrm{lensing}| \le \kappa,
+\end{equation}
+interpreted at cluster scales without per-system tuning.
+
+In the $\Psi=\Phi$ limit, $\alpha(b) \simeq 4GM(<b)/b$ is recovered. The total time delay decomposes into geometric and Shapiro contributions, $\Delta t = \Delta t_{\mathrm{geom}} + \Delta t_{\mathrm{Shapiro}}$.
+
+Lean references: `IndisputableMonolith/Relativity/ILG/Lensing.lean`. Certificates/reports: \texttt{cluster\_lensing\_derive\_report} (derivation), \texttt{lensing\_band\_report} (band inequality), \texttt{lensing\_zero\_report} (zero-path sanity), \texttt{cluster\_lensing\_report} (domain check).
+
+\section{FRW cosmology and growth}
+On a spatially flat FRW background, $ds^2=-dt^2+a(t)^2 d\bm{x}^2$, the $\psi$ sector contributes $T_{\psi\,00}=\rho_\psi(\text{params})$ and $T_{\psi\,ij}=p_\psi\,a^2\delta_{ij}$. The Friedmann restatements read
+\begin{equation}
+  H^2 = \Big(\frac{\dot a}{a}\Big)^2 = \frac{8\pi G}{3}\,(\rho_m + \rho_\psi) + \Lambda_{\mathrm{eff}},\qquad
+  \frac{\ddot a}{a} = -\frac{4\pi G}{3}\,(\rho_m+\rho_\psi+3p_\psi) + \Lambda_{\mathrm{eff}}.
+\end{equation}
+Scalar perturbations define the growth factor $D(a)$ via $\delta(a)=D(a)\,\delta(a_0)$ with growth rate $f(a)=\frac{d\ln D}{d\ln a}$. A linear-theory scaffold relates $f(a)$ and $\sigma_8(a)$, with present normalization $\sigma_8(1)=\sigma_{8,0}$, and we expose cosmology bands (CMB/BAO/BBN) under the global parameter set.
+
+The growth equation in terms of $\ln a$ takes the form
+\begin{equation}
+  D'' + \Big( 2 + \frac{d\ln H}{d\ln a} \Big) D' - \frac{3}{2}\, \Omega_m(a)\, \mu(a)\, D = 0,
+\end{equation}
+where $\mu(a)$ summarizes the effective modification due to the $\psi$ sector (GR limit: $\mu\equiv 1$). The Lean scaffold captures the placeholders used by the certificates, to be tightened with explicit solutions.
+
+Light deflection and lensing can be summarized by a phenomenological response $\Sigma(a)$ multiplying the Weyl potential $(\Phi+\Psi)$ in observables. Our present endpoints track these responses at the scaffold level under global parameters.
+
+Lean references: `IndisputableMonolith/Relativity/ILG/FRW.lean`, `FRWDerive.lean`, `Growth.lean`. Certificates/reports: \texttt{frw\_derive\_report}, \texttt{growth\_report}, \texttt{cmb\_bao\_bbn\_bands\_report}, \texttt{bands\_from\_params\_report}.
+
+\section{Gravitational waves}
+Expanding to quadratic order around FRW, the tensor sector obeys
+\begin{equation}
+  S_T = \frac{1}{8}\int d^3x\,dt\, a^3 \big[ G_T\, \dot h_{ij}\dot h_{ij} - F_T\, a^{-2}\, \partial_k h_{ij}\partial_k h_{ij} \big],\qquad \ctwo := \frac{F_T}{G_T},
+\end{equation}
+with $h_{ij}$ transverse and traceless. The observational consistency band constrains $|\ctwo-1|\le \kappa_{\mathrm{gw}}$.
+
+Lean references: `IndisputableMonolith/Relativity/ILG/GW.lean`. Certificates/reports: \texttt{gw\_quadratic\_report} (quadratic predicate and link to $\ctwo$), \texttt{gw\_derive\_report} (domain derivation), \texttt{gw\_band\_report} (band), \texttt{gw\_report} (propagation scaffold).
+
+\section{Compact objects}
+Using a static, spherically symmetric ansatz,
+\begin{equation}
+  ds^2 = -f(r)\,dt^2 + \frac{dr^2}{g(r)} + r^2(d\theta^2+\sin^2\!\theta\, d\phi^2),
+\end{equation}
+the horizon condition $f(r_h)=0=g(r_h)$ defines the black-hole radius. A ringdown proxy provides a band inequality summarizing leading deviations in quasinormal spectra,
+\begin{equation}
+  |\Delta \omega_{\mathrm{QNM}}| \le \kappa_{\mathrm{bh}},
+\end{equation}
+to be tightened with full solutions.
+
+Lean references: `IndisputableMonolith/Relativity/ILG/Compact.lean`, `BHDerive.lean`. Certificates/reports: \texttt{bh\_derive\_report} (derivations), \texttt{compact\_report} (band scaffold).
+
+\section{Quantum substrate and consistency}
+We posit microscopic degrees of freedom with a bounded-below Hamiltonian $H\ge 0$, unitary time evolution $U(t)=e^{-iHt}$, and a locality predicate implying microcausality,
+\begin{equation}
+  [\mathcal{O}(x),\mathcal{O}(y)] = 0 \quad \text{for spacelike-separated } (x,y).
+\end{equation}
+We provide witnesses for unitarity and positivity and sketch the microcausality interface used in the covariant sector.
+
+Lean references: `IndisputableMonolith/Relativity/ILG/Substrate.lean`. Certificates/reports: \texttt{micro\_unitary\_report}, \texttt{micro\_unitary\_completion\_report}, \texttt{forward\_pos\_report}, \texttt{substrate\_report}.
+
+\section{Falsifiers and CI science gates}
+Datasets are mapped to band predicates (PPN, lensing, cosmology, GW, compact) with explicit schema checks. A consolidated CI harness triggers representative certificates; failure of any certificate blocks changes.
+
+Lean references: `IndisputableMonolith/Relativity/ILG/Falsifiers.lean`. Certificates/reports: \texttt{qg\_harness\_report} (consolidated PASS), \texttt{falsifiers\_harness\_report} (schema), \texttt{falsifiers\_report} (falsifiers bundle).
+
+\section{Results catalog}
+Table summarizing endpoints used in this note (status is \emph{OK} if the corresponding Lean report elaborates):
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Domain & Certificate & Report endpoint \\
+\hline
+Action/variation & LPiecesUnits, LCovIdentity, GRLimit, ELLimit & \texttt{l\_pieces\_units\_report}, \texttt{l\_cov\_identity\_report}, \texttt{gr\_limit\_report}, \texttt{el\_limit\_report} \\
+Weak field & WeakFieldDerive, WLinkO, WeakFieldEps & \texttt{weakfield\_derive\_report}, \texttt{w\_link\_O\_report}, \texttt{weakfield\_eps\_report} \\
+PPN & PPNDerive, PPNBounds, PPNSmallCoupling & \texttt{ppn\_derive\_report}, \texttt{ppn\_report}, \texttt{ppn\_small\_report} \\
+Lensing & ClusterLensingDerive, LensingBand, LensingZeroPath & \texttt{cluster\_lensing\_derive\_report}, \texttt{lensing\_band\_report}, \texttt{lensing\_zero\_report} \\
+FRW/Growth & FRWDerive, Growth, CMBBAOBBNBands, BandsFromParams & \texttt{frw\_derive\_report}, \texttt{growth\_report}, \texttt{cmb\_bao\_bbn\_bands\_report}, \texttt{bands\_from\_params\_report} \\
+GW & GWQuadratic, GWDerive, GWBand, GWPropagation & \texttt{gw\_quadratic\_report}, \texttt{gw\_derive\_report}, \texttt{gw\_band\_report}, \texttt{gw\_report} \\
+Compact & BHDerive, CompactLimitSketch & \texttt{bh\_derive\_report}, \texttt{compact\_report} \\
+Substrate & MicroUnitary, MicroUnitaryCompletion, ForwardPositivity & \texttt{micro\_unitary\_report}, \texttt{micro\_unitary\_completion\_report}, \texttt{forward\_pos\_report} \\
+\hline
+\end{tabular}
+\end{center}
+
+\section*{Lean file references by domain}
+\begin{itemize}
+  \item Action/variation: `IndisputableMonolith/Relativity/ILG/Action.lean`, `IndisputableMonolith/Relativity/ILG/Variation.lean`
+  \item Weak field / Linearization: `IndisputableMonolith/Relativity/ILG/WeakField.lean`, `IndisputableMonolith/Relativity/ILG/Linearize.lean`
+  \item PPN: `IndisputableMonolith/Relativity/ILG/PPNDerive.lean`, `IndisputableMonolith/Relativity/ILG/PPN.lean`
+  \item Lensing: `IndisputableMonolith/Relativity/ILG/Lensing.lean`
+  \item FRW / Growth: `IndisputableMonolith/Relativity/ILG/FRW.lean`, `IndisputableMonolith/Relativity/ILG/FRWDerive.lean`, `IndisputableMonolith/Relativity/ILG/Growth.lean`
+  \item GW: `IndisputableMonolith/Relativity/ILG/GW.lean`
+  \item Compact objects: `IndisputableMonolith/Relativity/ILG/Compact.lean`, `IndisputableMonolith/Relativity/ILG/BHDerive.lean`
+  \item Substrate: `IndisputableMonolith/Relativity/ILG/Substrate.lean`
+  \item Falsifiers: `IndisputableMonolith/Relativity/ILG/Falsifiers.lean`
+  \item Certificates/adapters: `IndisputableMonolith/URCGenerators.lean`, `IndisputableMonolith/URCAdapters/Reports.lean`
+\end{itemize}
+
+\section{Methods: figure generation and seeds}
+We export selected \texttt{\#eval} report payloads to JSON for plotting. A simple approach is to evaluate endpoints in `IndisputableMonolith/URCAdapters/Reports.lean` and write their strings to files, or to add small helpers that produce structured JSON. Recommended pipeline:
+\begin{enumerate}
+  \item Build and evaluate the endpoints of interest (e.g., bands, proxy coefficients).
+  \item Save outputs under a frozen directory with a commit hash in the filename.
+  \item Use a small Python/Matplotlib script (seeded RNG, fixed versions) to render figures.
+\end{enumerate}
+Lean modules expose the report strings; for structured data, extend the adapters to return JSON via `Lean.Data.Json` (see `IndisputableMonolith/URCAdapters/Reports.lean` helpers already present for proof summaries).
+
+\section{Quick reference: \#eval endpoints}
+Evaluate these inside `IndisputableMonolith/URCAdapters/Reports.lean`.
+\begin{verbatim}
+# Action/variation
+#eval IndisputableMonolith.URCAdapters.l_pieces_units_report
+#eval IndisputableMonolith.URCAdapters.l_cov_identity_report
+#eval IndisputableMonolith.URCAdapters.gr_limit_report
+#eval IndisputableMonolith.URCAdapters.el_limit_report
+
+# Weak field
+#eval IndisputableMonolith.URCAdapters.weakfield_eps_report
+#eval IndisputableMonolith.URCAdapters.weakfield_derive_report
+#eval IndisputableMonolith.URCAdapters.w_link_O_report
+
+# PPN
+#eval IndisputableMonolith.URCAdapters.ppn_derive_report
+#eval IndisputableMonolith.URCAdapters.ppn_report
+#eval IndisputableMonolith.URCAdapters.ppn_small_report
+
+# Lensing
+#eval IndisputableMonolith.URCAdapters.cluster_lensing_derive_report
+#eval IndisputableMonolith.URCAdapters.lensing_band_report
+#eval IndisputableMonolith.URCAdapters.lensing_zero_report
+
+# FRW/Growth
+#eval IndisputableMonolith.URCAdapters.frw_derive_report
+#eval IndisputableMonolith.URCAdapters.growth_report
+#eval IndisputableMonolith.URCAdapters.cmb_bao_bbn_bands_report
+#eval IndisputableMonolith.URCAdapters.bands_from_params_report
+
+# GW
+#eval IndisputableMonolith.URCAdapters.gw_quadratic_report
+#eval IndisputableMonolith.URCAdapters.gw_derive_report
+#eval IndisputableMonolith.URCAdapters.gw_band_report
+#eval IndisputableMonolith.URCAdapters.gw_report
+
+# Compact
+#eval IndisputableMonolith.URCAdapters.bh_derive_report
+#eval IndisputableMonolith.URCAdapters.compact_report
+
+# Substrate
+#eval IndisputableMonolith.URCAdapters.micro_unitary_report
+#eval IndisputableMonolith.URCAdapters.micro_unitary_completion_report
+#eval IndisputableMonolith.URCAdapters.forward_pos_report
+#eval IndisputableMonolith.URCAdapters.substrate_report
+
+# Harnesses
+#eval IndisputableMonolith.URCAdapters.qg_harness_report
+#eval IndisputableMonolith.URCAdapters.falsifiers_harness_report
+\end{verbatim}
+
+\section{Figure stubs (placeholders)}
+\begin{itemize}
+  \item PPN bands vs small-coupling $\kappa$ (from \texttt{ppn\_report}, \texttt{ppn\_small\_report}); caption: proxy bounds under global parameters.
+  \item Lensing cluster time-delay band (from \texttt{lensing\_band\_report}, \texttt{cluster\_lensing\_derive\_report}); caption: cluster-scale admissible band, no per-system tuning.
+  \item FRW/growth: background band and $\sigma_8$ linkage (from \texttt{frw\_derive\_report}, \texttt{growth\_report}, \texttt{cmb\_bao\_bbn\_bands\_report}).
+  \item GW: $\ctwo$ constraint band vs $\kappa_{\mathrm{gw}}$ (from \texttt{gw\_band\_report}, \texttt{gw\_quadratic\_report}).
+  \item Compact objects: ringdown proxy band vs mass $M$ and $\kappa_{\mathrm{bh}}$ (from \texttt{bh\_derive\_report}, \texttt{compact\_report}).
+  \item Optional: weak-field $w(r)$ overlay for rotation curves (from \texttt{weakfield\_derive\_report}).
+\end{itemize}
+
+\appendix
+
+\section{Claims-to-Lean mapping}
+Each claim in the main text is accompanied by a Lean certificate and a \texttt{\#eval} endpoint string in `IndisputableMonolith/URCAdapters/Reports.lean`. See also `docs/QG_DISCOVERY_CATALOG.md` for the full catalog.
+\begin{center}
+\begin{tabular}{l l l l}
+\hline
+Claim & Lean modules & Certificate & Endpoint \\
+\hline
+GR limit & ILG/Action, ILG/Variation & GRLimit, ELLimit & \texttt{gr\_limit\_report}, \texttt{el\_limit\_report} \\
+Weak-field link & ILG/WeakField, ILG/Linearize & WeakFieldDerive, WLinkO & \texttt{weakfield\_derive\_report}, \texttt{w\_link\_O\_report} \\
+PPN mapping & ILG/PPNDerive, ILG/PPN & PPNDerive & \texttt{ppn\_derive\_report} \\
+Lensing band & ILG/Lensing & LensingBand, ClusterLensingDerive & \texttt{lensing\_band\_report}, \texttt{cluster\_lensing\_derive\_report} \\
+FRW restatement & ILG/FRW, ILG/FRWDerive & FRWDerive & \texttt{frw\_derive\_report} \\
+Growth linkage & ILG/Growth & Growth & \texttt{growth\_report} \\
+GW quadratic & ILG/GW & GWQuadratic & \texttt{gw\_quadratic\_report} \\
+Compact proxy & ILG/Compact, ILG/BHDerive & BHDerive & \texttt{bh\_derive\_report} \\
+Substrate health & ILG/Substrate & MicroUnitary, MicroUnitaryCompletion & \texttt{micro\_unitary\_report}, \texttt{micro\_unitary\_completion\_report} \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Datasets and parameters}
+We maintain JSON schemas and parameter defaults for bands and falsifiers. Parameter provenance is global-only and pinned by the recognition spine; no local astrophysical tuning is used.
+
+\paragraph{Schema (example: data/measurements.json).}
+Top-level object with key `items` containing an array of records with fields:
+\begin{itemize}
+  \item `name` (string)
+  \item `value` (string or number)
+  \item `uncertainty` (string or number)
+  \item optional `upper_bound` (boolean)
+\end{itemize}
+Example entries include electroweak and flavor observables (e.g., `AlphaInvPrediction`, `CKM_Jarlskog_J`, `PMNS_theta13`), as well as internal gates (e.g., `EightTickMinimality`, `RSRealityMaster`). See `data/measurements.json` in repo.
+
+\section{Reproducibility}
+Build with `elan` and `lake`, then evaluate the report endpoints listed above. Include commit hash, dataset hashes, and archived JSON outputs for figure regeneration. The CI harness must show \texttt{QGHarness: PASS} and \texttt{FalsifiersHarnessCert: OK}.
+\paragraph{Commands.}
+\begin{verbatim}
+elan toolchain install $(cat lean-toolchain)
+lake build
+lake exe qg_harness      # consolidated PASS gate
+# In editor: open IndisputableMonolith/URCAdapters/Reports.lean
+# Evaluate the desired `#eval` endpoints listed in this note
+# Record commit and dataset hashes for provenance
+git rev-parse HEAD > .commit
+shasum -a 256 data/measurements.json > data/measurements.sha256
+\end{verbatim}
+
+\paragraph{Version pins.}
+Record and bundle:
+\begin{itemize}
+  \item Lean toolchain from `lean-toolchain` (exact version string)
+  \item Lake dependencies from `lake-manifest.json`
+  \item Figure script environment: Python version and `pip freeze` (saved alongside figures)
+\end{itemize}
+
+\paragraph{Archive/DOI plan.}
+For internal releases, archive: PDF of this note, source `.tex` + `.bib`, generated figures, frozen JSON outputs, `.commit`, and dataset checksums. For external archival (e.g., Zenodo), mint a DOI at tagged commit and include the same bundle.
+
+\section*{Related work (for context)}
+Pointers for internal cross-checks (see `docs/paper.bib`): GR and PPN tests (Will; Cassini Shapiro delay; LLR), modified gravity/EFT and screening (Horndeski, beyond-Horndeski, k-essence; chameleon/Vainshtein), MOND/TeVeS, cosmological datasets and tensions (Planck, BAO, BBN, growth/$\sigma_8$), GW constraints from GW170817/GRB 170817A, and mechanized proofs in physics/math.
+
+\section*{Appendix: Adapter endpoints and certificate types (Lean)}
+Adapter functions live in `IndisputableMonolith/URCAdapters/Reports.lean` and wrap certificate types from `IndisputableMonolith/URCGenerators.lean`.
+\begin{center}
+\begin{tabular}{l l}
+\hline
+Endpoint (adapter) & Certificate type (generator) \\
+\hline
+\texttt{l\_pieces\_units\_report} & \texttt{LPiecesUnitsCert} \\
+\texttt{l\_cov\_identity\_report} & \texttt{LCovIdentityCert} \\
+\texttt{gr\_limit\_report} & \texttt{GRLimitCert} \\
+\texttt{el\_limit\_report} & \texttt{ELLimitCert} \\
+\texttt{weakfield\_eps\_report} & \texttt{WeakFieldEpsCert} \\
+\texttt{weakfield\_derive\_report} & \texttt{WeakFieldDeriveCert} \\
+\texttt{w\_link\_O\_report} & \texttt{WLinkOCert} \\
+\texttt{ppn\_derive\_report} & \texttt{PPNDeriveCert} \\
+\texttt{ppn\_report} & \texttt{PPNBoundsCert} \\
+\texttt{ppn\_small\_report} & \texttt{PPNSmallCouplingCert} \\
+\texttt{cluster\_lensing\_derive\_report} & \texttt{ClusterLensingDeriveCert} \\
+\texttt{lensing\_band\_report} & \texttt{LensingBandCert} \\
+\texttt{lensing\_zero\_report} & \texttt{LensingZeroPathCert} \\
+\texttt{cluster\_lensing\_report} & \texttt{ClusterLensingCert} \\
+\texttt{frw\_derive\_report} & \texttt{FRWDeriveCert} \\
+\texttt{growth\_report} & \texttt{GrowthCert} \\
+\texttt{cmb\_bao\_bbn\_bands\_report} & \texttt{CMBBAOBBNBandsCert} \\
+\texttt{bands\_from\_params\_report} & \texttt{BandsFromParamsCert} \\
+\texttt{gw\_quadratic\_report} & \texttt{GWQuadraticCert} \\
+\texttt{gw\_derive\_report} & \texttt{GWDeriveCert} \\
+\texttt{gw\_band\_report} & \texttt{GWBandCert} \\
+\texttt{gw\_report} & \texttt{GWPropagationCert} \\
+\texttt{bh\_derive\_report} & \texttt{BHDeriveCert} \\
+\texttt{compact\_report} & \texttt{CompactLimitSketch} \\
+\texttt{micro\_unitary\_report} & \texttt{MicroUnitaryCert} \\
+\texttt{micro\_unitary\_completion\_report} & \texttt{MicroUnitaryCompletionCert} \\
+\texttt{forward\_pos\_report} & \texttt{ForwardPositivityCert} \\
+\texttt{substrate\_report} & \texttt{QGSubstrateSketch} \\
+\texttt{qg\_harness\_report} & consolidated harness \\
+\texttt{falsifiers\_harness\_report} & \texttt{FalsifiersHarnessCert} \\
+\hline
+\end{tabular}
+\end{center}
+
+\end{document}
+
+

@@ -1,0 +1,261 @@
+\documentclass[11pt]{article}
+
+% Keep packages minimal for TeX Live "basic" installs.
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{array}
+
+\geometry{margin=1in}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue
+}
+
+% ---------------------------------------------------------------------------
+% Convenience macros
+% ---------------------------------------------------------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+
+\newcommand{\PatentTitle}{Null-Test Suites, Artifact Rejection Gates, and Pre-Registered Acceptance Criteria for Rotating-Field Experiments}
+\newcommand{\Docket}{NTL-PROV-011}
+\newcommand{\Inventors}{[Inventor Names]}
+\newcommand{\Assignee}{[Assignee / Organization]}
+\newcommand{\FilingDate}{February 1, 2026}
+
+\begin{document}
+
+\begin{center}
+{\LARGE \textbf{\PatentTitle}}\\[0.75em]
+{\large \textbf{Docket:} \Docket}\\[0.25em]
+{\large \textbf{Inventors:} \Inventors}\\[0.25em]
+{\large \textbf{Assignee:} \Assignee}\\[0.25em]
+{\large \textbf{Date:} \FilingDate}\\[0.75em]
+\end{center}
+
+\vspace{-0.5em}
+\hrule
+\vspace{0.75em}
+
+% ===========================================================================
+% ABSTRACT (PATENT)
+% ===========================================================================
+\section*{Abstract}
+
+Disclosed are apparatus, systems, methods, and non-transitory computer-readable media for conducting rotating-field experiments using an integrated null-test suite and artifact rejection methodology. The disclosure provides (i) standardized null-test definitions and matched-control schedules, (ii) synchronized confounder sensing for thermal, vibration, electromagnetic interference (EMI), and environmental artifacts, (iii) pre-registered acceptance gates that define what constitutes a valid peak or effect signature, and (iv) statistical safeguards against false discovery in frequency sweeps.
+
+In various embodiments, a device under test (DUT) is operated under multiple experimental conditions including: resonant candidate setpoints, off-resonance setpoints, phase-reversed conditions, matched-power heating controls, dummy-load/field-decoupled controls, randomized or scrambled schedules with identical duty/power, and alternative geometries. A controller or analysis system computes effect proxies and confounder metrics, rejects runs failing artifact gates, applies uncertainty quantification, and outputs auditable run artifacts with deterministic replay metadata. The disclosed methodology produces publication-grade null results and prevents false positives from confounding phenomena.
+
+% ===========================================================================
+% TECHNICAL FIELD
+% ===========================================================================
+\section*{Technical Field}
+
+The present disclosure relates to experimental design and measurement validation for rotating-field and commutated electromagnetic systems, and more particularly to null-test suites, artifact rejection gates, and pre-registered acceptance criteria for rejecting thermal, vibrational, and EMI confounders in frequency sweep experiments.
+
+% ===========================================================================
+% BACKGROUND
+% ===========================================================================
+\section*{Background}
+
+Rotating-field experiments can produce apparent signatures that resemble novel effects, but are in fact caused by ordinary confounders including thermal buoyancy, vibration coupling, electromagnetic pickup in sensors, and drift. Many historical experiments fail because the test plan does not include rigorous null controls and because acceptance criteria are applied after observing data (``p-hacking'').
+
+Accordingly, there is a need for a standardized, auditable, and repeatable methodology that integrates null tests, artifact rejection gates, and pre-registered acceptance criteria, such that experimental results are credible regardless of whether the outcome is positive or null.
+
+% ===========================================================================
+% SUMMARY
+% ===========================================================================
+\section*{Summary}
+
+This disclosure provides a complete null-test and artifact rejection framework for rotating-field experiments. In one aspect, a set of control conditions is generated that matches power dissipation, duty cycle, or marginal waveform statistics while breaking ordered commutation or decoupling field generation. In another aspect, the framework includes multi-sensor confounder measurements synchronized to the drive schedule.
+
+In another aspect, the framework defines pre-registered gates including minimum effect size thresholds, minimum replication counts, sign-consistency checks under reversal, and artifact rejection thresholds based on coherence or correlation between effect proxies and confounder channels.
+
+In another aspect, the framework provides multiple-hypothesis correction for frequency sweeps and outputs auditable run artifacts including configuration hashes and deterministic replay metadata.
+
+% ===========================================================================
+% BRIEF DESCRIPTION OF DRAWINGS
+% ===========================================================================
+\section*{Brief Description of the Drawings}
+
+Drawings may be provided later. For purposes of this specification:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{FIG. 1} depicts a rotating-field experiment runbook including candidate runs and null/control runs.
+  \item \textbf{FIG. 2} depicts a null-test generator producing matched-power and schedule-scrambled controls.
+  \item \textbf{FIG. 3} depicts artifact rejection gates computed from synchronized confounder sensors.
+  \item \textbf{FIG. 4} depicts pre-registered acceptance criteria including replication and sign checks.
+  \item \textbf{FIG. 5} depicts multiple-hypothesis correction in frequency sweeps.
+\end{itemize}
+
+% ===========================================================================
+% DEFINITIONS
+% ===========================================================================
+\section*{Definitions and Notation}
+
+Unless otherwise indicated:
+\begin{itemize}[leftmargin=*]
+  \item A \emph{device under test (DUT)} refers to a rotating-field generator and associated drivers.
+  \item An \emph{effect proxy} \(y(t)\) refers to a measured output quantity used to detect a claimed effect (e.g., force proxy, weight proxy, torque proxy, induced voltage).
+  \item A \emph{confounder channel} \(x_k(t)\) refers to a measured variable that can produce artifacts (e.g., temperature, vibration, EMI).
+  \item A \emph{null test} refers to a control condition in which the hypothesized effect is expected to be absent or significantly reduced.
+  \item A \emph{matched control} refers to a null test that matches one or more nuisance variables (power dissipation, duty, thermal load) to the active condition.
+  \item A \emph{gate} refers to a threshold or rule that must be satisfied for a run to be accepted as valid.
+  \item A \emph{frequency sweep} refers to testing multiple setpoints \(f_1,\dots,f_m\) within a runbook.
+\end{itemize}
+
+% ===========================================================================
+% DETAILED DESCRIPTION
+% ===========================================================================
+\section*{Detailed Description}
+
+\subsection*{1. Runbook Structure (Candidate + Controls)}
+
+In one embodiment, a runbook comprises:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{candidate runs}: operate the DUT at one or more candidate setpoints (e.g., from a resonance map);
+  \item \textbf{null/control runs}: operate the DUT under conditions designed to break the hypothesized mechanism while matching confounders;
+  \item \textbf{calibration runs}: verify sensor calibration, drift, and baseline stability.
+\end{itemize}
+
+\subsection*{2. Null-Test Suite (Non-Limiting Categories)}
+
+The following null tests may be combined; each is separately patentable and also supports the integrated method.
+
+\paragraph{2.1 Geometry controls.}
+In one embodiment, the DUT is operated with alternative geometries:
+\begin{itemize}[leftmargin=*]
+  \item non-target spiral or non-target layout;
+  \item randomized element placement;
+  \item same geometry with scrambled phase assignment.
+\end{itemize}
+
+\paragraph{2.2 Scheduling controls.}
+In one embodiment, controls include:
+\begin{itemize}[leftmargin=*]
+  \item off-resonance setpoints;
+  \item randomized schedules with identical duty/power;
+  \item phase-reversed schedules (direction reversal);
+  \item scrambled schedules that preserve neutrality/duty but destroy ordering.
+\end{itemize}
+
+\paragraph{2.3 Power/thermal matched controls.}
+In one embodiment, a matched heating run dissipates the same electrical power without generating a rotating field (e.g., resistive dummy load).
+
+\paragraph{2.4 Field-decoupled (dummy-load) controls.}
+In one embodiment, the driver is operated into a dummy load that matches impedance but is physically decoupled from the DUT field region, such that sensor pickup and EMI are exercised without the same field interaction.
+
+\paragraph{2.5 Environmental controls.}
+In one embodiment, the experiment is repeated under altered environment (e.g., reduced pressure) to discriminate aerodynamic buoyancy from non-aerodynamic signatures.
+
+\subsection*{3. Artifact Rejection Gates}
+
+\paragraph{3.1 Correlation gate (thermal).}
+Let \(y(t)\) be an effect proxy and \(T(t)\) be a temperature channel. Compute a correlation metric over a window:
+\[
+\mathrm{corr}(y,T) := \frac{\sum_t (y(t)-\bar{y})(T(t)-\bar{T})}
+{\sqrt{\sum_t (y(t)-\bar{y})^2}\sqrt{\sum_t (T(t)-\bar{T})^2}}.
+\]
+In one embodiment, reject the run if \(|\mathrm{corr}(y,T)| > \rho_{\max}\) for a configured threshold \(\rho_{\max}\), indicating buoyancy or thermal coupling risk.
+
+\paragraph{3.2 Coherence gate (vibration).}
+Let \(a(t)\) be an accelerometer channel. In one embodiment, compute coherence between \(y(t)\) and \(a(t)\) in a band around the drive frequency; reject if coherence exceeds a threshold.
+
+\paragraph{3.3 EMI gate.}
+Let \(e(t)\) be an EMI probe channel. In one embodiment, reject if EMI amplitude at sensor nodes exceeds threshold or if the effect proxy saturates when EMI increases.
+
+\paragraph{3.4 Sensor saturation gate.}
+Reject runs where any primary sensor saturates or clips.
+
+\paragraph{3.5 Drift gate.}
+Reject runs where baseline drift exceeds a pre-registered bound, or compensate with a pre-registered drift model and include the added uncertainty.
+
+\subsection*{4. Pre-Registered Acceptance Criteria}
+
+\paragraph{4.1 Peak definition.}
+For a frequency sweep with measured effect proxy summary \(Y(f)\), define a peak if:
+\[
+Y(f^\star) - Y_{\text{baseline}} \ge \Delta_{\min},
+\]
+where \(\Delta_{\min}\) is a pre-registered minimum effect size, and where the run passes artifact gates.
+
+\paragraph{4.2 Sign consistency under reversal.}
+In one embodiment, the runbook includes a reversal condition (e.g., phase order reversal). A valid candidate signature may require:
+\[
+\mathrm{sign}(Y_{\text{forward}}(f^\star)) = -\mathrm{sign}(Y_{\text{reverse}}(f^\star)).
+\]
+
+\paragraph{4.3 Replication requirement.}
+In one embodiment, a candidate peak must replicate across \(n_{\text{rep}}\) independent runs, days, or build variants.
+
+\paragraph{4.4 Multiple-hypothesis correction (frequency sweeps).}
+If \(m\) frequencies are tested, the system applies a correction (e.g., Bonferroni or false discovery rate control) to avoid false positives. In one embodiment, a corrected threshold is used:
+\[
+\alpha_{\text{per-test}} = \frac{\alpha}{m}.
+\]
+
+\subsection*{5. Output Artifacts and Auditability}
+
+In one embodiment, the system outputs a run artifact including:
+\begin{itemize}[leftmargin=*]
+  \item configuration snapshot (geometry ID, schedule ID, firmware hash);
+  \item raw synchronized sensor streams;
+  \item derived features and gate outcomes;
+  \item acceptance decision and reasons for rejection (if rejected);
+  \item checksums/hashes for integrity and deterministic replay.
+\end{itemize}
+
+% ===========================================================================
+% CLAIMS (DRAFT / PROVISIONAL-STYLE)
+% ===========================================================================
+\section*{Claims (Draft)}
+
+\textbf{Note:} The following claims are an initial, non-limiting claim set intended to preserve multiple fallback positions. Final claim strategy should be reviewed by counsel.
+
+\subsection*{Independent Claims}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{(Method)} A method of conducting a rotating-field experiment, the method comprising: operating a device under test (DUT) at one or more candidate setpoints; operating the DUT under one or more null-test conditions that match at least one confounder variable; collecting synchronized sensor data including an effect proxy and at least one confounder channel; applying one or more artifact rejection gates based on the synchronized sensor data; and outputting an acceptance decision based on pre-registered acceptance criteria.
+
+  \item \textbf{(System)} A system comprising one or more processors and memory storing instructions that, when executed, cause the system to: generate a null-test suite including at least one of a matched heating control, a schedule-scrambled control, a phase-reversed control, or a dummy-load control; compute one or more gate metrics comprising at least one of correlation, coherence, EMI amplitude, saturation, or drift metrics; and suppress reporting of a positive signature when a gate metric violates a threshold.
+
+  \item \textbf{(Non-transitory medium)} A non-transitory computer-readable medium storing instructions that, when executed by one or more processors, cause the one or more processors to: execute a frequency sweep; compute effect proxy summaries for each of a plurality of tested frequencies; apply a multiple-hypothesis correction; and identify candidate peaks satisfying a corrected acceptance threshold and a replication requirement.
+\end{enumerate}
+
+\subsection*{Dependent Claims (Examples; Non-Limiting)}
+
+\begin{enumerate}[leftmargin=*]
+  \setcounter{enumi}{3}
+  \item The method of claim 1, wherein the null-test conditions include a matched-power heating control that dissipates power without generating a rotating field.
+  \item The method of claim 1, wherein applying artifact rejection gates comprises rejecting a run based on correlation between a temperature channel and the effect proxy.
+  \item The system of claim 2, wherein generating the null-test suite comprises generating a schedule-scrambled control that preserves duty cycle while destroying phase order.
+  \item The non-transitory medium of claim 3, wherein identifying candidate peaks further requires sign reversal consistency between forward and reverse phase order conditions.
+  \item The system of claim 2, wherein the instructions further cause the system to output an auditable run artifact including hashes and deterministic replay metadata.
+\end{enumerate}
+
+% ===========================================================================
+% FALLBACK POSITIONS / ADDITIONAL EMBODIMENTS
+% ===========================================================================
+\section*{Additional Embodiments and Fallback Positions (Non-Limiting)}
+
+\begin{itemize}[leftmargin=*]
+  \item Gate thresholds may be fixed, schedule-dependent, or learned from calibration runs, provided the acceptance policy is pre-registered for a runbook.
+  \item Null tests may include geometry controls, environmental controls (vacuum), and sensor injection tests (known EMI injection).
+  \item Effect proxies may include force proxies, induced voltage, or any measurable output quantity claimed to change under resonance.
+  \item The system may generate human-readable and machine-readable run reports and may integrate with a closed-loop controller by exporting validated peak locations.
+\end{itemize}
+
+\vspace{1em}
+\hrule
+\vspace{0.75em}
+\noindent \textbf{End of Specification (Draft)}
+
+\end{document}
+

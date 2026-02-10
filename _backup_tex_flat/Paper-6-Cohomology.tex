@@ -1,0 +1,420 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm}
+
+\title{Cohomology Quantization for Microstructured Calibrated Currents via Discrepancy Rounding}
+\author{
+Jonathan Washburn\\
+Recognition Science\\
+Recognition Physics Institute\\
+\texttt{jon@recognitionphysics.org}\\
+Austin, Texas, USA
+}
+\date{}
+
+% --- theorem environments ---
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+
+% --- notation ---
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Mass}{\operatorname{Mass}}
+\newcommand{\F}{\mathcal{F}}
+\newcommand{\supp}{\operatorname{supp}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We address the global integrality constraint in microstructured constructions of calibrated currents: producing a closed integral current in an exact prescribed homology class $\mathrm{PD}(m[\gamma])$ with fixed $m$, while local sheet budgets are specified by real-valued mass targets. We introduce a quantization scheme compatible with template-based sheet assemblies.
+
+Given a fine mesh and a family of candidate sheet pieces $Z_{Q,j}$ representing the marginal (fractional) contributions, we encode their cohomological effects by vectors
+\[
+v_{Q,j}=\Bigl(\int_{Z_{Q,j}}\Theta_\ell\Bigr)_{\ell=1}^b
+\]
+against a fixed integral cohomology basis $\{\Theta_\ell\}_{\ell=1}^b$. When the mesh is sufficiently fine, each $\norm{v_{Q,j}}_{\ell^\infty}$ is uniformly small. We then apply a fixed-dimension discrepancy rounding lemma to choose activations $\varepsilon_{Q,j}\in\{0,1\}$ so that all period errors are simultaneously $<1/8$. After adding a vanishing-mass boundary correction, lattice discreteness forces the resulting integer periods to equal the target periods exactly, yielding the precise integral homology class.
+
+This provides a standalone, reusable period-locking step for calibrated microstructure constructions.
+\end{abstract}
+
+\section{Introduction}
+
+Microstructured calibrated-current constructions typically proceed in two phases.
+
+First, one builds a \emph{raw assembly} by placing many small calibrated sheet pieces inside the cells of a fine mesh. This phase is local: it is driven by real-valued budgets (masses, weights, or densities) that specify how much of each template family should appear in each cell.
+
+Second, one makes the assembly into a \emph{closed integral cycle}. This is where global constraints appear. Even if local pieces are individually integral and calibrated, the raw sum generally has boundary on interior mesh faces, and its homology class can drift from the intended target because local budgets are real, not integer.
+
+This paper isolates a clean mechanism that enforces the \emph{global integer homology class}:
+\begin{quote}
+\emph{Choose a finite integral cohomology basis, encode the marginal building blocks by their period vectors, and round the marginal activations so that all period errors are smaller than $1/2$. Then integrality forces the periods to lock to the correct integers.}
+\end{quote}
+
+The only analytic input needed downstream is a small-mass boundary correction (produced by a gluing estimate in the sliver regime). Once that correction has vanishing mass, its period effect is arbitrarily small, and the locking step becomes purely arithmetic.
+
+\section{Period basis and targets}
+
+Let $X$ be a smooth, closed, oriented manifold of dimension $d$, equipped with a Riemannian metric.
+
+Fix an integer $k$ with $1\le k<d$. We consider integral $k$--currents on $X$.
+
+\begin{definition}[Integral cohomology forms]
+A smooth closed $k$--form $\Theta$ on $X$ is called \emph{integral} if for every closed integral $k$--current $T$ (equivalently, every integral $k$--cycle),
+\[
+\int_T \Theta\ \in\ \Z.
+\]
+Equivalently, the de Rham class $[\Theta]\in H^k(X;\R)$ lies in the image of $H^k(X;\Z)\to H^k(X;\R)$.
+\end{definition}
+
+Let $b$ denote the rank of the free abelian part of $H^k(X;\Z)$.
+Fix integral closed forms $\Theta_1,\dots,\Theta_b$ whose cohomology classes form a $\Z$--basis for the free part.
+
+\begin{definition}[Target class via periods]
+Let $\gamma$ be a closed $(d-k)$--form on $X$ such that its cohomology class is rational.
+Choose an integer $m\ge 1$ that clears denominators so that the $b$ target numbers
+\[
+I_\ell\ :=\ \int_X \gamma\wedge \Theta_\ell
+\qquad (\ell=1,\dots,b)
+\]
+satisfy $mI_\ell\in\Z$ for all $\ell$.
+We regard $\mathrm{PD}(m[\gamma])\in H_k(X;\Z)/\mathrm{tors}$ as the target homology class.
+\end{definition}
+
+\begin{remark}[Torsion]
+Differential forms detect only the free part of homology. Period locking identifies the class in $H_k(X;\Z)/\mathrm{tors}$ (equivalently in $H_k(X;\Q)$).
+If one needs torsion control, it must be handled by separate topological insertions. In most calibrated constructions driven by a real cohomology class $[\gamma]$, torsion is not part of the specification.
+\end{remark}
+
+\section{Fractional vs.\ integer sheet currents}
+
+We set up the rounding problem in the form needed for template-based assemblies.
+
+Let $\{Q\}$ be a finite mesh on $X$ (for concreteness, a cubical mesh in local charts). Fix an index set of template labels $j\in\{1,\dots,J\}$.
+For each cell $Q$ and label $j$, assume one has an \emph{ordered} family of candidate integral $k$--currents
+\[
+Y_{Q,j}^1,\ Y_{Q,j}^2,\ Y_{Q,j}^3,\ \dots
+\]
+supported in $\overline{Q}$ (in applications these are calibrated sliver sheets realized in $Q$).
+
+Let $n_{Q,j}\in\R_{\ge 0}$ be the real-valued target sheet count for $(Q,j)$ coming from local budgets.
+Write
+\[
+n_{Q,j}\ =\ B_{Q,j}+a_{Q,j},\qquad B_{Q,j}:=\lfloor n_{Q,j}\rfloor\in\Z_{\ge 0},\quad a_{Q,j}\in[0,1).
+\]
+
+\begin{definition}[Base and marginal currents]
+Define the \emph{base} current
+\[
+S^{0}\ :=\ \sum_{Q}\ \sum_{j=1}^{J}\ \sum_{a=1}^{B_{Q,j}} Y_{Q,j}^a
+\]
+and define the \emph{marginal} current for each $(Q,j)$ by
+\[
+Z_{Q,j}\ :=\ Y_{Q,j}^{B_{Q,j}+1}.
+\]
+(If $a_{Q,j}=0$, one may set $Z_{Q,j}=0$; it plays no role.)
+
+For any choice of activations $\varepsilon_{Q,j}\in\{0,1\}$ define the \emph{rounded} assembly
+\[
+S(\varepsilon)\ :=\ S^{0}+\sum_{Q}\sum_{j=1}^{J}\varepsilon_{Q,j}\,Z_{Q,j}.
+\]
+Define also the \emph{fractional} (real) assembly
+\[
+S^{\mathrm{frac}}\ :=\ S^{0}+\sum_{Q}\sum_{j=1}^{J}a_{Q,j}\,Z_{Q,j}.
+\]
+\end{definition}
+
+The rounding problem is: choose $\varepsilon_{Q,j}\in\{0,1\}$ so that the periods of $S(\varepsilon)$ match those of $S^{\mathrm{frac}}$ (hence the target) to high accuracy \emph{simultaneously for all} $\Theta_\ell$.
+
+\section{Bounding marginal period contributions}
+
+The key quantitative input is that each marginal piece is geometrically small, so its period vector is small.
+
+\begin{lemma}[Comass bound for periods]
+Let $T$ be an integral $k$--current and let $\Theta$ be a smooth $k$--form. Then
+\[
+\biggl|\int_T \Theta\biggr|\ \le\ \|\Theta\|_{C^0}\,\Mass(T),
+\]
+where $\|\Theta\|_{C^0}$ denotes the pointwise comass supremum on $X$.
+\end{lemma}
+
+\begin{proof}
+By definition of mass, $|T(\eta)|\le \Mass(T)\,\|\eta\|_\infty$ for any smooth compactly supported $k$--form $\eta$.
+Apply this with $\eta=\Theta$.
+\end{proof}
+
+\begin{definition}[Marginal period vectors]
+For each $(Q,j)$ define
+\[
+v_{Q,j}\ :=\ \Bigl(\int_{Z_{Q,j}}\Theta_1,\ \dots,\ \int_{Z_{Q,j}}\Theta_b\Bigr)\ \in\ \R^b.
+\]
+Let
+\[
+M_\Theta\ :=\ \max_{1\le \ell\le b}\ \|\Theta_\ell\|_{C^0}.
+\]
+\end{definition}
+
+\begin{lemma}[Uniform smallness of marginal period vectors]
+Assume there is a scale parameter $h\in(0,1)$ and a constant $C_0$ such that every marginal piece satisfies
+\[
+\Mass(Z_{Q,j})\ \le\ C_0\,h^{k}.
+\]
+Then
+\[
+\norm{v_{Q,j}}_{\ell^\infty}\ \le\ C_0\,M_\Theta\,h^{k}.
+\]
+In particular, if $h$ is small enough that $C_0M_\Theta h^k\le \frac{1}{8b}$, then
+\[
+\norm{v_{Q,j}}_{\ell^\infty}\ \le\ \frac{1}{8b}\qquad\text{for all }(Q,j).
+\]
+\end{lemma}
+
+\begin{proof}
+For each coordinate $\ell$,
+\[
+\biggl|\int_{Z_{Q,j}}\Theta_\ell\biggr|\ \le\ \|\Theta_\ell\|_{C^0}\,\Mass(Z_{Q,j})
+\ \le\ M_\Theta\,C_0\,h^k.
+\]
+Taking the maximum over $\ell$ gives the claim.
+\end{proof}
+
+\section{A fixed-dimension discrepancy rounding lemma}
+
+We now state and prove a rounding lemma whose error depends only on the dimension $b$ of the period space, not on the number of variables.
+
+\begin{lemma}[Fixed-dimension discrepancy rounding in $\ell^\infty$]
+Let $v_1,\dots,v_N\in\R^b$ satisfy $\norm{v_i}_{\ell^\infty}\le \eta$ for all $i$.
+Let $a_1,\dots,a_N\in[0,1]$ be arbitrary.
+Then there exist choices $\varepsilon_i\in\{0,1\}$ such that
+\[
+\Bigl\|\sum_{i=1}^N(\varepsilon_i-a_i)\,v_i\Bigr\|_{\ell^\infty}\ \le\ b\,\eta.
+\]
+\end{lemma}
+
+\begin{proof}
+Let $V$ be the $b\times N$ matrix whose $i$-th column is $v_i$, and write $a=(a_i)\in[0,1]^N$.
+We construct a vector $x\in[0,1]^N$ with the same period sum $Vx=Va$ but with at most $b$ fractional coordinates.
+
+Let $F(x):=\{i:\ x_i\in(0,1)\}$ be the set of fractional indices.
+If $|F(x)|>b$, then the set of columns $\{v_i:\ i\in F(x)\}$ is linearly dependent in $\R^b$.
+Hence there exists a nonzero vector $d\in\R^N$ supported on $F(x)$ such that $Vd=0$.
+
+Consider the one-parameter family $x(t):=x+t d$.
+Because $d$ is supported on the fractional set, for sufficiently small $|t|$ we still have $x(t)\in[0,1]^N$.
+Let $t_+>0$ be the largest $t$ such that $x(t)\in[0,1]^N$ for all $t\in[0,t_+]$.
+Similarly let $t_->0$ be the largest $t$ such that $x(-t)\in[0,1]^N$ for all $t\in[0,t_-]$.
+At least one of $t_+$ or $t_-$ is positive (because $d\neq 0$), and at $t=t_+$ or $t=-t_-$ at least one coordinate hits $0$ or $1$.
+Moreover, for every $t$ we have $Vx(t)=Vx+tVd=Vx$.
+
+Starting from $x=a$, repeatedly apply this step to reduce $|F(x)|$ by at least one while keeping $Vx$ unchanged.
+After finitely many steps we reach $x^\star\in[0,1]^N$ with $Vx^\star=Va$ and $|F(x^\star)|\le b$.
+
+Now define $\varepsilon\in\{0,1\}^N$ by rounding the remaining fractional coordinates arbitrarily:
+set $\varepsilon_i=x_i^\star$ if $x_i^\star\in\{0,1\}$ and set $\varepsilon_i\in\{0,1\}$ if $x_i^\star\in(0,1)$.
+Then
+\[
+V(\varepsilon-a)\ =\ V(\varepsilon-x^\star),
+\]
+since $Vx^\star=Va$.
+For each coordinate $\ell\in\{1,\dots,b\}$,
+\[
+\bigl|(V(\varepsilon-x^\star))_\ell\bigr|
+\ =\ \biggl|\sum_{i\in F(x^\star)}(\varepsilon_i-x_i^\star)\,(v_i)_\ell\biggr|
+\ \le\ \sum_{i\in F(x^\star)} |(v_i)_\ell|
+\ \le\ |F(x^\star)|\,\eta
+\ \le\ b\,\eta.
+\]
+Taking the maximum over $\ell$ proves the bound.
+\end{proof}
+
+\begin{remark}[Why this lemma is the right shape here]
+The bound depends only on $b$ and the worst marginal size $\eta$, not on $N$.
+This is exactly what microstructured constructions need: $N$ grows like a negative power of the mesh size, but $b$ is fixed by topology.
+\end{remark}
+
+\section{Discrepancy rounding for periods}
+
+We now apply the rounding lemma to the marginal currents $Z_{Q,j}$.
+
+\begin{proposition}[Simultaneous period control after rounding]
+Assume:
+\begin{enumerate}
+\item The marginal period vectors satisfy $\norm{v_{Q,j}}_{\ell^\infty}\le \frac{1}{8b}$ for all $(Q,j)$.
+\item The fractional assembly $S^{\mathrm{frac}}$ already matches the target periods to accuracy $<\frac18$:
+\[
+\biggl|\int_{S^{\mathrm{frac}}}\Theta_\ell - mI_\ell\biggr|\ <\ \frac18\qquad\text{for all }\ell=1,\dots,b.
+\]
+\end{enumerate}
+Then there exist activations $\varepsilon_{Q,j}\in\{0,1\}$ such that the rounded assembly $S(\varepsilon)$ satisfies
+\[
+\biggl|\int_{S(\varepsilon)}\Theta_\ell - mI_\ell\biggr|\ <\ \frac14
+\qquad\text{for all }\ell=1,\dots,b.
+\]
+\end{proposition}
+
+\begin{proof}
+Apply the fixed-dimension discrepancy rounding lemma with the index $i$ ranging over the finite set of pairs $(Q,j)$ with $Z_{Q,j}\neq 0$,
+with vectors $v_{Q,j}\in\R^b$ and coefficients $a_{Q,j}\in[0,1)$.
+Since $\norm{v_{Q,j}}_{\ell^\infty}\le \frac{1}{8b}$, the lemma yields choices $\varepsilon_{Q,j}\in\{0,1\}$ such that
+\[
+\Bigl\|\sum_{Q,j}(\varepsilon_{Q,j}-a_{Q,j})\,v_{Q,j}\Bigr\|_{\ell^\infty}\ \le\ b\cdot \frac{1}{8b}\ =\ \frac18.
+\]
+Equivalently, for each $\ell$,
+\[
+\biggl|\int_{S(\varepsilon)}\Theta_\ell - \int_{S^{\mathrm{frac}}}\Theta_\ell\biggr|
+=\biggl|\sum_{Q,j}(\varepsilon_{Q,j}-a_{Q,j})\int_{Z_{Q,j}}\Theta_\ell\biggr|
+\le \frac18.
+\]
+Combine with the assumed $\frac18$ accuracy of $S^{\mathrm{frac}}$ to the target $mI_\ell$ to obtain the stated $\frac14$ bound.
+\end{proof}
+
+\section{Boundary correction and lattice locking}
+
+The final step is to convert the approximate period equalities into exact ones by closing the current with a vanishing-mass correction.
+
+\subsection{A standard small-mass boundary correction mechanism}
+
+We record the minimal input needed here.
+
+\begin{definition}[Flat norm]
+For an integral $(k-1)$--current $R$ on $X$, its flat norm is
+\[
+\F(R)\ :=\ \inf\Bigl\{\Mass(A)+\Mass(B)\ :\ R=A+\partial B,\ A\ \text{integral $(k-1)$--current},\ B\ \text{integral $k$--current}\Bigr\}.
+\]
+\end{definition}
+
+\begin{lemma}[Flat-small boundary implies a small-mass closure]
+Assume there exists a constant $C_X$ (depending only on $(X,g,k)$) such that every integral $(k-1)$--cycle $Z$ admits a filling $V$ with
+\[
+\partial V=Z,
+\qquad
+\Mass(V)\ \le\ C_X\,\Mass(Z)^{\frac{k}{k-1}}.
+\]
+Let $S$ be an integral $k$--current and set $R:=\partial S$.
+Let $\delta:=\F(R)$.
+Then there exists an integral $k$--current $U$ with
+\[
+\partial U = R
+\qquad\text{and}\qquad
+\Mass(U)\ \le\ \delta + C_X\,\delta^{\frac{k}{k-1}}.
+\]
+\end{lemma}
+
+\begin{proof}
+By definition of $\F(R)$, for any $\epsilon>0$ there exist integral currents $A$ (dimension $k-1$) and $B$ (dimension $k$) such that
+\[
+R=A+\partial B,
+\qquad
+\Mass(A)+\Mass(B)\ \le\ \delta+\epsilon.
+\]
+Because $\partial R=0$, we have $\partial A=0$, so $A$ is a cycle.
+By the assumed filling inequality, there exists $V$ with $\partial V=A$ and
+\[
+\Mass(V)\ \le\ C_X\,\Mass(A)^{\frac{k}{k-1}}\ \le\ C_X\,(\delta+\epsilon)^{\frac{k}{k-1}}.
+\]
+Set $U:=B+V$. Then $\partial U=\partial B+\partial V=R-A+A=R$, and
+\[
+\Mass(U)\ \le\ \Mass(B)+\Mass(V)\ \le\ (\delta+\epsilon)+C_X\,(\delta+\epsilon)^{\frac{k}{k-1}}.
+\]
+Let $\epsilon\downarrow 0$.
+\end{proof}
+
+\subsection{Lattice locking}
+
+\begin{proposition}[Period locking after a tiny boundary correction]
+Let $S$ be an integral $k$--current and assume:
+\begin{enumerate}
+\item For each $\ell=1,\dots,b$,
+\[
+\biggl|\int_{S}\Theta_\ell - mI_\ell\biggr|\ <\ \frac14.
+\]
+\item There exists an integral $k$--current $U$ with $\partial U=\partial S$ and
+\[
+\Mass(U)\ <\ \frac{1}{4M_\Theta},
+\qquad
+M_\Theta=\max_\ell\|\Theta_\ell\|_{C^0}.
+\]
+\end{enumerate}
+Define the closed integral current $T:=S-U$. Then for every $\ell$,
+\[
+\int_{T}\Theta_\ell\ =\ mI_\ell.
+\]
+In particular, $[T]=\mathrm{PD}(m[\gamma])$ in $H_k(X;\Z)/\mathrm{tors}$.
+\end{proposition}
+
+\begin{proof}
+Since $\partial T=0$ and $T$ is integral, each period $\int_T\Theta_\ell$ is an integer (because $\Theta_\ell$ is integral).
+
+We estimate the difference from $mI_\ell$:
+\[
+\int_T\Theta_\ell - mI_\ell\ =\ \Bigl(\int_S\Theta_\ell - mI_\ell\Bigr)\ -\ \int_U\Theta_\ell.
+\]
+By the comass bound,
+\[
+\biggl|\int_U\Theta_\ell\biggr|\ \le\ \|\Theta_\ell\|_{C^0}\,\Mass(U)\ \le\ M_\Theta\,\Mass(U)\ <\ \frac14.
+\]
+Therefore
+\[
+\biggl|\int_T\Theta_\ell - mI_\ell\biggr|\ <\ \frac14+\frac14\ =\ \frac12.
+\]
+But $\int_T\Theta_\ell$ and $mI_\ell$ are both integers, so the only integer within distance $<\frac12$ of $mI_\ell$ is $mI_\ell$ itself.
+Hence $\int_T\Theta_\ell=mI_\ell$ for all $\ell$.
+
+These period equalities identify $[T]$ with $\mathrm{PD}(m[\gamma])$ in the free part of $H_k(X;\Z)$.
+\end{proof}
+
+\begin{corollary}[Quantization summary]
+Assume the hypotheses of the rounding proposition and assume moreover that $\F(\partial S(\varepsilon))\to 0$ along a refinement schedule.
+Then for sufficiently fine mesh there exists a closed integral $k$--current $T$ with
+\[
+[T]=\mathrm{PD}(m[\gamma])\quad\text{in }H_k(X;\Z)/\mathrm{tors}
+\]
+obtained from the rounded assembly by subtracting a vanishing-mass correction.
+\end{corollary}
+
+\begin{proof}
+Use the small-mass closure lemma to produce $U$ with $\partial U=\partial S(\varepsilon)$ and $\Mass(U)\to 0$.
+For sufficiently fine mesh, $\Mass(U)<\frac{1}{4M_\Theta}$, so the period locking proposition applies.
+\end{proof}
+
+\section{Compatibility with prefix-template gluing}
+
+The rounding scheme above is designed to be compatible with prefix-template bookkeeping.
+
+The base current $S^0$ uses the first $B_{Q,j}$ pieces in the ordered family $(Y_{Q,j}^a)_{a\ge 1}$.
+Each marginal decision $\varepsilon_{Q,j}\in\{0,1\}$ either includes the next piece $Y_{Q,j}^{B_{Q,j}+1}$ or not.
+Therefore the \emph{selected set of pieces in each $(Q,j)$ remains an initial prefix}. No ``holes'' are introduced.
+
+This matters because prefix-based coherence across faces is a combinatorial stability mechanism: adjacent cells differ only in the tail.
+In the many-sliver regime, where $B_{Q,j}\gg h^{-1}$, changing $\varepsilon_{Q,j}$ changes neighbor counts by at most $1$ and therefore stays within the
+$O(h)$ slow-variation regime used by weighted flat-norm gluing estimates.
+
+The discrepancy rounding itself is global and does not require any holomorphic or calibrated structure. The only geometric requirement
+is that marginal pieces be small enough that their period vectors are uniformly tiny.
+
+\section{Variants and remarks}
+
+\begin{remark}[Alternative bases]
+Instead of a de Rham integral basis $\{\Theta_\ell\}$ one may choose harmonic representatives (for a fixed metric) of an integral basis of the free cohomology.
+Nothing changes: only the $C^0$ comass bounds enter the estimates.
+\end{remark}
+
+\begin{remark}[Sharper discrepancy constants]
+The fixed-dimension rounding lemma above gives an error bound $b\eta$ in $\ell^\infty$.
+Any improvement of the constant (for example to $C\sqrt{b}\eta$) immediately relaxes the required mesh fineness.
+The basic locking argument needs only a bound $<1/2$, so constants are not delicate as long as $h$ is small enough.
+\end{remark}
+
+\begin{remark}[What this paper does and does not do]
+This paper enforces the \emph{global period constraints}. It does not by itself guarantee that $\F(\partial S(\varepsilon))\to 0$; that is a separate gluing estimate.
+The output here is modular: once a construction supplies (i) small marginal period vectors and (ii) a vanishing-mass closure, period locking produces the exact target homology class.
+\end{remark}
+
+\end{document}

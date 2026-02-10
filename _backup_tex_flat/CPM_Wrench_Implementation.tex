@@ -1,0 +1,101 @@
+\documentclass[12pt]{article}
+\usepackage{amsmath,amsfonts,amssymb,amsthm}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{hyperref}
+
+\title{CPM Wrench for Light Language Synthesis}
+\author{Recognition Physics Engineering Notes}
+\date{November 12, 2025}
+
+\begin{document}
+\maketitle
+
+\section{Goal}
+We describe an explicit, engineerable iteration---the \emph{CPM wrench}---that drives any admissible recognition trace to the unique zero-parameter Light Language normal form forced by Recognition Science (RS). The construction is extracted from the coercive projection method (CPM) analysis in \texttt{CPM.tex} and is aligned with the empirical work already implemented in \texttt{tools/discover\_tokens.py}.
+
+\section{Constants and Bounds}
+\begin{itemize}
+  \item \textbf{Scale Gate.} Windows are constrained by the RS scale gate: eight-beat timing \(\tau_{0}\) and recognition length \(\lambda_{\mathrm{rec}}\).
+  \item \textbf{Curvature Constant.} \(t_{\phi}\) is derived from the curvature of the symmetric functional at \(\phi\):
+  \[
+    t_{\phi} = \frac{1}{\sqrt{J''(\phi)}} = \left(\frac{1}{\phi^{2}} + \frac{1}{\phi^{4}}\right)^{-1/2}.
+  \]
+  \item \textbf{Coercivity Constant.} CPM proves that
+  \[
+    E(\mu) - E_{0} \geq c \cdot D(\mu)
+  \]
+  with \(c = (C_{\mathrm{net}} C_{\mathrm{proj}} C_{\mathrm{eng}})^{-1}\). Here:
+  \begin{itemize}
+    \item \(C_{\mathrm{proj}} \leq 2\) from the Hermitian rank-one projection bound.
+    \item \(C_{\mathrm{net}}\) is the covering constant of the \(\varepsilon\)-net on the unit sphere of \(\mathbb{C}^{8}\) (empirically we use \(\varepsilon \approx 0.1\)).
+    \item \(C_{\mathrm{eng}}\) comes from the pseudo-inverse energy control; in code we map it to the measured SVD gap (see Section~\ref{subsec:energy-control}).
+  \end{itemize}
+\end{itemize}
+
+\section{Defect Vector and Proximal Operators}
+Let \(s\) be a neutralised eight-beat signal and \(\mu\) a candidate dictionary/normal-form. The defect vector
+\[
+  D(s,\mu) = \big(D_{\mathrm{neutral}}, D_{\mathrm{parity}}, D_{\mathrm{triad}}, D_{\mathrm{cycle}}, D_{\phi}, D_{\mathrm{energy}}\big)
+\]
+contains zero-parameter components (all already implemented in verification code):
+\begin{enumerate}
+  \item \textbf{Neutrality defect} (LISTEN gate).
+  \item \textbf{Parity defect} (LOCK/BALANCE coherence).
+  \item \textbf{Triad legality} (BRAID tests).
+  \item \textbf{Cycle alignment} (\(2^{10}\) ledger closure).
+  \item \textbf{\(\phi\)-residual} (pairwise distances to \(\phi^{k}\) within the curvature/SNR-derived band).
+  \item \textbf{Energy defect} (off-subspace energy measured by SVD gap).
+\end{enumerate}
+For each component we define a proximal projection:
+\begin{align*}
+  P_{0} &: \text{neutral alignment (LISTEN + eight-beat)} \\[4pt]
+  P_{\phi} &: \text{project pairwise distances to the nearest \(\phi^{k}\) within the certified band} \\[4pt]
+  P_{\mathrm{leg}} &: \text{enforce parity, triad legality, cycle closure} \\[4pt]
+  P_{\mathrm{nf}} &: \text{LNAL normal-form reduction (termination + confluence)}
+\end{align*}
+The composite \(P := P_{\mathrm{nf}} \circ P_{\mathrm{leg}} \circ P_{\phi} \circ P_{0}\) is our CPM wrench.
+
+\section{Iteration (Dictionary Update)}
+Given a current dictionary \(\mu\) and residual trace \(r\):
+\begin{enumerate}
+  \item Produce a rank-one proposal (e.g. leading singular vector or prototype variant).
+  \item Apply \(P\) to the proposal to ensure RS-invariant admissibility.
+  \item Compute \(\Delta D\) (change in defect) and \(\Delta E\) (change in energy/MDL).
+  \item Accept the proposal \emph{iff} \(\Delta E \geq c \cdot \Delta D\). This realises the CPM inequality directly.
+  \item Update \(\mu\) and repeat until \(\| \Delta D \| \leq \epsilon\) (numerical threshold).
+\end{enumerate}
+In practice we operate two phases:
+\begin{itemize}
+  \item \textbf{Core lock:} strict \(\phi\) bands, no family quotas. This converges quickly to a high-significance kernel (currently 9 tokens, \(p \approx 0.0078\)).
+  \item \textbf{Coverage expansion:} allow relaxed bands derived per family, enforce family quotas, and re-run steps 1--4.
+\end{itemize}
+
+\section{Energy Control Constant}
+\label{subsec:energy-control}
+The pseudo-inverse bound in CPM maps to the SVD gap in code. For a normalised matrix of windows \(X\) with singular values \(\sigma_{1} \geq \cdots \geq \sigma_{8}\), we estimate
+\[
+  C_{\mathrm{eng}} \approx \frac{\sigma_{1}}{\sigma_{r}} \quad \text{where} \quad r=\operatorname{rank}(X).
+\]
+In auto-calibration we store the minimum positive singular value and the norm of \(X\), so we can compute a conservative energy constant and thus \(c\).
+
+\section{Implementation Roadmap}
+\begin{enumerate}
+  \item \textbf{Documentation } complete (this file and the Markdown companion).
+  \item \textbf{Expose CPM constant \(c\)} ✓: calibration now records \(C_{\mathrm{proj}}, C_{\mathrm{net}}, C_{\mathrm{eng}}\), and \(c = (C_{\mathrm{net}} C_{\mathrm{proj}} C_{\mathrm{eng}})^{-1}\).
+  \item \textbf{Integrate \(\Delta E \geq c \cdot \Delta D\)}: refine the selection loop so candidates are rejected unless they satisfy the inequality (using MDL for \(\Delta E\) and the blended defect reductions already computed).
+  \item \textbf{Iterative normal-form wrench}: integrate the composite operator \(P\) explicitly (LISTEN/\(\phi\)/legality/normal form) so every update is the output of \(P\).
+  \item \textbf{Externally certify Meaning}: implement the iterative algorithm as a function \texttt{Meaning(s)} that repeatedly applies the wrench until convergence and returns the LNAL normal form.
+  \item \textbf{Lean mirroring}: link the numerical constants and the iteration to formal lemmas, completing the proof that CPM convergence plus LNAL normal form yields the unique Light Language definition.
+\end{enumerate}
+
+\section{Current Status}
+\begin{itemize}
+  \item Adaptive \(\phi\)-bands from theory + SNR are implemented.
+  \item Two-phase discovery with optimizer maintains \(p \leq 0.01\) while increasing coverage (currently 12 tokens, 9/13 families).
+  \item External optimizer now adds tokens only if the global \(\phi\)-analysis remains \(p \leq 0.01\) and mass at \(\{\phi^{-2}, \phi^{-1}\}\) increases.
+  \item Calibration payloads include \(C_{\mathrm{proj}}, C_{\mathrm{net}}, C_{\mathrm{eng}}, c\); the selection loop enforces an initial \(\Delta E \geq c \cdot \Delta D\) check based on the blended defect estimate.
+  \item Next step: tighten the combined defect (neutrality/legality + \(\phi\) residuals) and apply the full wrench \(P\) before every MDL evaluation.
+\end{itemize}
+
+\end{document}

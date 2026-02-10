@@ -1,0 +1,629 @@
+\documentclass[11pt,twocolumn]{article}
+
+% --- Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{enumitem}
+
+\geometry{margin=1in}
+
+% --- Theorem environments ---
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{remark}{Remark}[section]
+\newtheorem{hypothesis}{Hypothesis}[section]
+
+% --- Custom commands ---
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\phival}{\varphi}
+\newcommand{\Pdrive}{P_{\text{drive}}}
+\newcommand{\Pout}{P_{\text{out}}}
+\newcommand{\Pthermal}{P_{\text{thermal}}}
+\newcommand{\Pstored}{P_{\text{stored}}}
+
+% --- Title ---
+\title{%
+  Generator-Mode Operation, Active Detuning Governors,\\
+  and Responsible Disclosure for\\
+  High-Gain Resonant Field Systems%
+}
+
+\author{%
+  Recognition Science Research Institute\\
+  \texttt{[correspondence address]}
+}
+
+\date{February 1, 2026}
+
+\begin{document}
+
+\maketitle
+
+% ============================================================================
+% ABSTRACT
+% ============================================================================
+\begin{abstract}
+If a resonant rotating-field system exhibits high gain (energy or force amplification), the dominant risks become runaway behavior and unsafe disclosure. This paper defines rigorous energy accounting for ``generator mode'' operation, specifies a safety governor based on intentional detuning (phase slip injection), and establishes a governance model for staged disclosure.
+
+We formalize the thermodynamic conditions for self-sustaining operation, analyze runaway hazard modes, and prove that active detuning collapses system efficiency to prevent catastrophic failure. The framework is strictly data-gated: no claims of over-unity or novel effects are made absent verified measurements following the protocols of NM-0 (Foundation) and NM-1 (Engineering and Metrology).
+
+\textbf{Keywords:} safety governor, detuning, phase slip, resonance collapse, energy accounting, runaway prevention, responsible disclosure, export control
+\end{abstract}
+
+% ============================================================================
+% 1. INTRODUCTION
+% ============================================================================
+\section{Introduction}
+\label{sec:intro}
+
+\subsection{Motivation}
+
+This memo addresses two failure modes for high-gain resonant systems:
+
+\begin{enumerate}
+    \item \textbf{Technical failure (runaway):} Loss of load or controller fault causes uncontrolled acceleration, leading to mechanical failure or worse.
+    \item \textbf{Social failure (premature disclosure):} Publishing results before adequate verification enables misuse or reputational damage.
+\end{enumerate}
+
+Both failures must be prevented by design, not by caution alone.
+
+\subsection{Scientific Posture}
+
+All content in this paper is hypothesis-gated and measurement-gated:
+\begin{itemize}
+    \item No claim of ``over-unity'' or novel effect is made.
+    \item All hypotheses are formalized with falsifiers.
+    \item Claims require auditable data products per NM-1 protocols.
+\end{itemize}
+
+\subsection{Relationship to Project Architecture}
+
+\begin{itemize}
+    \item \textbf{NM-0 (Foundation):} Geometry, scheduling, resonance-map predictions.
+    \item \textbf{NM-1 (Engineering):} Virtual rotor, metrology, null tests.
+    \item \textbf{NM-2 (This paper):} Generator mode, safety governor, governance.
+\end{itemize}
+
+% ============================================================================
+% 2. ENERGY ACCOUNTING
+% ============================================================================
+\section{Energy Accounting}
+\label{sec:accounting}
+
+\subsection{Power Flow Definitions}
+
+\begin{definition}[Power Flows]
+\label{def:power}
+At any time $t$, the system has four power channels:
+\begin{align}
+    \Pdrive(t) &: \text{Electrical input to drivers} \label{eq:pdrive}\\
+    \Pstored(t) &: \text{Rate of change of stored energy} \label{eq:pstored}\\
+    \Pthermal(t) &: \text{Heat flow to/from environment} \label{eq:pthermal}\\
+    \Pout(t) &: \text{Harvested electrical output} \label{eq:pout}
+\end{align}
+\end{definition}
+
+\noindent Energy conservation (first law) requires:
+\begin{equation}
+    \Pdrive(t) = \Pout(t) + \Pthermal(t) + \frac{d}{dt}E_{\text{stored}}(t).
+    \label{eq:firstlaw}
+\end{equation}
+
+\subsection{Generator Mode Definition}
+
+\begin{definition}[Generator Mode]
+\label{def:generator}
+The system operates in \emph{generator mode} if, over a measurement interval $[t_1, t_2]$:
+\begin{equation}
+    \int_{t_1}^{t_2} \Pout(t)\,dt > \int_{t_1}^{t_2} \Pdrive(t)\,dt + \delta E_{\text{stored}}
+    \label{eq:generatormode}
+\end{equation}
+where $\delta E_{\text{stored}} = E_{\text{stored}}(t_1) - E_{\text{stored}}(t_2)$ accounts for any depletion of stored energy.
+\end{definition}
+
+\begin{remark}
+This definition is \emph{accounting-based}, not effect-based. It can be evaluated from measurements without assuming any particular physical mechanism.
+\end{remark}
+
+\subsection{Self-Sustaining Threshold}
+
+\begin{definition}[Self-Sustaining Operation]
+\label{def:selfsustain}
+The system is \emph{self-sustaining} at time $t$ if:
+\begin{equation}
+    \Pout(t) > \Pdrive(t).
+    \label{eq:selfsustain}
+\end{equation}
+\end{definition}
+
+\noindent Self-sustaining operation implies that the output power exceeds the drive power required to maintain resonance. This is a \textbf{data-gated hypothesis}---it is defined precisely so that it can be tested and falsified.
+
+\subsection{Entropic Cooling Hypothesis}
+
+\begin{hypothesis}[Entropic Cooling]
+\label{hyp:cooling}
+If a resonant system orders the vacuum (reduces vacuum entropy), it absorbs thermal energy from the environment:
+\begin{equation}
+    \Delta S_{\text{vacuum}} < 0 \implies \Delta Q_{\text{env}} < 0.
+    \label{eq:entropiccooling}
+\end{equation}
+\end{hypothesis}
+
+\noindent This is an empirically testable prediction: during high-resonance operation, the device temperature should \emph{decrease} relative to a matched-heating control.
+
+\begin{definition}[Entropic Cooling Predicate]
+\label{def:entropiccooling}
+The entropic cooling condition is formalized as:
+\begin{equation}
+    \text{EntropicCooling}(\Delta S_{\text{vac}}, \Delta Q_{\text{env}}) \coloneqq \left( \Delta S_{\text{vac}} < 0 \right) \to \left( \Delta Q_{\text{env}} < 0 \right).
+\end{equation}
+\end{definition}
+
+\subsection{Vacuum Power Scaling}
+
+\begin{hypothesis}[Vacuum Power Scaling]
+\label{hyp:vacpower}
+The power output in generator mode scales with frequency $f$ and metric gradient $\sigma_{\nabla}$:
+\begin{equation}
+    P_{\text{vac}} \propto f \cdot \sigma_{\nabla}.
+    \label{eq:vacpower}
+\end{equation}
+\end{hypothesis}
+
+\noindent This provides a testable prediction: output power should increase linearly with drive frequency at fixed resonance conditions.
+
+\subsection{Falsifiers and Disqualifiers}
+
+The generator-mode hypothesis is \textbf{falsified} if:
+\begin{enumerate}
+    \item Apparent over-unity disappears under improved thermal/EMI controls.
+    \item The effect correlates only with sensor pickup channels (measurement artifact).
+    \item Matched-heating runs produce the same ``output'' signal.
+\end{enumerate}
+
+% ============================================================================
+% 3. GENERATOR ARCHITECTURE
+% ============================================================================
+\section{Generator Architecture}
+\label{sec:architecture}
+
+\subsection{System Block Diagram}
+
+The generator-mode system comprises:
+
+\begin{enumerate}
+    \item \textbf{Core:} Virtual rotor (NM-1) generating rotating field.
+    \item \textbf{Pickup:} Secondary coil array (stator) around the core.
+    \item \textbf{Rectification:} AC-to-DC conversion of induced EMF.
+    \item \textbf{Buffer:} Energy storage (capacitor bank or battery).
+    \item \textbf{Load interface:} Grid-tie or resistive load.
+    \item \textbf{Controller:} Schedule generation, resonance lock, logging.
+    \item \textbf{Governor:} Safety system with detune/shutdown authority.
+\end{enumerate}
+
+\subsection{Startup Sequence}
+
+\begin{enumerate}
+    \item \textbf{Initialize:} External power brings system to idle.
+    \item \textbf{Resonance search:} Sweep through candidate frequencies (NM-0 resonance map).
+    \item \textbf{Lock detection:} Identify resonance peak via coherence metric.
+    \item \textbf{Load stabilization:} Connect load to provide braking.
+    \item \textbf{Self-power transition:} (Data-gated) If $\Pout > \Pdrive$, reduce external power.
+\end{enumerate}
+
+\subsection{Load as Stabilizer}
+
+\begin{theorem}[Load Stabilization]
+\label{thm:loadstable}
+When the output load draws power, it acts as a stabilizing brake on the resonant system. Load disconnect removes this braking instantaneously.
+\end{theorem}
+
+\begin{proof}[Argument]
+By Lenz's law, current drawn from the pickup coils creates a magnetic field opposing the rotating field, providing a restoring (damping) force proportional to load current. When load $= 0$, this damping vanishes.
+\end{proof}
+
+\noindent This is the fundamental hazard: loss of load $\Rightarrow$ loss of braking $\Rightarrow$ runaway.
+
+% ============================================================================
+% 4. RUNAWAY HAZARD ANALYSIS
+% ============================================================================
+\section{Runaway Hazard Analysis}
+\label{sec:hazard}
+
+\subsection{Runaway Signature}
+
+\begin{definition}[Runaway Signature]
+\label{def:runaway}
+A system exhibits the \emph{runaway signature} if, when load approaches zero, the rotational proxy (RPM or field frequency) increases without bound:
+\begin{equation}
+    \text{RunawaySignature}(\text{load}, \omega) \coloneqq \left( \text{load} = 0 \right) \to \left( \frac{d\omega}{dt} > 0 \right).
+    \label{eq:runaway}
+\end{equation}
+\end{definition}
+
+\noindent This signature distinguishes the hypothesized resonant generator from conventional generators, which slow down when unloaded.
+
+\subsection{Runaway Scenarios}
+
+\begin{table}[h]
+\centering
+\caption{Runaway Hazard Enumeration}
+\label{tab:hazards}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Scenario & Cause & Observable \\
+\midrule
+Loss of load & Open circuit, load fault & $\omega \uparrow$, $I_{\text{load}} \to 0$ \\
+Controller fault & Stuck-on pulses & $\omega \uparrow$, pulse timing frozen \\
+Clock instability & Jitter blowup & $\omega$ erratic, coherence $\downarrow$ \\
+Thermal runaway & Driver overheating & $T \uparrow$, current limit hit \\
+Mechanical failure & Structural resonance & Vibration spike, strain alarm \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Runaway Detection Observables}
+
+The following observables indicate runaway onset:
+\begin{enumerate}
+    \item Rapid rise of $\omega$ (RPM or field frequency).
+    \item Rising harmonic content / instability in resonance score.
+    \item Overcurrent or overvoltage events.
+    \item Strain/vibration spikes.
+\end{enumerate}
+
+\subsection{Safety Requirements}
+
+\begin{enumerate}
+    \item \textbf{Detection time:} Runaway must be detected within $t_{\det} < 100$ ms.
+    \item \textbf{Mitigation time:} Resonance must be collapsed within $t_{\text{mit}} < 1$ s.
+    \item \textbf{Fail-safe:} Controller crash must result in detune (not drive continuation).
+\end{enumerate}
+
+% ============================================================================
+% 5. ACTIVE DETUNING GOVERNOR
+% ============================================================================
+\section{Active Detuning Governor}
+\label{sec:governor}
+
+\subsection{Governor Concept}
+
+Rather than relying on mechanical friction braking (which may be insufficient for high-gain systems), we use \textbf{active detuning}: intentionally inject phase slip to collapse the resonance condition.
+
+\begin{definition}[Phase Slip]
+\label{def:phaseslip}
+A \emph{phase slip} of magnitude $\delta\phi$ is an intentional timing error in the drive schedule, shifting pulses away from the optimal 8-tick alignment.
+\end{definition}
+
+\subsection{Governor Function}
+
+\begin{definition}[Governor Function]
+\label{def:governor}
+The governor function outputs a phase slip command based on the rotational proxy $\omega$ and a limit $\omega_{\max}$:
+\begin{equation}
+    \text{Governor}(\omega, \omega_{\max}) \coloneqq 
+    \begin{cases}
+        \delta\phi_{\text{detune}} & \text{if } \omega > \omega_{\max} \\
+        0 & \text{otherwise}
+    \end{cases}
+    \label{eq:governor}
+\end{equation}
+where $\delta\phi_{\text{detune}} > 0$ is a fixed detune magnitude (e.g., 0.1 radians or 10\% phase error).
+\end{definition}
+
+\subsection{Efficiency Collapse}
+
+\begin{definition}[Efficiency Function]
+\label{def:efficiency}
+The system efficiency under phase error $\delta\phi$ is modeled as:
+\begin{equation}
+    \eta(\delta\phi) \coloneqq e^{-(\delta\phi)^2}.
+    \label{eq:efficiency}
+\end{equation}
+\end{definition}
+
+\noindent This Gaussian roll-off captures the intuition that small phase errors cause quadratic efficiency loss, with rapid collapse for larger errors.
+
+\begin{theorem}[Detuning Stops Runaway]
+\label{thm:detune}
+If $\omega > \omega_{\max}$, then applying the governor function collapses efficiency below unity:
+\begin{equation}
+    \omega > \omega_{\max} \implies \eta\bigl(\text{Governor}(\omega, \omega_{\max})\bigr) < 1.
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+When $\omega > \omega_{\max}$, the governor outputs $\delta\phi = \delta\phi_{\text{detune}} > 0$. Then:
+\begin{equation}
+    \eta(\delta\phi_{\text{detune}}) = e^{-(\delta\phi_{\text{detune}})^2} < e^0 = 1.
+\end{equation}
+For $\delta\phi_{\text{detune}} = 0.1$:
+\begin{equation}
+    \eta(0.1) = e^{-0.01} \approx 0.99.
+\end{equation}
+Larger detune values (e.g., $\delta\phi = 0.5$) yield $\eta \approx 0.78$.
+\end{proof}
+
+\begin{corollary}[Efficiency Floor]
+\label{cor:floor}
+To guarantee efficiency below any threshold $\eta_{\text{target}}$, choose:
+\begin{equation}
+    \delta\phi_{\text{detune}} \geq \sqrt{-\ln(\eta_{\text{target}})}.
+\end{equation}
+For $\eta_{\text{target}} = 0.5$: $\delta\phi_{\text{detune}} \geq 0.83$ radians.
+\end{corollary}
+
+\subsection{Governor State Machine}
+
+The governor operates as a state machine:
+
+\begin{enumerate}
+    \item \textbf{NOMINAL:} $\omega < \omega_{\max}$; output $\delta\phi = 0$.
+    \item \textbf{DETUNE:} $\omega_{\max} \leq \omega < \omega_{\text{crit}}$; output $\delta\phi = \delta\phi_{\text{detune}}$.
+    \item \textbf{SHUTDOWN:} $\omega \geq \omega_{\text{crit}}$ or fault detected; output SHUTDOWN command.
+\end{enumerate}
+
+\noindent Transitions: NOMINAL $\to$ DETUNE $\to$ SHUTDOWN (escalation ladder). Recovery: DETUNE $\to$ NOMINAL (if $\omega$ drops below $\omega_{\max} - \epsilon$).
+
+\subsection{Hardware Interlocks}
+
+In addition to the software governor, the following hardware interlocks are required:
+
+\begin{enumerate}
+    \item \textbf{Independent watchdog:} Separate microcontroller monitors $\omega$ and triggers detune if main controller fails.
+    \item \textbf{Physical E-stop:} Manual emergency stop accessible to operator.
+    \item \textbf{Dump load / crowbar:} Resistive load that can be switched in to absorb excess energy.
+    \item \textbf{Default-safe behavior:} On loss of control signal, drivers default to detune pattern.
+\end{enumerate}
+
+% ============================================================================
+% 6. OPERATIONAL SAFETY PROTOCOLS
+% ============================================================================
+\section{Operational Safety Protocols}
+\label{sec:protocols}
+
+\subsection{Test Gating and Escalation}
+
+Experiments proceed through power levels with mandatory gates:
+
+\begin{table}[h]
+\centering
+\caption{Power Escalation Ladder}
+\label{tab:escalation}
+\begin{tabular}{@{}llll@{}}
+\toprule
+Level & Power & Gate Requirement & Replications \\
+\midrule
+L1 & $< 10$ W & Basic safety check & 3 \\
+L2 & $10$--$100$ W & L1 complete, governor verified & 5 \\
+L3 & $100$--$1000$ W & L2 complete, remote operation & 10 \\
+L4 & $> 1$ kW & L3 complete, facility review & 20 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Facility and Personnel Safety}
+
+\begin{enumerate}
+    \item \textbf{Shielding:} Faraday enclosure; RF-absorbing materials if needed.
+    \item \textbf{Standoff distances:} No personnel within 2 m during L3+ operation.
+    \item \textbf{Remote operation:} All L3+ tests controlled from separate room.
+    \item \textbf{Electrical safety:} GFCI protection; lockout/tagout procedures.
+\end{enumerate}
+
+\subsection{Incident Response}
+
+\begin{enumerate}
+    \item \textbf{Automatic logging:} All sensor data preserved with tamper-evident checksums.
+    \item \textbf{Post-incident lockout:} System remains disabled until root-cause analysis complete.
+    \item \textbf{Root-cause workflow:} Standardized incident report template; independent review.
+\end{enumerate}
+
+% ============================================================================
+% 7. GOVERNANCE AND DISCLOSURE
+% ============================================================================
+\section{Governance and Responsible Disclosure}
+\label{sec:governance}
+
+\subsection{Disclosure Categories}
+
+\begin{table}[h]
+\centering
+\caption{Disclosure Classification}
+\label{tab:disclosure}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Category & Content \\
+\midrule
+Public & Geometry definitions, scheduling discipline, metrology protocols \\
+Patent & Broad claims, high-level diagrams, operating principles \\
+Trade Secret & Exact operating tables, PCB layouts, switching details \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Replication Strategy}
+
+Responsible replication proceeds as follows:
+\begin{enumerate}
+    \item \textbf{Internal replication:} $\geq 3$ independent builds within organization.
+    \item \textbf{NDA replication:} External parties under NDA with pre-registered protocols.
+    \item \textbf{Public release:} Only after reproducibility meets internal criteria.
+\end{enumerate}
+
+\subsection{Export Control Considerations}
+
+\begin{enumerate}
+    \item \textbf{Domestic-first filing:} All patents filed domestically before international.
+    \item \textbf{Counsel review:} Legal review before any international dissemination.
+    \item \textbf{ITAR/EAR awareness:} Monitor for potential dual-use classification.
+\end{enumerate}
+
+\subsection{Ethical Framework}
+
+\begin{enumerate}
+    \item \textbf{Safety by design:} Governor integration is mandatory, not optional.
+    \item \textbf{Misuse risk:} Explicit non-goal for weaponization applications.
+    \item \textbf{Transparency:} Null results published with same rigor as positive results.
+\end{enumerate}
+
+% ============================================================================
+% 8. CONCLUSION
+% ============================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+This paper has established the safety and governance framework for high-gain resonant field systems operating in generator mode. The key contributions are:
+
+\begin{enumerate}
+    \item \textbf{Energy accounting:} Rigorous definitions of power flows, generator-mode threshold, and self-sustaining operation.
+    \item \textbf{Falsifiable hypotheses:} Entropic cooling and vacuum power scaling, with explicit falsifiers.
+    \item \textbf{Hazard analysis:} Enumeration of runaway scenarios with detection observables and safety requirements.
+    \item \textbf{Active detuning governor:} Phase-slip-based efficiency collapse with proof that detuning prevents runaway.
+    \item \textbf{Operational protocols:} Power escalation ladder, facility safety, incident response.
+    \item \textbf{Governance model:} Disclosure categories, replication strategy, export control awareness.
+\end{enumerate}
+
+The framework ensures that any claimed effects are rigorously verified before disclosure, and that safety measures are in place to prevent catastrophic failure during testing.
+
+% ============================================================================
+% APPENDICES
+% ============================================================================
+\appendix
+
+\section{Energy Accounting Worksheet}
+\label{app:worksheet}
+
+\begin{verbatim}
+Run ID: ______________
+Date: ______________
+
+INPUTS:
+  P_drive (avg, W): ______________
+  Duration (s): ______________
+  E_drive = P_drive x duration: ______________
+
+STORED ENERGY:
+  E_stored_start (J): ______________
+  E_stored_end (J): ______________
+  Delta_E_stored: ______________
+
+OUTPUTS:
+  P_out (avg, W): ______________
+  E_out = P_out x duration: ______________
+
+THERMAL:
+  Delta_T_device (C): ______________
+  Delta_T_environment (C): ______________
+  Thermal anomaly (Y/N): ______________
+
+BALANCE:
+  E_drive + Delta_E_stored = __________ (input)
+  E_out + E_thermal = __________ (output)
+  Discrepancy: ______________
+
+GENERATOR MODE (Y/N): ______________
+\end{verbatim}
+
+\section{Governor State Machine}
+\label{app:statemachine}
+
+\textbf{States:}
+\begin{itemize}
+    \item NOMINAL: Normal operation, $\delta\phi = 0$
+    \item DETUNE: Active braking, $\delta\phi = \delta\phi_{\text{detune}}$
+    \item SHUTDOWN: All drives disabled
+\end{itemize}
+
+\textbf{Transitions:}
+\begin{enumerate}
+    \item NOMINAL $\to$ DETUNE: $\omega > \omega_{\max}$
+    \item DETUNE $\to$ NOMINAL: $\omega < \omega_{\max} - \epsilon$ for $t > t_{\text{hold}}$
+    \item DETUNE $\to$ SHUTDOWN: $\omega > \omega_{\text{crit}}$ OR fault detected
+    \item ANY $\to$ SHUTDOWN: E-stop pressed OR watchdog timeout
+\end{enumerate}
+
+\textbf{Pseudocode:}
+\begin{verbatim}
+loop:
+  w = read_rpm()
+  fault = check_faults()
+  
+  if state == NOMINAL:
+    if w > w_max:
+      state = DETUNE
+      set_phase_slip(dphi_detune)
+      
+  elif state == DETUNE:
+    if w > w_crit or fault:
+      state = SHUTDOWN
+      disable_all_drives()
+    elif w < w_max - eps for t_hold:
+      state = NOMINAL
+      set_phase_slip(0)
+      
+  elif state == SHUTDOWN:
+    disable_all_drives()
+    log_incident()
+    wait_for_manual_reset()
+\end{verbatim}
+
+\section{Redaction Checklist}
+\label{app:redaction}
+
+Before external sharing, verify removal of:
+\begin{enumerate}
+    \item[$\square$] Exact operating frequency tables
+    \item[$\square$] PCB layout files and Gerber data
+    \item[$\square$] Driver schematic details
+    \item[$\square$] Manufacturing tolerances
+    \item[$\square$] Specific component part numbers
+    \item[$\square$] Calibration constants
+    \item[$\square$] Internal test results (unless publication-approved)
+\end{enumerate}
+
+% ============================================================================
+% REFERENCES
+% ============================================================================
+\begin{thebibliography}{9}
+
+\bibitem{powersafety}
+IEEE Std 1584-2018,
+\textit{IEEE Guide for Performing Arc-Flash Hazard Calculations}.
+IEEE, 2018.
+
+\bibitem{resonance}
+J.~P.~Den Hartog,
+\textit{Mechanical Vibrations}, 4th ed.
+Dover, 1985.
+
+\bibitem{gridtie}
+IEEE Std 1547-2018,
+\textit{IEEE Standard for Interconnection and Interoperability of Distributed Energy Resources}.
+IEEE, 2018.
+
+\bibitem{disclosure}
+S.~D.~Scalet,
+``Responsible Disclosure of Security Vulnerabilities,''
+\textit{Communications of the ACM}, vol.~49, no.~4, pp.~83--88, 2006.
+
+\bibitem{dualuse}
+National Academies of Sciences,
+\textit{Dual Use Research of Concern in the Life Sciences}.
+National Academies Press, 2017.
+
+\end{thebibliography}
+
+\end{document}

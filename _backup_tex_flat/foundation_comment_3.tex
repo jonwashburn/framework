@@ -1,0 +1,217 @@
+
+\documentclass[11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}%[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{axiom}[theorem]{Axiom}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{observation}[theorem]{Observation}
+\newtheorem{example}[theorem]{Example}
+\newenvironment{proof}[1][Proof]{\par\noindent\textit{#1.}\ }{\hfill\(\square\)\par}
+
+
+
+\title{comment 3 -- Foundational paper}
+%\author{Internal technical note}
+\date{}
+
+\begin{document}
+\maketitle
+
+The note is based on the manuscript alone. Any claim should have a proper derivation chain or a need to provide a reference. 
+
+\section*{1.\quad The ``Atomic Tick'' corollary or a derived theorem!}
+
+A discrete-time dynamical system is defined  with
+\begin{equation}
+    S_{t+1} \;=\; F(S_t, e_t),
+\end{equation}
+where
+\begin{equation}
+    S_t \in \mathcal{S}
+\qquad\text{and}\qquad
+e_t \in \mathcal{E}
+\end{equation}
+is \emph{a single event} at time $t$, and the transition operator $F$ is (Here I call it $F$ instead of $U$)
+\begin{equation}
+    F:\mathcal{S}\times \mathcal{E}\to \mathcal{S}.
+\end{equation}
+Crucially, as stated, $F$ is \emph{not} defined on pairs of events $(e,e')$, nor on finite sets, multisets, or sequences of events. In other words, there is no primitive object like
+\begin{equation}
+   E_t \subseteq \mathcal{E}
+\quad\text{or}\quad
+E_t \in \mathcal{M}(\mathcal{E})
+\quad\text{or}\quad
+(e_{t,1},\dots,e_{t,k})\in \mathcal{E}^k 
+\end{equation}
+appearing in the model semantics at a single tick $t$.\\
+
+A statement that is being called a theorem is:
+\begin{quote}
+{\bf \emph{(T2) At most one recognition event occurs per tick.}}
+\end{quote}
+Question: what does ``at most one event per tick'' mean in this setting?
+
+Since the model provides a function $t \mapsto e_t$ with codomain $\mathcal{E}$, each tick $t$ is associated with \emph{exactly one} event argument $e_t$ (or possibly a distinguished ``null'' event if you allow idling). There is no model-level object for ``two events in the same tick.''
+
+Thus the statement is not something you \emph{prove from other axioms}; it is a direct consequence of the typing of $F$.
+
+\subsubsection*{Definitional single-event-per-tick.}
+Assume the model is defined by the recurrence
+\begin{equation}
+   S_{t+1}=F(S_t,e_t),
+\qquad e_t\in\mathcal{E},
+\qquad
+F:\mathcal{S}\times\mathcal{E}\to\mathcal{S}. 
+\end{equation}
+Then the update from $S_t$ to $S_{t+1}$ can depend on at most one event input at tick $t$.
+
+Proof: 
+At tick $t$, the transition is computed by evaluating the function $F$ on the ordered pair $(S_t,e_t)$.
+Because the second argument of $F$ is a \emph{single element} $e_t\in\mathcal{E}$, the transition rule includes exactly one event argument at that tick.
+
+To include two distinct events in the same tick, one would need a transition operator whose second argument can represent two events, e.g.
+\begin{equation}
+    \widetilde F:\mathcal{S}\times(\mathcal{E}\times\mathcal{E})\to\mathcal{S}
+\quad\text{or}\quad
+\widetilde F:\mathcal{S}\times \mathcal{M}(\mathcal{E})\to\mathcal{S}
+\quad\text{or}\quad
+\widetilde F:\mathcal{S}\times\mathcal{E}^\star\to\mathcal{S}.
+\end{equation}
+But this is not the model. Therefore, ``at most one event per tick'' holds purely by definition of the state update signature. 
+
+\subsection*{1.1\quad Calling it ``forced'' is somewhat misleading!}
+
+Saying the model \emph{forces} atomic ticks suggests a derivation of atomicity from independent principles (e.g.\ cost, minimality, invariance, determinism, etc.). But here the ``atomic tick'' property is not derived; it is \emph{baked into}:
+
+\begin{itemize}
+\item the choice of discrete time index $t\in\mathbb{Z}_{\ge 0}$, and
+\item the choice to feed $F$ exactly one event variable $e_t$ rather than a collection.
+\end{itemize}
+
+So logically,
+\[
+\text{``single-event-per-tick''} \quad\Longleftrightarrow\quad \text{``the semantics uses a single event argument $e_t$ per tick.''}
+\]
+
+\subsection*{1.2\quad How to fix?}
+
+\subsubsection*{Fix A: }
+
+Admit that it as a modeling axiom and stop calling it a theorem. We can explicitly state:
+
+\paragraph{Axiom (Single-event discrete-time semantics).\\}
+A system evolution is a sequence $\{(S_t,e_t)\}_{t\ge 0}$ satisfying
+\begin{equation}
+   S_{t+1}=F(S_t,e_t)
+\quad\text{with}\quad e_t\in\mathcal{E}. 
+\end{equation}
+Equivalently, each tick applies at most one primitive recognition event.
+
+Then T2 is removed (or relabeled as an immediate corollary of the definition).
+
+\subsubsection*{Fix B: (GPT)}
+
+One can start from multi-event ticks, then derive a serialization principle. If we genuinely want a \emph{derivation} of atomic updates, we must enlarge the model first.\\
+
+\underline{Step 1: Allow batches of events.}\\
+Let $\mathcal{M}(\mathcal{E})$ denote the set of finite multisets over $\mathcal{E}$.
+Define the update rule as
+\begin{equation}
+    S_{t+1} \;=\; G(S_t, E_t),
+\qquad
+E_t\in\mathcal{M}(\mathcal{E}),
+\qquad
+G:\mathcal{S}\times \mathcal{M}(\mathcal{E})\to\mathcal{S}.
+\end{equation}
+
+Now ``multiple recognitions per tick'' is expressible via $|E_t|>1$.
+
+\underline{Step 2: Connect batches to singles (decomposability).}\\
+A standard way is to require that $G$ is a (commutative) monoid action of $\mathcal{M}(\mathcal{E})$ on $\mathcal{S}$:
+\begin{align}
+G(S,\varnothing) &= S, \\
+G(G(S,A),B) &= G(S, A\uplus B),
+\end{align}
+where $\uplus$ is multiset union. Define the single-event update as the special case
+\begin{equation}
+    F(S,e) \;:=\; G(S,\{e\}).
+\end{equation}
+
+This allows one to \emph{serialize} a batch (not necessarily uniquely), because any multiset $E$ can be written as $\{e_1\}\uplus\cdots\uplus\{e_k\}$.\\
+
+\underline{Step 3: If we want ``forced serialisation,'' add an explicit principle that makes batching suboptimal.}
+
+One clean route is a minimality/cost argument on \emph{batch size}.
+
+Let a schedule be a sequence of batches $(E_0,E_1,\dots,E_{T-1})$ that collectively contain a fixed multiset of events
+\begin{equation}
+    E_{\mathrm{tot}} \;=\; \biguplus_{t=0}^{T-1} E_t.
+\end{equation}
+
+Define a per-tick penalty depending only on the number of events in the tick:
+\begin{equation}
+    C(E_0,\dots,E_{T-1}) \;=\; \sum_{t=0}^{T-1} c(|E_t|),
+\end{equation}
+where $c:\mathbb{Z}_{\ge 0}\to\mathbb{R}_{\ge 0}$ satisfies
+\begin{equation}
+   c(0)=0
+\quad\text{and}\quad
+c(a+b) > c(a)+c(b)\ \ \text{for all }a,b\ge 1. 
+\end{equation}
+(The strict inequality is a \emph{strict superadditivity} condition: batching is strictly more expensive than splitting.)
+
+\subsubsection*{Theorem (Cost-minimal schedules are atomic).}
+If $c$ is strictly superadditive as above, then any cost-minimizing schedule satisfies
+\begin{equation}
+    |E_t|\in\{0,1\}\quad\text{for all }t.
+\end{equation}
+
+{\bf Proof:}
+Assume, for contradiction, that an optimal schedule has some tick $\tau$ with $|E_\tau|=m\ge 2$.
+
+Choose any decomposition of the multiset $E_\tau$ into two nonempty multisets:
+\begin{equation}
+    E_\tau \;=\; A \uplus B,
+\qquad
+|A|=a\ge 1,\ |B|=b\ge 1,\ a+b=m.
+\end{equation}
+(For instance, take $A$ to be a singleton event and $B$ to be the remaining $m-1$ events.)
+
+Construct a new schedule by replacing the single batch $E_\tau$ by two consecutive batches $A$ and $B$, leaving all other ticks unchanged. The total multiset of events executed is unchanged:
+\begin{equation}
+    A\uplus B = E_\tau,
+\qquad
+\biguplus_t E_t \text{ is preserved.}
+\end{equation}
+
+The cost changes only at tick $\tau$:
+\begin{equation}
+  c(|E_\tau|) \;=\; c(m)
+\quad\longrightarrow\quad
+c(|A|)+c(|B|) \;=\; c(a)+c(b).  
+\end{equation}
+By strict superadditivity,
+\begin{equation}
+   c(m)=c(a+b) \;>\; c(a)+c(b). 
+\end{equation}
+Hence the modified schedule has strictly lower total cost, contradicting optimality.
+
+Therefore no optimal schedule can contain a tick with $|E_t|\ge 2$, i.e.\ $|E_t|\in\{0,1\}$ for all $t$. 
+
+\paragraph{Takeaway.}
+\emph{Only after} we (i) allow multi-event ticks and (ii) add a principle that penalizes batching (or yields a canonical confluent serialization) does ``atomic ticks'' become a derived statement. In the original single-event definition, it is not a theorem.
+
+\end{document}

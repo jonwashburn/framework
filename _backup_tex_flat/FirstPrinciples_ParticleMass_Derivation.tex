@@ -1,0 +1,163 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{booktabs}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+% --- Notation ---
+\newcommand{\phiG}{\varphi}
+\newcommand{\lnphi}{\ln\phiG}
+\newcommand{\Ecoh}{E_{\mathrm{coh}}}
+\newcommand{\Fgap}{\mathcal F}
+
+\title{\textbf{Internal Derivation Note: Particle Masses from First Principles}\\[0.3em]
+\large What is derived, where it is derived (Lean), and what is still an empirical interface}
+\author{Recognition (workspace: \texttt{reality})}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section*{Purpose (what this note resolves)}
+Anil's objection is methodological: if a ``recognition term'' is \emph{extracted} by rearranging the same measured masses being tested,
+then nothing has been predicted.
+This note provides the missing ``first principles'' provenance for the mass-law constants used in the repo and points to the new Lean
+formalization that derives (or explicitly flags) each step.
+
+\paragraph{Scope.}
+This note focuses on the \textbf{derived structural mass law and lepton masses} (electron/muon/tau), because that is where the repo contains
+the most explicit first-principles chain.
+The \textbf{SM single-anchor RG identity} is treated separately as an \emph{empirical RG-side claim} (with a certified interface available).
+
+\section{First-principles integer layer (cube geometry + crystallographic constant)}
+
+\subsection*{Cube combinatorics (proved in Lean)}
+The recognition ledger uses the cubic cell \(Q_3\) (8 vertices, 12 edges, 6 faces) as the minimal 3D unit cell.
+These integers are derived in:
+\begin{itemize}
+  \item \texttt{IndisputableMonolith/Constants/AlphaDerivation.lean}
+\end{itemize}
+In particular:
+\begin{itemize}
+  \item \(E_{\text{total}}=12\) edges, and
+  \item \(E_{\text{passive}}=11\) passive edges (12 total minus 1 active edge per atomic tick).
+\end{itemize}
+
+\subsection*{Wallpaper groups (documented constant)}
+The integer \(W=17\) (wallpaper groups) is treated as a crystallographic classification constant inside
+\texttt{IndisputableMonolith/Constants/AlphaDerivation.lean}. This is not a fit parameter; it is a standard mathematical constant.
+
+\section{Derived constants used in the mass law}
+
+\subsection*{Golden ratio and the gap/display function}
+The project fixes \(\phiG=\frac{1+\sqrt5}{2}\), and uses the closed form
+\[
+  \Fgap(Z)=\frac{\ln(1+Z/\phiG)}{\ln\phiG}.
+\]
+Mathematical properties of \(\Fgap\) are verified in Lean:
+\begin{itemize}
+  \item \texttt{IndisputableMonolith/RSBridge/GapProperties.lean}
+\end{itemize}
+
+\subsection*{Coherence energy}
+In the model layer, \(\Ecoh\) is defined as \(\phiG^{-5}\) (dimensionless) and then given physical units by a display convention
+(\(\Ecoh\approx \phiG^{-5}\,\mathrm{eV}\)).
+See:
+\begin{itemize}
+  \item \texttt{IndisputableMonolith/Masses/Anchor.lean} (\texttt{Anchor.E\_coh})
+\end{itemize}
+
+\subsection*{Sector yardsticks are now explicitly derivable}
+The common criticism is that the sector yardsticks look like tuned knobs.
+We addressed this directly: the frozen yardstick integers \((B_{\mathrm{pow}},r_0)\) are now proven equal to simple formulas in terms
+of the first-principles integers \((E_{\text{total}},E_{\text{passive}},W)\).
+
+\paragraph{Lean file (new).}
+\begin{itemize}
+  \item \texttt{IndisputableMonolith/Masses/AnchorDerivation.lean}
+\end{itemize}
+
+\paragraph{What it proves.}
+It proves that the constants in \texttt{Masses/Anchor.lean} match derived expressions, e.g.:
+\begin{itemize}
+  \item \(B_{\mathrm{pow}}(\text{Lepton})=-2E_{\text{passive}}=-22\),
+  \item \(B_{\mathrm{pow}}(\text{DownQuark})=2E_{\text{total}}-1=23\),
+  \item \(r_0(\text{DownQuark})=E_{\text{total}}-W=12-17=-5\),
+  \item \(r_0(\text{UpQuark})=2W+1=35\),
+  \item \(r_0(\text{Lepton})=4W-(8-2)=62\) (uses the 8-tick offset and the baseline lepton rung \(r_e=2\)).
+\end{itemize}
+These are \emph{sector-global} integers; no per-species tuning is introduced.
+
+\section{Lepton masses (derived chain in Lean)}
+
+\subsection*{Electron (T9)}
+The electron derivation uses:
+\begin{itemize}
+  \item the derived fine-structure constant pipeline (\texttt{Constants/AlphaDerivation.lean}),
+  \item the derived topological shift \(\delta\) (\texttt{Physics/MassTopology.lean}),
+  \item the lepton band value \(\Fgap(1332)\) (\texttt{RSBridge/GapProperties.lean}),
+  \item and the derived sector yardstick constants (now derived as above).
+\end{itemize}
+
+The electron mass construction is formalized (with interval-bounds bookkeeping) in:
+\begin{itemize}
+  \item \texttt{IndisputableMonolith/Physics/ElectronMass.lean}
+  \item \texttt{IndisputableMonolith/Physics/ElectronMass/Necessity.lean}
+\end{itemize}
+
+\subsection*{Muon and tau (T10)}
+The muon and tau derivations are built by adding derived ``step'' exponents to the electron residue.
+They are formalized in:
+\begin{itemize}
+  \item \texttt{IndisputableMonolith/Physics/LeptonGenerations.lean}
+  \item \texttt{IndisputableMonolith/Physics/LeptonGenerations/Necessity.lean}
+\end{itemize}
+
+\subsection*{Numerical evaluation (reproducible, non-circular)}
+We provide a small evaluator that mirrors the Lean definitions and produces a crisp
+``predicted vs.\ PDG'' table without per-species fitting:
+\begin{itemize}
+  \item script: \texttt{tools/lepton\_chain\_table.py}
+  \item outputs:
+    \texttt{out/masses/lepton\_chain\_pred\_vs\_pdg.csv} and
+    \texttt{out/masses/lepton\_chain\_pred\_vs\_pdg.tex}.
+\end{itemize}
+The LaTeX snippet is included below:
+
+\input{out/masses/lepton_chain_pred_vs_pdg.tex}
+
+\section{What remains empirical / external (and how we make it auditably non-circular)}
+
+\subsection*{SM single-anchor RG identity is an empirical claim}
+The claim ``the SM RG residue at \(\mu_\star\) equals \(\Fgap(Z)\)'' depends on multi-loop SM kernels and threshold policy.
+Those kernels are \emph{not} implemented in Lean; in the repo they are represented as:
+\begin{itemize}
+  \item a hypothesis interface (\texttt{IndisputableMonolith/Physics/AnchorPolicy.lean}), or
+  \item a certificate interface (externally computed residue intervals) (\texttt{IndisputableMonolith/Physics/AnchorPolicyCertified.lean}), or
+  \item a purely definitional model (for algebraic consequences only) (\texttt{IndisputableMonolith/Physics/AnchorPolicyModel.lean}).
+\end{itemize}
+This is the honest separation between \emph{first-principles RS derivations} and \emph{empirical SM-RG phenomenology}.
+
+\section*{Bottom line}
+For the lepton sector, the repo already contains a first-principles derivation chain in Lean for:
+\begin{itemize}
+  \item the core integers (cube geometry and passive edges),
+  \item the derived \(\alpha\) pipeline,
+  \item the electron topological shift and lepton generation steps,
+  \item and (new) the sector yardstick constants as derived expressions rather than fit knobs.
+\end{itemize}
+For the SM single-anchor identity, the repo treats the claim as RG-side phenomenology and provides a certified interface so the claim remains auditable and non-circular.
+
+\end{document}
+
+

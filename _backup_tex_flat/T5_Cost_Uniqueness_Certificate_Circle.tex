@@ -1,0 +1,238 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  citecolor=blue!60!black,
+  urlcolor=blue!60!black
+}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Rp}{\R_{>0}}
+
+\title{T5 Cost Uniqueness and the Certificate Circle\\
+\large What Completing ``T5'' Certifies in the \texttt{reality} Repository}
+\author{}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note explains the mathematical and engineering content of completing ``T5'' in the
+\texttt{reality} repository's Lean formalization workflow. In this codebase, T5 is packaged as a
+\emph{certificate} (\texttt{IndisputableMonolith/Verification/T5UniqueCert.lean}) asserting a
+uniqueness theorem for the Recognition Science cost function \(J\): any function satisfying the
+certified ``JensenSketch'' obligations agrees with \(J\) on all positive reals. We describe (i) the
+certificate-circle methodology used to expand the machine-checked surface while enforcing
+non-circularity, (ii) the explicit definition and key identities of \(J\), (iii) the precise statement
+of the certified T5 theorem, and (iv) what this theorem does and does not guarantee about the
+overall theory stack.
+\end{abstract}
+
+\section{The certificate circle: what it is and why it matters}
+
+The repository uses a disciplined pattern to grow what it calls the \emph{certified surface}:
+the set of claims that are not merely written down, but \emph{machine-checked} and imported by a
+top-level certificate module.
+
+\begin{definition}[Certificate module (repo convention)]
+A certificate module is a Lean file that defines a record \texttt{\dots Cert} together with:
+\begin{itemize}
+  \item a predicate \texttt{\dots Cert.verified : Prop} that expresses the intended claim; and
+  \item a theorem \texttt{\dots Cert.verified\_any : \dots Cert.verified} proved with no \texttt{sorry}
+        and no vacuous placeholders.
+\end{itemize}
+In practice, the record often carries no data; its role is to package a named proposition and a
+named proof in a stable import path.
+\end{definition}
+
+This pattern supports a ``certificate circle'': each completed step enlarges the certified surface,
+and future steps are required to import and build on prior certificates rather than reintroducing
+informal assumptions.
+
+\subsection{Where T5 sits in the certificate chain}
+
+The current top-level certificate anchor is
+\texttt{IndisputableMonolith/URCGenerators/UltimateCPMClosureCert.lean}. This module imports the
+audit certificate \texttt{IndisputableMonolith/Verification/NonCircularityCert.lean}. Since T5 is a
+conjunct of \texttt{NonCircularityCert.verified}, completing T5 places the T5 theorem inside the
+transitive import closure of the top-level certificate.
+
+\subsection{Non-circularity as an explicit invariant}
+
+The same workflow imposes a crucial constraint: \emph{non-circularity}. The repo explicitly audits
+against smuggling patterns such as:
+\begin{itemize}
+  \item proving ``matches'' by hard-coding empirical numerals and using \texttt{rfl};
+  \item \texttt{True} stubs or vacuous existentials (\(\exists c,\ \texttt{True}\));
+  \item hidden axioms introduced via typeclass instances.
+\end{itemize}
+
+At the Lean level, the main audit anchor is
+\texttt{IndisputableMonolith/Verification/NonCircularityCert.lean}, which is a large conjunction of
+certified facts (defaults, invariances, bridges, cost facts, etc.). T5 appears as one conjunct in this
+audit certificate, meaning it is explicitly part of the ``what is certified'' story for the project.
+
+\section{The cost function \(J\) in the formalization}
+
+The Recognition Science cost used throughout the certified surface is the function
+\(\,J:\Rp\to\R\,\) defined in Lean as \texttt{Jcost}. Its definition is explicit and algebraic:
+
+\begin{definition}[J-cost]
+For \(x\in\R\), define
+\[
+J(x)\ :=\ \frac{x + x^{-1}}{2} - 1.
+\]
+In the certified statements, the relevant domain is \(x>0\).
+\end{definition}
+
+Several basic properties are proved in the cost layer. Two identities are especially important:
+
+\begin{remark}[Symmetry and squared form]
+For \(x>0\),
+\[
+J(x)=J(x^{-1}),
+\qquad
+J(x)=\frac{(x-1)^2}{2x}\ge 0.
+\]
+The squared form makes non-negativity and the ``unique minimum at \(x=1\)'' intuition immediate.
+\end{remark}
+
+\subsection{Log-coordinates and the hyperbolic connection}
+
+The cost layer also defines a log-coordinate representation
+\[
+J_{\log}(t)\ :=\ J(e^t).
+\]
+In Lean, this is \texttt{Jlog}. A key certified identity is:
+\[
+J_{\log}(t)=\cosh(t)-1.
+\]
+This ties the cost geometry to a canonical hyperbolic function and supports analytic statements
+about derivatives, convexity, and normalization (e.g.\ \(J_{\log}''(0)=1\)).
+
+\section{The T5 theorem that was completed}
+
+\subsection{The certified interface: \texttt{JensenSketch}}
+
+In the codebase, T5 is phrased as a uniqueness result relative to a small interface called
+\texttt{JensenSketch}. Informally, \texttt{JensenSketch F} asserts that \(F\) is:
+\begin{itemize}
+  \item symmetric under inversion (\(F(x)=F(1/x)\) for \(x>0\));
+  \item normalized at \(1\) (\(F(1)=0\));
+  \item ``squeezed'' on the exponential axis by \(J\), i.e.\ for all \(t\in\R\),
+        \(F(e^t)\le J(e^t)\) and \(J(e^t)\le F(e^t)\).
+\end{itemize}
+The squeeze is logically equivalent to the pointwise equality \(F(e^t)=J(e^t)\), but it is written
+as two inequalities to match how such equalities are typically obtained in analysis
+(upper and lower bounds derived independently).
+
+\subsection{T5 (as certified)}
+
+The certificate \texttt{IndisputableMonolith/Verification/T5UniqueCert.lean} packages the following
+statement:
+
+\begin{theorem}[T5 cost uniqueness on \(\Rp\)]
+Let \(F:\R\to\R\). If \(F\) satisfies the \texttt{JensenSketch} obligations, then for all \(x>0\),
+\[
+F(x)=J(x).
+\]
+\end{theorem}
+
+\begin{remark}[Proof idea]
+The proof is conceptually simple: the \texttt{JensenSketch} bounds give equality on the exponential
+axis, and every \(x>0\) can be written as \(x=e^{\log x}\), so equality transfers from
+\(\{e^t:t\in\R\}\) to all of \(\Rp\). In Lean this is implemented as
+\texttt{T5\_cost\_uniqueness\_on\_pos}.
+\end{remark}
+
+\section{A ``full'' (classical) uniqueness route exists in the repo}
+
+While the certified T5 theorem is phrased at the \texttt{JensenSketch} interface, the repository also
+contains a more classical uniqueness theorem (\texttt{IndisputableMonolith/CostUniqueness.lean}).
+That theorem shows how one can force \(F=J\) from more recognizable analytic hypotheses such as:
+symmetry, strict convexity on \(\Rp\), calibration in log-coordinates, continuity, and a cosh-type
+functional identity.
+
+This matters for interpretation:
+\begin{itemize}
+  \item The T5 certificate says: \emph{once the JensenSketch obligations are met}, the cost is forced.
+  \item The deeper uniqueness theorem suggests: there are principled analytic roads to proving those
+        obligations without hard-coding \(J\) into the assumptions.
+\end{itemize}
+
+\section{What completing T5 means for the certificate circle}
+
+Completing T5 has two distinct meanings: a mathematical meaning and a certification meaning.
+
+\subsection{Mathematical meaning}
+
+Mathematically, T5 asserts that \(J\) is not an arbitrary choice once the project commits to the
+invariances and normalizations encoded by \texttt{JensenSketch}. Downstream theorems that depend on
+these obligations cannot silently ``swap in'' a different cost function to fit desired outcomes: the
+interface forces the same \(J\) everywhere on \(\Rp\).
+
+\subsection{Certification meaning}
+
+Engineering-wise, T5 is now part of the auditable, import-stable certified surface:
+\begin{itemize}
+  \item \texttt{T5UniqueCert} provides a named proposition (\texttt{verified}) and a named proof
+        (\texttt{verified\_any}) with no \texttt{sorry};
+  \item \texttt{NonCircularityCert} imports \texttt{T5UniqueCert} and includes it as one conjunct in its
+        verified predicate, so the audit certificate explicitly depends on T5.
+\end{itemize}
+
+In other words: T5 is not only proven somewhere in the library; it is a \emph{declared checkpoint}
+in the repo's audit certificate, and thus a stable part of what the project is willing to call
+``certified''.
+
+\section{What T5 does \emph{not} claim}
+
+It is equally important to state the boundary:
+\begin{itemize}
+  \item T5 does not claim that empirical physics selects \(J\) from nothing; it claims uniqueness
+        \emph{conditional on} the stated obligations.
+  \item T5 does not certify any CODATA/SI numerics. The repo treats hard-coded empirical numerics as
+        quarantined from the certified surface.
+  \item T5 does not automatically certify every downstream ``closure'' claim; it is one component in
+        a broader non-circularity story that also includes explicit match evaluators, calibration
+        witnesses, and rescaling invariances.
+\end{itemize}
+
+\section{Reproducibility (artifact map)}
+
+The relevant Lean artifacts are:
+\begin{itemize}
+  \item \texttt{IndisputableMonolith/URCGenerators/UltimateCPMClosureCert.lean} (top-level certificate
+        anchor that imports \texttt{NonCircularityCert});
+  \item \texttt{IndisputableMonolith/Cost.lean} (definition of \texttt{Jcost}, \texttt{Jlog}, and
+        \texttt{JensenSketch}, plus \texttt{T5\_cost\_uniqueness\_on\_pos});
+  \item \texttt{IndisputableMonolith/Verification/T5UniqueCert.lean} (packages T5 as a cert);
+  \item \texttt{IndisputableMonolith/Verification/NonCircularityCert.lean} (imports and asserts T5 as
+        part of the audit certificate);
+  \item \texttt{IndisputableMonolith/CostUniqueness.lean} (a stronger, explicit-hypothesis uniqueness
+        theorem that explains one non-circular route to deriving \(J\)).
+\end{itemize}
+
+Typical local verification commands (from repo root) are of the form:
+\begin{center}
+\texttt{lake build IndisputableMonolith.URCGenerators.UltimateCPMClosureCert}\\
+\texttt{lake build IndisputableMonolith.Verification.T5UniqueCert}\\
+\texttt{lake build IndisputableMonolith.Verification.NonCircularityCert}
+\end{center}
+
+\end{document}
+
+

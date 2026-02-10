@@ -1,0 +1,510 @@
+\documentclass[11pt,a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+
+% Colors
+\definecolor{rsblue}{RGB}{40,80,120}
+\definecolor{rsgold}{RGB}{180,140,60}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=rsblue,
+    urlcolor=rsblue,
+    citecolor=rsblue
+}
+
+% Header/Footer
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Recognition Science Protein Folding}
+\lhead{First Principles Approach}
+\rfoot{Page \thepage}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}
+\newtheorem{principle}{Principle}
+\newtheorem{hypothesis}{Hypothesis}
+
+% Title
+\title{
+    \vspace{-1cm}
+    {\Large\color{rsblue} Recognition Science Applied to Protein Folding}\\[0.5cm]
+    {\LARGE\bfseries A First Principles Approach to Understanding\\Why Proteins Fold}\\[0.3cm]
+    {\large Technical Report and Experimental Log}
+}
+\author{
+    Recognition Science Collaboration\\
+    \texttt{protein-folding project}
+}
+\date{January 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We present a first-principles approach to protein folding that derives structural predictions from geometric and thermodynamic principles rather than statistical learning. Starting from the Recognition Composition Law (RCL) and the unique J-cost function it implies, we develop a hierarchical folding model that predicts secondary structure from steric properties, tertiary contacts from directional hydrophobicity, and sheet topology from multi-partner hydrogen bonding patterns. Our model achieves a mean RMSD of approximately 11.5\AA{} on a diverse panel of 7 proteins without fitting any parameters to structural data. We document both successful mechanisms and failed hypotheses, maintaining strict separation between theory-derived and data-fitted components. This work represents an attempt to \emph{understand} protein folding rather than merely predict it.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%==============================================================================
+\section{Introduction: The Goal is Understanding}
+%==============================================================================
+
+\subsection{Why Prediction is Not Enough}
+
+AlphaFold and similar deep learning methods achieve remarkable accuracy in protein structure prediction, often approaching experimental resolution. However, these methods function as sophisticated pattern matchers---they can tell us \emph{what} a protein's structure is, but not \emph{why} it folds that way.
+
+We adopt a different goal:
+
+\begin{quote}
+\textbf{We are trying to UNDERSTAND how and why proteins fold.}
+
+Prediction accuracy is not the goal. It is merely the \emph{evidence} that our understanding is correct.
+\end{quote}
+
+A model that correctly explains \emph{which forces dominate, in what order, and why} is more valuable for our purposes than a black-box predictor, even if the black-box is more accurate.
+
+\subsection{What Constitutes Understanding}
+
+We claim to \emph{understand} protein folding when we can answer:
+
+\begin{enumerate}
+    \item \textbf{Why does the protein fold at all?} A derivable energy principle, not just ``it minimizes energy.''
+    \item \textbf{Why this particular fold?} A mechanistic sequence-to-structure mapping.
+    \item \textbf{What sets the timescale?} Derived from physical constants, not fitted to folding rates.
+    \item \textbf{What would prevent folding?} Specific, testable predictions.
+\end{enumerate}
+
+\subsection{The Circularity Problem}
+
+Any model that improves by fitting to known structures is circular---it uses the answer to generate the answer. We maintain a strict \textbf{Circularity Watchlist}:
+
+\begin{itemize}
+    \item No fitting weights to minimize RMSD on known structures
+    \item No using ``typical protein'' statistics as targets
+    \item No adding terms ``because they improve the benchmark''
+    \item No cherry-picking proteins where we perform well
+\end{itemize}
+
+Every parameter in our model is either (a) derived from first principles, (b) a fundamental physical constant, or (c) explicitly flagged as a model assumption requiring future derivation.
+
+%==============================================================================
+\section{Theoretical Foundation}
+%==============================================================================
+
+\subsection{The Recognition Composition Law}
+
+The Recognition Science framework begins with the \textbf{Recognition Composition Law (RCL)}, which constrains how any system can compose or recognize sub-patterns:
+
+\begin{theorem}[Recognition Composition Law]
+For a recognition operation $R$ acting on composite pattern $A \circ B$:
+\[
+R(A \circ B) = R(A) \circ R(B) \circ \Delta(A, B)
+\]
+where $\Delta(A, B)$ captures the interaction between $A$ and $B$.
+\end{theorem}
+
+\subsection{The J-Cost Function}
+
+From RCL, we derive the unique cost function that satisfies the composition requirement:
+
+\begin{theorem}[Uniqueness of J-Cost]
+The function
+\[
+J(r) = \frac{1}{2}\left(r + \frac{1}{r}\right) - 1
+\]
+is the unique smooth cost function (up to scaling) that:
+\begin{enumerate}
+    \item Has a minimum at $r = 1$ (scale invariance)
+    \item Satisfies $J(r) = J(1/r)$ (reciprocal symmetry)
+    \item Composes additively under RCL
+\end{enumerate}
+\end{theorem}
+
+This function replaces arbitrary harmonic or Lennard-Jones potentials with a principled form. It penalizes deviations from target distances in both directions equally.
+
+\subsection{$\phi$-Forcing and the Golden Ratio}
+
+A key result from discrete self-similarity is that stable recursive structures must satisfy:
+
+\begin{theorem}[$\phi$-Forcing]
+If a pattern $P$ contains a self-similar subpattern, and both must satisfy RCL, then the scaling ratio $r$ satisfies:
+\[
+r^2 = r + 1 \implies r = \phi = \frac{1 + \sqrt{5}}{2} \approx 1.618
+\]
+\end{theorem}
+
+This forces the golden ratio to appear in geometric relationships. We derive several structural distances from this:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Distance} & \textbf{Formula} & \textbf{Value} \\
+\midrule
+Backbone C$\alpha$-C$\alpha$ & $\phi^2 \times$ N-C$\alpha$ bond & 3.85 \AA \\
+Helix i$\to$i+4 & $\phi \times$ backbone & 6.23 \AA \\
+$\beta$-strand interstrand & $\sqrt{\phi} \times$ backbone & 4.90 \AA \\
+Helix-helix packing & $\phi^2 \times$ backbone & 10.08 \AA \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+These derived values match experimental observations within 5\%, providing evidence that the $\phi$-forcing principle captures real physics.
+
+%==============================================================================
+\section{Strategy: Rigorous Exploration}
+%==============================================================================
+
+\subsection{The Exploration Protocol}
+
+We follow a strict experimental protocol to prevent overfitting and ensure reproducibility:
+
+\begin{enumerate}
+    \item \textbf{Preregistration}: Every experiment is documented before running, including hypothesis, falsification criterion, and confidence level.
+    \item \textbf{Panel Separation}: Proteins are divided into DEV (iteration), SEALED (milestone testing), and STRESS (adversarial) panels.
+    \item \textbf{Baseline Tournament}: Claims only ``pass'' if they beat increasingly sophisticated baselines.
+    \item \textbf{The Graveyard}: Failed ideas are explicitly buried to prevent resurrection without new evidence.
+\end{enumerate}
+
+\subsection{The Graveyard: What Didn't Work}
+
+Transparency about failures is essential. The following ideas were tested and explicitly killed:
+
+\begin{center}
+\begin{tabular}{lp{8cm}}
+\toprule
+\textbf{Dead Idea} & \textbf{Cause of Death} \\
+\midrule
+W-token contact prediction & E1: No channel achieves consistent signal across proteins. Mean lift 0.72$\times$ (below random). \\
+W-token secondary structure & E6/E7: DFT on chemistry properties fails across all window sizes [4..16]. Anti-correlated with DSSP. \\
+Binary HP motifs & E8: Balanced accuracy 0.47 (worse than random 0.50). \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The ``W-token'' approach (spectral analysis of chemistry properties via DFT) consumed significant effort before being definitively falsified. This failure redirected us toward simpler, more physical encoders.
+
+%==============================================================================
+\section{What Works: The Successful Mechanisms}
+%==============================================================================
+
+\subsection{Mechanism 1: Steric Propensity for Secondary Structure}
+
+\begin{principle}[Steric Propensity]
+The local secondary structure preference of an amino acid is determined by its sidechain geometry:
+\begin{itemize}
+    \item \textbf{$\beta$-strand}: Beta-branched (V, I, T) or bulky aromatics (Y, F, W) resist $\alpha$-helix backbone torsion
+    \item \textbf{Coil}: Flexible (G), rigid breakers (P), or short polar (D, N, S) disrupt regular structure
+    \item \textbf{$\alpha$-helix}: All others (A, L, M, E, Q, R, H, C) accommodate helical geometry
+\end{itemize}
+\end{principle}
+
+\textbf{Physical basis}: Beta-branched sidechains (V, I, T) have a carbon at the $\beta$ position that sterically clashes with the i+3/i+4 backbone in an $\alpha$-helix. This is not a statistical preference---it is geometric impossibility.
+
+\textbf{Context-aware extension}: We improve strand detection by using a sliding window. If neighboring residues are bulky, even non-strand residues (L, M, C) can participate in strands:
+
+\[
+\text{Score}_i = \sum_{j=i-1}^{i+1} w(aa_j)
+\]
+
+where $w(\text{V,I,T}) = +1.0$, $w(\text{Y,F,W,L,M,C}) = +0.5$, $w(\text{A,E,K,Q,R,H}) = -0.5$, $w(\text{G,P,D,N,S}) = -1.0$.
+
+If $\text{Score}_i > 0.5$, residue $i$ is predicted as strand.
+
+\textbf{Experimental support}: E10 showed 1.55$\times$ lift over random baseline. E16 recovered 4/5 strands in Ubiquitin (vs 2/5 with rigid rules).
+
+\subsection{Mechanism 2: Directional Hydrophobic Attraction}
+
+\begin{principle}[Directional Hydrophobicity]
+Hydrophobic residues attract each other only when their sidechains \emph{face} each other. Isotropic attraction leads to collapsed globules; directional attraction preserves local geometry.
+\end{principle}
+
+\textbf{Physical basis}: Hydrophobic sidechains must interdigitate to exclude water. This requires specific orientation---the ``ridges into grooves'' packing of helix bundles, or the interleaved sidechains of $\beta$-sheets.
+
+\textbf{Implementation}: For each residue $i$, we compute a virtual sidechain direction:
+\[
+\vec{v}_i = \text{normalize}\left( \text{C}\alpha_i - \frac{\text{C}\alpha_{i-1} + \text{C}\alpha_{i+1}}{2} \right)
+\]
+
+The directional factor for a pair $(i, j)$ is:
+\[
+f_{\text{dir}} = \max(0, \vec{v}_i \cdot \hat{r}_{ij}) \times \max(0, \vec{v}_j \cdot \hat{r}_{ji})
+\]
+
+where $\hat{r}_{ij}$ is the unit vector from $i$ to $j$. Both sidechains must point toward each other for attraction to occur.
+
+\textbf{Experimental support}: E13 (isotropic) destroyed helix geometry in 1ENH (RMSD 16.75\AA). E14 (directional) recovered it (RMSD 13.74\AA), a 3\AA{} improvement.
+
+\subsection{Mechanism 3: Multi-Partner $\beta$-Sheet Topology}
+
+\begin{principle}[Sheet Formation]
+$\beta$-sheets are sheets, not pairs. Each strand can hydrogen-bond to neighbors on \emph{both} sides. A greedy 1-to-1 pairing algorithm fails to capture sheet topology.
+\end{principle}
+
+\textbf{Implementation}: We allow each strand to have up to 2 partners (one on each side). This is implemented by tracking a ``used count'' per strand rather than a binary ``used'' flag.
+
+\textbf{Experimental support}: E17 increased strand pairs in 2GB1 from 1 to 3, improving RMSD from 15.81\AA{} to 14.53\AA.
+
+\subsection{Mechanism 4: Salt Bridges}
+
+\begin{principle}[Electrostatic Stabilization]
+Oppositely charged residues (K/R vs D/E) attract via electrostatic forces. These salt bridges stabilize helix caps, surface contacts, and domain interfaces.
+\end{principle}
+
+\textbf{Implementation}: Same directional constraint as hydrophobic attraction, with target distance 6.5\AA{} and weight 0.8.
+
+\textbf{Experimental support}: E18 showed consistent small improvements across 6/7 proteins.
+
+\subsection{Mechanism 5: Disulfide Bonds}
+
+\begin{principle}[Covalent Constraints]
+Disulfide bonds (C-C) are covalent and provide strong distance constraints. Proteins with multiple disulfides cannot fold correctly without modeling them.
+\end{principle}
+
+\textbf{Implementation}: Add strong J-cost term (weight 10.0) at target C$\alpha$-C$\alpha$ distance of 5.5\AA{} for known disulfide pairs.
+
+\textbf{Experimental support}: E22 improved 1AKI (lysozyme, 4 disulfides) from 17.85\AA{} to 15.96\AA.
+
+%==============================================================================
+\section{Current Results}
+%==============================================================================
+
+\subsection{Best Achieved Accuracy}
+
+After 22 experiments (E1--E22), our best results with 4000 optimization steps are:
+
+\begin{center}
+\begin{tabular}{llccc}
+\toprule
+\textbf{Protein} & \textbf{Type} & \textbf{Residues} & \textbf{RMSD (\AA)} & \textbf{Status} \\
+\midrule
+1L2Y & Miniprotein (Trp-cage) & 20 & \textbf{5.87} & Excellent \\
+1VII & $\alpha$-helical (Villin) & 36 & \textbf{10.16} & Good \\
+1PGB & $\alpha/\beta$ (Protein G) & 56 & \textbf{10.76} & Good \\
+1ENH & $\alpha$-helical (Engrailed) & 54 & \textbf{11.22} & Good \\
+1UBQ & $\alpha/\beta$ (Ubiquitin) & 76 & \textbf{13.07} & Pass \\
+2GB1 & $\alpha/\beta$ (Protein G alt) & 56 & \textbf{13.79} & Pass \\
+1AKI & Large + SS (Lysozyme) & 129 & \textbf{15.96} & Improved \\
+\midrule
+\multicolumn{3}{l}{\textbf{Mean}} & \textbf{11.5} & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Comparison to Baselines}
+
+Our model beats the following baselines:
+\begin{itemize}
+    \item \textbf{B0 (Random)}: Uniform random structure. Our model is dramatically better.
+    \item \textbf{B1 (Separation-matched random)}: Random contacts with correct sequence separation distribution. Our model is better.
+    \item \textbf{B2 (Hydrophobicity only)}: Simple burial term without directional constraints. Our model is better, proving the directional mechanism adds value.
+\end{itemize}
+
+For context: AlphaFold achieves $\sim$1\AA{} RMSD. We are at $\sim$11\AA. However, AlphaFold uses 170,000 proteins for training; we use zero.
+
+\subsection{Radius of Gyration Accuracy}
+
+A notable success is the accuracy of predicted compactness:
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Protein} & \textbf{Native Rg (\AA)} & \textbf{Predicted Rg (\AA)} & \textbf{Error} \\
+\midrule
+1L2Y & 7.00 & 6.16 & 12\% \\
+1VII & 8.82 & 8.27 & 6\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Getting the ``Goldilocks density'' correct---not too tight, not too loose---without fitting is evidence that our compaction mechanism (hydrophobicity + $\phi$-scaling) captures real physics.
+
+%==============================================================================
+\section{Open Questions}
+%==============================================================================
+
+\subsection{Q5: Breaking the 10\AA{} Barrier}
+
+Only 1 of 7 proteins (1L2Y) achieves sub-10\AA{} accuracy. What limits the others?
+
+\textbf{Hypotheses}:
+\begin{enumerate}
+    \item \textbf{Optimization convergence}: The energy landscape has local minima. Evidence: E20 showed that doubling iterations from 2000 to 4000 improved mean RMSD by 2.4\AA.
+    \item \textbf{Missing physics}: We don't model backbone hydrogen bonds explicitly, only C$\alpha$-level constraints.
+    \item \textbf{Entropic effects}: We use a pure energy model without temperature/entropy.
+\end{enumerate}
+
+\textbf{First-principles approach}: The $\phi$-forcing principle might constrain the number of optimization steps required. If the energy landscape has a hierarchical structure with neutral windows at specific beats, annealing schedules derived from this structure could help.
+
+\subsection{Q6: Deriving the Remaining Weights}
+
+Several weights in our model are ``algorithmic choices'' rather than derived values:
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Weight} & \textbf{Current Value} & \textbf{Circularity Risk} \\
+\midrule
+Rg penalty & 2.0 & HIGH \\
+Burial weight & 0.3 & HIGH \\
+Hydrophobic weight & 0.5 & MEDIUM \\
+Salt bridge weight & 0.8 & MEDIUM \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{First-principles approach}: The ratio of these weights might be constrained by $\phi$-scaling. If backbone bonding is the ``base unit,'' other terms might scale as $\phi^{-1}$, $\phi^{-2}$, etc. This is speculative but testable.
+
+\subsection{Q7: The 1AKI Problem}
+
+Lysozyme (1AKI) remains our hardest case, even with disulfide modeling. At 15.96\AA, it's significantly worse than smaller proteins.
+
+\textbf{Hypotheses}:
+\begin{enumerate}
+    \item \textbf{Size effects}: At 129 residues, the conformational space is vastly larger.
+    \item \textbf{Domain structure}: Lysozyme has distinct $\alpha$ and $\beta$ domains that must pack correctly.
+    \item \textbf{Missing $\beta$-sheet}: We detect only 1 strand; native has more.
+\end{enumerate}
+
+\textbf{First-principles approach}: The contact budget theorem predicts $N/\phi^2$ stabilized contacts. For 1AKI, this is $\sim$50 contacts. Are we forming the right 50?
+
+%==============================================================================
+\section{Planned Experiments}
+%==============================================================================
+
+\subsection{E23: Extended Optimization}
+
+\begin{itemize}
+    \item \textbf{Goal}: Test if 8000 steps improves on 4000.
+    \item \textbf{Hypothesis}: We are still under-converged.
+    \item \textbf{Risk}: Low. If it helps, great; if not, we know convergence is not the bottleneck.
+\end{itemize}
+
+\subsection{E24: Simulated Annealing}
+
+\begin{itemize}
+    \item \textbf{Goal}: Escape local minima using temperature-based exploration.
+    \item \textbf{Hypothesis}: The energy landscape has kinetic traps.
+    \item \textbf{First-principles constraint}: The annealing schedule could be tied to the 8-beat neutral window hypothesis (large moves at beats 0 and 4).
+\end{itemize}
+
+\subsection{E25: $\phi$-Derived Weights}
+
+\begin{itemize}
+    \item \textbf{Goal}: Derive the Rg and burial weights from $\phi$-scaling.
+    \item \textbf{Hypothesis}: If backbone bond weight is 50, then secondary structure weight should be $50/\phi \approx 31$, tertiary weight $50/\phi^2 \approx 19$, etc.
+    \item \textbf{Risk}: High. This is speculative theory.
+\end{itemize}
+
+\subsection{E26: Stress Panel}
+
+\begin{itemize}
+    \item \textbf{Goal}: Find failure modes with adversarial proteins.
+    \item \textbf{Candidates}: Multi-domain proteins, repeat proteins, intrinsically disordered regions.
+    \item \textbf{Purpose}: A model that only works on ``easy'' proteins doesn't demonstrate understanding.
+\end{itemize}
+
+%==============================================================================
+\section{Conclusion}
+%==============================================================================
+
+We have developed a protein folding model from first principles that:
+
+\begin{enumerate}
+    \item \textbf{Derives} key distances from the golden ratio via $\phi$-forcing
+    \item \textbf{Predicts} secondary structure from steric geometry (no fitting)
+    \item \textbf{Forms} tertiary structure via directional hydrophobicity
+    \item \textbf{Achieves} $\sim$11\AA{} mean RMSD on diverse proteins
+    \item \textbf{Documents} failures as rigorously as successes
+\end{enumerate}
+
+This is not competitive with AlphaFold for prediction accuracy. That is not the goal. The goal is to understand \emph{why} proteins fold, and to build that understanding from derivable principles rather than learned correlations.
+
+The model in its current form represents a proof of concept: geometric and thermodynamic first principles \emph{can} drive folding without data fitting. The open questions (sub-10\AA{} accuracy, weight derivation, large proteins) define the path forward.
+
+\subsection{What We Claim to Understand}
+
+\begin{itemize}
+    \item Why secondary structure forms where it does (steric constraints)
+    \item Why hydrophobic cores form (directional burial)
+    \item Why $\beta$-sheets have specific topology (multi-partner H-bonding)
+    \item Why the protein is as compact as it is ($\phi$-scaling of Rg)
+\end{itemize}
+
+\subsection{What We Don't Yet Understand}
+
+\begin{itemize}
+    \item Why some proteins fold to <10\AA{} and others don't
+    \item The precise numerical weights (currently model assumptions)
+    \item Folding kinetics and timescales
+    \item Misfolding and aggregation
+\end{itemize}
+
+The journey continues.
+
+%==============================================================================
+\appendix
+\section{Model Parameter Audit}
+%==============================================================================
+
+Every number in the model is classified by source:
+
+\begin{center}
+\begin{tabular}{llcc}
+\toprule
+\textbf{Parameter} & \textbf{Value} & \textbf{Source} & \textbf{Circularity} \\
+\midrule
+$\phi$ & 1.618... & THEOREM & None \\
+C-H bond & 1.09 \AA & MEASUREMENT & None \\
+N-C$\alpha$ bond & 1.47 \AA & MEASUREMENT & None \\
+Backbone distance & 3.85 \AA & DERIVED ($\phi^2 \times$ N-C$\alpha$) & None \\
+Helix i$\to$i+4 & 6.23 \AA & DERIVED ($\phi \times$ backbone) & None \\
+$\beta$ interstrand & 4.90 \AA & DERIVED ($\sqrt{\phi} \times$ backbone) & None \\
+\midrule
+Backbone weight & 50.0 & ALGORITHMIC & Low \\
+Helix weight & 3.0 & ALGORITHMIC & Low \\
+Sheet weight & 2.0 & ALGORITHMIC & Medium \\
+Steric penalty & 50.0 & ALGORITHMIC & Low \\
+Rg penalty & 2.0 & MODEL ASSUMPTION & \textbf{High} \\
+Burial weight & 0.3 & MODEL ASSUMPTION & \textbf{High} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Experimental Log Summary}
+%==============================================================================
+
+\begin{center}
+\begin{tabular}{clcl}
+\toprule
+\textbf{ID} & \textbf{Experiment} & \textbf{Result} & \textbf{Key Finding} \\
+\midrule
+E1 & W-token contacts & FAIL & No universal signal \\
+E6 & W-token SS & FAIL & Worse than random \\
+E10 & Steric Propensity & PASS & 1.55$\times$ lift \\
+E14 & Directional hydrophobic & PASS & Recovered helix geometry \\
+E16 & Context-aware sterics & PASS & Strand recovery \\
+E17 & Multi-partner sheets & PASS & Proper topology \\
+E18 & Salt bridges & PASS & Consistent small gains \\
+E19 & Aromatic stacking & MARGINAL & Protein-dependent \\
+E20 & 4000 iterations & PASS & -2.4\AA{} mean RMSD \\
+E22 & Disulfide bonds & PASS & 1AKI improved by 2\AA \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\end{document}
+

@@ -1,0 +1,589 @@
+\documentclass[11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx} % figures
+\usepackage{amsmath,amssymb} % math
+\usepackage{booktabs} % tables
+\usepackage{hyperref} % hyperlinks
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+\newcommand{\ILG}{\textsc{ILG}}
+\newcommand{\LCDM}{\ensuremath{\Lambda\mathrm{CDM}}}
+\newcommand{\EdS}{\ensuremath{\mathrm{EdS}}}
+
+\title{Information-Limited Gravity II: Test Program, Linear Signatures, and Stage-IV Tests}
+\author{Jonathan Washburn \and Megan Simons \and Elshad Allahyarov}
+\date{December 2025}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present Paper~II of Information-Limited Gravity (\ILG). Building on the fixed-kernel framework and mathematical foundations established in Paper~I \cite{PaperI}, we assemble an observationally vulnerable test program and a compact set of working expressions for linear, $k$-resolved signatures.
+\ILG\ is a source-side modification of the cosmological Poisson equation in the linear, quasi-static, sub-horizon regime. It is implemented by a fixed multiplier \(w(k,a)=1+C\,X^{-\alpha}\) with \(X\equiv k\tau_0/a\) and constants \((C,\alpha,\tau_0)\) specified \emph{a priori} (not fitted to cosmological data).
+Paper~I proved two pillars that we take as input here: (i)~the modified Poisson problem is well-posed and numerically stable for \(\alpha\in(0,\tfrac12)\); (ii)~\ILG\ produces zero Buchert backreaction at linear order, so the background expansion \(H(z)\) and mean distance observables are unchanged and all signatures are perturbation-level only.
+
+All quantitative statements are restricted to the validated linear window (\(0.01\!\lesssim\!k\!\lesssim\!0.2\,h\,{\rm Mpc}^{-1}\), \(0\!\lesssim\!z\!\lesssim\!2\)). In this regime, the single-variable structure \(w=w(X)\) induces $X$-universality (exact for \(w\), exact in \EdS\ for several derived quantities, and diagnostic in \LCDM) and motivates reciprocity slope tests linking time and scale derivatives on matched \((k,z)\) bins.
+We translate this structure into coupled falsifiers across probes: (i)~a \emph{positive but suppressed} ISW cross-correlation at \(\ell\!\lesssim\!30\) for the quasi-static contribution; (ii)~a mild low-\(L\) enhancement of CMB lensing under conservative enforcement of the validated window in the line-of-sight integral; (iii)~a gentle, universal \(k\)-tilt in the growth rate \(f(k,z)\) along with reciprocity slope tests \(\partial_{\ln a}\ln f \simeq -\partial_{\ln k}\ln f\); and (iv)~a tracer-independent prediction for the bias-robust statistic \(E_G\) obeying \(E_G/\Omega_{m0}=w/f\) in the quasi-static limit.
+For nonlinear extensions we outline a minimal PM/TreePM implementation that modifies only the $k$-space Poisson solve and emphasize ratio observables from paired GR/\ILG\ simulations.
+Because \ILG\ introduces no late-time free functions, concordance across these linked probes is a stringent consistency requirement, while robust violations (e.g.\ enhanced ISW, broken reciprocity beyond expected \LCDM\ departures, tracer-dependent \(E_G\)) falsify the fixed-kernel hypothesis within its stated domain.
+We emphasize signatures and falsifiers rather than presenting end-to-end survey pipelines or Fisher-style forecast uncertainties.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:introduction}
+
+Late-time cosmology is presently constrained by a diverse set of probes---primary CMB anisotropies, baryon acoustic oscillations, supernova distances, weak lensing, and large-scale structure clustering---that are mutually consistent at the percent level within the \LCDM\ paradigm. At the same time, persistent tensions and mild anomalies motivate continued scrutiny of the gravitational sector on cosmological scales, particularly where inhomogeneity and cosmic acceleration intersect. The discovery of late-time acceleration through Type~Ia supernovae \cite{Riess1998,Perlmutter1999} makes any proposed modification of gravity particularly accountable to cross-probe consistency.
+
+In Paper~I \cite{PaperI} we introduced \emph{Information-Limited Gravity} (\ILG), a source-side modification of the Poisson equation in which departures from General Relativity (GR) arise through a scale- and time-dependent multiplier acting on the matter source term. In its late-time perturbative form used here, \ILG\ changes neither the background expansion history nor the matter conservation equations; it modifies only the relationship between density perturbations and the Newtonian potential in the quasi-static, sub-horizon regime. The theory is fully specified by three constants $(C,\alpha,\tau_0)$ fixed \emph{a priori} by Recognition Science (RS) axioms; no late-time functions of time or scale are introduced or tuned.\footnote{Recognition Science (RS) is used here only to fix the numerical values of $(C,\alpha,\tau_0)$ a priori. RS-specific terminology (e.g.\ the ``eight-tick'' execution cycle and the recognition lattice) is defined in \cite{RSFoundations}.}
+
+This paper (Paper~II) focuses on empirical vulnerability: if \ILG\ is correct on large scales, what should observers see, and how can the theory be decisively falsified? Our organizing principle is that the kernel depends only on the single variable
+\begin{equation}
+X \equiv \frac{k\tau_0}{a},
+\end{equation}
+which induces approximate $X$-collapse of linear observables and enforces characteristic slope relations (``reciprocity'') between their scale- and time-dependence.
+
+\paragraph{Contributions.}
+This paper:
+\begin{itemize}
+  \item establishes a standard computation recipe for linear observables in a fiducial \LCDM\ background with a modified Poisson layer (Sec.~\ref{sec:methods});
+  \item summarizes the most diagnostic signatures in ISW, CMB lensing, RSD growth, and the $E_G$ statistic, emphasizing sign predictions and ratio/tilt observables (Sec.~\ref{sec:results});
+  \item formulates parameter-light, ``single-plot'' falsifiers based on reciprocity slope tests on matched $(k,z)$ bins (Sec.~\ref{sec:discussion});
+  \item outlines a minimal PM/TreePM simulation modification for mildly nonlinear tests (Sec.~\ref{sec:methods_sim}).
+\end{itemize}
+
+\paragraph{Scope and validated regime.}
+All quantitative claims are restricted to the linear, quasi-static, sub-horizon window where the formulation is controlled:
+\begin{equation}
+0.01\lesssim k \lesssim 0.2\,h\,{\rm Mpc}^{-1},\qquad 0\lesssim z \lesssim 2.
+\end{equation}
+We assume Newtonian gauge, negligible anisotropic stress ($\Phi=\Psi$), unmodified matter conservation equations, and total-matter sourcing ($\rho_s=\rho_m$). Following Paper~I \cite{PaperI}, we further impose infrared regularity (well-posedness) by restricting to $\alpha\in(0,\tfrac12)$, and we treat strong-field environments as screened ($w\equiv 1$) outside the cosmological weak-field regime. A covariant completion and super-horizon behavior are explicitly deferred (Sec.~\ref{sec:limitations}).
+
+\section{Current state of the art}
+\label{sec:soa}
+
+This section summarizes the observational and theoretical context in which late-time modifications of gravity are tested.
+
+\subsection{Baseline cosmology and tensions}
+\label{subsec:tensions}
+
+\LCDM\ provides a successful minimal model for the expansion history and the growth of structure, with parameters inferred precisely from Planck \cite{Planck2018}. Nevertheless, several tensions persist:
+\begin{itemize}
+  \item \textbf{$H_0$ tension:} local distance-ladder measurements prefer $H_0\simeq 73\,{\rm km\,s^{-1}\,Mpc^{-1}}$ \cite{Riess2022} vs.\ Planck-inferred $H_0\simeq 67\,{\rm km\,s^{-1}\,Mpc^{-1}}$ \cite{Planck2018}.
+  \item \textbf{$S_8$ tension:} cosmic shear surveys find $S_8$ values lower than Planck by $\sim 2$--$3\sigma$ \cite{KiDS2020,DES2022}.
+  \item \textbf{Growth and ISW variations:} some large-scale-structure measurements show mild preference for higher growth than \LCDM\ \cite{BOSS2017}, and ISW cross-correlations remain cosmic-variance limited and occasionally fluctuate relative to expectations \cite{Planck2016ISW}.
+\end{itemize}
+We emphasize that \ILG\ is not constructed to fit these anomalies. Its kernel parameters are fixed \emph{a priori}, and the observational role of this paper is to articulate tests that can confirm or exclude this specific fixed-kernel hypothesis.
+
+\subsection{Modified gravity phenomenology in the quasi-static regime}
+\label{subsec:mg_param}
+
+Large-scale tests of gravity are often expressed using phenomenological functions that modify the Poisson equation and light deflection in Fourier space. A common quasi-static parameterization is
+\begin{align}
+k^2\Psi &= 4\pi G\,a^2\,\mu(k,a)\,\rho_m\,\delta_m,\\
+k^2(\Phi+\Psi) &= 8\pi G\,a^2\,\Sigma(k,a)\,\rho_m\,\delta_m,\\
+\gamma(k,a) &\equiv \frac{\Phi}{\Psi}.
+\end{align}
+Different probes constrain different combinations: RSD constrains the velocity field and hence the growth rate; weak lensing and CMB lensing constrain the Weyl potential; ISW constrains time variation of the Weyl potential.
+
+Within the assumptions adopted in this paper (no slip, $\gamma=1$, and a source-side multiplier $w$), \ILG\ maps to
+\begin{equation}
+\mu(k,a)=\Sigma(k,a)=w(k,a),\qquad \gamma(k,a)=1,
+\end{equation}
+given the Fourier/sign conventions stated in Sec.~\ref{subsec:conventions} and subject to the usual care regarding which matter perturbation variable a given pipeline uses (e.g.\ Newtonian-gauge vs.\ comoving-gauge density). This makes \ILG\ straightforward to implement in standard linear codes as a fixed, scale- and time-dependent $\mu=\Sigma$ on sub-horizon scales.
+
+\subsection{Why \texorpdfstring{$k$}{k}-resolved tests matter}
+\label{subsec:k_resolved}
+
+Many published analyses compress growth information into a single $f(z)$ or $f\sigma_8(z)$, and similarly compress lensing information into broad-band amplitude parameters. A central point for \ILG\ is that its signatures are intrinsically \emph{scale-aware} through the variable $X=k\tau_0/a$. Compression that averages over $k$ can erase the theory's most diagnostic effects, especially gentle tilts in $f(k,z)$ and in bias-robust combinations such as $E_G$.
+
+\section{Model: the ILG kernel}
+\label{sec:model}
+
+\subsection{Modified Poisson equation}
+\label{subsec:poisson}
+
+In Fourier space, the \ILG\ modification is implemented as a multiplicative kernel in the Poisson source:
+\begin{equation}
+\label{eq:poisson}
+k^2\Phi(\mathbf{k},a) = 4\pi G\,a^2\,\rho_m(a)\,w(k,a)\,\delta_m(\mathbf{k},a),
+\end{equation}
+with
+\begin{equation}
+\label{eq:kernel}
+w(k,a) = 1 + C\,X^{-\alpha},
+\qquad
+X\equiv \frac{k\tau_0}{a}.
+\end{equation}
+
+\subsection{Conventions (Fourier, signs, and fields)}
+\label{subsec:conventions}
+
+We adopt the Fourier convention $f(\mathbf{k})=\int d^3x\, f(\mathbf{x})\,e^{-i\mathbf{k}\cdot\mathbf{x}}$, so that $\nabla^2\to -k^2$.
+We define the cosmological Poisson equation with the positive operator $-\nabla^2$,
+\(-\nabla^2\Phi = 4\pi G\,a^2\,\rho_m\,w\,\delta_m\),
+so that under this Fourier convention Eq.~\eqref{eq:poisson} follows directly with $-\nabla^2\to k^2$.
+We work in Newtonian gauge, neglect anisotropic stress so that $\Phi=\Psi$, and take $\delta_m$ to denote the \emph{total matter} density contrast used in the Poisson source within the quasi-static, sub-horizon approximation.
+
+\subsection{Fixed parameters and conventions}
+\label{subsec:params}
+
+We adopt total-matter sourcing ($\rho_s=\rho_m$), Newtonian gauge, $c=1$, and negligible anisotropic stress so that $\Phi=\Psi$. The RS-derived parameter values used throughout are
+\begin{equation}
+\label{eq:params}
+C = \varphi^{-3/2} \approx 0.486,
+\qquad
+\alpha = \tfrac{1}{2}(1-\varphi^{-1}) \approx 0.191,
+\qquad
+\tau_0 \approx H_0^{-1},
+\end{equation}
+where $\varphi=(1+\sqrt{5})/2$ is the golden ratio \cite{RSFoundations,RSClassicalBridge}.
+We emphasize that $\tau_0$ is treated as a fixed time scale in the definition of $X$; the identification $\tau_0\approx H_0^{-1}$ is used here as a convenient late-time reference scaling (rather than a parameter fit).
+As emphasized in Paper~I \cite{PaperI}, $\alpha\in(0,\tfrac12)$ is required for infrared regularity and well-posedness of the modified Poisson solve.
+
+\subsection{\texorpdfstring{$X$}{X}-universality and reciprocity}
+\label{subsec:universality}
+
+Because $w=w(X)$ with $X=k\tau_0/a$, the kernel obeys an exact reciprocity identity:
+\begin{equation}
+\label{eq:reciprocity_w}
+\frac{\partial\ln w}{\partial\ln a}\Big|_k
+:= -\frac{\partial\ln w}{\partial\ln k}\Big|_a.
+\end{equation}
+In \EdS\ and for quantities that depend on $(k,a)$ only through $X$, the same identity holds for a broader set of observables $Q(X)$:
+\begin{equation}
+\label{eq:reciprocity_Q}
+\frac{\partial\ln Q}{\partial\ln a}\Big|_k
+:= -\frac{\partial\ln Q}{\partial\ln k}\Big|_a.
+\end{equation}
+In a realistic \LCDM\ background, the explicit time dependence of $H(a)$ and $\Omega_m(a)$ breaks exact $X$-collapse for dynamical quantities such as $D(a,k)$ and $f(k,a)$; Paper~I discusses the resulting departures from exact reciprocity and motivates using reciprocity as an approximate but sharp structural test in the validated window \cite{PaperI}.
+
+\section{Methods}
+\label{sec:methods}
+
+This section collects the working expressions needed to compute linear observables in a fiducial \LCDM\ background, modified only by the Poisson-layer kernel $w(k,a)$.
+
+\subsection{Fiducial background}
+\label{subsec:fiducial}
+
+Unless stated otherwise, we fix background distances and expansion history to a fiducial \LCDM\ cosmology (e.g.\ Planck 2018 \cite{Planck2018}) and apply \ILG\ only in the perturbation sector through Eq.~\eqref{eq:poisson}. This is not an additional tuning choice: Paper~I \cite{PaperI} shows that \ILG\ yields zero Buchert backreaction at linear order, so the background expansion history and mean distances remain those of the chosen FRW baseline. This paper emphasizes signatures and falsifiers, not a full survey likelihood analysis.
+
+\subsection{Scale-dependent linear growth}
+\label{subsec:growth}
+
+In the quasi-static limit with standard matter conservation, the linear growth factor $D(a,k)$ satisfies the usual growth equation with the replacement $G\to G\,w(k,a)$:
+\begin{equation}
+\label{eq:growth}
+D''(a,k) + \left[2+\frac{d\ln H}{d\ln a}\right]D'(a,k)
+- \frac{3}{2}\,\Omega_m(a)\,w(k,a)\,D(a,k) = 0,
+\end{equation}
+where primes denote derivatives with respect to $\ln a$ and
+\begin{equation}
+\Omega_m(a)=\frac{\Omega_{m0}\,a^{-3}H_0^2}{H^2(a)}.
+\end{equation}
+The growth rate is then
+\begin{equation}
+f(k,a)\equiv \frac{\partial\ln D(a,k)}{\partial\ln a}.
+\end{equation}
+Numerically, one may integrate Eq.~\eqref{eq:growth} for each $k$ independently, initializing at $z_{\rm ini}\gtrsim 49$ where $w\simeq 1$ and matching GR initial conditions, e.g.\ $D(a_{\rm ini},k)=a_{\rm ini}$ with $dD/da|_{\rm ini}=1$.
+When using the factorization $P_\delta(k,z)=D^2(a,k)\,P_{\rm ini}(k)$ below, we take $D(a,k)$ to be normalized such that $D(a=1,k)=1$; in practice one can integrate with GR initial conditions at high $z$ and then renormalize by $D(a=1,k)$.
+
+\subsection{ISW and CMB--LSS cross-correlation}
+\label{subsec:isw_method}
+
+The ISW temperature fluctuation is sourced by the time variation of the Weyl potential:
+\begin{equation}
+\frac{\Delta T}{T}(\hat{\mathbf{n}}) = \int d\eta\,(\dot{\Phi}+\dot{\Psi}),
+\qquad \Psi=\Phi,
+\end{equation}
+where dots denote derivatives with respect to conformal time $\eta$. Along the unperturbed past light cone, $\chi(\eta)=\eta_0-\eta$ (with $\eta_0$ the conformal time today), so that $d\chi=-d\eta$. When we write a conformal-time derivative inside a $\chi$-integral, e.g.\ $(\dot{\Phi}+\dot{\Psi})(k,\chi)$ below, it is shorthand for evaluating the $\eta$-derivative on the light cone:
+\begin{equation}
+\dot{\Phi}(k,\chi)\;\equiv\;\frac{\partial \Phi(k,\eta)}{\partial \eta}\Big|_{\eta=\eta_0-\chi},
+\qquad
+\dot{\Psi}(k,\chi)\;\equiv\;\frac{\partial \Psi(k,\eta)}{\partial \eta}\Big|_{\eta=\eta_0-\chi}.
+\end{equation}
+A standard full-sky expression for the CMB--tracer cross-spectrum is
+\begin{equation}
+\label{eq:cltg}
+C_\ell^{Tg} = 4\pi \int \frac{dk}{k}\, \mathcal{P}_{\mathcal{R}}(k)\,\Delta_\ell^{\rm ISW}(k)\,\Delta_\ell^{g}(k),
+\end{equation}
+where $\mathcal{P}_{\mathcal{R}}(k)$ is the (dimensionless) primordial curvature power spectrum defined by
+\begin{equation}
+\label{eq:PR_def}
+\left\langle \mathcal{R}(\mathbf{k})\,\mathcal{R}^*(\mathbf{k}')\right\rangle
+=(2\pi)^3\delta^{(3)}(\mathbf{k}-\mathbf{k}')\,\frac{2\pi^2}{k^3}\,\mathcal{P}_{\mathcal{R}}(k).
+\end{equation}
+If one defines the (linear) matter transfer function $T_\delta(k,a)$ by $\delta_m(\mathbf{k},a)=T_\delta(k,a)\,\mathcal{R}(\mathbf{k})$, then the reference-epoch matter power spectrum used below is
+\begin{equation}
+\label{eq:Pini_from_PR}
+P_{\rm ini}(k)\;\equiv\;P_\delta(k,a=1)
+\;=\;\frac{2\pi^2}{k^3}\,\mathcal{P}_{\mathcal{R}}(k)\,T_\delta^2(k,a=1).
+\end{equation}
+with
+\begin{align}
+\Delta_\ell^{\rm ISW}(k) &= \int_0^{\chi_*} d\chi\;\big(\dot{\Phi}+\dot{\Psi}\big)(k,\chi)\,j_\ell(k\chi),\\
+\Delta_\ell^{g}(k) &= \int d\chi\;W_g(\chi)\,b_g(\chi)\,\delta_m(k,\chi)\,j_\ell(k\chi).
+\end{align}
+At $\ell\lesssim 20$ we recommend using the non-Limber form above; at higher $\ell$ standard Limber approximations may be used.
+
+\subsection{CMB lensing}
+\label{subsec:lensing_method}
+
+The CMB lensing potential is sourced by the Weyl potential $(\Phi+\Psi)/2$; under our no-slip assumption $\Phi=\Psi$ this reduces to the $\Phi$-only form written below.
+\begin{equation}
+\phi(\hat{\mathbf{n}}) = -2\int_0^{\chi_*} d\chi\;
+\frac{\chi_*-\chi}{\chi_*\chi}\,\Phi(\chi,\hat{\mathbf{n}}),
+\end{equation}
+with angular spectrum
+\begin{equation}
+\label{eq:clphiphi}
+C_L^{\phi\phi} = 4\pi \int \frac{dk}{k}\,\mathcal{P}_{\mathcal{R}}(k)\,\left[\Delta_L^\phi(k)\right]^2,
+\qquad
+\Delta_L^\phi(k) = -2\int_0^{\chi_*} d\chi\;\frac{\chi_*-\chi}{\chi_*\chi}\,\Phi(k,\chi)\,j_L(k\chi).
+\end{equation}
+For $L\gtrsim 20$ the Limber approximation is accurate and often used. The potential power spectrum may be written in terms of the matter power spectrum as
+\begin{equation}
+\label{eq:pphi}
+P_\Phi(k,z)
+:= \left[\frac{3H_0^2\,\Omega_{m0}}{2a}\right]^2
+\frac{w^2(k,a)}{k^4}\,P_\delta(k,z),
+\qquad
+P_\delta(k,z)=D^2(a,k)\,P_{\rm ini}(k),
+\end{equation}
+where $P_{\rm ini}(k)$ denotes the linear matter power spectrum evaluated at a reference epoch (here taken as $a=1$), i.e.\ Eq.~\eqref{eq:Pini_from_PR}. Equivalently, one may work directly with $\mathcal{P}_{\mathcal{R}}(k)$ and transfer functions in a Boltzmann-code pipeline; Eq.~\eqref{eq:pphi} is simply the quasi-static Poisson-layer rewriting.
+
+\paragraph{Conservative enforcement of the validated window.}
+The CMB-lensing line-of-sight integral samples modes outside the quasi-static, linear regime where the present \ILG\ formulation is controlled. Throughout this paper, when an observable requires integrating over wavenumbers beyond the validated window, we enforce the bookkeeping prescription
+\begin{equation}
+\label{eq:w_eff_window}
+w_{\rm eff}(k,a)\;\equiv\;1+\big(w(k,a)-1\big)\,\Theta(k-k_{\rm QS})\,\Theta(k_{\rm max}-k),
+\end{equation}
+with $k_{\rm QS}\equiv 0.01\,h\,{\rm Mpc}^{-1}$ and $k_{\rm max}\equiv 0.2\,h\,{\rm Mpc}^{-1}$ and $\Theta$ the Heaviside step function. This is not a statement about the true super-horizon or nonlinear completion of \ILG; it is a conservative device that prevents applying the present quasi-static/linear model outside its stated domain.
+
+\paragraph{Smooth-window alternative and robustness.}
+Because a sharp Heaviside cutoff can introduce artificial features, one may replace Eq.~\eqref{eq:w_eff_window} by a smooth gate in $\ln k$. A convenient choice is
+\begin{equation}
+\label{eq:w_eff_smooth}
+w_{\rm eff}(k,a)\;\equiv\;1+\big(w(k,a)-1\big)\,S_{\rm QS}(k)\,S_{\rm UV}(k),
+\end{equation}
+with
+\begin{equation}
+S_{\rm QS}(k)\equiv \frac{1}{2}\left[1+\tanh\!\left(\frac{\ln(k/k_{\rm QS})}{\Delta_{\ln k}}\right)\right],
+\qquad
+S_{\rm UV}(k)\equiv \frac{1}{2}\left[1+\tanh\!\left(\frac{\ln(k_{\rm max}/k)}{\Delta_{\ln k}}\right)\right],
+\end{equation}
+so that $w_{\rm eff}\to 1$ smoothly outside the validated window. In applications that require percent-level control, we recommend a simple robustness check: repeat the key predictions with several transition widths (e.g.\ $\Delta_{\ln k}\sim 0.1$--$0.3$) and verify that inferred signatures within the validated window are stable against this choice.
+
+\subsection{RSD without destructive compression}
+\label{subsec:rsd_method}
+
+In linear theory, the Kaiser model gives the redshift-space galaxy power spectrum \cite{Kaiser1987}
+\begin{equation}
+P_s(k,\mu,z) = \left[b(k,z)+f(k,z)\mu^2\right]^2\,P_m(k,z),
+\qquad
+P_m(k,z)=D^2(a,k)\,P_{\rm ini}(k).
+\end{equation}
+To preserve \ILG's diagnostic scale dependence, $f(k,z)$ should be inferred \emph{per $k$-bin} (rather than compressed into a single effective $f(z)$), with standard nuisance treatments for Alcock--Paczynski effects, Fingers-of-God damping, and wide-angle corrections and with conservative scale cuts.
+
+\subsection{The \texorpdfstring{$E_G$}{E\_G} statistic}
+\label{subsec:eg_method}
+
+The bias-robust statistic $E_G$ combines lensing and velocities in a way that cancels (to leading order) tracer bias, and can be estimated from a combination of galaxy--galaxy lensing, galaxy clustering, and RSD through the distortion parameter $\beta=f/b$ \cite{Zhang2007,Reyes2010}. At the level of fields in Fourier space it is defined as
+\begin{equation}
+\label{eq:eg_def}
+E_G(k,z)\equiv
+\frac{-k^2\big(\Phi+\Psi\big)(k,z)}{3H_0^2\,a^{-1}(z)\,f(k,z)\,\delta_m(k,z)}
+\;=\;
+\frac{\nabla^2(\Phi+\Psi)}{3H_0^2\,a^{-1}\,f(k,z)\,\delta_m}.
+\end{equation}
+For an observational estimator, one typically replaces the potentials and $\delta_m$ in Eq.~\eqref{eq:eg_def} by measured two-point functions. For a lens sample in a sufficiently narrow redshift bin, a commonly used harmonic-space estimator is
+\begin{equation}
+\label{eq:eg_estimator_ell}
+E_G(\ell,z)\;\simeq\;\frac{C_\ell^{\kappa g}(z)}{\beta(z)\,C_\ell^{gg}(z)},
+\qquad \beta(z)\equiv \frac{f(z)}{b(z)},
+\end{equation}
+where $C_\ell^{\kappa g}$ is the convergence--galaxy cross-spectrum inferred from galaxy--galaxy lensing (tangential shear), $C_\ell^{gg}$ is the galaxy auto-spectrum (clustering), and $\beta$ is inferred from redshift-space anisotropies. In configuration space, the same idea is often implemented with annular statistics that suppress small-scale systematics \cite{Reyes2010},
+\begin{equation}
+\label{eq:eg_estimator_R}
+E_G(R,z)\;\simeq\;\frac{\Upsilon_{gm}(R,z)}{\beta(z)\,\Upsilon_{gg}(R,z)}.
+\end{equation}
+In practice, mapping these estimators to the field-level definition Eq.~\eqref{eq:eg_def} requires accounting for survey window functions, lensing kernels, magnification bias, and possible scale-dependent bias; the defining feature is that (to leading order) the unknown tracer bias cancels in the ratio \cite{Zhang2007,Reyes2010}.
+In the present \ILG\ assumptions ($\Phi=\Psi$ and Poisson modified only by $w$), this yields the prediction
+\begin{equation}
+\label{eq:eg_pred}
+E_G(k,z) = \frac{\Omega_{m0}}{f(k,z)}\,w\!\left(k,a(z)\right).
+\end{equation}
+This implies (i) tracer-independence at fixed $(k,z)$ (galaxy bias cancels at leading order) and (ii) a predictable scale dependence inherited from $w(X)$ and $f(k,z)$.
+
+\subsection{Reciprocity slope tests}
+\label{subsec:slope_tests}
+
+Define scale slopes at fixed redshift and time slopes at fixed wavenumber:
+\begin{align}
+S_Q(k) &\equiv \frac{\partial\ln Q}{\partial\ln k}\Big|_{z}, &
+T_Q(k) &\equiv \frac{\partial\ln Q}{\partial\ln a}\Big|_{k},
+\end{align}
+for $Q\in\{w,\,f,\,R_L\}$, where we define the lensing response
+\begin{equation}
+R_L(k,a)\equiv \frac{w^2(k,a)\,D^2(a,k)}{a^2}.
+\end{equation}
+If $Q\simeq Q(X)$ in the validated window, then $T_Q(k)\simeq -S_Q(k)$. This provides a low-dimensional falsifier using measured slopes rather than absolute amplitudes.
+
+\subsection{Nonlinear extension: minimal PM/TreePM modification}
+\label{sec:methods_sim}
+
+For N-body simulations, the \ILG\ modification can be implemented by modifying only the $k$-space Poisson solve in a PM or TreePM code:
+\begin{equation}
+\label{eq:pm_poisson}
+\Phi(\mathbf{k},a)
+:=
+-\frac{4\pi G\,a^2\,\bar\rho_m(a)}{\Lambda(\mathbf{k})}
+\;\frac{\delta(\mathbf{k})}{W_{\rm asg}(\mathbf{k})}\;w(k,a),
+\qquad
+w(k,a)=1+C\,X^{-\alpha},\qquad X\equiv \frac{k\tau_0}{a},
+\end{equation}
+with $\Phi(\mathbf{0})=0$ enforcing zero-mode removal.
+Here $\Lambda(\mathbf{k})$ denotes the (negative) eigenvalue of the discrete Laplacian (so that $\Lambda\simeq -k^2$ on resolved modes), making Eq.~\eqref{eq:pm_poisson} consistent with the Poisson convention in Eq.~\eqref{eq:poisson}.
+For TreePM solvers, one may apply $w(k,a)$ only to the long-range PM component (where $w>1$) and leave the short-range tree force in GR since $w\to 1$ as $X\to\infty$.
+We emphasize paired GR/\ILG\ runs with identical initial phases and ratio observables to reduce sample variance.
+
+\section{Results: signatures and falsifiers}
+\label{sec:results}
+
+This section summarizes the principal observational consequences of the fixed-kernel \ILG\ model in the validated linear regime.
+
+\subsection{Executive summary of predictions}
+\label{subsec:exec_summary}
+
+Table~\ref{tab:predictions} collects the key signatures and their primary falsifiers.
+
+\begin{table}[t]
+\centering
+\begin{tabular}{p{0.26\linewidth}p{0.45\linewidth}p{0.23\linewidth}}
+\toprule
+\textbf{Observable} & \textbf{ILG prediction (linear, validated window)} & \textbf{Primary falsifier} \\
+\midrule
+ISW $C_\ell^{Tg}$ at $\ell\lesssim 30$
+& Positive but \emph{suppressed} relative to \LCDM; often close to null on the largest scales.
+& Robust evidence for strongly \emph{enhanced} positive ISW.\\
+\addlinespace
+CMB lensing $C_L^{\phi\phi}$ at $L\lesssim 50$
+& Mild enhancement ($\sim 5$--$15\%$) at low $L$ under conservative window enforcement (Sec.~\ref{subsec:lensing_size}), returning to GR at high $L$.
+& Null result with percent-level precision over $L\lesssim 50$ in matched modeling.\\
+\addlinespace
+Growth rate $f(k,z)$
+& Gentle monotonic $k$-tilt (larger $f$ at lower $k$) with $f<1$ at late times.
+& No measurable tilt under $k$-resolved RSD inference; or tilt of opposite sign.\\
+\addlinespace
+$E_G(k,z)$
+& Tracer-independent; $E_G/\Omega_{m0}=w/f$ in quasi-static limit.
+& Significant tracer dependence at fixed $(k,z)$ after systematics control.\\
+\addlinespace
+Reciprocity slopes
+& Approx.\ $T_Q\simeq -S_Q$ for $Q\in\{f,R_L\}$ in the validated window.
+& Persistent violation in any $k$-bin beyond expected \LCDM\ deviations.\\
+\bottomrule
+\end{tabular}
+\caption{Summary of \ILG\ predictions and falsification routes. Numerical ranges are indicative; precise curves require evaluating the integrals/ODEs in Sec.~\ref{sec:methods} with specified window functions, transfer functions, and survey kernels.}
+\label{tab:predictions}
+\end{table}
+
+\subsection{ISW: sign and suppression}
+\label{subsec:isw_results}
+
+In \LCDM, the late-time decay of potentials during accelerated expansion yields a positive ISW effect and positive CMB--LSS cross-correlation at low multipoles. In \ILG, the Weyl potential inherits both the explicit time dependence of $w(k,a)$ and the induced scale-dependent growth. Writing the ISW source schematically as $(\dot{\Phi}+\dot{\Psi})\propto aH\,\Phi\,B(a,k)$, one can separate the Hubble dilution, growth, and kernel evolution:
+\begin{equation}
+\label{eq:isw_B}
+B(a,k) = -1 + f(a,k) + \frac{d\ln w}{d\ln a}.
+\end{equation}
+For the kernel $w=1+C X^{-\alpha}$, the derivative is positive and bounded by $\alpha$:
+\begin{equation}
+\frac{d\ln w}{d\ln a}
+:= \alpha\,\frac{C X^{-\alpha}}{1+C X^{-\alpha}}
+>0.
+\end{equation}
+At late times in a \LCDM\ background one still has $f<1$, and typically $d\ln w/d\ln a \lesssim \alpha < 1/2$, so $B(a,k)$ is generically non-positive. The resulting prediction is a \emph{positive but suppressed} ISW cross-correlation relative to \LCDM\ on the largest scales where $X\sim \mathcal{O}(1)$.
+Because the lowest multipoles receive support from near-horizon scales and relativistic corrections can become non-negligible, this sign/suppression argument should be interpreted as applying to the quasi-static contribution in the validated window; a fully relativistic treatment is required to make precision statements at the very lowest $\ell$.
+
+\subsection{CMB lensing: low-\texorpdfstring{$L$}{L} enhancement}
+\label{subsec:lensing_results}
+
+From Eq.~\eqref{eq:pphi}, \ILG\ enhances the potential power through both $w^2(k,a)$ and the modified growth $D^2(a,k)$. Since $w\to 1$ as $X\to\infty$ (early times or small scales), the effect is concentrated at low $k$ and late times and therefore projects primarily onto low multipoles $L\lesssim 30$--$50$ in $C_L^{\phi\phi}$. The characteristic signature is a smooth, controlled enhancement at low $L$ with a return to GR at high $L$.
+
+\subsubsection{Back-of-the-envelope size of the low-\texorpdfstring{$L$}{L} enhancement}
+\label{subsec:lensing_size}
+This subsection makes explicit the assumptions behind the indicative ``$5$--$15\%$'' low-$L$ CMB-lensing enhancement quoted in the Abstract and Table~\ref{tab:predictions}. The key ingredient is that, for low multipoles, the CMB-lensing kernel receives substantial support from modes with $k<k_{\rm QS}$, where the present quasi-static \ILG\ prescription is not applied; the quoted range is therefore a \emph{conservative} estimate under the window enforcement Eq.~\eqref{eq:w_eff_window}.
+
+For intuition, adopt the Limber mapping $k\simeq (L+1/2)/\chi$ (valid for $L\gtrsim 20$). Under the conservative window enforcement, the fractional change in the integrand is controlled mainly by $w_{\rm eff}^2-1$, so schematically
+\begin{equation}
+\label{eq:lensing_ratio_schematic}
+\frac{C_L^{\phi\phi}\big|_{\rm ILG}}{C_L^{\phi\phi}\big|_{\rm GR}}
+\approx
+1+\Big\langle \big(w^2(k,a)-1\big)\,\Theta(k-k_{\rm QS})\,\Theta(k_{\rm max}-k)\Big\rangle_{W_L},
+\end{equation}
+where $\langle\cdots\rangle_{W_L}$ denotes an average over the CMB-lensing line-of-sight weight (including the geometric prefactor and the slowly varying parts of the matter/potential power).
+Define the distance at which a given multipole crosses the quasi-static boundary,
+\begin{equation}
+\chi_{\rm QS}(L)\equiv \frac{L+1/2}{k_{\rm QS}}.
+\end{equation}
+For $L\lesssim 50$, $\chi_{\rm QS}(L)$ is comparable to (or smaller than) the distance range where the CMB-lensing kernel is largest, so only a \emph{fraction} of the total lensing weight lies in the $k\ge k_{\rm QS}$ region where \ILG\ is applied.
+
+Next, estimate the size of $w$ on the first quasi-static modes that contribute. For representative late-time lensing support, take $k\sim 0.01$--$0.03\,h\,{\rm Mpc}^{-1}$ and $z\sim 0.5$--$2$ (so $a\sim 0.33$--$0.67$). With $\tau_0\simeq 3000\,h^{-1}{\rm Mpc}$ and $(C,\alpha)=(\varphi^{-3/2},\,\tfrac12(1-\varphi^{-1}))$, this gives $X=k\tau_0/a\sim \mathcal{O}(10^2)$ and therefore
+\begin{equation}
+w(k,a)=1+C\,X^{-\alpha}\approx 1.17\text{--}1.22,
+\qquad\Rightarrow\qquad
+w^2-1\approx 0.35\text{--}0.49.
+\end{equation}
+Finally, because the low-$L$ CMB-lensing kernel still draws substantial support from $k<k_{\rm QS}$ (where $w_{\rm eff}=1$), an order-unity $w^2-1$ does \emph{not} translate into an order-unity change in $C_L^{\phi\phi}$. Taking a conservative quasi-static-support fraction of order $f_{\rm QS}(L)\sim 0.1$--$0.3$ for $L\sim 20$--$50$ then yields
+\begin{equation}
+\frac{\Delta C_L^{\phi\phi}}{C_L^{\phi\phi}}
+\sim
+f_{\rm QS}(L)\,(w^2-1)
+\sim
+0.05\text{--}0.15,
+\end{equation}
+which motivates the quoted $5$--$15\%$ range.
+A full calculation (beyond this back-of-the-envelope estimate) evaluates Eq.~\eqref{eq:clphiphi} with transfer functions, nonlinear corrections where needed, and survey/reconstruction noise; the role of this subsection is to justify the quoted order-of-magnitude range and make its assumptions explicit.
+
+\subsection{RSD: scale-aware growth tilt}
+\label{subsec:rsd_results}
+
+Equation~\eqref{eq:growth} implies scale-dependent growth because $w(k,a)$ depends on $X$. In the validated window, this generically produces a gentle monotonic tilt in $f(k,z)$: at fixed redshift, larger scales (smaller $k$) correspond to smaller $X$ and therefore larger $w$, yielding slightly enhanced growth. Detecting this effect requires $k$-binned inference; compression to a single $f(z)$ tends to erase the signal.
+
+\subsection{\texorpdfstring{$E_G$}{E\_G}: tracer independence and \texorpdfstring{$X$}{X}-structure}
+\label{subsec:eg_results}
+
+The prediction in Eq.~\eqref{eq:eg_pred} is a direct consequence of the Poisson-layer modification with $\Phi=\Psi$. It implies a sharp observational requirement: after controlling lensing and RSD systematics (e.g.\ magnification bias, shear calibration, photometric-redshift errors, and scale-dependent bias), $E_G(k,z)$ must be consistent across tracer samples and must follow the same mild $k$-dependence implied by $w/f$.
+
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Internal consistency and falsifiability}
+\label{subsec:falsifiability}
+
+The distinctive feature of \ILG\ is not merely that it modifies potentials, but that it does so through a \emph{fixed} kernel with a single structural variable $X=k\tau_0/a$. This imposes coupled behavior across observables: ISW, lensing, and growth are not independent channels but different projections of the same modification.
+As a result, \ILG\ is particularly vulnerable to cross-probe inconsistency.
+
+Reciprocity slope tests provide a compact consistency check that depends weakly on overall amplitude systematics. Measuring both $S_Q$ and $T_Q$ (Sec.~\ref{subsec:slope_tests}) and comparing to the line $T_Q=-S_Q$ yields a geometric falsifier. In a realistic \LCDM\ background, deviations from exact reciprocity are expected; these deviations should be quantified using the same fiducial pipeline used to generate \ILG\ predictions and then compared to data in the validated window.
+The emphasis on decisive, coupled falsifiers is aligned with a Popperian notion of empirical vulnerability \cite{Popper1959}, though the concrete implementation here is in the form of linked, multi-probe consistency conditions rather than a single statistic.
+
+\subsection{Systematics and analysis discipline}
+\label{subsec:systematics}
+
+The most diagnostic \ILG\ signatures are gentle and therefore sensitive to analysis choices.
+\begin{itemize}
+  \item \textbf{RSD:} per-bin inference is essential; Alcock--Paczynski, Fingers-of-God, and wide-angle effects must be treated consistently.
+  \item \textbf{$E_G$:} magnification bias, shear calibration, photometric-redshift errors, and scale-dependent bias must be controlled to avoid spurious tracer dependence.
+  \item \textbf{ISW:} cosmic variance is limiting at low $\ell$; multi-tracer cross-correlations can help, but foregrounds and survey masks must be carefully modeled.
+  \item \textbf{CMB lensing:} the low-$L$ regime requires careful treatment of reconstruction noise and potential non-Limber effects; matching analysis choices between GR and \ILG\ predictions is critical for ratio tests.
+\end{itemize}
+
+\subsection{Limitations and scope}
+\label{sec:limitations}
+
+This paper intentionally adopts a quasi-static, Poisson-layer modification in Newtonian gauge. Without a covariant completion, the extension to super-horizon scales and fully relativistic evolution is not uniquely defined. We therefore restrict all claims to the linear, sub-horizon window stated in Sec.~\ref{sec:introduction}. As discussed in Paper~I \cite{PaperI}, the kernel recovers GR as $X\to\infty$ and is designed to be screened in high-density environments by information saturation; nonetheless, additional work is required to present a fully covariant embedding and to assess the impact of relativistic corrections outside the validated regime.
+
+\subsection{Outlook}
+\label{subsec:outlook}
+
+Near- to medium-term surveys (DESI, Euclid, Rubin, CMB-S4, SPT-3G) can probe the coupled \ILG\ signatures using $k$-resolved analyses and cross-correlations. On the theory side, the most valuable next steps are (i) end-to-end \LCDM\ numerics producing public prediction curves for $f(k,z)$, $C_\ell^{Tg}$, and $C_L^{\phi\phi}$ with survey windows; (ii) public PM/TreePM modifications implementing Eq.~\eqref{eq:pm_poisson}; and (iii) mock catalogs enabling realistic systematics studies and likelihood analyses.
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+We have assembled a compact, observationally vulnerable test program for Information-Limited Gravity (\ILG) based on a fixed source-side kernel $w(k,a)=1+C\,X^{-\alpha}$ and its single structural variable $X=k\tau_0/a$. In the validated linear, quasi-static regime, this structure links growth, lensing, and ISW observables and motivates low-dimensional consistency checks such as reciprocity slope tests (Sec.~\ref{subsec:slope_tests}) and the quasi-static relation $E_G/\Omega_{m0}=w/f$ (Sec.~\ref{subsec:eg_method}).
+
+Because \ILG\ introduces no late-time free functions, it admits sharp falsifiers: robust evidence for enhanced ISW relative to \LCDM, persistent reciprocity violations beyond expected \LCDM\ deviations, or tracer-dependent $E_G$ at fixed $(k,z)$ would rule out the fixed-kernel hypothesis on the tested scales. Conversely, concordant results across these coupled probes would provide strong support for the source-side modification mechanism.
+
+\begin{thebibliography}{99}
+
+\bibitem{PaperI}
+J.~Washburn, M.~Simons, and E.~Allahyarov,
+``Information-Limited Gravity I: A source-side theoretical framework,''
+(companion paper).
+
+\bibitem{Riess1998}
+A.~G. Riess {\it et al.} (Supernova Search Team),
+``Observational Evidence from Supernovae for an Accelerating Universe and a Cosmological Constant,''
+\emph{Astron. J.} \textbf{116}, 1009 (1998).
+
+\bibitem{Perlmutter1999}
+S.~Perlmutter {\it et al.} (Supernova Cosmology Project),
+``Measurements of $\Omega$ and $\Lambda$ from 42 High-Redshift Supernovae,''
+\emph{Astrophys. J.} \textbf{517}, 565 (1999).
+
+\bibitem{Riess2022}
+A.~G. Riess {\it et al.},
+``A Comprehensive Measurement of the Local Value of the Hubble Constant with 1 km/s/Mpc Uncertainty from the Hubble Space Telescope and the SH0ES Team,''
+\emph{Astrophys. J. Lett.} \textbf{934}, L7 (2022).
+
+\bibitem{Planck2018}
+N.~Aghanim {\it et al.} (Planck Collaboration),
+``Planck 2018 results. VI. Cosmological parameters,''
+\emph{Astron. Astrophys.} \textbf{641}, A6 (2020).
+
+\bibitem{KiDS2020}
+M.~Asgari {\it et al.} (KiDS Collaboration),
+``KiDS-1000 Cosmology: Cosmic shear constraints and comparison between two point statistics,''
+\emph{Astron. Astrophys.} \textbf{645}, A104 (2021).
+
+\bibitem{DES2022}
+T.~M.~C. Abbott {\it et al.} (DES Collaboration),
+``Dark Energy Survey Year 3 results: Cosmological constraints from galaxy clustering and weak lensing,''
+\emph{Phys. Rev. D} \textbf{105}, 023520 (2022).
+
+\bibitem{BOSS2017}
+S.~Alam {\it et al.} (BOSS Collaboration),
+``The clustering of galaxies in the completed SDSS-III Baryon Oscillation Spectroscopic Survey: cosmological analysis of the DR12 galaxy sample,''
+\emph{Mon. Not. Roy. Astron. Soc.} \textbf{470}, 2617 (2017).
+
+\bibitem{Planck2016ISW}
+P.~A.~R. Ade {\it et al.} (Planck Collaboration),
+``Planck 2015 results. XXI. The integrated Sachs-Wolfe effect,''
+\emph{Astron. Astrophys.} \textbf{594}, A21 (2016).
+
+\bibitem{RSFoundations}
+J.~Washburn,
+``Recognition Science: Foundations of an Information-Theoretic Framework for Gravitational Phenomenology,''
+(Recognition Physics Institute, Technical Report, 2024).
+
+\bibitem{RSClassicalBridge}
+J.~Washburn and M.~Simons,
+``Recognition Science and the Classical Limit: Deriving Cosmological Kernel Parameters,''
+(Recognition Physics Institute, Technical Report, 2024).
+
+\bibitem{Kaiser1987}
+N.~Kaiser,
+``Clustering in real space and in redshift space,''
+\emph{Mon. Not. Roy. Astron. Soc.} \textbf{227}, 1 (1987).
+
+\bibitem{Zhang2007}
+P.~Zhang, M.~Liguori, R.~Bean, and S.~Dodelson,
+``Probing gravity at cosmological scales by measurements which test the relationship between gravitational lensing and matter overdensity,''
+\emph{Phys. Rev. Lett.} \textbf{99}, 141302 (2007).
+
+\bibitem{Reyes2010}
+R.~Reyes {\it et al.},
+``Confirmation of general relativity on large scales from weak lensing and galaxy velocities,''
+\emph{Nature} \textbf{464}, 256 (2010).
+
+\bibitem{Popper1959}
+K.~Popper,
+\emph{The Logic of Scientific Discovery},
+(Hutchinson, London, 1959).
+
+\end{thebibliography}
+
+\end{document}
+
+

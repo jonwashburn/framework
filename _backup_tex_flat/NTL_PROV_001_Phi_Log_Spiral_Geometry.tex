@@ -1,0 +1,352 @@
+\documentclass[11pt]{article}
+
+% NOTE: Keep packages minimal for TeX Live "basic" installs.
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{enumitem}
+
+\geometry{margin=1in}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  citecolor=blue
+}
+
+% ---------------------------------------------------------------------------
+% Convenience macros (ASCII-only text; avoid Unicode Greek in body text)
+% ---------------------------------------------------------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\phival}{\varphi} % golden ratio symbol (typeset)
+
+\newcommand{\PatentTitle}{Apparatus and Methods for Generating a Golden-Ratio Logarithmic-Spiral Spatial Scaffold for Rotors and Electromagnetic Arrays}
+\newcommand{\Docket}{NTL-PROV-001}
+\newcommand{\Inventors}{[Inventor Names]}
+\newcommand{\Assignee}{[Assignee / Organization]}
+\newcommand{\FilingDate}{February 1, 2026}
+
+\begin{document}
+
+\begin{center}
+{\LARGE \textbf{\PatentTitle}}\\[0.75em]
+{\large \textbf{Docket:} \Docket}\\[0.25em]
+{\large \textbf{Inventors:} \Inventors}\\[0.25em]
+{\large \textbf{Assignee:} \Assignee}\\[0.25em]
+{\large \textbf{Date:} \FilingDate}\\[0.75em]
+\end{center}
+
+\vspace{-0.5em}
+\hrule
+\vspace{0.75em}
+
+% ===========================================================================
+% ABSTRACT (PATENT)
+% ===========================================================================
+\section*{Abstract}
+
+Disclosed are apparatus, systems, and methods for generating, parameterizing, and fabricating a spatial scaffold defined by a golden-ratio (\(\phival\)) logarithmic spiral. In various embodiments, a rotor, conductive trace, coil winding, magnet placement, or other field-generating structure is defined by a radius profile
+\[
+r(\theta) = r_0 \cdot \phival^{\kappa \theta / (2\pi)},
+\]
+where \(r_0 > 0\) is a base radius, \(\theta\) is an angular coordinate, and \(\kappa \in \Z\) is an integer pitch parameter. The spatial scaffold may be compiled from symbolic parameters into fabrication artifacts (e.g., CAD files, PCB layout files, or toolpaths) and may be discretized into sampled element positions for segmented or multi-element arrays.
+
+The disclosure further provides closed-form invariants (e.g., step-ratio and per-turn multiplier) that enable scale-invariant design rules and quantized pitch families. The disclosed scaffold is applicable to (i) rotating mechanical members, (ii) stationary electromagnetic arrays configured to synthesize rotating fields, and (iii) metrology and tuning workflows in which geometry is used as a primary input to computation and control.
+
+% ===========================================================================
+% TECHNICAL FIELD
+% ===========================================================================
+\section*{Technical Field}
+
+The present disclosure relates to geometric parameterization of rotors and electromagnetic arrays, and more particularly to apparatus and methods for generating a logarithmic spiral spatial scaffold based on the golden ratio, including computer-implemented compilation of the scaffold to fabrication files and discretized element placement for multi-element devices.
+
+% ===========================================================================
+% BACKGROUND
+% ===========================================================================
+\section*{Background}
+
+Many rotor and array systems (including mechanical rotors, spiral traces, spiral inductors, and phased electromagnetic arrays) are designed using ad hoc geometry, empirically tuned spacing rules, and continuous parameters that are later fit to measurements. Such approaches often impede reproducibility when a design is scaled, manufactured by a different process, or discretized into segmented elements.
+
+In particular, logarithmic spirals are known in antenna and inductor design; however, typical practice uses continuously adjustable growth factors or curve-fit geometry without enforcing discrete pitch families or providing invariants that support scale-invariant, parameter-compact specification and fabrication.
+
+Accordingly, there is a need for a compact, reproducible geometric specification for a spiral scaffold, including quantized pitch families and computer-implemented generation of manufacturing artifacts.
+
+% ===========================================================================
+% SUMMARY
+% ===========================================================================
+\section*{Summary}
+
+This disclosure provides a golden-ratio logarithmic-spiral scaffold and methods to generate and use it. In one aspect, a rotor or array is defined by:
+\begin{itemize}[leftmargin=*]
+  \item a base radius \(r_0 > 0\),
+  \item an integer pitch parameter \(\kappa \in \Z\), and
+  \item a radius function \(r(\theta) = r_0 \cdot \phival^{\kappa \theta / (2\pi)}\).
+\end{itemize}
+
+In another aspect, the scaffold is discretized into sampled element locations \((r_i,\theta_i)\) that define coil centers, winding centers, magnet placements, via locations, or segment boundaries for manufacturing.
+
+In another aspect, a computer system receives inputs \((r_0,\kappa,n,\text{constraints})\) and outputs fabrication artifacts (e.g., DXF/SVG/STL/GERBER or equivalent) and/or a table of element coordinates, with optional derived quantities such as step ratios and per-turn multipliers.
+
+The disclosure further provides invariants including:
+\begin{align}
+  \textbf{Step ratio:}\quad
+  \frac{r(\theta+\Delta\theta)}{r(\theta)}
+    &= \phival^{\kappa \Delta\theta / (2\pi)}, \label{eq:step_ratio}\\
+  \textbf{Per-turn multiplier:}\quad
+  \frac{r(\theta+2\pi)}{r(\theta)}
+    &= \phival^{\kappa}. \label{eq:per_turn}
+\end{align}
+These invariants are independent of \(r_0\) and support scale-invariant design rules. Additionally, shifting \(\kappa\) by an integer \(d\) shifts the per-turn multiplier by \(\phival^d\), producing discrete pitch families.
+
+% ===========================================================================
+% BRIEF DESCRIPTION OF DRAWINGS
+% ===========================================================================
+\section*{Brief Description of the Drawings}
+
+Drawings may be provided in a later filing or as attachments to this disclosure. For purposes of the present specification, the following figures are described:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{FIG. 1} illustrates a polar-coordinate representation of a golden-ratio logarithmic spiral scaffold.
+  \item \textbf{FIG. 2} illustrates discretization of the spiral scaffold into a set of \(n\) sampled element positions for a segmented array.
+  \item \textbf{FIG. 3} illustrates example embodiments: (a) a mechanical rotor profile, (b) a PCB spiral trace, and (c) a multi-coil electromagnetic array.
+  \item \textbf{FIG. 4} illustrates multi-arm and stacked-layer spiral variants.
+  \item \textbf{FIG. 5} illustrates an example computer-implemented pipeline that compiles symbolic parameters into fabrication artifacts.
+  \item \textbf{FIG. 6} illustrates derived invariants and pitch-family relationships.
+\end{itemize}
+
+% ===========================================================================
+% DEFINITIONS
+% ===========================================================================
+\section*{Definitions and Notation}
+
+Unless otherwise indicated, the following definitions apply:
+\begin{itemize}[leftmargin=*]
+  \item \(\phival\) (golden ratio) is defined as \(\phival = (1+\sqrt{5})/2 \approx 1.6180339887\).
+  \item \(\theta \in \R\) is an angular coordinate measured in radians.
+  \item \(r_0 \in \R_{>0}\) is a base radius (scale parameter).
+  \item \(\kappa \in \Z\) is an integer pitch parameter (discrete pitch family index).
+  \item A \emph{spiral scaffold} refers to any geometric locus defined by a radius function \(r(\theta)\) in polar coordinates, together with a mapping to a physical embodiment (e.g., trace centerline, coil centerline, rotor boundary).
+  \item The terms ``comprising,'' ``including,'' and ``having'' are open-ended and do not exclude additional elements.
+\end{itemize}
+
+% ===========================================================================
+% DETAILED DESCRIPTION
+% ===========================================================================
+\section*{Detailed Description}
+
+\subsection*{1. Overview}
+
+The golden-ratio logarithmic spiral scaffold is defined by:
+\begin{equation}
+  r(\theta; r_0,\kappa) = r_0 \cdot \phival^{\kappa \theta / (2\pi)}.
+  \label{eq:log_spiral}
+\end{equation}
+
+This definition yields a multiplicative growth (or decay) of radius with angle. The integer \(\kappa\) yields discrete pitch families. The base radius \(r_0\) scales the entire scaffold without changing ratios.
+
+\subsection*{2. Invariants and Quantized Pitch Families}
+
+\paragraph{2.1 Step ratio (scale invariance).}
+For any \(\Delta\theta \in \R\), the ratio of radii separated by \(\Delta\theta\) is independent of \(r_0\):
+\[
+\frac{r(\theta+\Delta\theta)}{r(\theta)}
+= \frac{r_0 \phival^{\kappa(\theta+\Delta\theta)/(2\pi)}}{r_0 \phival^{\kappa\theta/(2\pi)}}
+= \phival^{\kappa \Delta\theta/(2\pi)}.
+\]
+This is Eq.~\eqref{eq:step_ratio}. Therefore the scaffold has \emph{scale-invariant} step ratios: scaling \(r_0\) scales the geometry but does not change multiplicative spacing rules.
+
+\paragraph{2.2 Per-turn multiplier.}
+For a full revolution \(\Delta\theta = 2\pi\), the per-turn ratio is Eq.~\eqref{eq:per_turn}:
+\[
+\frac{r(\theta+2\pi)}{r(\theta)} = \phival^{\kappa}.
+\]
+
+\paragraph{2.3 Discrete pitch families.}
+Define the per-turn multiplier \(M(\kappa) = \phival^{\kappa}\). Then for any integer \(d\),
+\[
+M(\kappa+d) = \phival^{\kappa+d} = \phival^{\kappa}\cdot \phival^{d} = M(\kappa)\cdot \phival^d.
+\]
+Accordingly, changing \(\kappa\) by integer steps yields a discrete family of multiplicative growth behaviors.
+
+\subsection*{3. Discretization into Sampled Elements}
+
+Many embodiments require discretizing the continuous scaffold into a finite set of positions. In one embodiment, for \(n \in \N\), define:
+\begin{align}
+  \theta_i &= \theta_{\text{start}} + \frac{2\pi i}{n},\quad i=0,1,\dots,n-1, \label{eq:theta_i}\\
+  r_i &= r(\theta_i; r_0,\kappa), \label{eq:r_i}\\
+  (x_i,y_i) &= (r_i\cos\theta_i,\; r_i\sin\theta_i). \label{eq:xy_i}
+\end{align}
+
+The set \(\{(x_i,y_i)\}\) may define, without limitation:
+\begin{itemize}[leftmargin=*]
+  \item coil centers (wound coils on a substrate),
+  \item via locations or pad centers (PCB implementation),
+  \item magnet placements (embedded magnets on a rotor),
+  \item segment boundaries (for a segmented mechanical rotor),
+  \item inspection targets (for metrology fixtures).
+\end{itemize}
+
+\subsection*{4. Multi-Arm, Segmented, and Stacked Variants}
+
+\paragraph{4.1 Multi-arm spiral.}
+In one embodiment, the scaffold comprises \(m \ge 2\) spiral arms, where each arm \(j\) uses an angular offset \(\alpha_j\):
+\[
+r_j(\theta) = r_0 \cdot \phival^{\kappa (\theta+\alpha_j)/(2\pi)}.
+\]
+Offsets may be uniform (e.g., \(\alpha_j = 2\pi j/m\)) or non-uniform.
+
+\paragraph{4.2 Segmented spiral.}
+In one embodiment, the scaffold is implemented as a set of piecewise segments approximating the curve, where each segment is defined by endpoints \((x_i,y_i)\) and \((x_{i+1},y_{i+1})\) for sample points from Eq.~\eqref{eq:xy_i}. Segment counts may be chosen to satisfy manufacturing constraints (e.g., minimum radius of curvature, trace width, tool diameter).
+
+\paragraph{4.3 Stacked layers.}
+In one embodiment, the scaffold is implemented across multiple layers (e.g., PCB layers or stacked mechanical laminations). Each layer may use a different \(\kappa\), \(r_0\), or \(\theta_{\text{start}}\), enabling nested or coupled scaffolds.
+
+\subsection*{5. Mapping to Physical Embodiments}
+
+\paragraph{5.1 Mechanical rotor boundary.}
+In one embodiment, the spiral scaffold defines an outer boundary of a rotor plate or annulus. For example, a rotor profile may be defined by an inner radius \(r_{\text{in}}\) and an outer boundary \(r_{\text{out}}(\theta)=r(\theta;r_0,\kappa)\), optionally clipped to a maximum radius.
+
+\paragraph{5.2 Coil windings and traces.}
+In one embodiment, the spiral scaffold defines a trace centerline or winding centerline. Trace width \(w\) and spacing \(s\) constraints may be enforced by selecting discretization density and/or by offsetting the centerline with a normal-direction rule.
+
+\paragraph{5.3 Magnet placements.}
+In one embodiment, magnets are placed at the sampled points \((x_i,y_i)\) with polarities assigned by a rule (e.g., alternating or grouped polarities), where the geometry is fixed by the scaffold and the polarity rule is a separate parameterization.
+
+\paragraph{5.4 Electromagnetic arrays.}
+In one embodiment, the sampled points define a set of coil elements forming an electromagnetic array. The present disclosure is focused on the spatial scaffold; drive scheduling, sensing, and control are addressed in separate disclosures. Nevertheless, the spatial scaffold may be used independently in any array where a spiral-based layout is advantageous.
+
+\subsection*{6. Computer-Implemented Generation and Compilation}
+
+\paragraph{6.1 Input parameterization.}
+In one embodiment, a computer system receives a parameter set:
+\[
+\mathcal{P} = (r_0,\kappa,n,\theta_{\text{start}},\text{constraints}),
+\]
+where constraints may include minimum feature size, maximum radius, trace width, spacing, and manufacturing-specific limits.
+
+\paragraph{6.2 Output artifacts.}
+The system outputs one or more of:
+\begin{itemize}[leftmargin=*]
+  \item a coordinate table of \((x_i,y_i)\) points and associated metadata,
+  \item CAD geometry (DXF/SVG/STL or equivalents) representing the spiral scaffold,
+  \item PCB layout artifacts (e.g., GERBER or equivalent),
+  \item toolpaths or manufacturing instructions.
+\end{itemize}
+
+\paragraph{6.3 Example pipeline (non-limiting).}
+An example pipeline comprises:
+\begin{enumerate}[leftmargin=*]
+  \item validate input \((r_0,\kappa,n)\) against constraints;
+  \item generate sample angles per Eq.~\eqref{eq:theta_i};
+  \item compute radii per Eq.~\eqref{eq:r_i};
+  \item convert to Cartesian coordinates per Eq.~\eqref{eq:xy_i};
+  \item fit a spline/curve or generate line/arc segments;
+  \item export to one or more target formats.
+\end{enumerate}
+
+\subsection*{7. Design Rules Enabled by Invariants}
+
+Because Eq.~\eqref{eq:step_ratio} is independent of \(r_0\), a designer can:
+\begin{itemize}[leftmargin=*]
+  \item scale the entire design without re-optimizing step ratios;
+  \item select \(\kappa\) to choose a discrete pitch family;
+  \item discretize with uniform \(\Delta\theta\) while preserving multiplicative spacing rules.
+\end{itemize}
+
+In one embodiment, \(\Delta\theta\) is selected to ensure that successive radii differ by a desired factor \(q>0\):
+\[
+q = \phival^{\kappa \Delta\theta/(2\pi)} \quad \Rightarrow \quad
+\Delta\theta = \frac{2\pi \ln q}{\kappa \ln \phival},
+\]
+for \(\kappa \ne 0\). This provides a direct rule for choosing discretization density based on multiplicative radial spacing.
+
+\subsection*{8. Example Embodiments (Non-Limiting)}
+
+\paragraph{Embodiment A: Spiral trace inductor.}
+Choose \(r_0 = 5\) mm, \(\kappa=1\), and discretize with \(n=512\). Output an SVG/DXF path representing the spiral centerline. Apply a trace width and spacing in CAD/EDA tools.
+
+\paragraph{Embodiment B: Segmented rotor boundary.}
+Choose \(r_0 = 50\) mm, \(\kappa=2\), and discretize with \(n=720\). Define a rotor boundary by connecting successive points \((x_i,y_i)\) with line segments, then apply smoothing if desired.
+
+\paragraph{Embodiment C: Magnet placement ring.}
+Choose \(r_0 = 40\) mm, \(\kappa=-1\), and sample \(n=64\) points. Place magnets at the sampled coordinates with alternating polarity, producing a spiral-distributed magnet lattice.
+
+\paragraph{Embodiment D: Multi-arm geometry.}
+Choose \(m=3\) arms with offsets \(0,2\pi/3,4\pi/3\) and identical \((r_0,\kappa)\). Export each arm as a separate CAD layer for a three-arm spiral scaffold.
+
+% ===========================================================================
+% CLAIMS (DRAFT / PROVISIONAL-STYLE)
+% ===========================================================================
+\section*{Claims (Draft)}
+
+\textbf{Note:} The following claims are provided as an initial, non-limiting claim set suitable for guiding drafting strategy. Claim language (e.g., ``comprising'') and claim grouping should be finalized by counsel.
+
+\subsection*{Independent Claims}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{(Apparatus)} A field-generating structure comprising: a physical embodiment defined by a logarithmic spiral scaffold in polar coordinates, the logarithmic spiral scaffold having a radius profile
+  \[
+  r(\theta) = r_0 \cdot \phival^{\kappa \theta/(2\pi)},
+  \]
+  where \(r_0>0\) is a base radius, \(\phival\) is the golden ratio, \(\kappa\in\Z\) is an integer pitch parameter, and \(\theta\) is an angular coordinate.
+
+  \item \textbf{(Method)} A method of generating a fabrication-ready representation of a field-generating structure, the method comprising: receiving, by a computing system, a parameter set including \(r_0>0\) and an integer \(\kappa\); computing a spiral scaffold radius profile \(r(\theta)=r_0\cdot\phival^{\kappa\theta/(2\pi)}\); generating a geometric representation of the spiral scaffold; and exporting the geometric representation to a fabrication artifact.
+
+  \item \textbf{(Non-transitory medium)} A non-transitory computer-readable medium storing instructions that, when executed by one or more processors, cause the one or more processors to perform operations comprising: receiving \(r_0>0\), \(\kappa\in\Z\), and a sampling parameter \(n\); generating a set of sampled angles \(\{\theta_i\}_{i=0}^{n-1}\); computing sampled radii \(r_i=r(\theta_i)\); converting the sampled radii to Cartesian coordinates \((x_i,y_i)\); and emitting at least one of (i) a coordinate table or (ii) a fabrication file representing the spiral scaffold.
+\end{enumerate}
+
+\subsection*{Dependent Claims (Examples; Non-Limiting)}
+
+\begin{enumerate}[leftmargin=*]
+  \setcounter{enumi}{3}
+  \item The structure of claim 1, wherein the physical embodiment comprises a conductive trace disposed on a substrate and the conductive trace follows the spiral scaffold as a trace centerline.
+  \item The structure of claim 1, wherein the physical embodiment comprises a coil winding disposed on a substrate and the coil winding follows the spiral scaffold as a winding centerline.
+  \item The structure of claim 1, wherein the physical embodiment comprises a mechanical rotor boundary defined by an outer radius \(r_{\text{out}}(\theta)=r(\theta)\).
+  \item The structure of claim 1, further comprising a set of discrete elements disposed at sampled positions determined from the spiral scaffold.
+  \item The structure of claim 7, wherein the sampled positions are determined by \(\theta_i=\theta_{\text{start}}+2\pi i/n\) and \(r_i=r(\theta_i)\).
+  \item The structure of claim 7, wherein the discrete elements comprise magnets.
+  \item The structure of claim 7, wherein the discrete elements comprise coil centers of an electromagnetic array.
+  \item The method of claim 2, wherein exporting the fabrication artifact comprises exporting a DXF file.
+  \item The method of claim 2, wherein exporting the fabrication artifact comprises exporting a GERBER file for a printed circuit board.
+  \item The method of claim 2, further comprising computing a step ratio invariant \(\phival^{\kappa\Delta\theta/(2\pi)}\) and outputting the step ratio invariant.
+  \item The method of claim 2, further comprising computing a per-turn multiplier \(\phival^\kappa\) and outputting the per-turn multiplier.
+  \item The method of claim 2, wherein the spiral scaffold comprises multiple arms each having an angular offset \(\alpha_j\).
+  \item The method of claim 2, wherein the fabrication artifact includes multiple layers, each layer having a respective pitch parameter \(\kappa\).
+  \item The non-transitory medium of claim 3, wherein the instructions further cause the one or more processors to enforce a manufacturing constraint comprising at least one of minimum trace width, minimum spacing, minimum curvature radius, or maximum outer radius.
+  \item The non-transitory medium of claim 3, wherein emitting the fabrication file comprises emitting a piecewise linear approximation connecting successive points \((x_i,y_i)\) and \((x_{i+1},y_{i+1})\).
+  \item The non-transitory medium of claim 3, wherein emitting the fabrication file comprises fitting a spline curve through the points \((x_i,y_i)\).
+\end{enumerate}
+
+% ===========================================================================
+% ADDITIONAL DISCLOSURE (EXHAUSTIVE VARIANTS / FALLBACK POSITIONS)
+% ===========================================================================
+\section*{Additional Embodiments and Fallback Positions (Non-Limiting)}
+
+The following are included to maximize optionality for later claim drafting:
+\begin{itemize}[leftmargin=*]
+  \item The scaffold may be clipped, windowed, or bounded by inner/outer radii, including annular implementations.
+  \item The scaffold may be combined with radial spokes, bridges, or structural ribs without departing from the defined radius profile.
+  \item The scaffold may be mirrored or inverted (e.g., \(\kappa<0\)) and may be used to generate inward spirals.
+  \item The scaffold may be implemented at any scale (microfabricated to large-scale) due to scale-invariant ratios.
+  \item The scaffold may be discretized non-uniformly in \(\theta\) (e.g., variable \(\Delta\theta\)) to enforce constant chord length, constant curvature error, or other manufacturing constraints.
+  \item The scaffold may be expressed equivalently as:
+  \[
+  r(\theta) = r_0 \cdot e^{(\kappa \ln\phival)\theta/(2\pi)}.
+  \]
+  \item The parameter \(\kappa\) may be stored as an integer and used to guarantee discrete pitch families in a design database and/or manufacturing control system.
+  \item A design system may generate test coupons and metrology targets derived from the same parameter set \((r_0,\kappa)\) to verify manufacturing fidelity.
+\end{itemize}
+
+\vspace{1em}
+\hrule
+\vspace{0.75em}
+\noindent \textbf{End of Specification (Draft)}
+
+\end{document}
+

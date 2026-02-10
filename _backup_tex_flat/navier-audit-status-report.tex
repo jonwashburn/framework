@@ -1,0 +1,206 @@
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{xcolor}
+
+\geometry{margin=1in}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+\title{Navier--Stokes Proof Program:\\Audit Status and Remaining Global Gates}
+\author{Repository consolidation (snapshot)}
+\date{2025-12-17}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This document consolidates the current \emph{audited} proof status in the repository, using
+(\texttt{ASSUMPTIONS\_TO\_CLOSE.md}) as the authoritative checklist of remaining assumption blocks in
+\texttt{navier-dec-12-rewrite.tex} and (\texttt{P0\_PLAN\_ONE\_CORE\_DOMINANCE.md}) as the detailed analysis
+of the hardest remaining global obstruction (RM2), reformulated as an $\ell=2$ \emph{B-flux (BF)} gate.
+The intent is to produce a referee-friendly ``what is proved / what is missing'' snapshot.
+\end{abstract}
+
+\section{Sources of truth (what to read)}
+
+\begin{itemize}
+\item \textbf{Main manuscript (most complete + most audited):} \texttt{navier-dec-12-rewrite.tex} (compiled as \texttt{navier-dec-12-rewrite.pdf}).
+\item \textbf{Open gate checklist:} \texttt{ASSUMPTIONS\_TO\_CLOSE.md}.
+\item \textbf{RM2/BF deep dive (one-core / tail depletion track):} \texttt{P0\_PLAN\_ONE\_CORE\_DOMINANCE.md}.
+\end{itemize}
+
+\section{Executive summary}
+
+As of this snapshot, \textbf{unconditional global regularity is not yet proved} in the running-max architecture.
+After audit, the remaining nonlocal/global blockers are:
+
+\begin{itemize}
+\item \textbf{U-decay / relative tail depletion:} the true content is a uniform tail envelope in \emph{blow-up variables} (``one-core dominance''), not passive inheritance of physical-space decay at infinity.
+\item \textbf{RM2 (running-max compactness local-energy gate):} extracting a running-max ancient element in a fixed-frame velocity/pressure formulation is obstructed by affine/harmonic modes. In the working log this is reformulated in the $\ell=2$ channel as the \textbf{B-flux (BF) gate} plus an \textbf{endpoint time-regularity} upgrade (BF-timeBV/BF-timeCarleson).
+\end{itemize}
+
+Many local/coercive pieces of the direction-field analysis are valuable and largely written, but they do not by themselves remove the above global obstructions.
+
+\section{Explicit assumption blocks still present in the main TeX}
+
+The file \texttt{ASSUMPTIONS\_TO\_CLOSE.md} records the remaining explicit \texttt{\textbackslash begin\{assumption\}} blocks in \texttt{navier-dec-12-rewrite.tex}.
+Table~\ref{tab:assumptions} summarizes their meaning at a high level.
+
+\begin{longtable}{@{}p{0.24\textwidth}p{0.72\textwidth}@{}}
+\caption{Assumption blocks present in \texttt{navier-dec-12-rewrite.tex} (per \texttt{ASSUMPTIONS\_TO\_CLOSE.md}).}\label{tab:assumptions}\\
+\toprule
+\textbf{Label} & \textbf{Summary (informal)}\\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Label} & \textbf{Summary (informal)}\\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{\emph{(continued)}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+\texttt{assump:C-liouville} &
+Directional $\varepsilon$-regularity + Liouville/ridigity for the vorticity direction drift--diffusion equation under critical forcing/drift hypotheses; as written it relies on a global smallness mechanism for the unweighted Morrey energy of $\nabla \xi$.\\[3pt]
+\texttt{assump:RM2-runningmax} &
+Running-max compactness / fixed-frame local-energy gate (affine/harmonic mode obstruction). In the working notes this is sharpened as an $\ell=2$ \textbf{BF} gate plus an endpoint \textbf{BF-time} regularity upgrade.\\[3pt]
+\texttt{assump:D-forcing} &
+Total tangential forcing (near-field + geometric + tail) is Carleson-small at small scales.\\[3pt]
+\texttt{assump:D-logamp} &
+Uniform-in-$\varepsilon$ control of $\nabla\log(\rho+\varepsilon)$ across the vorticity zero set (known codimension-2 pathologies are a documented obstruction).\\[3pt]
+\texttt{assump:tail-depletion} &
+Carleson-smallness of the tail forcing; a far-field gate that is borderline/nonlocal and closely related to tail depletion / one-core dominance.\\[3pt]
+\texttt{assump:U-decay} &
+Spatial decay/tail control for the running-max ancient element; after audit the correct target is \emph{relative tail depletion} in blow-up variables, not just decay of the original solution at infinity.\\[3pt]
+\texttt{assump:E-2d} &
+Optional 2D classification/Liouville input (kept as a modular global classification statement; parts may be bypassed depending on the contradiction route).\\
+\end{longtable}
+
+\section{Priority order (hardest first)}
+
+Following \texttt{ASSUMPTIONS\_TO\_CLOSE.md}, the current P0/P1 prioritization is:
+\begin{itemize}
+\item \textbf{P0 (global / most non-classical):} U-decay (relative tail depletion in blow-up variables), RM2 (fixed-frame compactness), tail depletion (far-field forcing), log-amplitude control across vorticity zeros, and the global mechanism behind direction Liouville (\texttt{assump:C-liouville}).
+\item \textbf{P1:} optional 2D Liouville/classification once the reduced flow lies in a classical global class.
+\end{itemize}
+
+\section{RM2 reformulated: the $\ell=2$ B-flux (BF) gate}
+
+The working log in \texttt{P0\_PLAN\_ONE\_CORE\_DOMINANCE.md} isolates the fixed-frame compactness obstruction (RM2) into an explicit $\ell=2$ subsystem for a radial coefficient $A(r,t)$ driven by an $\ell=2$ forcing written in flux form via a potential $B(r,t)$.
+
+\subsection{Fixed objects and subsystem}
+
+Fix an $\ell=2$ spherical harmonic test field $\Phi(\theta)$ and define the $\ell=2$ coefficient
+\[
+A(r,t) := \int_{\mathbb S^2} \omega(r\theta,t)\cdot \Phi(\theta)\,d\theta.
+\]
+In the $\ell=2$ channel, $A$ satisfies an exact radial parabolic equation (see UA-A510):
+\[
+\partial_t A
+=\Bigl(\partial_{rr}+\frac{2}{r}\partial_r-\frac{6}{r^2}\Bigr)A
+-\frac{1}{r^2}\partial_r B.
+\]
+The flux potential $B$ is built linearly from $F=u\times \omega$ (and admits an exact divergence-theorem identity
+$B(r,t)=\int_{|y|<r}\Psi(y)\cdot \operatorname{curl}(u\times\omega)(y,t)\,dy$; see UA-A498).
+
+\subsection{BF(1--3): a checkable uniform flux gate}
+
+The BF gate (UA-A401) packages the remaining $\ell=2$ obstruction as:
+\begin{itemize}
+\item \textbf{BF(1) (log-Carleson bound):} for all $t\le 0$,
+\[
+\int_{1}^{\infty}\frac{|B(r,t)|^2}{r^2}\,dr \le C_{\mathrm{BF}}.
+\]
+\item \textbf{BF(2) (vanishing far boundary flux):} as $R\to\infty$,
+\[
+|A(R,t)\,B(R,t)|\to 0,
+\qquad
+R^2|A(R,t)A_r(R,t)|\to 0.
+\]
+\item \textbf{BF(3) (local boundary control at $r=1$):} the $r=1$ boundary terms in the $A$-energy identity are uniformly bounded (local; compatible with running-max inputs).
+\end{itemize}
+
+\subsection{The exact energy identity and the endpoint issue}
+
+Multiplying the $A$ equation by $A r^2$ and integrating on $[1,R]$ yields the exact identity (UA-A406, tagged BF:energy in the plan file):
+\begin{equation}\label{eq:bf-energy}
+\frac12\frac{d}{dt}\int_1^R |A|^2 r^2dr
+\;+\;\int_1^R |A_r|^2 r^2dr
+\;+\;6\int_1^R |A|^2dr
+\;=\;\Bigl[r^2A A_r\Bigr]_{1}^{R}\;-\;\Bigl[A B\Bigr]_{1}^{R}\;+\;\int_1^R A_r\,B\,dr.
+\end{equation}
+Formally, BF(1) allows the bulk forcing term to be Cauchy--Schwarz absorbed into the dissipation.
+However (UA-A511), \textbf{BF(1) alone does not give pointwise-in-time coercivity} at the endpoint:
+explicit linear counterexamples show BF(1) $\not\Rightarrow$ the needed pointwise bound on $\int_1^\infty |A_r|^2 r^2\,dr$.
+
+\subsection{Endpoint fixes: BF-timeBV / BF-timeCarleson}
+
+The working log identifies the correct endpoint repair (UA-A511): add a \emph{time regularity} condition on $B$ in the BF norm.
+Two equivalent ``endpoint upgrade'' forms are recorded:
+\begin{itemize}
+\item \textbf{BF-timeBV:} bounded variation in time for $B$ in the BF norm (an endpoint maximal-regularity surrogate).
+\item \textbf{BF-timeCarleson:} a critical square-function / Carleson-in-time control compatible with semigroup square-function estimates for the self-adjointly factorized $\ell=2$ operator.
+\end{itemize}
+With such a BF-time input, the log provides a unit-slab proof template:
+\[
+\text{BF(1--3) + BF-timeCarleson}\ \Rightarrow\ \text{BF-aux}_{\mathrm{coerc}},
+\]
+which is the missing analytic step needed to pass from time-averaged dissipation to pointwise control and then to the Tauberian/BV$_{\log}$ bridge used to close the $\ell=2$ moment (RM2).
+
+\subsection{Practical handoff statement (single missing theorem)}
+
+The clearest ``handoff'' statement (UA-A513) is:
+\[
+\text{(bounded-vorticity ancient NSE)}\ \Rightarrow\ \text{BF(1) + BF-timeCarleson (or BV)}.
+\]
+Supplying such a theorem would close Track U-A (and hence RM2) in the current architecture.
+
+\section{Hardness frontier (why this looks Clay-level)}
+
+The plan file records a one-sentence summary (Session 61):
+\begin{quote}
+In the running-max architecture, any unconditional route must effectively prove a global tail-depletion principle (BF(1) and especially BF-time regularity / ``no far-field spike''), and every attempted derivation of that principle from bounded vorticity + local energy collapses to regularity-level global control.
+\end{quote}
+Concretely, the log documents several collapse points:
+\begin{itemize}
+\item BF(1) follows from strong global budgets such as $\|u\times\omega\|_{L^2_x}$ (already stronger than critical tightness), but no derivation from running-max inputs is known.
+\item Differentiating $B$ in time introduces $\Delta u,\Delta\omega,\nabla p$ terms (global regularity-level burdens).
+\item BMO--Hardy / compensated compactness attempts fail because the BF testing family is nonlocal in $r$ and not uniformly Hardy-bounded (Session 58).
+\item A separate CPM/$\mathcal W$ architecture introduces an explicit ``Dyadic Decay / no far-field spike'' gate; the plan maps this back to the same tail-depletion/one-core obstruction (Sessions 59).
+\end{itemize}
+
+\section{What would make the proof unconditional (in this repo)}
+
+Per \texttt{ASSUMPTIONS\_TO\_CLOSE.md}, to claim unconditional closure one must \emph{either} prove the existing global gates \emph{or} refactor the manuscript to remove them.
+Three clean replacement targets for the global tail gate are recorded there:
+\begin{itemize}
+\item \textbf{U-A:} prove relative tail depletion (one-core dominance) in blow-up variables.
+\item \textbf{U-B:} prove finite-capacity / sub-affine growth for the ancient element (kills affine/harmonic modes; another face of RM2).
+\item \textbf{U-C:} prove critical-space tightness ($u\in L^\infty_tL^3_x$ or $\omega\in L^\infty_tL^{3/2}_x$) for the ancient element.
+\end{itemize}
+The working conclusion in \texttt{P0\_PLAN\_ONE\_CORE\_DOMINANCE.md} is that these are different packagings of the same regularity-level obstruction.
+
+\section{Recommended reading order}
+
+\begin{enumerate}
+\item \texttt{ASSUMPTIONS\_TO\_CLOSE.md} (first 2 pages) for the global blocker list and P0 priorities.
+\item \texttt{P0\_PLAN\_ONE\_CORE\_DOMINANCE.md}, Session 56 (UA-A510--UA-A513) for the $\ell=2$ BF obstruction diagram.
+\item \texttt{navier-dec-12-rewrite.tex} to see exactly where RM2/U-decay enter the main contradiction chain.
+\end{enumerate}
+
+\end{document}
+
+

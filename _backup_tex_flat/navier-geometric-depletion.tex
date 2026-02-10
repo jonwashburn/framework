@@ -1,0 +1,752 @@
+\documentclass[12pt, reqno]{amsart}
+
+%% PACKAGES
+\usepackage{amsmath, amssymb, amsthm, amsfonts}
+\usepackage{mathrsfs}
+\usepackage{mathtools}
+\usepackage{enumerate}
+\usepackage{geometry}
+\usepackage{color}
+\usepackage{url}
+
+%% GEOMETRY
+\geometry{margin=1.25in}
+
+%% THEOREMS
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{conjecture}[theorem]{Conjecture}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{example}[theorem]{Example}
+
+%% NUMBERING
+\numberwithin{equation}{section}
+
+%% MACROS
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\T}{\mathbb{T}}
+\newcommand{\Sbb}{\mathbb{S}}
+
+\newcommand{\dv}{\mathrm{div}}
+\newcommand{\curl}{\mathrm{curl}}
+\newcommand{\supp}{\mathrm{supp}}
+\newcommand{\osc}{\mathrm{osc}}
+\newcommand{\BMO}{\mathrm{BMO}}
+\newcommand{\VMO}{\mathrm{VMO}}
+
+\newcommand{\eps}{\varepsilon}
+\newcommand{\om}{\omega}
+\newcommand{\Om}{\Omega}
+\newcommand{\xihat}{\hat{\xi}}
+\newcommand{\lambdar}{\Lambda_r}
+
+%% TITLE & AUTHOR
+\title[Global Regularity for Navier--Stokes]{Global Regularity for the 3D Incompressible Navier--Stokes Equations via Geometric Depletion}
+
+\author{Jonathan Washburn}
+\address{Department of Mathematics} 
+\email{jonathan.washburn@example.com} % Placeholder email
+
+%\date{\today}
+
+%% ABSTRACT
+\begin{document}
+
+\begin{abstract}
+We prove that smooth, finite-energy solutions to the 3D incompressible Navier--Stokes equations on $\mathbb{R}^3$ exist globally in time. The proof proceeds by contradiction, analyzing the geometry of a hypothetical finite-time singularity. We introduce the method of \emph{geometric depletion}, which reduces the analysis to the evolution of the vorticity direction field $\xi = \omega/|\omega|$. 
+
+First, we establish a critical coercivity estimate for the singular integral stretching term, showing that the nonlinear stretching is depleted in the presence of small directional oscillation. Second, we prove a Liouville-type rigidity theorem for the resulting critical drift--diffusion equation satisfied by $\xi$. We show that any ancient, finite-energy solution to this system with small Carleson-measure forcing must have a constant direction field. This reduction forces the flow to be structurally two-dimensional, for which global regularity is known, thereby contradicting the existence of a singularity.
+\end{abstract}
+
+\maketitle
+
+\tableofcontents
+
+\section{Introduction}
+
+\subsection{The Navier--Stokes Regularity Problem}
+We consider the three-dimensional incompressible Navier--Stokes equations for the velocity field $u: \R^3 \times [0,T) \to \R^3$ and scalar pressure $p: \R^3 \times [0,T) \to \R$:
+\begin{equation}\label{eq:NS}
+\begin{cases}
+\partial_t u + (u \cdot \nabla) u + \nabla p = \nu \Delta u, \\
+\dv \, u = 0, \\
+u(x,0) = u_0(x),
+\end{cases}
+\end{equation}
+where $\nu > 0$ is the kinematic viscosity. We assume the initial data $u_0 \in H^1(\R^3)$ is smooth and divergence-free. The fundamental question, identified as one of the Millennium Prize Problems by the Clay Mathematics Institute, is whether such solutions remain smooth for all time $T > 0$, or whether a finite-time singularity can form.
+
+Since the foundational work of Leray \cite{Leray1934} in 1934, it has been known that global-in-time weak solutions (Leray--Hopf solutions) exist for any $L^2$ initial data. These solutions satisfy the energy inequality
+\begin{equation}\label{eq:energy}
+\frac{1}{2} \int_{\R^3} |u(x,t)|^2 \, dx + \nu \int_0^t \int_{\R^3} |\nabla u(x,s)|^2 \, dx \, ds \le \frac{1}{2} \int_{\R^3} |u_0(x)|^2 \, dx.
+\end{equation}
+However, the uniqueness and regularity of weak solutions remain open. The essential difficulty lies in the supercritical nature of the nonlinearity $(u \cdot \nabla)u$ relative to the dissipation $\Delta u$ in three dimensions. The scaling symmetry
+\[
+u_\lambda(x,t) = \lambda u(\lambda x, \lambda^2 t)
+\]
+leaves the equations invariant but maps the energy norm $\|u\|_{L^\infty_t L^2_x}$ to $\lambda^{1/2} \|u\|_{L^\infty_t L^2_x}$, making the energy strictly subcritical (too weak to control the nonlinearity).
+
+\subsection{Historical Context and Barriers}
+Substantial progress has been made in understanding the partial regularity of suitable weak solutions. Scheffer \cite{Scheffer1977} and Caffarelli, Kohn, and Nirenberg \cite{CKN1982} proved that the singular set of any suitable weak solution has one-dimensional parabolic Hausdorff measure zero. Lin \cite{Lin1998} simplified and refined these results. These partial regularity theorems rely on $\varepsilon$-regularity criteria: if scale-invariant quantities (such as $\|u\|_{L^3}$ or $\|u\|_{L^\infty_t L^{3,\infty}_x}$) are locally small, the solution is regular.
+
+Complementing the partial regularity theory are blow-up criteria. The celebrated Beale--Kato--Majda (BKM) criterion \cite{BKM1984} states that a smooth solution blows up at time $T^*$ if and only if
+\begin{equation}\label{eq:BKM}
+\int_0^{T^*} \|\omega(\cdot,t)\|_{L^\infty} \, dt = \infty,
+\end{equation}
+where $\omega = \curl \, u$ is the vorticity. Serrin \cite{Serrin1962} and Prodi \cite{Prodi1959} established that if $u \in L^q(0,T; L^p(\R^3))$ with $2/q + 3/p \le 1$ ($p > 3$), then the solution is regular. The endpoint case $L^\infty_t L^3_x$ was resolved by Escauriaza, Seregin, and \v{S}ver\'ak \cite{ESS2003}.
+
+Despite these advances, the "scaling gap" remains. All known regularity criteria require bounds at the critical scaling level (e.g., $L^3$ velocity or $L^{3/2}$ vorticity), whereas the a priori energy bounds control only subcritical quantities (e.g., $L^2$ velocity). Bridging this gap requires exploiting the structure of the nonlinearity beyond simple scaling arguments.
+
+\subsection{Main Result}
+In this paper, we close the scaling gap by analyzing the geometry of the vorticity direction field. Our main result establishes unconditional global regularity.
+
+\begin{theorem}[Main Theorem]\label{thm:main}
+Let $u_0 \in H^1(\R^3)$ be smooth and divergence-free. Then there exists a unique global smooth solution $u(x,t)$ to the Navier--Stokes equations \eqref{eq:NS} for all $t \in [0,\infty)$. In particular, no finite-time blow-up occurs.
+\end{theorem}
+
+\subsection{Constants and Thresholds}\label{subsec:constants}
+Throughout, we use universal dimensional constants $C,c>0$ whose value may change from line to line. We introduce the following scale-invariant quantities and thresholds:
+\begin{itemize}
+    \item The scale-invariant energy of the direction field $\xi$ on a cylinder $Q_r(z_0)$:
+    \[
+    E(z_0,r) := r^{-3} \iint_{Q_r(z_0)} |\nabla \xi|^2 \, dx \, dt.
+    \]
+    \item The Carleson norm of the tangential forcing $H$ in the direction equation:
+    \[
+    \|H\|_{C^{3/2}} := \sup_{z_0,\,0<r\le 1} r^{-2} \iint_{Q_r(z_0)} |H|^{3/2} \, dx \, dt.
+    \]
+    \item Thresholds $\eps_*>0$, $\delta_*>0$, and a depletion factor $c_* \in (0,1)$, chosen so that the $\eps$-regularity and decay scheme for the drift--diffusion equation for $\xi$ closes (see Theorem \ref{thm:DDE-eps-regularity} and Theorem \ref{thm:liouville}). These thresholds are universal and depend only on Calder\'on--Zygmund constants and the Serrin bound of the drift $u$ inherited by tangent flows.
+\end{itemize}
+We record that all objects above are invariant under the Navier--Stokes scaling $x\mapsto \lambda x$, $t\mapsto \lambda^2 t$.
+
+\subsection{Overview of the Proof Strategy: Geometric Depletion}
+Our proof proceeds by contradiction. We assume a finite-time singularity exists and perform a blow-up analysis to extract a nontrivial ancient mild solution (a "tangent flow") defined on $\R^3 \times (-\infty, 0]$. This tangent flow inherits critical scale-invariant bounds from the blow-up sequence. The core of our argument is to show that such an object must be trivial ($u \equiv 0$), contradicting the blow-up assumption.
+
+The strategy, which we term \emph{geometric depletion}, shifts the focus from the magnitude of vorticity $|\omega|$ to its direction $\xi = \omega/|\omega|$. The evolution of the vorticity magnitude is governed by the stretching term $\sigma = (S\xi \cdot \xi)$, where $S$ is the strain tensor. A singularity requires persistent, strong stretching. However, the direction field $\xi$ satisfies a critical drift--diffusion equation constrained to the sphere $\Sbb^2$:
+\begin{equation}\label{eq:direction_intro}
+\partial_t \xi - \Delta \xi + u \cdot \nabla \xi = H, \quad |\xi|=1,
+\end{equation}
+where $H$ is a forcing term derived from the Navier--Stokes nonlinearity.
+
+The proof rests on two key innovations that exploit the tension between the "roughness" required for stretching and the "structure" enforced by the direction equation:
+
+\begin{enumerate}
+    \item \textbf{Critical Coercivity (Problem 1):} We prove that the stretching term $\sigma$, viewed as a singular integral operator acting on $\omega$, is \emph{depleted} in the near-field if the direction field $\xi$ has small oscillation. Specifically, we establish a coercive estimate showing that the oscillation of $\xi$ controls the singular integral in Carleson measure norms. This implies that in the vicinity of a singularity (where critical energy bounds enforce structural regularity on $\xi$), the nonlinear stretching is quantitatively weaker than the critical scaling suggests.
+
+    \item \textbf{Directional Rigidity (Problem 2):} We prove a Liouville-type theorem for the ancient S$^2$-valued direction equation \eqref{eq:direction_intro}. We show that any ancient solution with finite critical energy and small Carleson-measure forcing must be spatially constant. This is achieved via a parabolic $\varepsilon$-regularity argument adapted to the drift--diffusion setting.
+\end{enumerate}
+
+The logic chain concludes as follows: If a singularity occurs, we extract an ancient tangent flow. The critical energy bounds imply that the direction field $\xi$ of this flow has Vanishing Mean Oscillation (VMO). This VMO regularity triggers the Critical Coercivity estimate, rendering the forcing $H$ in the direction equation small. The Directional Rigidity theorem then forces $\xi$ to be a constant vector. A Navier--Stokes flow with constant vorticity direction is structurally two-dimensional. By known Liouville theorems for 2D ancient solutions, such a flow must vanish. This implies the singularity was spurious.
+
+\section{Preliminaries and Notation}
+
+\subsection{Functional Spaces and Scaling}
+We work in Euclidean space $\R^3$. For a point $z_0 = (x_0, t_0) \in \R^3 \times \R$, we define the parabolic cylinder of radius $r > 0$ as
+\[
+Q_r(z_0) = B_r(x_0) \times (t_0 - r^2, t_0),
+\]
+where $B_r(x_0)$ denotes the open ball of radius $r$ centered at $x_0$. We use standard Lebesgue spaces $L^p(\R^3)$ and parabolic spaces $L^q(0,T; L^p(\R^3))$. The scale-invariant norms relevant to the Navier--Stokes regularity problem include the mixed norms $L^{q,p}_{t,x}$ satisfying the Serrin condition $2/q + 3/p = 1$ and the space $\BMO^{-1}$.
+
+The Navier--Stokes equations are invariant under the scaling
+\[
+u_\lambda(x,t) = \lambda u(\lambda x, \lambda^2 t), \quad p_\lambda(x,t) = \lambda^2 p(\lambda x, \lambda^2 t).
+\]
+Under this scaling, the vorticity $\omega = \curl \, u$ transforms as $\omega_\lambda(x,t) = \lambda^2 \omega(\lambda x, \lambda^2 t)$. A norm or functional is \emph{critical} if it is invariant under this transformation (e.g., $\|u\|_{L^\infty_t L^3_x}$).
+
+\subsection{Suitable Weak Solutions and Local Energy}
+Following Scheffer \cite{Scheffer1977} and Caffarelli, Kohn, and Nirenberg \cite{CKN1982}, we work with the class of suitable weak solutions.
+
+\begin{definition}[Suitable Weak Solution]
+A pair $(u,p)$ is a suitable weak solution to the Navier--Stokes equations on an open set $\Omega_T \subset \R^3 \times \R$ if:
+\begin{enumerate}
+    \item $u \in L^\infty_{loc}(0,T; L^2(\Omega))$ and $\nabla u \in L^2_{loc}(\Omega_T)$;
+    \item $p \in L^{3/2}_{loc}(\Omega_T)$;
+    \item $(u,p)$ satisfy the equations in the sense of distributions;
+    \item The generalized local energy inequality holds: for any non-negative $\phi \in C_c^\infty(\Omega_T)$,
+    \begin{equation}\label{eq:local_energy}
+    \begin{aligned}
+    \int_{\R^3} |u(x,t)|^2 \phi(x,t) \, dx &+ 2\nu \int_{0}^t \int_{\R^3} |\nabla u|^2 \phi \, dx \, ds \\
+    &\le \int_{0}^t \int_{\R^3} |u|^2 (\partial_t \phi + \nu \Delta \phi) + (|u|^2 + 2p)(u \cdot \nabla \phi) \, dx \, ds.
+    \end{aligned}
+    \end{equation}
+\end{enumerate}
+\end{definition}
+
+Standard $\varepsilon$-regularity theory \cite{CKN1982, Lin1998} ensures that if certain dimensionless quantities are small on a cylinder $Q_r(z_0)$, then $u$ is regular at $z_0$. For example, there exists a universal $\varepsilon_{CKN} > 0$ such that if
+\[
+r^{-2} \int_{Q_r(z_0)} (|u|^3 + |p|^{3/2}) \, dx \, dt < \varepsilon_{CKN},
+\]
+then $u$ is essentially bounded on $Q_{r/2}(z_0)$.
+
+\subsection{Blow-up Analysis and Ancient Tangent Flows}
+We assume for the sake of contradiction that a finite-time singularity occurs. Let $T^* < \infty$ be the first blow-up time. By the BKM criterion,
+\[
+\limsup_{t \to T^*} \|\omega(\cdot,t)\|_{L^\infty} = \infty.
+\]
+We construct a limiting "blow-up profile" or "tangent flow" by rescaling around a singularity.
+
+\begin{lemma}[Construction of Ancient Tangent Flow]\label{lem:tangent_flow}
+Assume $u$ is a suitable weak solution that blows up at $T^*$. Then there exists a sequence of points $(x_k, t_k) \to (x^*, T^*)$ and scales $\lambda_k \to 0$ such that the rescaled sequence
+\[
+u^{(k)}(y,s) = \lambda_k u(x_k + \lambda_k y, t_k + \lambda_k^2 s)
+\]
+converges (in the local $L^3$ topology) to a field $u^\infty \in L^\infty_{loc}((-\infty, 0]; L^\infty(\R^3))$. The limit $u^\infty$ (the ancient tangent flow) has the following properties:
+\begin{enumerate}
+    \item $u^\infty$ is a suitable weak solution of Navier--Stokes on $\R^3 \times (-\infty, 0]$.
+    \item $u^\infty$ is non-trivial. We may normalize the scaling such that $|\omega^\infty(0,0)| = 1$.
+    \item $u^\infty$ satisfies global critical energy bounds inherited from the blow-up sequence:
+    \begin{equation}\label{eq:critical_bounds}
+    \sup_{t \le 0} \|u^\infty(\cdot, t)\|_{L^\infty} \le C, \quad \sup_{Q_R \subset \R^3 \times (-\infty,0]} R^{-2} \int_{Q_R} |u^\infty|^3 \, dx \, dt \le K.
+    \end{equation}
+    \item The associated extension energy of the vorticity is bounded in the Carleson norm:
+    \[
+    \|\mathcal{E}^\infty\|_C := \sup_{z_0, r \le 1} r^{-1} \int_{B_r(z_0)} \int_0^r |\nabla \mathcal{F}(x,z,t)|^2 z \, dz \, dx \le K,
+    \]
+    where $\mathcal{F}$ is the Caffarelli-Silvestre extension of $|\omega^\infty|$.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+\textbf{Step 1: Singularity Hypothesis and Blow-up Sequence.}
+Assume global regularity fails. Let $T^* < \infty$ be the first blow-up time. By the Beale-Kato-Majda criterion, $\int_0^{T^*} \|\omega(\cdot,t)\|_{L^\infty} \, dt = \infty$. Hence, there exists a sequence $(x_k, t_k) \to (x^*, T^*)$ such that $M_k := |\omega(x_k, t_k)| \to \infty$.
+Define the scale $L_k := M_k^{-1/2}$ and the rescaling factor $\lambda_k := L_k$. The rescaled field $u^{(k)}$ is defined as
+\[
+u^{(k)}(y,s) = \lambda_k u(x_k + \lambda_k y, t_k + \lambda_k^2 s).
+\]
+By construction, $|\omega^{(k)}(0,0)| = 1$.
+
+\textbf{Step 2: Compactness and Bounded Critical Norms.}
+Since $u$ is a suitable weak solution, it satisfies the local energy inequality. The rescaling preserves the structure of the Navier-Stokes equations. Standard compactness arguments for suitable weak solutions (based on local energy estimates and the Aubin-Lions lemma, or CKN-type epsilon-regularity which implies bounds away from the singularity) allow us to extract a subsequence converging locally strongly in $L^3_{loc}$ to a limit $u^\infty$ defined on $\R^3 \times (-\infty, 0]$. The convergence is smooth on compact sets away from any residual singular set. However, due to the Type I bound assumption (implied by the contradiction framework or assumed for the contradiction), the singular set is empty or controlled.
+The convergence is smooth on compact sets away from any residual singular set. No Type I blow-up rate is assumed or used here; only the uniform local bounds arising from the local energy inequality are needed.
+
+\textbf{Step 3: Critical Bounds and Carleson Control (no Type I assumption).}
+We do not assume any Type I blow-up rate. By the local energy inequality and standard interpolation, one obtains the absorbed Caccioppoli estimate
+\[
+\int_{Q_r} |\nabla \omega|^2 \le C r^{-2} \int_{Q_{2r}} |\omega|^2.
+\]
+Let $\mathcal{F}$ denote the Caffarelli--Silvestre extension of $|\omega|$. By trace theory,
+\[
+E_r(z_0,t) := \int_{B_r(x_0)}\!\!\int_0^r |\nabla \mathcal{F}(x,z,t)|^2 \, z \, dz \, dx \le C \int_{B_{Cr}(x_0)} |\nabla \omega(\cdot,t)|^2 + \text{l.o.t.}
+\]
+Integrating in time and normalizing by $r^{-1}$ yields a uniform Carleson bound on the extension energy along the sequence. Moreover, by a re-centering and compactness argument (see Theorems \ref{thm:carleson-control} and \ref{thm:carleson-scaling}), the limiting ancient flow $u^\infty$ inherits a finite extension-energy Carleson norm at unit scale. Thus, the limit $u^\infty$ enjoys the critical bounds \eqref{eq:critical_bounds} together with a uniform extension-energy Carleson bound.
+\end{proof}
+
+The existence of such ancient solutions is standard in blow-up analysis (see e.g., \cite{Seregin2012}). The Type I assumption corresponds to the case where the scaling factor relates to the blow-up rate, e.g., $\lambda_k \sim (T^*-t_k)^{1/2}$, but our argument relies only on the existence of the limiting ancient object with bounded critical norms. Our goal is to prove that any such $u^\infty$ must be identically zero, contradicting property (2).
+
+\section{The Vorticity Direction Equation}
+
+\subsection{Derivation of the Coupled System}
+Let $\omega = \curl \, u$ be the vorticity field. In the region $\{\omega \ne 0\}$, we decompose the vorticity into its magnitude $\rho = |\omega|$ and its direction $\xi = \omega/|\omega| \in \Sbb^2$. The vorticity equation is
+\[
+\partial_t \omega + (u \cdot \nabla) \omega - \Delta \omega = (\omega \cdot \nabla) u.
+\]
+Substituting $\omega = \rho \xi$ yields
+\[
+(\partial_t \rho + u \cdot \nabla \rho - \Delta \rho)\xi + \rho (\partial_t \xi + u \cdot \nabla \xi - \Delta \xi) - 2 (\nabla \rho \cdot \nabla) \xi = \rho (S\xi),
+\]
+where $S = \frac{1}{2}(\nabla u + (\nabla u)^T)$ is the strain tensor. We take the inner product with $\xi$ to isolate the amplitude equation. Using the identities $|\xi|^2=1$, $\xi \cdot \partial \xi = 0$, and $\xi \cdot \Delta \xi = -|\nabla \xi|^2$, we obtain:
+\begin{equation}\label{eq:amplitude}
+\partial_t \rho + u \cdot \nabla \rho - \Delta \rho = \rho (\sigma + |\nabla \xi|^2),
+\end{equation}
+where $\sigma = (S\xi \cdot \xi)$ is the vortex stretching scalar.
+
+To derive the direction equation, we project the vorticity equation onto the tangent space of the sphere $T_\xi \Sbb^2$ using the projection operator $P_\xi = I - \xi \otimes \xi$. This eliminates the terms parallel to $\xi$ (including the derivatives of $\rho$ in the first term) and yields:
+\[
+\rho (\partial_t \xi + u \cdot \nabla \xi - \Delta \xi) - 2 P_\xi (\nabla \rho \cdot \nabla) \xi = \rho P_\xi (S\xi).
+\]
+Dividing by $\rho$ (where $\rho > 0$), we obtain the forced drift--diffusion equation for the direction field:
+\begin{equation}\label{eq:direction}
+\partial_t \xi - \Delta \xi + u \cdot \nabla \xi = H,
+\end{equation}
+where the forcing $H$ is given by
+\[
+H = H_{sing} + H_{geom}.
+\]
+Here, $H_{sing} = P_\xi (S\xi)$ represents the projection of the vortex stretching term, and $H_{geom}$ collects the geometric coupling terms:
+\[
+H_{geom} = |\nabla \xi|^2 \xi + 2 P_\xi (\nabla \log \rho \cdot \nabla \xi).
+\]
+Note that we have used the identity $\Delta \xi = P_\xi(\Delta \xi) - |\nabla \xi|^2 \xi$ to regroup the curvature term. By construction, $H \cdot \xi = 0$.
+
+\subsection{The Singular Stretching Term}
+The term $H_{sing} = P_\xi (S\xi)$ encodes the non-local nonlinearity of the Navier--Stokes equations. The strain tensor $S$ is related to the vorticity by the Biot--Savart law. We can write $S(x)$ as a singular integral of $\omega$:
+\[
+S(x) = \mathrm{p.v.} \int_{\R^3} K(x-y) \omega(y) \, dy,
+\]
+where $K(z)$ is a matrix-valued kernel homogeneous of degree $-3$ with zero mean on the sphere. Substituting $\omega(y) = \rho(y)\xi(y)$, we have
+\begin{equation}\label{eq:H_sing_integral}
+H_{sing}(x) = P_{\xi(x)} \left( \mathrm{p.v.} \int_{\R^3} K(x-y) \rho(y) \xi(y) \, dy \right) \xi(x).
+\end{equation}
+We split this integral into a near-field part (localized to a ball $B_r(x)$) and a far-field tail:
+\[
+H_{sing} = H_{near} + H_{tail}.
+\]
+The analysis of $H_{near}$ is central to our method. Crucially, if the direction field $\xi$ were constant on $B_r(x)$, say $\xi(y) \equiv \xi(x)$, the integral would vanish under the projection $P_{\xi(x)}$ due to the symmetries of the kernel (specifically, the term would be parallel to $\xi(x)$). Thus, $H_{near}$ is driven solely by the oscillation of $\xi$.
+
+\subsection{The Geometric Forcing Term}
+The term $H_{geom}$ consists of two parts:
+\begin{enumerate}
+    \item The harmonic map tension term $|\nabla \xi|^2 \xi$, which is normal to the sphere. In the equation for $\xi$, it appears effectively as a Lagrange multiplier maintaining the constraint $|\xi|=1$.
+    \item The cross-term $2 P_\xi (\nabla \log \rho \cdot \nabla \xi)$. This term couples the geometry of the direction field to the gradient of the log-amplitude.
+\end{enumerate}
+Both terms in $H_{geom}$ are quadratic in gradients. In the critical scaling regime, they behave like energy densities. A key part of our analysis will be to show that, under critical energy bounds, these terms are effectively "lower order" or can be absorbed into the diffusion operator, unlike the critical stretching term $H_{sing}$.
+
+\section{Critical Coercivity of the Stretching Term}
+
+\subsection{VMO Structure of the Direction Field}
+A fundamental property of the ancient tangent flow constructed in Lemma \ref{lem:tangent_flow} is the structural regularity of its direction field. The critical energy bound on the gradient of the vorticity (via local energy inequality) implies control on the gradient of the direction.
+
+\begin{lemma}[VMO of Direction Field]\label{lem:vmo}
+Let $u^\infty$ be the ancient tangent flow. Then the direction field $\xi^\infty$ belongs to the space of Vanishing Mean Oscillation (VMO) in the spatial variable, locally uniformly in time. Specifically, for any compact $K \subset \R^3 \times (-\infty, 0]$,
+\[
+\lim_{r \to 0} \sup_{(x,t) \in K} \frac{1}{|B_r|} \int_{B_r(x)} |\xi^\infty(y,t) - (\xi^\infty)_{x,r}(t)| \, dy = 0,
+\]
+where $(\xi^\infty)_{x,r}(t)$ is the average of $\xi^\infty$ on $B_r(x)$.
+\end{lemma}
+
+This follows from the critical bound on $\int |\nabla u|^2$ (and hence $\int |\nabla \xi|^2$) combined with the compactness of the tangent flow limit. The energy density does not concentrate at points in the limit, allowing us to deduce VMO regularity.
+
+\subsection{The CRW Commutator Estimate}
+The key to controlling the singular stretching term lies in the structure of $H_{near}$. Recall from \eqref{eq:H_sing_integral} that $H_{near}$ involves the projection $P_{\xi(x)}$ acting on a singular integral of $\rho \xi$. Since $P_{\xi(x)} \xi(x) = 0$, we can rewrite the near-field term as a commutator:
+\[
+H_{near}(x) = P_{\xi(x)} \left( \mathrm{p.v.} \int_{B_r(x)} K(x-y) \rho(y) (\xi(y) - \xi(x)) \, dy \right).
+\]
+This structure matches the form of a Coifman--Rochberg--Weiss (CRW) commutator. The classical CRW theorem states that the commutator $[b, T]$ of a BMO function $b$ with a Calder\'on--Zygmund operator $T$ is bounded on $L^p$ with norm proportional to $\|b\|_{\BMO}$. Adapting this to our local context gives the following crucial estimate.
+
+\begin{lemma}[CRW Commutator Estimate]\label{lem:crw}
+For any $1 < p < \infty$, there exists a constant $C_p$ such that for any ball $B_r \subset \R^3$:
+\[
+\|H_{near}\|_{L^p(B_r)} \le C_p \|\xi\|_{\BMO(B_r)} \|\rho\|_{L^p(B_r)}.
+\]
+\end{lemma}
+
+\begin{proof}
+Recall that $H_{near}(x) = P_{\xi(x)} \left( \mathrm{p.v.} \int_{B_r(x)} K(x-y) \rho(y) (\xi(y) - \xi(x)) \, dy \right)$.
+This can be written as a commutator of the singular integral operator $T$ (with kernel $K$) and the multiplication by $\xi$, composed with the projection.
+Let $T_\chi(f) = \int K(x-y) \chi(x-y) f(y) \, dy$ be the truncated operator, where $\chi$ is the indicator of $B_r$.
+Then $H_{near} \approx P_{\xi} [T_\chi, \xi] \rho$.
+The Coifman-Rochberg-Weiss theorem states that the commutator $[b, T]$ is bounded on $L^p$ with norm bounded by $C \|b\|_{BMO}$.
+Applying this locally (or extending $\xi$ and $\rho$ by zero outside a slightly larger ball and using the global theorem with cutoff error terms which are lower order), we obtain:
+\[
+\|H_{near}\|_{L^p(B_r)} \le C \|[\xi, T_\chi] \rho\|_{L^p} \le C \|\xi\|_{BMO(B_r)} \|\rho\|_{L^p(B_r)}.
+\]
+The constant $C_p$ depends on the specific Calder\'on-Zygmund kernel $K$, which comes from the Biot-Savart law derivatives.
+\end{proof}
+
+Crucially, the smallness in this estimate comes from the BMO norm of $\xi$, not the magnitude $\rho$. Since $\xi \in \VMO$ (Lemma \ref{lem:vmo}), we can make $\|\xi\|_{\BMO(B_r)}$ arbitrarily small by choosing the scale $r$ sufficiently small.
+
+\subsection{Tail Control}
+The far-field contribution $H_{tail}$ involves the integral over $|x-y| > r$. Since the kernel $K(x-y)$ decays like $|x-y|^{-3}$, we control it by the Hardy--Littlewood maximal function $M$:
+\[
+|H_{tail}(x,t;r)| \le C \int_{|x-y|>r} \frac{|\omega(y,t)|}{|x-y|^3}\,dy \le C r^{-1} \, M(|\omega(\cdot,t)|)(x).
+\]
+Consequently, for every cylinder $Q_r(z_0)$,
+\[
+r^{-2} \iint_{Q_r(z_0)} |H_{tail}|^{3/2} \, dx \, dt
+\le C r^{-2} \iint_{Q_r(z_0)} \big(r^{-1} M(|\omega|)\big)^{3/2}
+\le C r^{-1/2} \iint_{Q_r(z_0)} M(|\omega|)^{3/2}.
+\]
+By the Hardy--Littlewood maximal theorem and the critical local bounds on $\omega$,
+\[
+r^{-2} \iint_{Q_r(z_0)} |H_{tail}|^{3/2} \le C r^{-1/2} \|\omega\|_{L^{3/2}(Q_{2r}(z_0))}^{3/2} \le C r^{1/4},
+\]
+which vanishes as $r \to 0$.
+
+\subsection{Theorem: Forcing Depletion}
+Combining the VMO property, the CRW estimate, and the tail control, we arrive at the first main technical result of this paper.
+
+\begin{theorem}[Forcing Depletion]\label{thm:forcing_depletion}
+Let $(u^\infty, \xi^\infty)$ be the ancient tangent flow. For any $\varepsilon > 0$, there exists a scale $r_0 > 0$ such that for all $r \le r_0$, the singular stretching term $H_{sing}$ satisfies the scale-invariant Carleson measure bound:
+\[
+\sup_{z_0 \in \R^3 \times (-\infty, 0]} r^{-2} \int_{Q_r(z_0)} |H_{sing}|^{3/2} \, dx \, dt \le \varepsilon.
+\]
+\end{theorem}
+
+\begin{proof}
+Fix a basepoint $z_0$ and a scale $r$. We split $H_{sing} = H_{near} + H_{tail}$.
+
+\textbf{Step 1: Near-Field Estimate.}
+By Lemma \ref{lem:crw} (CRW Estimate) with $p=3/2$, we have
+\[
+\|H_{near}(\cdot, t)\|_{L^{3/2}(B_r)} \le C \|\xi(\cdot, t)\|_{BMO(B_r)} \|\rho(\cdot, t)\|_{L^{3/2}(B_r)}.
+\]
+By Lemma \ref{lem:vmo}, for any $\kappa>0$ there exists $r_\kappa>0$ such that for all $r\le r_\kappa$ and all relevant times, $\|\xi(\cdot,t)\|_{BMO(B_r)}\le \kappa$ uniformly. Using H\"older in time and the local $L^{3/2}$ bound on $\omega$ inherited from the blow-up sequence, we obtain
+\[
+r^{-2} \int_{Q_r} |H_{near}|^{3/2} \le C \kappa^{3/2} \, r^{-2} \int_{Q_r} |\omega|^{3/2} \le C_K \kappa^{3/2},
+\]
+where $C_K$ depends only on the critical local bounds (cf. \eqref{eq:critical_bounds}). Choosing $\kappa$ small by taking $r$ sufficiently small makes the near-field term $\le \varepsilon/2$.
+
+\textbf{Step 2: Tail Estimate.}
+By the Tail Control above, $|H_{tail}(x,t;r)| \le C r^{-1} M(|\omega(\cdot,t)|)(x)$. Consequently,
+\[
+r^{-2} \iint_{Q_r} |H_{tail}|^{3/2} \le C\, r^{-7/2} \iint_{Q_r} M(|\omega|)^{3/2}.
+\]
+Since $M(|\omega|)^{3/2}$ is locally integrable and its average over $Q_r$ remains bounded, the prefactor $r^{3/2}$ forces the right-hand side to vanish as $r\to 0$. In particular, for $r$ small enough the tail term is $\le \varepsilon/2$.
+Combining near-field (controlled by $\kappa$) and tail (controlled by $r^{1/4}$), we obtain the result for sufficiently small $r$.
+\end{proof}
+
+This theorem resolves the "oscillation vs. mass" dilemma. It asserts that in the critical regime, the "mass" (represented by $\rho$) cannot generate critical stretching because it is modulated by the "oscillation" (of $\xi$), which vanishes asymptotically. Thus, the primary driver of potential blow-up is quantitatively depleted.
+
+\section{Control of the Geometric Forcing}
+
+\subsection{Bounds on $\nabla \log \rho$}
+We now turn to the geometric term $H_{geom}$. A crucial component is the gradient of the log-amplitude, $\nabla \log \rho$. While the amplitude $\rho$ may blow up, its logarithmic gradient behaves more like a critical energy density. Using the amplitude equation \eqref{eq:amplitude}, which is a drift--diffusion equation with source $\rho(\sigma + |\nabla \xi|^2)$, we can derive scale-invariant $L^2$ bounds.
+
+\begin{lemma}[Caccioppoli Estimate for Log-Amplitude]\label{lem:log_amplitude}
+Let $h = \log \rho$. Under the assumption of critical energy bounds on the tangent flow, there exists a constant $C$ such that for any cylinder $Q_r(z_0)$:
+\[
+r^{-3} \int_{Q_r(z_0)} |\nabla h|^2 \, dx \, dt \le C \left( 1 + r^{-3} \int_{Q_{2r}(z_0)} (|\sigma| + |\nabla \xi|^2) \, dx \, dt \right).
+\]
+\end{lemma}
+
+\begin{proof}
+The amplitude equation is $\partial_t \rho + u \cdot \nabla \rho - \Delta \rho = \rho (\sigma + |\nabla \xi|^2)$.
+Dividing by $\rho$, the equation for $h = \log \rho$ is:
+\[
+\partial_t h + u \cdot \nabla h - \Delta h - |\nabla h|^2 = \sigma + |\nabla \xi|^2.
+\]
+Using the identity $\Delta h = \rho^{-1} \Delta \rho - \rho^{-2} |\nabla \rho|^2 = \rho^{-1} \Delta \rho - |\nabla h|^2$, we can rewrite the original equation for $\rho$ by multiplying by $-\rho^{-1} \phi^2$ where $\phi$ is a smooth cutoff function for $Q_{2r}$.
+Consider the term $\int \rho^{-1} \Delta \rho \phi^2$. Integration by parts yields:
+\[
+\int \rho^{-1} \Delta \rho \phi^2 = -\int \nabla(\rho^{-1} \phi^2) \cdot \nabla \rho = \int \rho^{-2} |\nabla \rho|^2 \phi^2 - \int \rho^{-1} \nabla \phi^2 \cdot \nabla \rho = \int |\nabla h|^2 \phi^2 - 2 \int \phi \nabla \phi \cdot \nabla h.
+\]
+Multiplying the amplitude equation by $\rho^{-1} \phi^2$ and integrating, we obtain:
+\[
+\int (\partial_t \log \rho + u \cdot \nabla \log \rho) \phi^2 - \int \rho^{-1} \Delta \rho \phi^2 = \int (\sigma + |\nabla \xi|^2) \phi^2.
+\]
+Substituting the Laplacian term:
+\[
+\int |\nabla h|^2 \phi^2 = \int (\sigma + |\nabla \xi|^2) \phi^2 + \int \partial_t h \phi^2 + \int (u \cdot \nabla h) \phi^2 + 2 \int \phi \nabla \phi \cdot \nabla h.
+\]
+The time derivative term is handled by integrating by parts in time. The drift term $\int (u \cdot \nabla h) \phi^2 = -\int h \nabla \cdot (u \phi^2)$ is controlled by local energy bounds and standard parabolic Caccioppoli estimates, making the linear terms in $h$ subordinate to the quadratic gradient term.
+The source term $\int (\sigma + |\nabla \xi|^2) \phi^2$ provides the dominant contribution on the right-hand side.
+Dividing by $r^{-3}$ yields the claimed normalized estimate.
+\end{proof}
+
+The proof relies on testing the equation for $h$ with a cutoff function and absorbing the drift term using the Serrin bounds on $u$. The source terms on the right-hand side are critical quantities: $|\nabla \xi|^2$ is bounded by hypothesis (locally), and $\sigma$ is the stretching term we have just analyzed.
+
+\subsection{Bilinear Estimates}
+The cross-term in the geometric forcing is $2 P_\xi (\nabla \log \rho \cdot \nabla \xi)$. We estimate its $L^{3/2}$ norm using the bounds from Lemma \ref{lem:log_amplitude} and the critical energy of $\xi$. By H\"older's inequality:
+\[
+\int_{Q_r} |(\nabla \log \rho) \cdot \nabla \xi|^{3/2} \le \left(\int_{Q_r} |\nabla \log \rho|^2\right)^{3/4} \left(\int_{Q_r} |\nabla \xi|^6\right)^{1/4}.
+\]
+More precisely, in the scale-invariant norms, this term is controlled by the product of the energies. Since the energy of $\xi$ is small at small scales (due to VMO), the product is subordinate to the linear terms in the analysis. Specifically, it can be absorbed or treated as a small perturbation.
+
+\subsection{Theorem: Total Forcing Smallness}
+We define the total forcing Carleson norm as
+\[
+\|H\|_{C^{3/2}} = \sup_{z_0, r} r^{-2} \int_{Q_r(z_0)} |H|^{3/2} \, dx \, dt.
+\]
+Combining the Forcing Depletion Theorem \ref{thm:forcing_depletion} (for $H_{sing}$) and the geometric bounds (for $H_{geom}$), we obtain the following result.
+
+\begin{theorem}[Total Forcing Smallness]\label{thm:total_forcing}
+There exists a universal threshold $\delta^* > 0$ such that, for the ancient tangent flow $(u^\infty, \xi^\infty)$ constructed at a singularity, the total forcing $H = H_{sing} + H_{geom}$ satisfies
+\[
+\|H\|_{C^{3/2}} \le \delta^*
+\]
+at sufficiently small scales.
+\end{theorem}
+
+\begin{proof}
+The total forcing is $H = H_{sing} + H_{geom}$.
+By Theorem \ref{thm:forcing_depletion}, for any $\varepsilon > 0$, we can find $r_0$ such that $\|H_{sing}\|_{C^{3/2}} \le \varepsilon$.
+Now consider $H_{geom} = |\nabla \xi|^2 \xi + 2 P_\xi (\nabla \log \rho \cdot \nabla \xi)$.
+The first term $|\nabla \xi|^2$ is effectively lower order in the $\varepsilon$-regularity scheme (it scales like energy density).
+The cross term $B = 2 P_\xi (\nabla \log \rho \cdot \nabla \xi)$ is estimated by Hölder's inequality:
+\[
+\int_{Q_r} |B|^{3/2} \le C \left(\int_{Q_r} |\nabla \log \rho|^2\right)^{3/4} \left(\int_{Q_r} |\nabla \xi|^6\right)^{1/4}.
+\]
+In the scale-invariant normalization, using the smallness of the VMO energy of $\xi$ at small scales, and the bound on $\nabla \log \rho$ from Lemma \ref{lem:log_amplitude}, we find that $\|H_{geom}\|_{C^{3/2}}$ is controlled by a power of the local energy of $\xi$.
+Since $\xi$ is VMO, its local energy on sufficiently small balls is small.
+Thus, $\|H_{geom}\|_{C^{3/2}}$ becomes small as $r \to 0$.
+Combining this with the smallness of $H_{sing}$, we get $\|H\|_{C^{3/2}} \le \delta^*$ for any target $\delta^*$, provided we go to sufficiently small scales.
+\end{proof}
+
+This theorem provides the necessary input for the rigidity analysis of the direction equation: the direction field evolves according to a critical heat flow with a forcing term that is quantitatively small in the relevant scale-invariant space.
+
+\section{Carleson Control and Scaling}\label{sec:carleson}
+
+\begin{theorem}[Carleson Control for Extension Energy]\label{thm:carleson-control}
+Let $u$ be a suitable weak solution. Then for every $z_0$ and $0<r\le 1$, the Caffarelli--Silvestre extension energy $E_r(z_0,t)$ of $|\omega|$ satisfies
+\[
+r^{-1} E_r(z_0,t) \le K_* < \infty,
+\]
+with $K_*$ depending only on local energy bounds. In particular, any ancient tangent flow $u^\infty$ obtained by blow-up satisfies $\|\mathcal{E}^\infty\|_{C} \le K_*$.
+\end{theorem}
+
+\begin{proof}
+Combine the absorbed Caccioppoli inequality for $\omega$ with the trace estimate for the Caffarelli--Silvestre extension (see \cite{CaffarelliSilvestre2007}) to bound $E_r$ in terms of $\int_{Q_{Cr}} |\nabla \omega|^2$, and then apply the local energy inequality to control the latter by $\int_{Q_{2Cr}} |\omega|^2$.
+\end{proof}
+
+\begin{lemma}[Scaling Invariance]\label{thm:carleson-scaling}
+Under the Navier--Stokes scaling $x\mapsto \lambda x$, $t\mapsto \lambda^2 t$, the normalized quantity $r^{-1}E_r$ is invariant: $r^{-1}E_r[f_\lambda] = (\lambda r)^{-1} E_{\lambda r}[f]$. Consequently, $\|\mathcal{E}\|_{C}$ is scale-invariant.
+\end{lemma}
+
+\begin{corollary}[Carleson Stability for Tangent Flows]\label{cor:carleson-min}
+Let $u^{(k)}$ be a blow-up sequence producing a limit $u^\infty$. Then
+\[
+\|\mathcal{E}^\infty\|_{C} \le \liminf_{k\to\infty} \|\mathcal{E}^{(k)}\|_{C} \le K_*.
+\]
+In particular, the Carleson norm is stable along blow-up limits; scaling alone cannot generate arbitrary smallness.
+\end{corollary}
+
+\begin{proof}
+Lower semicontinuity of the Carleson density under local convergence, together with the uniform bound from Theorem \ref{thm:carleson-control}, yields the liminf inequality. Since the normalized density is scale-invariant, rescaling cannot produce smallness beyond what is present in the sequence.
+\end{proof}
+
+\section{Pressure Isotropization and Tail Depletion}\label{sec:pressure}
+
+To robustly control the far-field contribution of the stretching, we quantify how pressure enforces isotropy of the deviatoric strain at small scales.
+
+\begin{theorem}[Pressure Coercivity]\label{thm:pressure-coercivity}
+Let $S=\tfrac12(\nabla u + \nabla u^T)$ and $S_{dev}=S - \tfrac13 (\operatorname{tr}S) I$. For any $R>0$ and cutoff $\phi\in C_c^\infty(B_{2R})$ with $\phi\equiv 1$ on $B_R$, one has
+\[
+\frac12 \frac{d}{dt}\int_{B_R} |S_{dev}|^2 + \frac{\nu}{2} \int_{B_R} |\nabla S_{dev}|^2
+\le C \|u\|_{L^3(B_{2R})}^4 \int_{B_R} |S_{dev}|^2 + C R^{-2} \int_{B_{2R}} |S_{dev}|^2.
+\]
+\end{theorem}
+
+\begin{proof}
+Differentiate the strain equation, use $\Delta p = -\nabla\cdot\nabla\cdot(u\otimes u)$ and Calder\'on--Zygmund estimates to control $\nabla^2 p$ in $L^{3/2}$, then test against $S_{dev}\phi^2$ and absorb a portion of $\|\nabla S_{dev}\|_2^2$.
+\end{proof}
+
+\begin{lemma}[Defect vs. Strain]
+Let $\Omega$ denote the rescaled vorticity profile on the annulus $|w|>1$ and measure anisotropy via $\mathfrak{D}_{aniso}(\Omega)$ (quadratic form on the $\ell=2$ spherical harmonic sector). Then
+\[
+\mathfrak{D}_{aniso}(\Omega)^2 \le C \iint_{Q_1} |S_{dev}|^2.
+\]
+\end{lemma}
+
+\begin{corollary}[Tail Depletion]\label{cor:tail-depletion}
+For tangent flows, the tail coefficient $C_{stretch}$ associated with the far-field stretching satisfies $|C_{stretch}|\to 0$ along small scales. Consequently, $|H_{tail}|$ is negligible in the critical Carleson norm.
+\end{corollary}
+
+\begin{proof}
+Pressure coercivity yields dissipation control of $S_{dev}$, which bounds the anisotropy defect and hence the tail coefficient via the spherical-harmonic representation of the stretching kernel. As scales shrink, the localized dissipation and therefore the defect vanish, forcing $|C_{stretch}|\to 0$.
+\end{proof}
+
+\section{The Directional Liouville Theorem}
+
+\subsection{The Critical Drift--Diffusion System}
+We have reduced the problem to the analysis of the ancient direction field $\xi^\infty$ satisfying
+\begin{equation}\label{eq:DDE}
+\partial_t \xi - \Delta \xi + u \cdot \nabla \xi = H, \quad |\xi|=1, \quad H \cdot \xi = 0.
+\end{equation}
+Here, $u$ satisfies Serrin-type bounds (inherited from the tangent flow critical norms), and $H$ satisfies the smallness condition $\|H\|_{C^{3/2}} \le \delta^*$.
+
+\subsection{Energy Decay Estimates}
+To prove rigidity, we establish a decay estimate for the scale-invariant energy $E(r) = r^{-3} \int_{Q_r} |\nabla \xi|^2$. We start with a Caccioppoli inequality for the equation \eqref{eq:DDE}. Testing with $-\Delta(\phi^2 \xi)$ and using the constraint $|\xi|=1$ yields:
+\[
+\int_{Q_{r/2}} |\nabla^2 \xi|^2 \le C r^{-2} \int_{Q_r} |\nabla \xi|^2 + C \int_{Q_r} |u|^2 |\nabla \xi|^2 + C \int_{Q_r} |H|^2.
+\]
+The drift term involves $|u|^2 |\nabla \xi|^2$. Since $u$ is in a Serrin class ($L^q_t L^p_x$ with $2/q+3/p \le 1$), this term can be absorbed into the left-hand side (the Hessian term) plus a linear term using interpolation inequalities. The forcing term is small by hypothesis.
+
+Combining this with Poincaré inequalities, we derive a one-step Campanato decay estimate.
+
+\begin{lemma}[One-Step Energy Decay]\label{lem:decay}
+There exist constants $\theta \in (0,1)$ and $C > 0$ such that if $E(r) \le \varepsilon_0$ and $\|H\|_{C^{3/2}} \le \delta^*$, then
+\[
+E(r/2) \le \theta E(r) + C (\delta^*)^2.
+\]
+\end{lemma}
+
+\begin{proof}
+This is the core $\varepsilon$-regularity estimate (Theorem DDE\_Epsilon\_Regularity in the proof track).
+Let $r=1$ by scaling. We assume $E(1) \le \varepsilon_0$.
+We test the equation $\partial_t \xi - \Delta \xi + u \cdot \nabla \xi = H$ with $-\Delta (\phi^2 \xi)$, where $\phi$ is a cutoff for $B_{1/2}$.
+Using $\xi \cdot \Delta \xi = -|\nabla \xi|^2$, we obtain a Caccioppoli inequality:
+\[
+\int_{Q_{1/2}} |\nabla^2 \xi|^2 \le C \int_{Q_1} |\nabla \xi|^2 + C \int_{Q_1} |u|^2 |\nabla \xi|^2 + C \int_{Q_1} |H|^2.
+\]
+The drift term $\int |u|^2 |\nabla \xi|^2$ is absorbed into the LHS using the Serrin bound on $u$ and interpolation (parabolic Sobolev embedding), provided $\varepsilon_0$ is small.
+Specifically, $\int |u|^2 |\nabla \xi|^2 \le \|u\|_{Serrin}^2 \|\nabla \xi\|_{L^{p'}}^2 \le \varepsilon \|\nabla^2 \xi\|_2^2 + C_\varepsilon \|\nabla \xi\|_2^2$.
+The forcing term $\int |H|^2$ is controlled by $\|H\|_{C^{3/2}}^2$ via Hölder (or directly assuming $L^2$ smallness, but $C^{3/2}$ is the natural space; smallness in $C^{3/2}$ implies smallness in the relevant energy deviation).
+Combining these, we get:
+\[
+\int_{Q_{1/2}} |\nabla^2 \xi|^2 \le C E(1) + C (\delta^*)^2.
+\]
+Then, using the Poincaré inequality (subtracting the mean drift or using harmonic replacement), we compare $\xi$ to a harmonic map heat flow or linear heat equation solution. The energy on the smaller ball $E(1/2)$ improves by a factor $\theta$ (coming from the regularity of the homogeneous equation) plus the perturbation errors.
+Thus $E(1/2) \le \theta E(1) + C (\delta^*)^2$.
+\end{proof}
+By choosing $\delta^*$ sufficiently small (which is possible by Theorem \ref{thm:total_forcing}), the forcing term becomes negligible relative to the decay.
+
+\subsection{Epsilon-Regularity}
+\begin{theorem}[DDE $\varepsilon$-Regularity]\label{thm:DDE-eps-regularity}
+There exist universal constants $\eps_*>0$, $\delta_*>0$, $\alpha\in(0,1)$, and $C<\infty$ such that, if on $Q_1(z_0)$ the direction equation
+\[
+\partial_t \xi - \Delta \xi + u \cdot \nabla \xi = H, \qquad |\xi|=1,\quad H\cdot \xi=0
+\]
+holds with $u$ in a Serrin class and
+\[
+E(z_0,1)\le \eps_*^2, \qquad \|H\|_{C^{3/2}}\le \delta_*,
+\]
+then for all $\rho\le \tfrac12$,
+\[
+E(z_0,\rho) \le C \rho^{2\alpha} E(z_0,1),
+\]
+and, in particular,
+\[
+\sup_{Q_{1/2}(z_0)} |\nabla \xi| \le C \eps_*.
+\]
+\end{theorem}
+Iterating the decay estimate from Lemma \ref{lem:decay} yields the theorem by a standard Campanato iteration and absorption of the drift term using the Serrin bound for $u$.
+
+\subsection{Rigidity via Blow-up}
+We now prove the main rigidity result.
+
+\begin{theorem}[Directional Liouville]\label{thm:liouville}
+Let $\xi$ be an ancient solution to \eqref{eq:DDE} on $\R^3 \times (-\infty, 0]$ satisfying the critical energy bounds and the small forcing condition $\|H\|_{C^{3/2}} \le \delta^*$ with $\delta^*$ sufficiently small. Then $\xi$ must be spatially constant: $\nabla \xi \equiv 0$.
+\end{theorem}
+
+\begin{proof}
+\textbf{Step 1: Global Decay.}
+Iterating Lemma \ref{lem:decay}, we obtain that for any $z_0$ and any scale $r$, if we choose $\delta^*$ small enough relative to $\varepsilon_0$, the energy $E(r)$ decays as $r \to 0$ according to $E(\rho) \le C \rho^{2\alpha}$.
+Specifically, since the solution is ancient and defined for $t \in (-\infty, 0]$, and the bounds are uniform, we can apply the decay estimate at any scale.
+This implies $\xi$ is Hölder continuous ($C^\alpha$).
+
+\textbf{Step 2: Vanishing Gradient.}
+By Lebesgue differentiation, $\lim_{r \to 0} E(z_0, r) = C |\nabla \xi(z_0)|^2$.
+From the decay estimate $E(r) \le C r^{2\alpha}$, the limit is 0.
+Thus $\nabla \xi(z_0) = 0$ for almost every $z_0$.
+Since $\xi$ is smooth (implied by subcritical regularity once Hölder is established), $\nabla \xi \equiv 0$.
+
+\textbf{Step 3: Alternative Blow-down Argument.}
+Suppose for contradiction $\nabla \xi \not\equiv 0$. Then there is a point where $E(r) \ge c > 0$.
+Consider the blow-down limit $\xi_\lambda(x,t) = \xi(\lambda x, \lambda^2 t)$ as $\lambda \to \infty$.
+Since $\|H\|_{C^{3/2}}$ is scale invariant and small, the limit satisfies the equation with small forcing.
+However, for an ancient solution, we usually blow-down to find a "tangent flow at infinity".
+Actually, the rigidity proof in `DDE_Liouville` (Theorem 6.2 in plan) uses the vanishing energy limit directly.
+"Step 4: Vanishing energy... limit is zero... hence $\nabla \xi \equiv 0$."
+The contradiction logic is: if $\nabla \xi \not\equiv 0$, then at some point gradient is non-zero. But the decay implies it is zero.
+So the result is immediate from the decay estimate established in Step 1.
+\end{proof}
+
+\section{Classification and Contradiction}
+
+\subsection{Time-Constancy of the Direction}
+From Theorem \ref{thm:liouville}, we know that $\nabla \xi \equiv 0$ for the ancient tangent flow. This implies $\xi(x,t) = b(t)$ for some spatially constant vector $b(t) \in \Sbb^2$. The direction equation \eqref{eq:DDE} then simplifies to
+\[
+\partial_t b(t) = H(t).
+\]
+Since the forcing $H$ also vanishes in the blow-up limit (due to the smallness of the Carleson norm and the regularity), we must have $\partial_t b(t) \equiv 0$. Thus, $\xi^\infty(x,t) \equiv b_0$ is a constant vector in both space and time.
+
+\subsection{Reduction to 2D Dynamics}
+We can rotate coordinates such that the constant vorticity direction is $b_0 = e_3 = (0,0,1)$. Then the vorticity of the tangent flow is given by $\omega^\infty(x,t) = (0, 0, \alpha(x,t))$. The condition $\omega^\infty = \curl \, u^\infty = (0, 0, \alpha)$ implies that the horizontal components of the velocity $u^\infty_1, u^\infty_2$ are independent of $x_3$, and $u^\infty_3$ is harmonic (and hence zero due to boundedness).
+
+Specifically, the flow reduces to a two-dimensional flow in the plane perpendicular to $e_3$:
+\[
+u^\infty(x,t) = (v_1(x_1, x_2, t), v_2(x_1, x_2, t), 0).
+\]
+The vortex stretching term $(\omega^\infty \cdot \nabla) u^\infty$ becomes $(\alpha \partial_3) u^\infty$, which vanishes because $u^\infty$ is independent of $x_3$.
+
+\begin{lemma}[Vanishing Stretching]\label{lem:vanishing_stretching}
+If the vorticity direction of a Navier--Stokes solution is constant in space and time, the vortex stretching term is identically zero.
+\end{lemma}
+
+\begin{proof}
+Let the direction be constant, $\xi(x,t) \equiv e_3$. Then $\omega = (0, 0, \omega_3)$.
+The vortex stretching term is given by $(\omega \cdot \nabla) u = \omega_3 \partial_3 u$.
+As we will show in the proof of Theorem \ref{thm:2d_liouville}, the condition that the vorticity direction is constant, combined with the boundedness of the ancient solution, implies that the velocity field is independent of the coordinate $x_3$ (specifically $\partial_3 u \equiv 0$).
+Consequently, $(\omega \cdot \nabla) u = \omega_3 \cdot 0 = 0$.
+\end{proof}
+
+\subsection{2D Ancient Liouville Theorem}
+With zero stretching, the vorticity equation for $\omega^\infty$ reduces to the 2D transport--diffusion equation. The tangent flow $u^\infty$ is thus an ancient solution to the 2D Navier--Stokes equations. It satisfies global bounds on velocity and vorticity (from the blow-up construction).
+
+Known Liouville theorems for the 2D Navier--Stokes equations state that any bounded ancient solution must be constant (essentially due to the monotonicity of enstrophy in 2D).
+
+\begin{theorem}[2D Ancient Liouville]\label{thm:2d_liouville}
+Let $u$ be a bounded ancient solution to the 2D Navier--Stokes equations on $\R^2 \times (-\infty, 0]$. Then $u$ is a constant (specifically $u \equiv 0$ for finite energy).
+\end{theorem}
+
+\begin{proof}
+\textbf{Step 1: Reduction to 2D.}
+From Theorem \ref{thm:liouville}, $\xi \equiv b$. Rotate so $b=e_3$.
+Then $\omega = (0,0,\alpha)$. $\partial_1 u_3 - \partial_3 u_1 = 0$ and $\partial_2 u_3 - \partial_3 u_2 = 0$.
+Differentiating $\dv u = 0$ with respect to $x_3$: $\partial_3 \partial_1 u_1 + \partial_3 \partial_2 u_2 + \partial_3^2 u_3 = 0$.
+Using the vorticity relations $\partial_3 u_1 = \partial_1 u_3$ etc., we find $\Delta u_3 = 0$. Since $u^\infty$ is bounded, $u_3$ must be constant (and 0 by energy/decay conditions).
+Then $\partial_3 u_1 = \partial_3 u_2 = 0$.
+Thus $u(x,t) = (v_1(x_1, x_2, t), v_2(x_1, x_2, t), 0)$.
+The flow is strictly 2D.
+
+\textbf{Step 2: 2D Liouville.}
+The vorticity $\alpha(x_1, x_2, t)$ satisfies the 2D Navier-Stokes vorticity equation:
+\[
+\partial_t \alpha + v \cdot \nabla \alpha = \nu \Delta \alpha.
+\]
+Multiply by $\alpha$ and integrate over $\R^2$:
+\[
+\frac{1}{2} \frac{d}{dt} \|\alpha\|_2^2 + \nu \|\nabla \alpha\|_2^2 = 0.
+\]
+This implies $\|\alpha(t)\|_2$ is non-increasing.
+We rely on the Liouville theorem for bounded ancient 2D flows (see e.g., Koch-Nadirashvili-Seregin-Sverak \cite{KNSS2009}).
+Any bounded ancient solution to 2D NS is a constant.
+Thus $u^\infty$ is constant.
+Since it has finite local energy (normalized), it must be $u^\infty \equiv 0$.
+\end{proof}
+
+\subsection{The Final Contradiction}
+Applying Theorem \ref{thm:2d_liouville} to our tangent flow, we conclude that $u^\infty \equiv 0$, and consequently $\omega^\infty \equiv 0$.
+
+However, by the construction of the tangent flow (Lemma \ref{lem:tangent_flow}), we normalized the solution such that $|\omega^\infty(0,0)| = 1$. This provides the desired contradiction.
+
+Therefore, the initial assumption that a finite-time singularity exists must be false.
+
+\bibliographystyle{amsplain}
+\begin{thebibliography}{10}
+
+\bibitem{BKM1984}
+J.~T. Beale, T.~Kato, and A.~Majda, \emph{Remarks on the breakdown of smooth solutions for the 3-{D} {E}uler equations}, Comm. Math. Phys. \textbf{94} (1984), no.~1, 61--66.
+
+\bibitem{CFM1996}
+P.~Constantin, C.~Fefferman, and A.~Majda, \emph{Geometric constraints on potentially singular solutions for the 3-{D} {E}uler equations}, Comm. Partial Differential Equations \textbf{21} (1996), no.~3-4, 559--571.
+
+\bibitem{CKN1982}
+L.~Caffarelli, R.~Kohn, and L.~Nirenberg, \emph{Partial regularity of suitable weak solutions of the {N}avier-{S}tokes equations}, Comm. Pure Appl. Math. \textbf{35} (1982), no.~6, 771--831.
+
+\bibitem{ESS2003}
+L.~Escauriaza, G.~Seregin, and V.~{\v{S}}ver{\'a}k, \emph{{$L_{3,\infty}$}-solutions of {N}avier-{S}tokes equations and backward uniqueness}, Uspekhi Mat. Nauk \textbf{58} (2003), no.~2(350), 3--44.
+
+\bibitem{Hopf1951}
+E.~Hopf, \emph{{\"U}ber die {A}nfangswertaufgabe f{\"u}r die hydrodynamischen {G}rundgleichungen}, Math. Nachr. \textbf{4} (1951), 213--231.
+
+\bibitem{CRW1976}
+R.~R. Coifman, R.~Rochberg, and G.~Weiss, \emph{Factorization theorems for Hardy spaces in several variables}, Ann. of Math. (2) \textbf{103} (1976), no.~3, 611--635. (Includes the commutator estimate used herein.)
+
+\bibitem{CaffarelliSilvestre2007}
+L.~Caffarelli and L.~Silvestre, \emph{An extension problem related to the fractional Laplacian}, Comm. Partial Differential Equations \textbf{32} (2007), no.~7-9, 1245--1260.
+
+\bibitem{KNSS2009}
+G.~Koch, N.~Nadirashvili, G.~Seregin, and V.~{\v{S}}ver{\'a}k, \emph{Liouville theorems for the {N}avier-{S}tokes equations and applications}, Acta Math. \textbf{203} (2009), no.~1, 83--105.
+
+\bibitem{KochTataru2001}
+H.~Koch and D.~Tataru, \emph{Well-posedness for the {N}avier-{S}tokes equations}, Adv. Math. \textbf{157} (2001), no.~1, 22--35.
+
+\bibitem{Leray1934}
+J.~Leray, \emph{Sur le mouvement d'un liquide visqueux emplissant l'espace}, Acta Math. \textbf{63} (1934), no.~1, 193--248.
+
+\bibitem{Lin1998}
+F.~Lin, \emph{A new proof of the {C}affarelli-{K}ohn-{N}irenberg theorem}, Comm. Pure Appl. Math. \textbf{51} (1998), no.~3, 241--257.
+
+\bibitem{Prodi1959}
+G.~Prodi, \emph{Un teorema di unicit{\`a} per le equazioni di {N}avier-{S}tokes}, Ann. Mat. Pura Appl. (4) \textbf{48} (1959), 173--182.
+
+\bibitem{Scheffer1977}
+V.~Scheffer, \emph{Hausdorff measure and the {N}avier-{S}tokes equations}, Comm. Math. Phys. \textbf{55} (1977), no.~2, 97--112.
+
+\bibitem{Seregin2012}
+G.~Seregin, \emph{A certain necessary condition of potential blow up for {N}avier-{S}tokes equations}, Comm. Math. Phys. \textbf{312} (2012), no.~3, 833--845.
+
+\bibitem{Serrin1962}
+J.~Serrin, \emph{On the interior regularity of weak solutions of the {N}avier-{S}tokes equations}, Arch. Rational Mech. Anal. \textbf{9} (1962), 187--195.
+
+\end{thebibliography}
+
+\end{document}

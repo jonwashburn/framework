@@ -1,0 +1,175 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{hyperref}
+
+% Simple page style
+\pagestyle{plain}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\begin{document}
+
+\begin{center}
+\textbf{\LARGE PATENT APPLICATION}\\[0.5cm]
+\textbf{\Large Method and System for Certifying Stability in Control Systems\\Using a Strictly Convex Ledger Functional}\\[1cm]
+
+\begin{tabular}{rl}
+\textbf{Application Type:} & Utility Patent \\
+\textbf{Filing Date:} & January 25, 2026 \\
+\textbf{Inventor:} & Jonathan Washburn \\
+\textbf{Technology Field:} & Control Theory / Formal Verification / Safety-Critical Systems \\
+\textbf{International Class:} & G05B 13/02; G06F 17/11; H04L 9/00 \\
+\end{tabular}
+\end{center}
+
+\vspace{1cm}
+\hrule
+\vspace{0.5cm}
+
+\section*{ABSTRACT}
+
+A method and system for generating an auditable convexity certificate for a ratio-space ledger objective used in control systems. The system computes a weighted ledger \(L=\sum_i w_i\,J(r_i)\) on positive ratios \(r_i>0\), where \(J(x)=\frac12(x+x^{-1})-1\) (J-cost). Lean formalizes that \(J\) is symmetric and strictly convex on \(x>0\); the implementation computes ledger values and emits a hash-based certificate bundle binding declared ratios/weights and an explicit curvature witness (e.g., \(w_i\,J''(r_i)\) with \(J''(x)=x^{-3}\)). The certificate attests to objective convexity in ratio-space and can be used as a deployment gate; any closed-loop stability guarantee for a specific plant/controller is an explicit seam unless separately validated.
+
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+
+\section{BACKGROUND OF THE INVENTION}
+
+\subsection{Technical Field}
+
+This invention relates generally to the design and verification of stable control systems, and specifically to the use of strictly convex objectives to support convergence analysis and auditability in high-dimensional, safety-critical environments under explicit assumptions.
+
+\subsection{Description of Related Art}
+
+Stability is the most critical property of any control system. A stable system will return to its setpoint after a disturbance; an unstable one may oscillate or diverge, leading to catastrophic failure.
+
+Standard control theory relies on Lyapunov functions $V(x)$ to prove stability. If $\dot{V}(x) < 0$ along trajectories, the system is stable. However, constructing a valid Lyapunov function for complex, non-linear systems is difficult. Engineers often default to simple quadratic costs (Mean Squared Error, MSE), i.e., $V(x) = (x-1)^2$.
+
+While MSE is convex locally, it lacks symmetry in ratio space (an error of $0.5$ is not treated equivalently to an error of $2.0$, despite being the multiplicative inverse). In some applications (including fusion diagnostics and other multiplicative processes), engineers prefer ratio-symmetric objectives; any physical ``law'' interpretation is conceptual background and not asserted as a facility-independent fact.
+
+There is a need for a cost function that is strictly convex on a declared domain (ensuring a unique minimizer) and symmetric for ratio-based errors, providing a rigorous basis for auditability and for stability analysis under explicit plant/controller assumptions.
+
+\section{SUMMARY OF THE INVENTION}
+
+The present invention provides a \textbf{Convexity-Certified Stability System} based on the J-cost functional.
+
+The core innovation is the application of the function:
+\[
+J(x) = \frac{1}{2}\left(x + \frac{1}{x}\right) - 1
+\]
+as the fundamental control objective. This function has properties proven in the accompanying formal verification (Lean 4):
+\begin{enumerate}
+    \item \textbf{Strict Convexity (ratio-space):} $J''(x) = x^{-3} > 0$ for all $x > 0$. This implies \(J\) has a unique minimizer at \(x=1\) on \(x>0\) and no spurious local minima in ratio-space.
+    \item \textbf{Symmetry:} $J(x) = J(1/x)$. This ensures that a parameter being ``half'' its target is penalized exactly as much as being ``double'' its target, aligning with multiplicative physical processes.
+\end{enumerate}
+
+The system uses this functional to:
+\begin{itemize}
+    \item Aggregate multi-dimensional errors into a single scalar ``Ledger'' $L = \sum w_i J(r_i)$.
+    \item Verify objective convexity in ratio-space by checking declared domain conditions (\(r_i>0\), \(w_i>0\)) and emitting a curvature witness (e.g., diagonal entries \(w_i\,J''(r_i)\)).
+    \item Issue a hash-based ``Convexity Certificate'' (certificate bundle) that binds inputs and outputs for audit/replay; external signing is an optional integration seam.
+\end{itemize}
+
+\section{BRIEF DESCRIPTION OF THE DRAWINGS}
+
+\begin{itemize}
+    \item \textbf{FIG. 1} compares the J-cost function with standard quadratic loss, showing the divergence of J-cost at zero.
+    \item \textbf{FIG. 2} illustrates the unique global minimum of the aggregate Ledger surface.
+    \item \textbf{FIG. 3} is a block diagram of the stability certification pipeline.
+\end{itemize}
+
+\section{DETAILED DESCRIPTION OF EMBODIMENTS}
+
+\subsection{Definitions}
+
+\begin{itemize}
+    \item \textbf{State Ratio ($x$):} A dimensionless variable representing the ratio of a measured value to its target setpoint (\(x := y/y^*\)); requires \(y^*\neq 0\) (integration seam).
+    \item \textbf{J-Cost ($J(x)$):} The cost function defined as $\frac{1}{2}(x + x^{-1}) - 1$ with domain \(x>0\).
+    \item \textbf{Ledger ($L$):} a weighted sum \(L=\sum_i w_i\,J(r_i)\) with weights \(w_i\ge 0\) and ratios \(r_i>0\).
+    \item \textbf{Lyapunov candidate (seam-labeled)}: using \(L\) as a Lyapunov function for a particular plant/controller is a separate, explicit assumption; the certificate in this disclosure attests only to ratio-space convexity of the objective.
+    \item \textbf{Strict Convexity:} A property of a function $f$ where $f'' > 0$, ensuring that any line segment connecting two points on the graph lies strictly above the graph.
+    \item \textbf{Convexity Certificate (ratio-space):} A digital artifact (certificate bundle) attesting that the ledger objective is strictly convex in ratio coordinates under declared ratios/weights (does not by itself certify closed-loop plant stability).
+    \item \textbf{Certificate bundle}: a hash-based auditable record including an input hash, outputs, and theorem identifier references; external signing optional seam.
+\end{itemize}
+
+\subsection{Theoretical Foundation}
+
+The invention relies on the theorem (formally proven in \texttt{IndisputableMonolith/Cost/Convexity.lean}) that $J(x)$ is strictly convex on $(0, \infty)$.
+\[
+\frac{d^2}{dx^2} J(x) = \frac{d}{dx} \left( \frac{1 - x^{-2}}{2} \right) = x^{-3}
+\]
+Since $x^{-3}$ is strictly positive for positive $x$, the curvature is always upward. This precludes the existence of ``traps'' (local minima) where a controller might get stuck away from the target.
+
+\subsection{System Architecture}
+
+The control loop comprises:
+\begin{enumerate}
+    \item \textbf{Ratio Computer:} Converts raw sensor data $y_i$ and targets $y_i^*$ into ratios $r_i = y_i / y_i^*$, requiring \(y_i^*\neq 0\). (Integration seam)
+    \item \textbf{Ledger Engine:} Computes the aggregate cost $L = \sum w_i J(r_i)$.
+    \item \textbf{Convexity Monitor (ratio-space):} Computes curvature witnesses for the ledger with respect to ratio coordinates \(r_i\). For \(L=\sum_i w_i\,J(r_i)\), the ratio-space Hessian is diagonal with entries \(w_i\,J''(r_i)=w_i/r_i^3\) (for \(r_i>0\)).
+    \item \textbf{Certifier:} Checks declared domain conditions (e.g., \(r_i>0\), \(w_i>0\)) and emits a hash-based certificate bundle including the computed ledger value and curvature witnesses. Any actuation gating/fallback behavior is an integration seam.
+\end{enumerate}
+
+\subsection{Application to Fusion}
+
+In fusion, ratio variables may represent normalized mode amplitudes or other diagnostic-derived ratios. J-cost penalizes both ``overshoot'' and ``undershoot'' symmetrically in ratio-space and diverges as \(x\to 0^+\). Any mapping from this model-layer objective to physical safety or yield is an explicit facility seam.
+
+\subsection{Seams}
+
+The mathematical convexity of $J(x)$ on \(x>0\) is Lean-proved. The primary \textbf{seam} is the mapping from physical actuators to ratios (the plant model) and the controller update law. In a nonlinear plant, the composite objective \(L(r(u))\) need not be convex in control-input space without additional assumptions; any such plant-level convexity/stability claim is treated as an explicit seam unless separately validated.
+
+\section{CLAIMS}
+
+\begin{enumerate}
+    \item \textbf{A computer-implemented method for generating a ratio-space convexity certificate for a control objective, comprising:}
+    \begin{enumerate}
+        \item mapping a plurality of system state variables to dimensionless ratios relative to a target operating point;
+        \item defining a Lyapunov candidate function as a weighted sum of convex costs, wherein each cost is defined by the function $J(x) = \frac{1}{2}(x + x^{-1}) - 1$;
+        \item calculating, for each ratio coordinate, a curvature witness value \(w_i\,J''(r_i)\) with \(J''(x)=x^{-3}\);
+        \item verifying declared domain conditions including \(r_i>0\) and \(w_i>0\), and verifying \(w_i\,J''(r_i)>0\); and
+        \item generating a hash-based certificate bundle binding the declared inputs and the computed outputs, including theorem identifier references.
+    \end{enumerate}
+
+    \item The method of claim 1, wherein the cost function satisfies symmetry \(J(x)=J(1/x)\) on \(x>0\) and has a unique minimizer at \(x=1\).
+
+    \item The method of claim 1, further comprising using the ledger objective in a controller that computes a control action intended to decrease the ledger; any closed-loop stability guarantee is an explicit seam unless separately validated for a given plant and update law.
+
+    \item The method of claim 1, wherein the digital certificate includes a reference to a machine-checked proof of the strict convexity of $J(x)$.
+
+    \item \textbf{A control system comprising:}
+    \begin{enumerate}
+        \item a state estimator configured to output normalized error ratios;
+        \item an objective function generator configured to construct a cost surface using the function $J(x) = \frac{1}{2}(x + x^{-1}) - 1$;
+        \item a convexity monitor configured to evaluate ratio-space curvature witnesses \(w_i\,J''(r_i)\) at a current operating point; and
+        \item a certificate generator configured to emit a hash-based certificate bundle recording inputs, outputs, and theorem identifier references.
+    \end{enumerate}
+
+    \item The system of claim 5, wherein the objective function generator aggregates multiple error ratios into a single scalar ledger value.
+
+    \item \textbf{A non-transitory computer-readable medium storing instructions that, when executed by a processor, cause a system to:}
+    \begin{enumerate}
+        \item compute a control error metric using a symmetric convex functional;
+        \item verify that the second derivative of the metric is positive;
+        \item determine a control action intended to reduce the metric (e.g., a descent step under a declared update rule); and
+        \item log a certificate bundle containing an input hash, computed outputs, and theorem identifier references associated with the control action.
+    \end{enumerate}
+\end{enumerate}
+
+\section*{APPENDIX: Implementation Evidence}
+
+The core logic of this invention is implemented in the accompanying software artifacts:
+\begin{itemize}
+    \item \textbf{Python Implementation:} \texttt{fusion/simulator/foundations/jcost.py} implements the J-cost function and ratio-space curvature witness \texttt{Jcost.second\_derivative}.
+    \item \textbf{Certificate emission (hash-based):} \texttt{fusion/simulator/fusion/certificate.py} implements \texttt{generate\_jcost\_convexity\_certificate} and \texttt{CertificateBundle}/\texttt{compute\_input\_hash}.
+    \item \textbf{Formal Verification:} The strict convexity of J is proven in Lean 4 in \texttt{IndisputableMonolith/Cost/Convexity.lean}, specifically \texttt{Jcost\_strictConvexOn\_pos}.
+\end{itemize}
+
+\end{document}

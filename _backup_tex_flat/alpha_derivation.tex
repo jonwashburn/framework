@@ -1,0 +1,410 @@
+\documentclass[aps,preprint,12pt]{revtex4-2}
+
+% ============================
+% Packages (keep minimal/robust)
+% ============================
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{bm}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+% ============================
+% Convenience macros
+% ============================
+% Make `\Lean{...}` safe in both text and math mode.
+\newcommand{\Lean}[1]{\ifmmode\text{\texttt{#1}}\else\texttt{#1}\fi}
+\newcommand{\RS}{\textsc{Recognition Science}}
+\newcommand{\phiG}{\phi}
+\newcommand{\alphainv}{\alpha^{-1}}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  columns=fullflexible,
+  keepspaces=true
+}
+
+\begin{document}
+
+\title{A Lean-Referenced Derivation of the Electromagnetic Fine-Structure Constant from Recognition Ledger Geometry}
+
+\author{Recognition Science Collaboration}
+\affiliation{Recognition Physics Institute}
+
+\date{\today}
+
+\begin{abstract}
+This paper documents the \RS{} derivation of the electromagnetic fine-structure constant in the exact form implemented in this repository's Lean~4 development.
+The derived inverse constant is:
+\[
+\alpha^{-1} = 4\pi\cdot 11 \;-\; f_{\mathrm{gap}} \;-\; \delta_{\kappa},
+\quad\text{where}\quad
+\delta_{\kappa} = -\frac{103}{102\,\pi^5}.
+\]
+We explain each factor: \emph{what} enters this formula, \emph{why} it is structurally forced by the ledger/cube interface, and \emph{where} each component lives in the Lean codebase.
+Integer/combinatorial components (11, 102, 103), the solid-angle factor ($4\pi$), and the $\pi^5$ power are proved in Lean; the gap weight $w_8$ is currently an external certificate, with a DFT-8 derivation in progress.
+\end{abstract}
+
+\maketitle
+
+%==============================================================================
+\section{What ``alpha'' means in this repo}
+%==============================================================================
+
+This repository contains \emph{two} distinct ``alpha'' quantities:
+\begin{itemize}
+  \item \textbf{Electromagnetic fine-structure constant:} $\alpha_{\mathrm{EM}} \approx 1/137$, implemented as \texttt{alpha} $:= 1/$\texttt{alphaInv} in \texttt{Constants.Alpha}, with $\alpha^{-1}\approx 137.036$.
+  This is the subject of this paper.
+
+  \item \textbf{Locked kernel exponent:} $\alpha_{\mathrm{lock}} := (1-1/\phi)/2 \approx 0.191$, implemented as \texttt{alphaLock} and used as an exponent in the ILG kernel.
+  It is \emph{not} equal to $\alpha_{\mathrm{EM}}$.
+\end{itemize}
+
+Throughout, ``\(\alpha\)'' or ``fine-structure constant'' refers to \(\alpha_{\mathrm{EM}}\).
+
+%==============================================================================
+\section{The Lean top-level definition}
+%==============================================================================
+
+The \emph{symbolic} definition of $\alpha_{\mathrm{EM}}$ is in \texttt{Constants/Alpha.lean}.
+The core definitions are:
+\begin{align*}
+\texttt{alpha\_seed} &:= 4\cdot\pi\cdot 11,\\
+\texttt{delta\_kappa} &:= -103/(102\cdot\pi^5),\\
+\texttt{alphaInv} &:= \texttt{alpha\_seed} - (\texttt{f\_gap} + \texttt{delta\_kappa}),\\
+\texttt{alpha} &:= 1/\texttt{alphaInv}.
+\end{align*}
+
+For reference, here is the exact Lean snippet (abridged):
+\begin{lstlisting}
+-- IndisputableMonolith/Constants/Alpha.lean
+@[simp] def alpha_seed : Real := 4 * Real.pi * 11
+@[simp] def delta_kappa : Real := -(103 : Real) / (102 * Real.pi ^ 5)
+@[simp] def alphaInv : Real := alpha_seed - (f_gap + delta_kappa)
+@[simp] def alpha : Real := 1 / alphaInv
+\end{lstlisting}
+
+Everything else in this paper explains why these specific factors appear.
+
+%==============================================================================
+\section{First-principles structure: seed--gap--curvature}
+%==============================================================================
+
+In \RS{}, the coupling constant is not introduced as a measured parameter; it is assembled as a \emph{dimensionless closure balance} across the discrete ledger-to-continuum interface:
+\[
+\alphainv = \underbrace{\text{(geometric seed)}}_{\text{baseline closure}}
+\;-\;
+\underbrace{\text{(gap cost)}}_{\text{8-tick spectral deficit}}
+\;-\;
+\underbrace{\text{(curvature correction)}}_{\text{tiling/phase-space mismatch}}.
+\]
+
+Lean implements this as:
+\[
+\alpha^{-1} = \texttt{alpha\_seed} - (\texttt{f\_gap} + \texttt{delta\_kappa}),
+\]
+where $\texttt{delta\_kappa}<0$. Thus subtracting it adds a small positive curvature correction.
+
+%==============================================================================
+\section{Why \texorpdfstring{$D=3$}{D=3} (brief): the Gap45 synchronization forcing}
+%==============================================================================
+
+In \RS{}, the cube geometry used in the $\alpha_{\mathrm{EM}}$ pipeline is not an arbitrary modeling choice: $D=3$ is structurally forced by the eight-tick closure and the ``Gap45'' synchronization constraint.
+The certificate is \texttt{Verification/Gap45DimensionCert.lean}.
+
+In that development, the main idea is:
+\begin{itemize}
+  \item The eight-tick period is \(2^D\). For $D=3$, \(2^D=8\).
+  \item A closure/fibonacci construction yields a ``gap'' of 45:
+  \[
+  45 = (8+1)\cdot 5,
+  \]
+  where $8+1$ is a wrap-around closure factor and $5=\mathrm{fib}(4)$ is the smallest nontrivial Fibonacci factor coprime to 8.
+  \item A global synchronization period is imposed:
+  \[
+    \mathrm{lcm}(2^D,45)=360.
+  \]
+  Since $\gcd(2^D,45)=1$ (no factor of 2 in 45), this reduces to \(2^D\cdot 45=360\), hence \(2^D=8\) and therefore \(D=3\).
+\end{itemize}
+
+For the $\alpha_{\mathrm{EM}}$ derivation, \texttt{AlphaDerivation.lean} sets $D:=3$ directly; the Gap45 certificate is the upstream justification.
+
+%==============================================================================
+\section{Why the number 11: passive edges of the \texorpdfstring{$D{=}3$}{D=3} cube}
+%==============================================================================
+
+The integer $\mathbf{11}$ is the passive-edge count of the 3-cube $Q_3$.
+This is formalized in \texttt{AlphaDerivation.lean} and certified in \texttt{CubeGeometryCert.lean}.
+
+\subsection{Cube combinatorics in Lean}
+
+Lean defines the hypercube edge/face/vertex counts:
+\begin{align}
+V(D) &= 2^D, \\
+E(D) &= D\cdot 2^{D-1}, \\
+F(D) &= 2D,
+\end{align}
+as \texttt{cube\_vertices}, \texttt{cube\_edges}, \texttt{cube\_faces}.
+With $D=3$, Lean proves: $V(3)=8$, $E(3)=12$, $F(3)=6$.
+
+\subsection{Active vs.\ passive edges}
+
+The ledger dynamics require one ``active'' edge transition per atomic tick.
+Lean encodes:
+\[
+\texttt{active\_edges\_per\_tick} := 1,\qquad
+\texttt{passive\_field\_edges}(D) := E(D) - 1.
+\]
+For $D=3$, the key theorem is $\texttt{passive\_field\_edges}\ 3 = 11$.
+
+Interpretation: the single active edge realizes the local transition; the remaining 11 edges represent the ``field dressing'' paths around that transition---this is the structural origin of 11 in $\texttt{alpha\_seed}$.
+
+%==============================================================================
+\section{Why \texorpdfstring{$4\pi$}{4pi}: isotropic solid-angle closure in \texorpdfstring{$D{=}3$}{D=3}}
+%==============================================================================
+
+The factor $4\pi$ appears because the seed is a \emph{spherical closure} over directions in three spatial dimensions.
+In Lean, the derivation is in \texttt{Constants/SolidAngleExclusivity.lean}.
+
+\subsection{Sphere surface area in arbitrary $D$}
+
+Lean defines the surface area of the unit \((D-1)\)-sphere embedded in \(\mathbb{R}^D\) by the standard Gamma-function formula:
+\[
+S_{D-1} = \frac{2\pi^{D/2}}{\Gamma(D/2)}.
+\]
+This is \texttt{unitSphereSurface}.
+
+\subsection{Specializing to $D=3$}
+
+Lean proves $S_2 = 4\pi$ via \texttt{unitSphereSurface\_D3}.
+
+\subsection{Seed assembly}
+
+With the passive-edge count 11 and isotropic direction measure $4\pi$, Lean defines:
+\[
+\texttt{alpha\_seed} := 4\pi\cdot 11.
+\]
+This is the ``baseline'' inverse coupling before spectral gap and curvature corrections.
+
+%==============================================================================
+\section{The curvature correction: why \texorpdfstring{$103/102$}{103/102} and why \texorpdfstring{$\pi^5$}{pi^5}}
+%==============================================================================
+
+The curvature correction is:
+\[
+\texttt{delta\_kappa} = -\frac{103}{102\pi^5}.
+\]
+
+The integer provenance is proved in \texttt{Constants/AlphaDerivation.lean}; the $\pi^5$ power is explained in \texttt{Constants/CurvatureSpaceDerivation.lean}.
+
+\subsection{Why 102 and 103: voxel seam counting}
+
+Lean defines the denominator as:
+\[
+\texttt{seam\_denominator}(D) := F(D)\cdot W,
+\]
+where $W:=17$ is the number of wallpaper groups (plane symmetry groups).
+For $D=3$, $F(3)=6$, so $6\cdot 17 = 102$.
+
+Lean then adds an explicit closure increment:
+\[
+\texttt{euler\_closure}:=1,\quad
+\texttt{seam\_numerator}(D):=\texttt{seam\_denominator}(D)+1,
+\]
+so for $D=3$: $102+1=103$.
+
+\subsection{Why $\pi^5$: 5D configuration-space angular measure}
+
+Lean models the curvature integral as living on an effective configuration space of dimension:
+\[
+3\ \text{(space)} + 1\ \text{(time/phase)} + 1\ \text{(dual-balance)} = 5,
+\]
+encoded as $\texttt{configSpaceDim}:=5$.
+Each dimension contributes a factor of $\pi$ under the angular normalization, yielding $\pi^5$ in the denominator.
+
+\subsection{Sign of the correction}
+
+Lean encodes the curvature term as negative ($\texttt{delta\_kappa} < 0$).
+In the top-level assembly, subtracting a negative value adds a small positive correction.
+The seam mismatch is a \emph{defect} term; the sign convention treats it as a negative correction inside the parenthesis.
+
+%==============================================================================
+\section{The gap term \texorpdfstring{$f_{\mathrm{gap}} = w_8\ln(\phi)$}{f\_gap = w8 ln(phi)}}
+%==============================================================================
+
+The gap term is the information/spectral deficit arising from the eight-tick periodicity and the $\phi$-lattice scaling at the discrete--continuous interface.
+In Lean, two layers exist:
+\begin{itemize}
+  \item \textbf{Pipeline constant:} \texttt{Constants/GapWeight.lean} (currently used).
+
+  \item \textbf{DFT-8 derivation:} \texttt{Constants/GapWeightDerivation.lean}, with positivity certified in \texttt{Verification/GapWeightDerivationCert.lean}.
+\end{itemize}
+
+\subsection{Why $\ln(\phi)$}
+
+\RS{} distinguishes multiplicative self-similar scaling (natural on the $\phi$-lattice) from additive bookkeeping cost (natural for ledger balance).
+The logarithm is the unique bridge between the two:
+\[
+\ln(\phi^n) = n\ln(\phi).
+\]
+Thus a unit ``scale step'' carries additive cost proportional to $\ln\phi$.
+Lean uses \texttt{Real.log phi} for this quantity.
+
+\subsection{What $w_8$ is}
+
+In the DFT-8 derivation module, Lean defines the canonical $\phi$-pattern on eight ticks:
+\[
+p(t) = \phi^t,\qquad t\in\{0,1,\dots,7\},
+\]
+as \texttt{phiPattern}.
+It then defines DFT coefficients $c_k$ and mode energies $|c_k|^2$.
+The weight $w_8$ is defined as a weighted sum over the neutral modes $k\neq 0$:
+\[
+w_8 = \sum_{k=1}^{7} |c_k|^2\,g_k(\phi),
+\]
+where $g_k(\phi)$ are geometric weights from the 8-tick frequency alignment and $\phi$-scaling.
+This is \texttt{w8\_computed}.
+
+\subsection{DFT-8 coefficients and closed form}
+
+The DFT-8 coefficient implemented in \texttt{GapWeightDerivation.lean} is:
+\[
+c_k \;:=\; \sum_{t\in \mathrm{Fin}\,8} \overline{\mathrm{DFT}_{t,k}}\;\phi^t,
+\]
+encoded as:
+\begin{lstlisting}
+-- IndisputableMonolith/Constants/GapWeightDerivation.lean
+noncomputable def phiDFTCoeff (k : Fin 8) : Complex :=
+  Finset.univ.sum fun t => star (dft8_entry t k) * (phi ^ t.val : Complex)
+\end{lstlisting}
+
+Two key proved facts are:
+\begin{itemize}
+  \item \textbf{Nontriviality:} the mode-1 coefficient is nonzero (\texttt{phiDFTCoeff\_one\_ne\_zero}).
+  The proof uses the geometric series identity
+  $\sum_{t=0}^{7} r^t = (r^8-1)/(r-1)$ with $r := \overline{\omega_8}\phi$, together with
+  $\phi^8 = 21\phi+13$, to show $r^8\neq 1$.
+
+  \item \textbf{Positivity:} $w_8>0$ (\texttt{w8\_computed\_pos}), since every summand $|c_k|^2 g_k(\phi)$ is nonnegative and at least $k{=}1$ is strictly positive.
+\end{itemize}
+
+\subsection{The geometric weights $g_k(\phi)$}
+
+The per-mode weight is:
+\[
+g_k(\phi) =
+\begin{cases}
+0, & k=0,\\[4pt]
+\sin^2\!\bigl(\tfrac{\pi k}{8}\bigr)\,\phi^{-k}, & k\in\{1,\dots,7\}.
+\end{cases}
+\]
+
+\subsection{Current pipeline status}
+
+The top-level \texttt{alphaInv} currently uses:
+\[
+\texttt{w8\_from\_eight\_tick} := 2.488254397846,
+\quad
+\texttt{f\_gap} := \texttt{w8\_from\_eight\_tick}\cdot\ln(\phi),
+\]
+documented as a quarantined certificate in \texttt{GapWeight.lean}.
+The JSON file \texttt{w8.json} records $w_8$, $\phi$, $\ln\phi$, $f_{\mathrm{gap}}$, $\delta_\kappa$, and $\alpha^{-1}$.
+
+Separately, \texttt{GapWeightDerivation.lean} proves positivity of $w_8$ and non-vanishing of the mode-1 coefficient, and records \texttt{w8\_computed\_eq\_abstract} as a named proposition pending final integration.
+
+%==============================================================================
+\section{Assembling \texorpdfstring{$\alphainv$}{alpha^-1} and numerical bounds}
+%==============================================================================
+
+\subsection{Assembly theorem}
+
+The symbolic assembly is in \texttt{Alpha.lean}, connected to the ingredient derivations by \texttt{alphaInv\_derived\_eq\_formula}.
+
+\subsection{Numeric evaluation (quarantined)}
+
+Numeric checks are quarantined in \texttt{AlphaNumericsScaffold.lean}; the JSON certificate records $\alpha^{-1} \approx 137.036$.
+
+\subsection{Rigorous interval bounds (proved)}
+
+Rigorous inequality bounds are in \texttt{AlphaBounds.lean}.
+That module proves:
+\[
+137.031 < \texttt{alphaInv} < 137.040,
+\]
+using certified bounds on $\pi$ and coarse bounds on $\ln\phi$.
+Tightening the logarithm bounds correspondingly tightens the $\alpha^{-1}$ interval.
+
+%==============================================================================
+\section{Lean cross-reference map (where each factor comes from)}
+%==============================================================================
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Factor} & \textbf{Meaning} & \textbf{Lean module} \\
+\midrule
+$D=3$       & dimension forcing      & \texttt{Verification/Gap45DimensionCert} \\
+$11$        & passive edges ($12{-}1$) & \texttt{Constants/AlphaDerivation} \\
+$4\pi$      & solid angle in 3D      & \texttt{Constants/SolidAngleExclusivity} \\
+$17$        & wallpaper groups       & \texttt{Constants/AlphaDerivation} \\
+$102$       & $6\times 17$ (seam denom.) & \texttt{Constants/AlphaDerivation} \\
+$103$       & $102+1$ (Euler closure)   & \texttt{Constants/AlphaDerivation} \\
+$\pi^5$     & 5D config.\ space      & \texttt{Constants/CurvatureSpaceDerivation} \\
+$w_8$       & 8-tick gap weight      & \texttt{Constants/GapWeight[Derivation]} \\
+$\ln\phi$   & additive scale cost    & Mathlib \texttt{Real.log} \\
+\bottomrule
+\end{tabular}
+\caption{Provenance map for each element of the $\alpha^{-1}$ derivation.}
+\end{table}
+
+%==============================================================================
+\section{Conclusion}
+%==============================================================================
+
+The \RS{} fine-structure pipeline implemented in Lean decomposes \(\alpha_{\mathrm{EM}}^{-1}\) into:
+\begin{itemize}
+  \item a geometric seed \(4\pi\cdot 11\) forced by $D{=}3$ cube combinatorics and isotropy,
+  \item an eight-tick gap cost \(f_{\mathrm{gap}} = w_8\ln(\phi)\) capturing the neutral spectral deficit of the $\phi$-pattern under DFT-8,
+  \item and a curvature/tiling correction \(\delta_\kappa = -103/(102\pi^5)\) from seam topology over a 5D effective configuration space.
+\end{itemize}
+
+Lean makes the dependency structure explicit and (for most components) machine-checkable.
+The remaining open step is to replace the pipeline constant \texttt{w8\_from\_eight\_tick} with the derived DFT-8 expression \texttt{w8\_computed} (or prove their equality), closing the last derivation gap inside the certified surface.
+
+%==============================================================================
+\begin{thebibliography}{99}
+
+\bibitem{Lean}
+Lean~4 theorem prover, \url{https://leanprover.github.io/}.
+
+\bibitem{Mathlib}
+Mathlib: the Lean mathematical library, \url{https://github.com/leanprover-community/mathlib}.
+
+\bibitem{Fedorov1891}
+E.~S.~Fedorov, ``Symmetry of regular systems of figures,'' \emph{Zapiski Imp.\ S.-Peterburgskogo Mineral.\ Obshchestva} \textbf{28}, 1--146 (1891).
+
+\bibitem{Conway}
+J.~H.~Conway, H.~Burgiel, C.~Goodman-Strauss, \emph{The Symmetries of Things}, A K Peters (2008).
+
+\bibitem{Repo}
+Lean modules referenced: \texttt{Constants/\{Alpha, AlphaDerivation, SolidAngleExclusivity, CurvatureSpaceDerivation, GapWeight, GapWeightDerivation\}.lean}, \texttt{Numerics/Interval/AlphaBounds.lean}, and \texttt{data/certificates/w8.json}.
+
+\end{thebibliography}
+
+\end{document}
+
+

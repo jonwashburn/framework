@@ -1,0 +1,570 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{falsifier}[theorem]{Falsification Criterion}
+
+\newcommand{\phig}{\varphi}
+\newcommand{\Jcost}{J}
+
+\title{\textbf{The Geometry of Inquiry:\\
+Questions as Cost Gaps, Forced Answers,\\
+and the Meta-Closure of Recognition Science}\\[0.5em]
+\large A Theorem in Recognition Science}
+\author{Jonathan Washburn\\
+\small Recognition Science Research Institute, Austin, Texas\\
+\small \texttt{washburn.jonathan@gmail.com}}
+\date{February 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We formalize a \emph{Geometry of Inquiry} in which questions are not
+free-floating semantic objects but structures determined by the $\Jcost$-cost
+landscape.  A question $Q$ maps a context (configuration space with
+cost) to a set of candidate answers, each carrying a cost.  We classify
+questions into three types: \emph{well-formed} (some answer has finite
+cost), \emph{dissolved} (all answers have infinite cost --- the fate of
+G\"{o}del-type self-referential paradoxes), and \emph{forced} (exactly
+one answer has zero cost).  We prove that each theorem T0--T8 in the
+Recognition Science forcing chain is a forced question with a unique
+zero-cost answer.  We then establish a \emph{meta-closure theorem}:
+Recognition Science is the unique zero-cost theory in the space of
+physical frameworks, and the question ``Why RS?'' is itself forced.
+This achieves a non-paradoxical form of self-reference: RS explains why
+RS is the explanation, with the self-referential loop being
+cost-decreasing (stable) rather than cost-increasing (paradoxical).  All
+definitions and core theorems are formalized in Lean~4
+(\texttt{IndisputableMonolith.Foundation.Inquiry},
+\texttt{QuestionTaxonomy}, \texttt{InquiryForcingConnection},
+\texttt{MetaClosure}).
+
+\medskip\noindent\textbf{Keywords:} cost geometry, inquiry, forced
+questions, meta-closure, G\"{o}del dissolution, self-reference, Recognition
+Science.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%======================================================================
+\section{Introduction}\label{sec:intro}
+%======================================================================
+
+What is a question?  In classical logic, a question is an interrogative
+sentence; in formal semantics, it is a partition of logical
+space~\cite{Groenendijk1984}.  Neither framework explains \emph{why some
+questions have unique answers} while others are paradoxical.
+
+Recognition Science offers a precise answer: a question is a
+\textbf{cost gap} in the $\Jcost$-landscape.  The gap's geometry
+determines whether the question is well-formed, dissolved, or forced.
+The act of inquiry is gradient descent on the cost manifold --- moving
+from high cost to zero cost.
+
+This paper formalizes that insight and proves two main results:
+\begin{enumerate}
+\item \textbf{The forcing chain is a sequence of forced questions.}
+  Each theorem T0--T8 corresponds to a question whose unique zero-cost
+  answer is the RS result (logic, discreteness, ledger, $\Jcost$,
+  $\phig$, 8-tick, $D{=}3$).
+\item \textbf{Meta-closure.}  In the space of physical theories, RS
+  has zero cost (zero free parameters, unique $\Jcost$, unique $\phig$).
+  All alternatives have positive cost.  The question ``Which theory is
+  correct?'' is forced, and the answer is RS.
+\end{enumerate}
+
+The self-referential character of statement (2) --- RS explaining why RS
+--- is resolved by showing that the self-reference loop is
+cost-\emph{decreasing}: each iteration reduces residual cost toward
+zero, unlike G\"{o}delian loops that increase complexity without bound.
+
+\paragraph{Foundational dependencies.}
+\begin{enumerate}[nosep]
+\item $\Jcost$-uniqueness (T5)~\cite{WashburnCost2026}.
+\item G\"{o}del dissolution~\cite{WashburnGodel2026}: self-referential
+  queries have infinite cost.
+\item Reference theory~\cite{WashburnAboutness2026}: reference as
+  cost-minimising compression.
+\item Law of Existence~\cite{WashburnExistence2026}: $x$ exists iff
+  $\Jcost(x) = 0$ iff $x = 1$.
+\end{enumerate}
+
+%======================================================================
+\section{Questions as Cost Structures}\label{sec:questions}
+%======================================================================
+
+\begin{definition}[Context]\label{def:context}
+A \emph{context} $\mathcal{X} = (X, \Jcost_X)$ is a non-empty set $X$
+(the configuration space) equipped with a non-negative cost function
+$\Jcost_X : X \to \mathbb{R}_{\ge 0}$.
+\end{definition}
+
+\begin{definition}[Question]\label{def:question}
+A \emph{question} $Q = (\mathcal{X}, \mathcal{A}, C, \iota)$ consists
+of:
+\begin{itemize}[nosep]
+\item A context $\mathcal{X}$ (where the question is asked).
+\item An answer space $\mathcal{A} = (A, \Jcost_A)$ (where answers live).
+\item A non-empty set of candidates $C \subseteq A$.
+\item An embedding $\iota : C \hookrightarrow A$.
+\end{itemize}
+\end{definition}
+
+\begin{definition}[Answer cost]\label{def:answer_cost}
+The \emph{cost} of an answer $a \in C$ is $\Jcost_A(\iota(a))$.
+\end{definition}
+
+%======================================================================
+\section{Classification of Questions}\label{sec:classification}
+%======================================================================
+
+\begin{definition}[Well-formed]\label{def:wellformed}
+$Q$ is \emph{well-formed} iff $\exists\, a \in C : \Jcost_A(a) < \infty$.
+\end{definition}
+
+\begin{definition}[Dissolved]\label{def:dissolved}
+$Q$ is \emph{dissolved} iff $\forall\, a \in C : \Jcost_A(a) = \infty$
+(or exceeds any fixed threshold).
+\end{definition}
+
+\begin{definition}[Forced]\label{def:forced}
+$Q$ is \emph{forced} iff $\exists!\, a \in C : \Jcost_A(a) = 0$.
+\end{definition}
+
+\begin{definition}[Determinate]\label{def:determinate}
+$Q$ is \emph{determinate} iff $\exists\, a \in C : \Jcost_A(a) = 0$.
+\end{definition}
+
+\begin{theorem}[Trichotomy]\label{thm:trichotomy}
+Every question is either dissolved, forced, determinate-but-not-forced,
+or well-formed-but-indeterminate.  These four classes are exhaustive and
+mutually exclusive.
+\end{theorem}
+
+\begin{proof}
+Case analysis on the infimum of $\Jcost_A$ over $C$:
+\begin{itemize}[nosep]
+\item $\inf = \infty$: dissolved.
+\item $\inf = 0$, achieved by exactly one $a$: forced.
+\item $\inf = 0$, achieved by multiple $a$: determinate, not forced.
+\item $0 < \inf < \infty$: well-formed, indeterminate. \qedhere
+\end{itemize}
+\end{proof}
+
+\begin{theorem}[Forced implies unique answer]\label{thm:forced_unique}
+If $Q$ is forced, the zero-cost answer $a^*$ is unique.
+
+\emph{Lean:} \texttt{forced\_answer\_unique}.
+\end{theorem}
+
+\begin{proof}
+By the definition of forced ($\exists!$). \qed
+\end{proof}
+
+\begin{theorem}[Dissolved questions are not real questions]\label{thm:dissolved}
+A dissolved question has no practically accessible answer.  In the RS
+ontology, dissolved questions correspond to self-referential or
+paradoxical constructions whose cost diverges.
+
+\emph{Lean:} \texttt{dissolved\_question\_no\_answer}.
+\end{theorem}
+
+\begin{example}[The Liar Paradox as dissolved question]\label{ex:liar}
+Consider the question ``Is the sentence `This sentence is false'
+true or false?''  Model this as $Q$ with $C = \{\mathrm{True},
+\mathrm{False}\}$ and answer cost:
+\begin{itemize}[nosep]
+\item $\Jcost_A(\mathrm{True}) = \infty$: if the sentence is true, it
+  is false, creating a self-referential loop with divergent cost
+  ($\Jcost(0^+) \to \infty$).
+\item $\Jcost_A(\mathrm{False}) = \infty$: if the sentence is false, it
+  is true, same divergence.
+\end{itemize}
+Both answers have infinite cost, so $Q$ is \emph{dissolved}.  The Liar
+is not a paradox but a cost singularity --- a question that the
+$\Jcost$-landscape renders inaccessible.  This is the RS mechanism behind
+G\"{o}del dissolution~\cite{WashburnGodel2026}.
+\end{example}
+
+\begin{example}[``Why does anything exist?'' as forced question]\label{ex:existence}
+$C = \{\text{``Something exists''}, \text{``Nothing exists''}\}$.
+\begin{itemize}[nosep]
+\item $\Jcost_A(\text{``Something''}) = 0$: at $x = 1$ (the unique
+  existent), $\Jcost(1) = 0$.
+\item $\Jcost_A(\text{``Nothing''}) = \infty$: $\Jcost(0^+) \to \infty$.
+\end{itemize}
+This is \emph{forced}: exactly one answer has zero cost.  Existence is
+not contingent but inevitable.
+\end{example}
+
+%======================================================================
+\section{The Forcing Chain as Forced Questions}\label{sec:forcing}
+%======================================================================
+
+Each theorem T0--T8 can be recast as a forced question.
+
+\begin{definition}[T0 Question: ``What is logic?'']\label{def:Q0}
+$C = \{\text{True}, \text{False}\}$; $\Jcost_A(\text{True}) = 0$,
+$\Jcost_A(\text{False}) > 0$.
+This is forced at $\text{True}$ (consistency has zero cost).
+
+\emph{Lean:} \texttt{T0Question}, \texttt{t0\_forced}.
+\end{definition}
+
+\begin{definition}[T5 Question: ``What is the cost function?'']\label{def:Q5}
+$C = \{F : \mathbb{R}_{>0} \to \mathbb{R}_{\ge 0} \mid F(1) = 0,\
+F \text{ symmetric, smooth}\}$;
+$\Jcost_A(F) = 0$ iff $F = \Jcost$.
+Forced at $F = \Jcost$ by T5 uniqueness.
+
+\emph{Lean:} \texttt{T5Question}, \texttt{t5\_forced\_at\_one}.
+\end{definition}
+
+\begin{definition}[T6 Question: ``What is the scaling ratio?'']\label{def:Q6}
+$C = \{r \in \mathbb{R}_{>0} \mid r^2 = r + 1\}$;
+$\Jcost_A(r) = 0$ iff $r = \phig$.
+Forced at $\phig = (1{+}\sqrt{5})/2$.
+
+\emph{Lean:} \texttt{T6Question}, \texttt{t6\_forced\_at\_phi}.
+\end{definition}
+
+\begin{definition}[T7 Question: ``What is the period?'']\label{def:Q7}
+$C = \{2^k : k \in \mathbb{N}\}$;
+$\Jcost_A(n) = 0$ iff $n = 8$.
+Forced at $n = 8 = 2^3$.
+
+\emph{Lean:} \texttt{T7Question}, \texttt{t7\_forced\_at\_eight}.
+\end{definition}
+
+\begin{definition}[T8 Question: ``What is the dimension?'']\label{def:Q8}
+$C = \mathbb{N}$;
+$\Jcost_A(D) = 0$ iff $2^D = 8$, i.e.\ $D = 3$.
+Forced at $D = 3$.
+
+\emph{Lean:} \texttt{T8Question}, \texttt{t8\_forced\_at\_three}.
+\end{definition}
+
+\begin{theorem}[Complete forcing]\label{thm:complete}
+All of T0, T5, T6, T7, T8 are forced questions.  Their answers form the
+RS foundation: logic, $\Jcost$, $\phig$, 8-tick, $D{=}3$.
+
+\emph{Lean:} \texttt{forcing\_chain\_as\_inquiry}.
+\end{theorem}
+
+%======================================================================
+\section{Theory Space and Meta-Closure}\label{sec:meta}
+%======================================================================
+
+\begin{definition}[Theory space]\label{def:theory_space}
+The \emph{theory space} $\mathcal{T}$ is the set of all candidate
+physical frameworks.  Each theory $T \in \mathcal{T}$ has a
+\emph{theory cost}
+\begin{equation}
+  \Jcost_{\mathcal{T}}(T) = \underbrace{N_{\text{params}}(T)}_{\text{parameter count}} + \underbrace{\Jcost_{\text{mismatch}}(T)}_{\text{prediction error}} + \underbrace{\Jcost_{\text{complexity}}(T)}_{\text{description length}}.
+\end{equation}
+\end{definition}
+
+\begin{theorem}[RS has zero cost]\label{thm:rs_zero}
+$\Jcost_{\mathcal{T}}(\text{RS}) = 0$.
+
+$N_{\text{params}} = 0$ (proven: zero adjustable parameters).
+$\Jcost_{\text{mismatch}} = 0$ (at the model layer: exact derivations).
+$\Jcost_{\text{complexity}} = 0$ (minimal: one functional equation).
+
+\emph{Lean:} \texttt{rs\_zero\_cost}.
+\end{theorem}
+
+\begin{theorem}[Alternatives have positive cost]\label{thm:alt_positive}
+For any theory $T \ne \text{RS}$ with at least one free parameter:
+$\Jcost_{\mathcal{T}}(T) > 0$.
+
+\emph{Lean:} \texttt{alternatives\_positive\_cost}.
+\end{theorem}
+
+\begin{theorem}[Meta-closure]\label{thm:meta_closure}
+The question ``Which physical framework is correct?'' is \emph{forced}
+in $\mathcal{T}$.  The unique zero-cost answer is RS.
+
+\emph{Lean:} \texttt{meta\_closure}.
+\end{theorem}
+
+\begin{proof}
+Combine Theorems~\ref{thm:rs_zero} and~\ref{thm:alt_positive}: RS is
+the unique $T$ with $\Jcost_{\mathcal{T}}(T) = 0$, so the question
+is forced by Definition~\ref{def:forced}. \qed
+\end{proof}
+
+%======================================================================
+\section{Self-Reference Without Paradox}\label{sec:self_ref}
+%======================================================================
+
+\begin{definition}[Self-referential question]\label{def:self_ref}
+A question is \emph{self-referential} if its answer space includes the
+theory in which it is formulated.
+\end{definition}
+
+\begin{theorem}[Stable self-reference]\label{thm:stable}
+The meta-closure question (``Why RS?'') is self-referential but
+\emph{stable}: the self-reference loop is cost-decreasing.
+\end{theorem}
+
+\begin{proof}
+Let $T_n$ denote the $n$-th iteration of ``apply RS to explain RS.''
+\begin{itemize}[nosep]
+\item $T_0 = \text{RS}$ has cost 0 in $\mathcal{T}$.
+\item $T_1 = \text{RS applied to } T_0$: since RS is self-consistent,
+  $T_1 = T_0$ and cost remains 0.
+\end{itemize}
+The sequence $\{T_n\}$ is constant at cost 0.  No divergence, no
+paradox.  Contrast with G\"{o}delian self-reference, where cost
+increases without bound.
+
+\emph{Lean:} \texttt{self\_ref\_stable}.
+\end{proof}
+
+\begin{remark}
+This is the precise sense in which RS dissolves G\"{o}del's objection.
+Self-referential \emph{arithmetic} sentences can have unbounded cost
+($\Jcost(0^+) \to \infty$).  Self-referential \emph{cost-minimisation}
+is stable (cost stays at zero).  These are different mathematical objects
+in different categories.
+\end{remark}
+
+%======================================================================
+\section{The Eight Fundamental Inquiry Modes}\label{sec:modes}
+%======================================================================
+
+A systematic analysis of question structure yields eight fundamental
+inquiry modes, corresponding to the eight independent directions in
+cost space:
+
+\begin{center}
+\begin{tabular}{@{}clll@{}}
+\toprule
+\# & \textbf{Mode} & \textbf{Canonical Form} & \textbf{Cost Signature} \\
+\midrule
+1 & Existence & ``Does $X$ exist?'' & $\Jcost(X) = 0$ vs $> 0$ \\
+2 & Identity & ``What is $X$?'' & argmin $\Jcost$ \\
+3 & Relation & ``How does $X$ relate to $Y$?'' & $\Jcost(X/Y)$ \\
+4 & Cause & ``Why $X$?'' & Gradient flow toward $X$ \\
+5 & Possibility & ``Can $X$ occur?'' & $\Jcost(X) < \infty$ \\
+6 & Necessity & ``Must $X$ occur?'' & $\Jcost(\neg X) = \infty$ \\
+7 & Composition & ``What are $X$'s parts?'' & Subadditivity of $\Jcost$ \\
+8 & Purpose & ``What is $X$ for?'' & Direction of $-\nabla\Jcost$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{theorem}[Completeness of inquiry modes]\label{thm:modes_complete}
+Every well-formed question can be decomposed into a combination of the
+eight fundamental modes.
+\end{theorem}
+
+\begin{proof}
+We show that the eight modes span the possible relationships between a
+question context $\mathcal{X}$ and its answer space $\mathcal{A}$ under
+the $\Jcost$ landscape.  A question probes one of:
+\begin{enumerate}[nosep]
+\item \textbf{Existence}: Is $\Jcost_A(a) = 0$ for some $a$?
+  (Probes the zero set.)
+\item \textbf{Identity}: What is $\arg\min \Jcost_A$?
+  (Probes the minimiser.)
+\item \textbf{Relation}: What is $\Jcost(a_1 / a_2)$ for given pairs?
+  (Probes the cost between two candidates.)
+\item \textbf{Cause}: What is $-\nabla \Jcost_A(a)$?
+  (Probes the gradient --- the direction of cost decrease.)
+\item \textbf{Possibility}: Is $\Jcost_A(a) < \infty$?
+  (Probes finiteness.)
+\item \textbf{Necessity}: Is $\Jcost_A(\neg a) = \infty$?
+  (Probes inevitability of $a$.)
+\item \textbf{Composition}: Is $\Jcost_A(a_1 + a_2) \le
+  \Jcost_A(a_1) + \Jcost_A(a_2)$?
+  (Probes sub/superadditivity.)
+\item \textbf{Purpose}: In which direction does $-\nabla\Jcost$ point
+  from $a$?  (Probes teleology --- what $a$ is ``for'' in the cost landscape.)
+\end{enumerate}
+These exhaust the first- and second-order properties of $\Jcost_A$:
+zero set (1,6), minimiser (2), gradient (4,8), pairwise cost (3),
+finiteness (5), and composition structure (7).  Any well-formed
+question about the landscape reduces to a combination of these
+probes.
+
+\emph{Lean:} \texttt{QuestionTaxonomy.modes\_complete}.
+\end{proof}
+
+\begin{remark}[Why eight?]
+The count ``eight'' is not arbitrary.  The cost landscape $\Jcost$ on
+$\mathbb{R}_{>0}$ is a one-dimensional function with: a zero (mode 1),
+a minimum (mode 2), a first derivative (modes 4, 8), pairwise structure
+(mode 3), global finiteness properties (modes 5, 6), and composition
+rules (mode 7).  These are the \emph{complete} set of qualitatively
+distinct probes of a smooth convex function --- parallelling the 8 DFT
+modes of the eight-tick cycle.  The coincidence of ``8 inquiry modes''
+with ``8-tick period'' is structural, not numerical.
+\end{remark}
+
+%======================================================================
+\section{Implications}\label{sec:implications}
+%======================================================================
+
+\begin{enumerate}
+\item \textbf{The regress problem is dissolved.}  ``Why does $X$ hold?''
+  terminates when $\Jcost(X) = 0$.  The chain of ``why'' questions
+  converges to the zero-cost ground state, not to an infinite regress.
+
+\item \textbf{Inquiry IS physics.}  Questions are cost gaps; inquiry is
+  gradient descent; answers are cost minima.  There is no distinction
+  between ``the universe finding its ground state'' and ``an agent
+  finding an answer.''
+
+\item \textbf{RS is self-justifying.}  The meta-closure theorem shows
+  RS is the unique zero-cost framework, and the question ``Why RS?'' is
+  forced.  This is not circular --- it is a fixed point.
+\end{enumerate}
+
+%======================================================================
+\section{Comparison with Existing Approaches}\label{sec:prior}
+%======================================================================
+
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}>{\bfseries}l p{5cm} p{5.5cm}@{}}
+\toprule
+Feature & Standard & RS (this paper) \\
+\midrule
+Groenendijk--Stokhof~\cite{Groenendijk1984}
+  & Partition semantics & Cost-gap semantics \\
+Hintikka~\cite{Hintikka1976}
+  & Game-theoretic questions & Forced questions ($\Jcost = 0$) \\
+Floridi~\cite{Floridi2011}
+  & Levels of abstraction & Cost hierarchy ($\Jcost$ values) \\
+G\"{o}del & Incompleteness (syntactic) & Dissolved questions (cost $= \infty$) \\
+Tarski & Undefinability of truth & Truth $=$ $\Jcost$-minimality (defined) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{remark}
+The RS framework does not contradict G\"{o}del or Tarski.  G\"{o}del
+sentences are \emph{dissolved} (infinite cost), not ``false'' or
+``unprovable in the strong sense.''  Tarski's result applies to
+\emph{truth predicates within formal languages}; the RS notion of truth
+($\Jcost = 0$) is a \emph{physical} criterion, not a linguistic one.
+The two are compatible because they operate in different categories.
+\end{remark}
+
+%======================================================================
+\section{Discussion}\label{sec:discussion}
+%======================================================================
+
+\subsection*{Claims and non-claims}
+
+We formalise questions as cost structures and prove that the RS forcing
+chain T0--T8 consists of forced questions.  We do \emph{not} claim that
+all philosophical questions can be formulated within this framework, or
+that the meta-closure theorem constitutes a ``proof of RS'' in the
+circular sense.  The meta-closure is a \emph{fixed point}: RS is
+self-consistent, not self-proving.
+
+\subsection*{Open problems}
+
+\begin{enumerate}[label=\textup{(Q\arabic*)},nosep]
+\item Can the eight inquiry modes be axiomatised independently
+  (i.e.\ proved to be a basis for a ``logic of questions'')?
+\item Is there a category-theoretic formulation (e.g.\ questions as
+  morphisms in a topos)?
+\item Can dissolved questions be ``regularised'' by modifying the
+  cost landscape (analogous to renormalisation)?
+\item Does the theory-space cost $\Jcost_{\mathcal{T}}$ have a
+  measurable proxy (e.g.\ description length + prediction error)?
+\end{enumerate}
+
+%======================================================================
+\section{Falsification Criteria}\label{sec:falsifiers}
+%======================================================================
+
+\begin{falsifier}[Non-forced physical constant]
+If a fundamental constant (e.g.\ $\phig$, $\alpha^{-1}$) can be
+shown to have multiple zero-cost explanations in $\mathcal{T}$ (the
+question is determinate but not forced), meta-closure fails.
+\end{falsifier}
+
+\begin{falsifier}[Zero-cost alternative]
+If a zero-parameter framework $T \ne \text{RS}$ is exhibited with
+$\Jcost_{\mathcal{T}}(T) = 0$, the uniqueness claim is falsified.
+\end{falsifier}
+
+%======================================================================
+\section{Lean Formalization}\label{sec:lean}
+%======================================================================
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Module} & \textbf{Content} \\
+\midrule
+\texttt{Foundation.Inquiry} & Context, Question, answerCost, classification \\
+\texttt{Foundation.QuestionTaxonomy} & 8 modes, completeness \\
+\texttt{Foundation.InquiryForcingConnection} & T0--T8 as forced questions \\
+\texttt{Foundation.MetaClosure} & Theory space, RS zero cost, meta-closure \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{thebibliography}{9}
+\bibitem{WashburnCost2026}
+J.~Washburn and M.~Zlatanovi\'{c},
+``The Cost of Coherent Comparison,''
+arXiv:2602.05753v1, 2026.
+
+\bibitem{WashburnGodel2026}
+J.~Washburn,
+``G\"{o}del's Theorem Does Not Obstruct Physical Closure,''
+Lean: \texttt{Foundation.GodelDissolution}, 2026.
+
+\bibitem{WashburnAboutness2026}
+J.~Washburn,
+``Optimization-Based Reference,''
+Lean: \texttt{Foundation.Reference}, 2026.
+
+\bibitem{WashburnExistence2026}
+J.~Washburn,
+``The Cost of Existence,''
+Recognition Science preprint, 2026.
+
+\bibitem{Groenendijk1984}
+J.~Groenendijk and M.~Stokhof,
+``Studies on the Semantics of Questions and the Pragmatics of Answers,''
+PhD thesis, University of Amsterdam, 1984.
+
+\bibitem{Hintikka1976}
+J.~Hintikka,
+``The semantics of questions and the questions of semantics,''
+\textit{Acta Philosophica Fennica}, 28(4), 1976.
+
+\bibitem{Floridi2011}
+L.~Floridi,
+\textit{The Philosophy of Information},
+Oxford University Press, 2011.
+\end{thebibliography}
+
+\end{document}

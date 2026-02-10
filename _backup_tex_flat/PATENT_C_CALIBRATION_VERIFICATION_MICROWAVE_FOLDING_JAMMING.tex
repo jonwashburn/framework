@@ -1,0 +1,194 @@
+\documentclass[11pt]{article}
+
+% Packages (keep minimal for broad TeX compatibility)
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{microtype}
+
+% Manual definitions for compatibility (avoid siunitx dependency)
+\newcommand{\angstrom}{\text{\normalfont\AA}}
+\newcommand{\SI}[2]{#1\,\text{#2}}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+
+\geometry{margin=1in}
+
+\title{\textbf{PATENT C (Draft): Calibration and Verification of Frequency-Selective}\\
+\textbf{Microwave Modulation of Protein Folding (Non-Thermal Discrimination)}\\
+\large Method Specification and Starter Claim Set}
+
+\author{
+Jonathan Washburn\\
+\texttt{jon@recognitionphysics.org}
+}
+
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Status:} Technical draft for counsel; \textbf{not legal advice}.\\
+\textbf{Related internal documents:} \code{docs/JAMMING_PATENT_OUTLINES.md}; \code{docs/JAMMING_PROTOCOL.md}; \code{docs/RS_JAMMING_FREQUENCY_PAPER.pdf}; \code{docs/RS_PROTEIN_FOLDING_BASELINE_PAPER.pdf}.\\
+\textbf{Note on examples:} any ``Example'' describing expected outcomes is \textbf{prophetic} unless explicitly stated as experimentally observed.
+
+\section*{Abstract (Patent)}
+Disclosed are methods for calibrating, identifying, and verifying frequency-selective modulation of protein folding in aqueous samples under microwave irradiation, while distinguishing such modulation from dielectric heating. In embodiments, a calibration workflow comprises: measuring frequency-dependent coupling and/or absorbed power in an applicator and sample cell; establishing a heating baseline of a solvent and/or buffer; performing a temperature-controlled frequency sweep while measuring one or more folding metrics; computing a residual response after controlling for heating; identifying a resonant frequency window; and verifying the window using off-resonance controls and/or an isotope shift experiment in D\(_2\)O. In embodiments, the workflow produces a resonant frequency estimate, bandwidth, effect size, and a confidence score, and may transition to a lock mode for subsequent experiments.
+
+\section{Field of the invention}
+The present disclosure relates to calibration and verification methods for microwave irradiation experiments on biomolecular samples, and more particularly to methods that identify and validate frequency-selective folding modulation while controlling for bulk thermal effects and coupling artifacts.
+
+\section{Background}
+Microwave irradiation of aqueous samples frequently produces broad, frequency-dependent heating due to dielectric loss in water and buffer components. In the Ku band and nearby regimes, heating and temperature gradients can dominate observed changes in biomolecular kinetics and stability. As a result, identifying a genuine frequency-selective (resonance-like) effect requires an experimental and analytical workflow that explicitly separates narrowband effects from the baseline heating curve.
+
+The art lacks widely adopted, reproducible calibration procedures that (i) generate a frequency-response curve for a folding metric under controlled temperature, (ii) incorporate matched-heating and off-resonance controls, and (iii) optionally verify a solvent-mass dependence (e.g., D\(_2\)O shift) that can strengthen interpretation and reproducibility.
+
+\section{Summary of the invention}
+In one aspect, a method is provided to identify a frequency-selective effect of microwave irradiation on a protein folding metric. The method comprises: establishing a heating baseline; performing a temperature-controlled frequency sweep while measuring a folding metric; computing a frequency-response curve; identifying a resonant frequency window as a localized deviation from the heating baseline and/or matched-heating controls; and verifying the window using one or more off-resonance controls and/or isotope shift validation.
+
+In embodiments, the method further provides an automated analysis routine that produces a resonant frequency estimate, bandwidth, effect size, and confidence score, and that selects a frequency for subsequent ``lock mode'' operation.
+
+\section{Brief description of drawings}
+Drawings are not included in this draft. Typical filing figures include:
+\begin{itemize}
+    \item Fig. 1: flowchart of calibration/verification workflow.
+    \item Fig. 2: example coupling calibration versus frequency (e.g., reflection coefficient).
+    \item Fig. 3: heating baseline curve (temperature rise or absorbed power) versus frequency.
+    \item Fig. 4: folding metric versus frequency (raw) and residual (after baseline removal).
+    \item Fig. 5: fit of residual response to a peak model (e.g., Lorentzian) with extracted center and width.
+    \item Fig. 6: comparison plots: on-window vs off-window frequencies under matched heating.
+    \item Fig. 7: H\(_2\)O versus D\(_2\)O frequency shift comparison.
+\end{itemize}
+
+\section{Detailed description}
+
+\subsection{Definitions}
+Unless otherwise stated:
+\begin{itemize}
+    \item \textbf{Folding metric}: any measurable observable correlated with folded fraction or folding kinetics, including CD ellipticity (e.g., 222 nm), fluorescence, FRET, NMR, IR, light scattering, or other spectroscopy.
+    \item \textbf{Heating baseline}: a model or measurement describing the expected change in the folding metric attributable to bulk temperature change and/or absorbed power as a function of frequency.
+    \item \textbf{Matched-heating control}: a control condition in which power/duty cycle is adjusted so that the bulk temperature trajectory (or absorbed power estimate) matches a reference condition.
+    \item \textbf{Off-resonance control}: one or more frequencies outside a candidate resonant window used to estimate a null response under matched heating.
+    \item \textbf{Residual response}: a difference between (i) observed folding metric response and (ii) expected response from the heating baseline or matched-heating controls.
+    \item \textbf{Resonant window}: a bounded frequency interval where the residual response is significantly different from off-resonance controls.
+    \item \textbf{Confidence score}: a quantitative indicator of how likely the observed residual response is to represent a localized, repeatable effect rather than noise/heating artifacts (e.g., peak-to-baseline ratio, repeatability, fit quality, or statistical significance).
+\end{itemize}
+
+\subsection{Calibration workflow (core embodiment)}
+In one embodiment, the calibration and verification workflow comprises:
+\begin{enumerate}
+    \item \textbf{Instrument/coupling calibration.} Measure frequency-dependent coupling of the applicator and sample cell. In embodiments, measure incident/reflected power and/or reflection coefficient as a function of frequency to characterize delivered field strength.
+
+    \item \textbf{Blank heating baseline.} Using buffer without protein (or a reference sample), apply irradiation across a frequency sweep and record bulk temperature trajectories. This produces a baseline heating curve as a function of frequency and power.
+
+    \item \textbf{Temperature-controlled sweep with protein.} Prepare a protein sample at a fixed temperature setpoint (e.g., \(25\,^{\circ}\mathrm{C}\)). Sweep frequency across a target band while maintaining bulk temperature within a tolerance (e.g., \(\pm 0.2\,^{\circ}\mathrm{C}\)). Measure the folding metric at each frequency (or continuously).
+
+    \item \textbf{Matched-heating sweep (control).} Repeat the sweep while adjusting power and/or duty cycle so that the bulk temperature trajectory (or absorbed power estimate) matches across frequencies. This enables subtraction of purely thermal effects.
+
+    \item \textbf{Compute residual response.} Compute a residual response versus frequency by subtracting the heating baseline or matched-heating control response from the raw folding metric response.
+
+    \item \textbf{Identify candidate resonant window.} Identify a localized peak/dip in the residual response. In embodiments, fit a peak model (e.g., Gaussian or Lorentzian) to estimate center frequency, width, and effect size.
+
+    \item \textbf{Verification by off-resonance controls.} Measure the folding metric at one or more off-resonance frequencies under matched heating to confirm that the effect is localized and not broadly present.
+
+    \item \textbf{Optional verification by isotope shift.} Repeat the above steps in D\(_2\)O buffer and compare the identified resonant window to that in H\(_2\)O, determining whether a reproducible shift exists.
+
+    \item \textbf{Lock mode.} If verified, operate at the identified frequency and duty cycle for subsequent experiments (e.g., kinetic measurements, power-dependence curves).
+\end{enumerate}
+
+\subsection{Residual computation embodiments}
+\paragraph{Residual from matched heating.}
+In one embodiment, the residual response at frequency \(f\) is:
+\[
+R(f) = M_{\mathrm{on}}(f) - M_{\mathrm{matched}}(f),
+\]
+where \(M\) is a folding metric and \(M_{\mathrm{matched}}\) is measured under a matched-heating control.
+
+\paragraph{Residual from heating baseline model.}
+In one embodiment, a baseline model predicts a thermal contribution \(B(f)\) to the folding metric (based on measured temperature rise, absorbed power, or a calibration curve), and:
+\[
+R(f) = M_{\mathrm{on}}(f) - B(f).
+\]
+
+\subsection{Peak identification embodiments}
+\paragraph{Peak model fit.}
+In one embodiment, a peak model (e.g., Lorentzian) is fit:
+\[
+R(f) \approx \frac{A\gamma^2}{(f-f_0)^2+\gamma^2} + c,
+\]
+extracting center frequency \(f_0\), half-width \(\gamma\), amplitude \(A\), and baseline \(c\).
+
+\paragraph{Non-parametric identification.}
+In one embodiment, the resonant window is identified by comparing residual values to an off-resonance distribution using a threshold criterion (e.g., exceeds the off-resonance mean by \(k\) standard deviations) and requiring repeatability across runs.
+
+\subsection{Confidence scoring embodiments}
+In one embodiment, a confidence score combines:
+\begin{itemize}
+    \item effect size (peak-to-off-resonance contrast),
+    \item fit quality (e.g., \(R^2\) of peak model),
+    \item repeatability across replicate sweeps,
+    \item thermal stability (temperature drift within tolerance),
+    \item control separation (off-resonance controls show reduced residual).
+\end{itemize}
+
+\section{Examples (prophetic unless otherwise stated)}
+
+\subsection*{Example 1: Ku-band sweep with matched heating}
+Prepare a fast-folding protein in buffer at \(25\,^{\circ}\mathrm{C}\) and measure a fluorescence folding metric. Perform a sweep from \SI{14.0}{GHz} to \SI{15.2}{GHz} in \SI{0.05}{GHz} steps under closed-loop temperature control. Repeat the sweep using matched-heating controls. Compute residual response and identify whether a localized peak/dip exists.
+
+\subsection*{Example 2: Off-resonance verification}
+After identifying a candidate window near \SI{14.65}{GHz}, measure the folding metric at two off-resonance frequencies (e.g., near \SI{11.5}{GHz} and \SI{18.6}{GHz}) under matched heating. Confirm that residual effects are reduced outside the window.
+
+\subsection*{Example 3: D\(_2\)O shift}
+Repeat Example 1 in D\(_2\)O buffer. Identify whether the candidate window shifts in center frequency relative to H\(_2\)O.
+
+\section{Claims (starter set; for counsel refinement)}
+\noindent\textbf{What follows is a technical starter claim set to guide drafting. Counsel should rewrite for jurisdiction, support, and scope.}
+
+\begin{enumerate}
+    \item A method of identifying a frequency-selective effect of microwave irradiation on protein folding, comprising:
+    \begin{enumerate}
+        \item providing an aqueous sample comprising a protein;
+        \item irradiating the aqueous sample with narrowband microwave radiation at a plurality of frequencies while maintaining a bulk temperature of the aqueous sample within a temperature tolerance;
+        \item measuring a folding metric at the plurality of frequencies to generate a frequency-response curve; and
+        \item identifying a resonant frequency window based on the frequency-response curve.
+    \end{enumerate}
+
+    \item The method of claim 1, further comprising establishing a heating baseline by irradiating a reference sample and recording a temperature response as a function of frequency.
+
+    \item The method of claim 2, further comprising computing a residual response by subtracting an expected thermal contribution from the frequency-response curve.
+
+    \item The method of claim 1, further comprising performing a matched-heating control in which microwave power and/or duty cycle is adjusted to match a bulk temperature trajectory across at least two different frequencies.
+
+    \item The method of claim 1, further comprising verifying the resonant frequency window by measuring the folding metric at one or more off-resonance control frequencies under matched heating.
+
+    \item The method of claim 5, wherein the off-resonance control frequencies comprise at least one frequency below and at least one frequency above the resonant frequency window.
+
+    \item The method of claim 1, wherein identifying the resonant frequency window comprises fitting a peak model to a residual response curve to estimate a center frequency and a bandwidth.
+
+    \item The method of claim 1, further comprising generating a confidence score based on effect size and repeatability across replicate sweeps.
+
+    \item The method of claim 1, further comprising selecting an operating frequency within the resonant frequency window and operating the microwave radiation at the operating frequency in a lock mode for subsequent folding experiments.
+
+    \item The method of claim 1, wherein the plurality of frequencies comprise frequencies in a Ku-band range.
+
+    \item The method of claim 1, wherein the plurality of frequencies comprise a sweep across \SI{14.0}{GHz} to \SI{15.2}{GHz}.
+
+    \item The method of claim 1, wherein the temperature tolerance is \(\pm 0.2\,^{\circ}\mathrm{C}\) or tighter.
+
+    \item The method of claim 1, further comprising repeating the method in a D\(_2\)O-containing aqueous sample and determining an isotope-dependent shift of the resonant frequency window.
+
+    \item A non-transitory computer-readable medium comprising instructions that, when executed by one or more processors, cause the one or more processors to:
+    \begin{enumerate}
+        \item ingest frequency-response measurements of a folding metric and corresponding temperature data;
+        \item compute a residual response by controlling for heating;
+        \item fit a peak model or apply a threshold criterion to identify a resonant frequency window; and
+        \item output a center frequency, a bandwidth, and a confidence score.
+    \end{enumerate}
+\end{enumerate}
+
+\end{document}
+
+

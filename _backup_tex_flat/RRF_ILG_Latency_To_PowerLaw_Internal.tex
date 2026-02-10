@@ -1,0 +1,556 @@
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  citecolor=blue
+}
+
+% -----------------------------
+% Internal formatting / macros
+% -----------------------------
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+
+\newcommand{\phiG}{\varphi}
+\newcommand{\tauz}{\tau_{0}}
+\newcommand{\alphaG}{\alpha}
+\newcommand{\Clag}{C_{\mathrm{lag}}}
+\newcommand{\Cgeom}{C}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\dd}{\,\mathrm{d}}
+
+\newtheorem{assumption}{Assumption}
+\newtheorem{claim}{Claim}
+\newtheorem{definition}{Definition}
+\newtheorem{proposition}{Proposition}
+\newtheorem{remark}{Remark}
+\newtheorem{falsifier}{Falsifier}
+
+\title{\textbf{Internal Memo: The Missing Move}\\
+\large Turning ``Ledger Latency'' into the ILG Power-Law Kernel \\
+\normalsize (RRF $\leftrightarrow$ ILG Bridge: fractional response operator, pinned constants, falsifiers)}
+\author{Jonathan Washburn \quad + \quad Internal synthesis (Cursor / GPT-assisted)}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This document records the creative and technical bridge between two strands of the Recognition Science program:
+(i) the mature \emph{Information-Limited Gravity} (ILG) phenomenology, expressed as a source-side kernel
+$w(k,a)=1+\Cgeom\,(a/(k\tauz))^{\alphaG}$; and (ii) the emerging \emph{Reality Recognition Framework} (RRF),
+which identifies mass with ledger density and gravity with ledger/strain curvature.
+
+The missing move, historically, was that ``finite refresh / latency'' was a compelling story but not a
+mechanism that forces the observed (and Lean-encoded) power-law multiplier $k^{-\alphaG}$.
+Here we give a minimal derivation: a ledger-latency model is formalized as a \emph{power-law memory}
+operator in time (a fractional integral). In Fourier space this produces $(\omega\tauz)^{-\alphaG}$.
+Using causality/refresh arguments to relate temporal frequency $\omega$ to comoving wave-number $k$
+via $\omega\sim ck/a$, the model yields $w(k,a)=1+\Cgeom\,(a/(k\tauz))^{\alphaG}$.
+Equivalently, the same construction is a fractional \emph{spatial} response operator with symbol $|k|^{-\alphaG}$,
+i.e. $(-\Delta)^{-\alphaG/2}$.
+
+We then pin $\alphaG$ and $\Cgeom$ to the RS constants already defined in the primary Lean repository
+(\texttt{github.com/jonwashburn/reality}): $\alphaG=(1-1/\phiG)/2$ and $\Cgeom=\phiG^{-3/2}$ (RS-canonical),
+with an alternate 8-tick-aligned amplitude option used in some modules.
+Finally, we list falsifiers implied by the mechanism (not just by the kernel), and we propose the next Lean steps
+to formalize the fractional-operator bridge explicitly.
+\end{abstract}
+
+\tableofcontents
+
+\section{Background: how we got here (internal narrative)}
+
+\subsection{From protein folding to universal strain}
+
+This project did not begin as a gravity project.
+It began as a protein-folding optimizer and a search for a tractable, mechanistic surrogate for AlphaFold-like
+performance. In the process we repeatedly encountered the same formal pattern:
+
+\begin{itemize}
+  \item A system has a notion of \emph{validity} (consistency, closure, equilibrium).
+  \item Deviations from validity are measured by a scalar functional $J$ (``strain'', ``cost'').
+  \item Optimization drives $J\to 0$ subject to constraints.
+\end{itemize}
+
+This manifested as:
+
+\begin{itemize}
+  \item \textbf{Proteins:} local and global energetic/steric penalties; folding as $J$ minimization.
+  \item \textbf{Sound/sonification:} detuning/dissonance as a measurable $J$; correlation with fold quality.
+  \item \textbf{Logic/traces:} invariants / non-closure as a scalar measure of inconsistency.
+\end{itemize}
+
+That cross-domain identity motivated a more general ontology:
+instead of treating physics, cognition, and computation as separate substances, treat them as
+distinct \emph{vantages} on the same underlying closure/recognition process.
+
+\subsection{The Reality Recognition Framework (RRF)}
+
+RRF is the name for the systematized ontology:
+
+\begin{itemize}
+  \item \textbf{Recognition / existence:} to exist is to be recognized by the self-consistent whole.
+  \item \textbf{Ledger:} recognition events are bookkeeping; closure constraints enforce conservation-like laws.
+  \item \textbf{Strain $J$:} the universal penalty for non-closure; balanced states are $J=0$.
+  \item \textbf{Octaves:} the same pattern appears at multiple scales (domains), related by scaling hypotheses.
+\end{itemize}
+
+In Lean, RRF was implemented as a module tree under:
+\texttt{IndisputableMonolith/RRF/} plus an umbrella \texttt{IndisputableMonolith/RRF.lean}.
+
+\subsection{Information-Limited Gravity (ILG)}
+
+Independently, the gravity work matured into a precise phenomenology:
+
+\begin{itemize}
+  \item Modify gravity on the \emph{source side}, leaving the operator form classical:
+  \[
+    k^2\Phi(\mathbf{k},a)=4\pi G a^2 \rho_s(a)\,w(k,a)\,\delta_s(\mathbf{k},a).
+  \]
+  \item Use a parameter-fixed kernel:
+  \[
+    w(k,a)=1+\phiG^{-3/2}\left(\frac{a}{k\tauz}\right)^{\alphaG},\qquad
+    \alphaG=\frac12\left(1-\phiG^{-1}\right).
+  \]
+  \item Derive many linear-observable predictions as functions of the variable $X=k\tauz/a$ (``X-only'').
+\end{itemize}
+
+This is expressed across the internal papers:
+\texttt{Dark-Energy.tex}, \texttt{Pressure-Gravity.tex}, \texttt{Quantum-Gravity-New.tex},
+\texttt{Information-Limited-Gravity-Paper1-Sept26.tex}.
+
+\subsection{The tension: story vs.\ mechanism}
+
+The ILG story is intuitively framed as \emph{finite refresh / information limit / bandwidth triage}:
+slow, extended systems cannot be updated with the same immediacy as compact, fast systems.
+The kernel was motivated as a rigorous instantiation of this idea.
+
+However, there remained a conceptual gap:
+
+\begin{quote}
+  Why does latency produce a \emph{power-law} gain with symbol $k^{-\alphaG}$,
+  rather than an exponential cutoff, a rational filter, a log, etc.?
+\end{quote}
+
+RRF also introduced a new explanatory vocabulary (ledger closure, strain, recognition density),
+but did not automatically force the ILG kernel either.
+
+This memo records the missing bridge: \textbf{turn latency into a fractional operator}.
+
+\section{Goal: derive the ILG kernel from ledger latency (not just motivate it)}
+
+We want a derivation that:
+
+\begin{itemize}
+  \item is \textbf{minimal}: few assumptions, explicit and auditable;
+  \item forces \textbf{power-law} behavior in a controlled regime;
+  \item naturally yields the ILG form $w(k,a)=1+\Cgeom (a/(k\tauz))^{\alphaG}$;
+  \item makes \textbf{falsifiers} easy to state (and different from arbitrary kernel fits);
+  \item is consistent with the already-pinned RS constants in Lean:
+  $\alphaG=(1-1/\phiG)/2$ and $\Cgeom=\phiG^{-3/2}$.
+\end{itemize}
+
+\section{The minimal ledger-latency model (assumptions)}
+
+\begin{assumption}[Ledger-consistent sourced density]
+The gravitational potential responds to a \emph{recognition-consistent} (ledger-closed) source
+$\rho_{\mathrm{rec}}$ rather than the instantaneous source $\rho$.
+Equivalently, in the pressure language: $\nabla^2\Phi \propto \rho_{\mathrm{rec}}$ (or its contrast).
+\end{assumption}
+
+\begin{assumption}[Latency as backlog memory (scale-free)]
+Ledger closure is not instantaneous; unclosed transactions persist as a backlog.
+Backlog is \emph{scale-free} in the low-frequency regime and therefore appears as a power-law memory
+kernel in time. Concretely, for some $\alphaG\in(0,1)$ and amplitude $\Cgeom\ge 0$,
+\begin{equation}
+\label{eq:rho_rec_fractional_time}
+\rho_{\mathrm{rec}}(t,\mathbf{x})
+=
+\rho(t,\mathbf{x})
++ \Cgeom\,\tauz^{-\alphaG}\,(I_t^{\alphaG}\rho)(t,\mathbf{x}),
+\end{equation}
+where $I_t^{\alphaG}$ is the Riemann--Liouville fractional integral in time:
+\begin{equation}
+\label{eq:RL_fractional_integral}
+(I_t^{\alphaG}f)(t)
+ :=
+\frac{1}{\Gamma(\alphaG)}\int_0^{\infty} s^{\alphaG-1} f(t-s)\,\dd s.
+\end{equation}
+\end{assumption}
+
+\begin{assumption}[Causal identification of time-scale with spatial scale]
+For a comoving spatial Fourier mode $k$ at scale factor $a$, the fastest effective refresh
+frequency scales like the causal rate:
+\begin{equation}
+\label{eq:omega_k_a}
+\omega(k,a)\sim \frac{c\,k}{a}.
+\end{equation}
+In units with $c=1$, this is $\omega\sim k/a$.
+This is the bridge that carries time-latency into scale-dependent spatial response.
+\end{assumption}
+
+\begin{remark}[Why these assumptions are minimal]
+Assumption 2 is the core: it is exactly the claim ``latency/backlog has power-law memory''.
+This is the only step that fixes a power-law rather than an arbitrary filter family.
+Assumption 3 is a causality/refresh statement: the ledger is local and finite-speed, so a mode's
+refresh frequency must scale with its physical wavelength.
+\end{remark}
+
+\subsection{Why power-law memory is the unique scale-free latency kernel}
+
+The word ``scale-free'' can be made precise. The point is not that we \emph{like} power laws;
+it is that \emph{if the ledger latency has no characteristic scale in the slow regime},
+then the only stable functional form for the memory kernel is a homogeneous (power) kernel.
+
+\begin{definition}[Backlog kernel as a convolution]
+Write the backlog contribution to the recognition-consistent source as a time-convolution:
+\[
+(Bf)(t) := \int_0^\infty K(s)\,f(t-s)\,\dd s,
+\]
+for some kernel $K(s)\ge 0$ on $s>0$.
+\end{definition}
+
+\begin{assumption}[Homogeneity / scale invariance of backlog]
+In the slow regime, the backlog kernel has a scaling symmetry: for some exponent $\alphaG\in(0,1)$ and
+all $\lambda>0$,
+\begin{equation}
+\label{eq:kernel_homogeneity}
+K(\lambda s) = \lambda^{\alphaG-1}\,K(s).
+\end{equation}
+\end{assumption}
+
+\begin{proposition}[Scale invariance forces a power kernel]
+If $K$ is locally integrable on $(0,\infty)$ and satisfies \eqref{eq:kernel_homogeneity}, then
+there exists a constant $c\ge 0$ such that
+\[
+K(s)=c\,s^{\alphaG-1}.
+\]
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+Equation \eqref{eq:kernel_homogeneity} is exactly the definition of a homogeneous function of degree
+$(\alphaG-1)$ on $(0,\infty)$. On the positive reals, such functions are of the form $K(s)=c s^{\alphaG-1}$.
+\end{proof}
+
+\begin{remark}[Connection to fractional calculus]
+Choosing $K(s)\propto s^{\alphaG-1}$ produces the Riemann--Liouville fractional integral (up to normalization),
+which is precisely why fractional operators are the canonical language for scale-free latency.
+\end{remark}
+
+\subsection{Alternative physical interpretation: heavy-tailed waiting times}
+
+Another way to justify the same mathematics is via renewal processes / queueing:
+if ledger ``commit'' events have waiting-time distribution with a Pareto tail
+$\mathbb{P}(\text{wait}>s)\sim s^{-\alphaG}$, then the effective response to a driving signal is
+known to exhibit fractional (power-law) memory, and the low-frequency gain behaves like $|\omega|^{-\alphaG}$.
+This memo does not require the full stochastic derivation; the point is that \emph{power-law tails}
+and \emph{fractional operators} are equivalent descriptions of ``latency without a characteristic scale.''
+
+\section{Derivation: fractional time-memory $\Rightarrow$ $(\omega\tauz)^{-\alphaG}$}
+
+We work in temporal Fourier domain (fixing spatial $\mathbf{x}$ or a spatial mode $k$).
+Let $\widehat{f}(\omega)$ denote the Fourier transform in time with convention
+\[
+\widehat{f}(\omega) = \int_{-\infty}^{\infty} e^{-i\omega t} f(t)\,\dd t.
+\]
+
+\begin{proposition}[Fractional integral multiplier]
+For sufficiently regular $f$ (tempered distributions suffice for the multiplier statement),
+the Riemann--Liouville fractional integral satisfies
+\begin{equation}
+\widehat{I_t^{\alphaG}f}(\omega)
+ =
+(i\omega)^{-\alphaG}\,\widehat{f}(\omega),
+\end{equation}
+with the standard branch choice for $(i\omega)^{-\alphaG}$.
+\end{proposition}
+
+Therefore Assumption 2 implies:
+\begin{equation}
+\widehat{\rho}_{\mathrm{rec}}(\omega,\mathbf{x})
+ =
+\left[1+\Cgeom\,(\tauz\,i\omega)^{-\alphaG}\right]\widehat{\rho}(\omega,\mathbf{x}).
+\end{equation}
+
+In magnitude (ignoring the phase of $i^{-\alphaG}$), this is a gain of the form:
+\begin{equation}
+\label{eq:time_gain_magnitude}
+\left|\widehat{\rho}_{\mathrm{rec}}\right|
+\approx
+\left[1+\Cgeom\,(\tauz\,|\omega|)^{-\alphaG}\right]\left|\widehat{\rho}\right|.
+\end{equation}
+
+\begin{remark}[Interpretation]
+The backlog behaves like ``old source contributions do not decay exponentially; they decay as a power''.
+At low frequency (slow dynamics, small $|\omega|$) the enhancement grows as $|\omega|^{-\alphaG}$.
+At high frequency (fast dynamics) it vanishes and $\rho_{\mathrm{rec}}\to \rho$.
+\end{remark}
+
+\section{Causality bridge: $(\omega\tauz)^{-\alphaG} \Rightarrow (a/(k\tauz))^{\alphaG}$}
+
+Now consider a comoving Fourier mode $k$ of the source field in an expanding background.
+Causal refresh identifies the effective update frequency for that mode as
+$\omega\sim ck/a$ (Assumption 3).
+Substituting into \eqref{eq:time_gain_magnitude} yields:
+
+\begin{equation}
+\left|\widehat{\rho}_{\mathrm{rec}}(k,a)\right|
+\approx
+\left[1+\Cgeom\left(\frac{a}{k\,c\,\tauz}\right)^{\alphaG}\right]
+\left|\widehat{\rho}(k,a)\right|.
+\end{equation}
+
+Absorb $c$ into $\tauz$ (or set $c=1$ in natural units) to obtain:
+\begin{equation}
+\label{eq:wka_from_latency}
+w(k,a)=1+\Cgeom\left(\frac{a}{k\tauz}\right)^{\alphaG}.
+\end{equation}
+
+\begin{claim}[This is the missing move]
+Equation \eqref{eq:wka_from_latency} is the ILG kernel, derived from a ledger-latency model
+whose essential structure is a fractional-memory backlog plus a causal scale--time identification.
+The power law $k^{-\alphaG}$ is not an \emph{ansatz}; it is the Fourier symbol of a fractional operator.
+\end{claim}
+
+\section{Equivalent spatial form: a fractional response operator with symbol $|k|^{-\alphaG}$}
+
+Because \eqref{eq:wka_from_latency} depends on $k^{-\alphaG}$, it can be expressed as an operator
+acting on spatial fields at fixed epoch.
+
+\begin{definition}[Fractional spatial integral / Riesz potential]
+Define the fractional spatial operator $I_{\alphaG}$ by its Fourier symbol:
+\[
+\widehat{(I_{\alphaG}f)}(k) := |k|^{-\alphaG}\,\widehat{f}(k).
+\]
+Formally, $I_{\alphaG}=(-\Delta)^{-\alphaG/2}$ on mean-zero fields (to avoid the $k=0$ singularity).
+\end{definition}
+
+Then the same latency mechanism can be written (schematically) as:
+\begin{equation}
+\rho_{\mathrm{rec}}(\mathbf{x},a)
+ =
+\rho(\mathbf{x},a)
+ + \Cgeom\left(\frac{a}{\tauz}\right)^{\alphaG}
+(-\Delta)^{-\alphaG/2}\rho(\mathbf{x},a),
+\end{equation}
+whose Fourier transform is exactly \eqref{eq:wka_from_latency}.
+
+\begin{remark}[Why this matters]
+This exhibits the ILG kernel as a \emph{nonlocal} response: recognition/ledger closure is not pointwise;
+it couples long wavelengths more strongly. This makes the ``dark-sector'' behavior a direct consequence
+of nonlocal closure rather than an extra matter component.
+\end{remark}
+
+\section{Pinning the constants: \texorpdfstring{$\alphaG$}{alpha} and \texorpdfstring{$\Cgeom$}{C}}
+
+\subsection{What is already pinned in Lean (reality repo)}
+
+In the primary Lean repository (\texttt{github.com/jonwashburn/reality}), the ILG kernel parameters are
+encoded directly:
+
+\begin{itemize}
+  \item \textbf{Kernel form:} $w(k,a)=1+\Cgeom(a/(k\tauz))^{\alphaG}$.
+  \item \textbf{Exponent:} $\alphaG = (1-1/\phiG)/2$ (named \texttt{alphaLock}).
+  \item \textbf{Amplitude (RS canonical):} $\Cgeom=\phiG^{-3/2}$ (in \texttt{rsKernelParams}).
+  \item \textbf{Alternate amplitude (8-tick aligned):} $\Cgeom = 49/162$ (in \texttt{eightTickKernelParams}).
+\end{itemize}
+
+The exact code location:
+
+\begin{lstlisting}[basicstyle=\ttfamily\small,breaklines=true,literate={ℝ}{Real}1{≤}{<=}1]
+-- reality/IndisputableMonolith/ILG/Kernel.lean (excerpt)
+structure KernelParams where
+  alpha : Real
+  C : Real
+  tau0 : Real
+  tau0_pos : 0 < tau0
+  alpha_nonneg : 0 <= alpha
+  C_nonneg : 0 <= C
+
+noncomputable def rsKernelParams (tau0 : Real) (h : 0 < tau0) : KernelParams := {
+  alpha := alphaLock,                 -- alphaLock = (1 - 1/phi)/2
+  C := phi ^ (-(3 : Real) / 2),       -- RS-canonical amplitude
+  tau0 := tau0,
+  tau0_pos := h,
+  alpha_nonneg := le_of_lt alphaLock_pos,
+  C_nonneg := le_of_lt (Real.rpow_pos_of_pos phi_pos _)
+}
+\end{lstlisting}
+
+\subsection{Interpretation: why \texorpdfstring{$\Cgeom=\phiG^{-3/2}$}{C = phi^{-3/2}}}
+
+Internally, the $\phiG^{-3/2}$ factor has an intended geometric meaning:
+
+\begin{itemize}
+  \item There are \textbf{three orthogonal recognition channels} in $D=3$ (x,y,z).
+  \item Each channel has a \textbf{primal/dual} traversal across an 8-tick schedule.
+  \item Ledger link penalty fixes the \emph{product} of primal/dual weights per channel to $\phiG^{-1}$.
+  \item Minimality / equal split gives each traversal weight $\phiG^{-1/2}$ per channel.
+  \item Multiplying three channels yields $\phiG^{-3/2}$.
+\end{itemize}
+
+This is exactly the ``3-channel factorization'' used in the ILG papers' appendices.
+
+\subsection{Interpretation: why \texorpdfstring{$\alphaG=(1-1/\phiG)/2$}{alpha = (1-1/phi)/2}}
+
+The exponent $\alphaG$ is the reciprocity/self-similarity exponent.
+In this memo, \emph{the mechanism that produces a power law} is fractional memory.
+But fractional memory alone does not pin the exponent numerically.
+Pinning $\alphaG$ requires an additional selection rule.
+
+The RS program pins $\alphaG$ by \textbf{self-similarity at the golden fixed point}:
+the scaling transform by $\phiG$ is the unique stable recursion under the cost/coverage constraints,
+and the exponent becomes a function of $\phiG$.
+
+In Lean, this is encoded as:
+\[
+\alphaG = \frac12\left(1-\frac{1}{\phiG}\right)
+\]
+and treated as a derived constant from $\phiG$ (see parameter provenance certificate).
+
+\section{Falsifiers implied by the mechanism (not just by kernel fitting)}
+
+The fractional-latency mechanism yields falsifiers stronger than ``fit a kernel'':
+
+\begin{falsifier}[Slope of enhancement term]
+In the regime where $w-1$ is dominated by the enhancement term and the $\max(\varepsilon,\cdot)$ cutoff is inactive,
+\[
+\frac{\partial\ln(w-1)}{\partial\ln k} = -\alphaG
+\quad\text{(constant slope).}
+\]
+Large, systematic deviation from constant slope falsifies pure fractional-memory latency.
+\end{falsifier}
+
+\begin{falsifier}[X-only reciprocity identity]
+If $w=w(X)$ with $X=k\tauz/a$, then for any such observable $Q(X)$:
+\[
+\partial_{\ln a}\ln Q(a,k) = -\partial_{\ln k}\ln Q(a,k).
+\]
+This is the ``single-plot'' falsifier family emphasized in \texttt{Dark-Energy.tex}.
+Violation falsifies the hypothesis that the enhancement is purely a function of $X$ (hence purely causal-latency based).
+\end{falsifier}
+
+\begin{falsifier}[No free prefactor]
+If $\Cgeom$ is pinned to $\phiG^{-3/2}$ by the 3-channel ledger geometry,
+then the amplitude is not adjustable. Any empirical requirement for a different amplitude in the same regime
+falsifies the channel-factorization story (or the identification of the relevant channels/dimension).
+\end{falsifier}
+
+\begin{remark}[Why these falsifiers are ``mechanism-level'']
+They do not just test whether a kernel can be tuned.
+They test whether a \emph{fractional-memory + causality} origin is correct.
+Other kernel families can fit some data but will generally not satisfy all three falsifiers simultaneously.
+\end{remark}
+
+\section{How this connects to the four gravity manuscripts (internal alignment)}
+
+\subsection{\texttt{Dark-Energy.tex}}
+Already uses $w(k,a)=1+\phiG^{-3/2}(a/(k\tauz))^{\alphaG}$ and emphasizes the $X=k\tauz/a$ universal-variable structure,
+including the reciprocity identity and single-plot falsifiers.
+This memo supplies a deeper \emph{mechanism} for why $k^{-\alphaG}$ appears: fractional latency.
+
+\subsection{\texttt{Pressure-Gravity.tex}}
+Recasts ILG as classical gravity with an effective source/``pressure'' $p=w\ast\rho_b$.
+The fractional-operator picture fits naturally: the pressure source is precisely the application of a
+fractional operator (Fourier multiplier) to the baryonic field.
+
+\subsection{\texttt{Quantum-Gravity-New.tex}}
+Builds the discrete recognition calculus, 8-tick minimality, and bridge invariants to GR/QG.
+This memo connects the QG framing to ILG by adding:
+``finite update'' $\Rightarrow$ fractional memory $\Rightarrow$ power-law nonlocal kernel.
+This is compatible with discrete-to-continuum limits (fractional operators often appear from heavy-tailed waiting times).
+
+\subsection{\texttt{Information-Limited-Gravity-Paper1-Sept26.tex}}
+Frames gravity as latency geometry and motivates triage. The fractional-memory mechanism can be read as the
+unique scale-free form of triage: rather than a specific scheduler, the ledger imposes power-law persistence
+of unclosed recognition events.
+
+\section{RRF alignment: ``mass = ledger density'' and ``gravity = ledger curvature''}
+
+RRF introduces a foundational mapping:
+
+\begin{itemize}
+  \item \textbf{Mass} = ledger density
+  \item \textbf{Curvature} = constraint pressure / strain
+\end{itemize}
+
+In Lean (RRF module):
+\texttt{IndisputableMonolith/RRF/Foundation/Gravity.lean}.
+
+This memo's mechanism suggests a refinement:
+
+\begin{quote}
+Mass is the instantaneous ledger transaction density; \emph{effective gravitational sourcing}
+is the \textbf{recognition-consistent ledger density}, i.e. instantaneous density plus backlog.
+Backlog is the fractional operator.
+\end{quote}
+
+That is, RRF provides the ontological identification of what is being sourced; ILG provides the
+phenomenological kernel; the fractional-latency bridge explains why the kernel has a $k^{-\alphaG}$ tail.
+
+\section{Next Lean steps (optional, but recommended)}
+
+If we want this bridge to be more than a memo, the natural formalization target is:
+
+\begin{enumerate}
+  \item Define a Fourier-multiplier operator on a suitable function space (periodic torus is easiest)
+  whose symbol is $|k|^{-\alphaG}$ with mean-zero constraint.
+  \item Prove the identity that applying this operator corresponds to multiplication by $k^{-\alphaG}$
+  in Fourier domain (likely already close to existing Fourier work in the repo).
+  \item State the ILG kernel as $I + \Cgeom(a/\tauz)^{\alphaG}(-\Delta)^{-\alphaG/2}$.
+  \item Prove the $X$-reciprocity identity at the level of the kernel and derived observables (some of this
+  exists already in the ILG pipeline/papers).
+  \item Connect to RRF: define a \texttt{SpatialLedger} density field and define the recognition-consistent
+  density via the fractional operator; then show monotonicity / positivity constraints.
+\end{enumerate}
+
+\section{Open questions / guardrails}
+
+\begin{itemize}
+  \item \textbf{Uniqueness of power-law memory:} This memo assumes power-law memory as the scale-free choice.
+  The deeper question is whether RRF/ledger axioms force this uniquely (e.g., from self-similarity + minimality).
+  \item \textbf{IR behavior:} $k^{-\alphaG}$ diverges at $k\to 0$; physically the zero mode is fixed by boundary
+  conditions (mean-zero potential in a periodic box, or decay at infinity). This must be treated carefully.
+  \item \textbf{Phase of $(i\omega)^{-\alphaG}$:} For real physical fields we use magnitude or an appropriate
+  symmetric fractional operator (Caputo / Riesz variants). This memo focuses on the amplitude scaling.
+  \item \textbf{Relation to $G$:} The kernel is dimensionless; $G$ is still an external scale in the classical
+  presentation. A further creative leap is to derive $G$ itself as the inverse ``bandwidth'' of the vacuum ledger.
+\end{itemize}
+
+\appendix
+\section{Appendix: conventions and quick references}
+
+\subsection{Fourier conventions}
+Time Fourier transform: $\widehat{f}(\omega)=\int e^{-i\omega t} f(t)\dd t$.
+Spatial Fourier transform conventions vary; the key property used here is:
+fractional operators correspond to power-law symbols, e.g. $(-\Delta)^{s/2}\leftrightarrow |k|^s$.
+
+\subsection{Where the constants live in Lean}
+\begin{itemize}
+  \item \texttt{IndisputableMonolith/ILG/Kernel.lean}:
+  \texttt{rsKernelParams} sets $\Cgeom=\phiG^{-3/2}$ and $\alphaG=\texttt{alphaLock}$.
+  \item \texttt{IndisputableMonolith/URCGenerators/ParameterProvenanceCert.lean}:
+  records the provenance chain MP $\to (\phiG,\alphaG,\Clag,\alpha_{\mathrm{EM}})$.
+  \item \texttt{IndisputableMonolith/RRF/Foundation/Gravity.lean}:
+  records the mapping ``mass = ledger density'' and ``curvature monotone in strain''.
+\end{itemize}
+
+\end{document}
+
+

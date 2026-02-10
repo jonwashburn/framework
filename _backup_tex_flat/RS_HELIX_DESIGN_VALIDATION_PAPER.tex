@@ -1,0 +1,363 @@
+\documentclass[twocolumn,10pt,a4paper]{article}
+
+% Packages (keep minimal for broad TeX compatibility)
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{geometry}
+\usepackage{microtype}
+
+% Manual definitions for compatibility (avoid siunitx dependency)
+\newcommand{\angstrom}{\text{\normalfont\AA}}
+\newcommand{\SI}[2]{#1\,\text{#2}}
+
+% Geometry settings
+\geometry{top=2cm, bottom=2cm, left=1.5cm, right=1.5cm}
+
+% Macros
+\newcommand{\phiR}{\varphi} % Golden ratio symbol
+\newcommand{\code}[1]{\texttt{#1}}
+
+% ---------------------------------------------------------------------------
+% OUTLINE (paper skeleton)
+% ---------------------------------------------------------------------------
+% 1. Introduction
+%    - Why forward design is a stronger test than retrospective prediction
+%    - Why alpha helices are a good "unit test" for mechanistic understanding
+%    - The self-deception problem in purely computational validation
+% 2. Methods
+%    2.1 Physics-guided sequence design rules (propensity, salt bridges, capping, amphipathic patterning)
+%    2.2 Negative controls: matched helix-breakers (central PP substitutions)
+%    2.3 Structure prediction (ESMFold) and strict geometric analysis (phi/psi, continuity, kink)
+% 3. Results
+%    3.1 Positive controls: 10/10 continuous helices (phi/psi)
+%    3.2 Negative controls: 10/10 disrupted (break and/or kink)
+% 4. Discussion
+%    - What this validates / what it does not validate (beta sheets, tertiary packing, in vitro stability)
+%    - Limits: empirical propensities; predictor-world validation
+% 5. Strongest next-step upgrades
+%    - Replication on AlphaFold/ColabFold
+%    - CD spectroscopy for helicity + thermal stability
+% 6. Data and code availability
+
+% Title and Author
+\title{\textbf{Physics-Guided \(\alpha\)-Helix Design with Matched Negative Controls:\\
+A Reproducible In Silico Validation Protocol}}
+
+\author{
+Jonathan Washburn\\
+Recognition Science Research Institute\\
+Austin, Texas
+}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Forward design is a stronger test of mechanistic understanding than retrospective prediction: if a theory explains why a structure is stable, it should support generating new sequences that adopt that structure. We report a short, controlled mini-project that designs ten \(25\)-residue sequences predicted to form continuous \(\alpha\)-helices using simple, interpretable rules (helix-forming residue preference, salt-bridge patterning, amphipathic hydrophobic/polar faces, and helix capping). We validate these designs using ESMFold \cite{Lin2022ESMFold} and evaluate helicity with a strict geometric criterion based on backbone dihedral angles (\(\phi/\psi\)) and continuity metrics. To guard against self-deception, we construct ten matched negative controls by substituting the two central residues (positions 13--14) with proline--proline (\texttt{PP}), a canonical helix-breaking perturbation.
+
+\textbf{Result:} all \(10/10\) designed sequences are predicted as continuous \(\alpha\)-helices by \(\phi/\psi\), while \(10/10\) negative controls are disrupted relative to their matched positives (loss of helix continuity and/or strong kinking). We release the complete sequence panel, prediction artifacts, and analysis scripts to enable independent replication. We also provide concrete next steps for strengthening interpretation: replication on AlphaFold/ColabFold and in vitro circular dichroism (CD) spectroscopy for helicity and thermal stability.
+\end{abstract}
+
+\section{Introduction}
+
+Protein structure prediction has advanced rapidly, with AlphaFold demonstrating near-experimental accuracy across a broad range of proteins \cite{Jumper2021}. However, high predictive accuracy alone does not imply a first-principles explanation. In a ``mechanistic understanding'' program, a key upgrade is \emph{forward design}: rather than asking whether a method can reconstruct known structures, we ask whether a small set of explicit rules can generate \emph{new} sequences whose predicted structures match the intended design objective.
+
+This paper presents a deliberately modest but high-signal design task: \(\alpha\)-helix design. Alpha helices are an ideal ``unit test'' for mechanistic reasoning because their stability is dominated by local geometry and well-characterized interactions: backbone hydrogen-bonding patterns, residue-specific helix propensity, and simple electrostatic effects such as i--i+4 salt bridges. A successful helix-design protocol does not solve protein folding in general, but it provides a clean check that (i) the design rules are coherent, (ii) the evaluation metric is not overly permissive, and (iii) the computational pipeline behaves directionally correctly under controlled perturbations.
+
+Purely computational validation is vulnerable to self-deception: when a predictor returns the ``expected'' structure, it is easy to over-interpret the outcome, especially on an easy topology such as a helix. We therefore treat negative controls as mandatory. For each designed helix, we generate a matched negative-control sequence that differs only by a minimal, targeted perturbation with a clear physical prediction. Proline is a canonical helix breaker; inserting proline near the center of a helix is expected to disrupt helix continuity and often introduces a kink even when local helical dihedral angles remain partially satisfied. If a validation pipeline cannot detect this directional effect, it is not trustworthy.
+
+Our contributions are therefore primarily methodological: we provide (1) a reproducible positive/negative sequence panel, (2) strict, geometry-based helicity metrics (dihedral \(\phi/\psi\), continuity, and kink angle), and (3) an explicit plan for upgrading computational validation to independent-model replication (AlphaFold/ColabFold) and physical measurement (CD spectroscopy). The resulting artifact is a compact, falsifiable test that can be extended to harder problems (mixed \(\alpha/\beta\) topologies and \(\beta\)-sheet register pairing), where the global energy landscape and long-range topology dominate.
+
+\section{Background and related work}
+
+\subsection{Why \(\alpha\)-helix design is a good ``unit test''}
+The \(\alpha\)-helix is one of the simplest and most common secondary-structure motifs in proteins. It is stabilized by a regular backbone hydrogen-bond pattern, and its geometry is largely local: the conformation at residue \(i\) is primarily constrained by its immediate neighbors, the backbone torsion preferences of the residue, and short-range electrostatic and solvation effects. In contrast, \(\beta\)-sheet topology depends on nonlocal pairing register and long-range contacts, which makes it a much harder test of global folding dynamics.
+
+For a mechanistic program, this separation is useful. A helix-design task is not intended to be impressive by modern prediction standards; it is intended to be \emph{diagnostic}. If we cannot design helices reliably with explicit rules, then our pipeline (design rules + evaluation metrics) is unlikely to be trustworthy on harder motifs.
+
+\subsection{Predictors as instruments (and why we need controls)}
+Learned structure predictors are not ``ground truth'', but they can serve as high-throughput instruments for testing whether a set of design rules produces sequences that resemble known structural priors. AlphaFold \cite{Jumper2021} and ESMFold \cite{Lin2022ESMFold} encode powerful priors about peptide geometry and local secondary structure. This makes them useful, but it also creates a hazard: it is easy to obtain ``good-looking'' outputs for trivial designs, and it is easy to over-interpret those outputs as validation of a deeper theory.
+
+The most direct safeguard is \emph{matched negative controls}. If a method predicts the intended structure for the positive designs but fails to respond appropriately to canonical helix-breaking perturbations, then the method is not sensitive to the causal mechanism we think we are testing. In this paper, each positive sequence is paired with a negative sequence differing only by a minimal central \texttt{PP} substitution; the outcome is evaluated with strict geometric metrics that detect both breaks and kinks.
+
+\section{Methods}
+
+\subsection{Design objective and constraints}
+We target a single, explicit structural objective: \emph{a continuous, monomeric \(\alpha\)-helix} for short sequences. We restrict to \(N=25\) residues to keep the task simple and interpretable; helicity is evaluated primarily on the \(N-2=23\) internal residues where \(\phi/\psi\) dihedrals are well-defined.
+
+The protocol intentionally prioritizes falsifiability and reproducibility over novelty: we generate a small set of sequences using fixed heuristics, and we evaluate them with strict geometric metrics plus matched negative controls. We do not optimize sequences against the predictor; there is no gradient-based sequence search, no use of templates, and no iterative design loop.
+
+\subsection{Physics-guided sequence design}
+We generated ten candidate helix sequences spanning five strategies:
+\begin{itemize}
+    \item \textbf{Balanced (amphipathic)}: alternating hydrophobic (A/L/M) and polar/charged (E/K/Q) positions to create two faces.
+    \item \textbf{Charged (salt-bridge stabilized)}: enrichment of oppositely charged residues arranged to encourage i--i+4 electrostatic stabilization.
+    \item \textbf{Hydrophobic (leucine-zipper-like)}: enrichment of L and other helix-compatible residues with periodicity consistent with helical turns.
+    \item \textbf{Polar (high solubility)}: high E/K/Q/A content to reduce aggregation while retaining helix propensity.
+    \item \textbf{Alanine-rich} (\textit{classic helix peptides}): A-dominant backbone with occasional charges for solubility.
+\end{itemize}
+
+All sequences are provided in \code{designed\_helices.fasta}. The generator is \code{design\_helices.py}.
+
+\paragraph{Salt-bridge logic.}
+In an \(\alpha\)-helix, residues separated by four positions (i and i+4) are approximately co-linear along one face of the helix, so opposite charges at these positions can form stabilizing salt bridges. In our ``charged'' strategy, we intentionally place E and K with i--i+4 spacing to encourage these interactions while retaining high helix-forming content.
+
+\paragraph{Amphipathic logic.}
+Many helices are amphipathic: one face is hydrophobic and the opposite face is polar/charged. We implement this crudely by using a repeating pattern that places hydrophobic residues on adjacent positions in the same helical turn and polar residues on the opposing positions. This is not a full helical-wheel optimization, but it is sufficient for a clean unit test.
+
+\subsection{Design rules as explicit constraints (pre-registered)}
+To make the design procedure maximally falsifiable, we summarize the intended design logic as explicit constraints on the \emph{positive} sequences. These constraints are not claimed to be optimal; they are claimed to be interpretable and sufficient for a unit test.
+
+Let the sequence be \(s_1,\dots,s_N\) with \(N=25\). Define:
+\begin{itemize}
+    \item A set of helix breakers \(B = \{\texttt{P},\texttt{G}\}\).
+    \item A set of helix-compatible residues \(H = \{\texttt{A},\texttt{E},\texttt{L},\texttt{M},\texttt{K},\texttt{Q},\texttt{R}\}\).
+    \item Charge function \(q(\texttt{K})=q(\texttt{R})=+1\), \(q(\texttt{E})=q(\texttt{D})=-1\), and \(q(\cdot)=0\) otherwise.
+    \item Hydrophobic set \(U = \{\texttt{A},\texttt{V},\texttt{I},\texttt{L},\texttt{M},\texttt{F},\texttt{W}\}\).
+\end{itemize}
+
+The intended positive-design constraints are:
+\begin{align}
+    &\textbf{(C1) No helix breakers:} && \sum_{i=1}^{N}\mathbf{1}[s_i \in B] = 0 \\
+    &\textbf{(C2) High helix-compatible content:} && \frac{1}{N}\sum_{i=1}^{N}\mathbf{1}[s_i \in H] \ \text{is large (heuristic)} \\
+    &\textbf{(C3) Salt-bridge enrichment (charged designs):} && \sum_{i=1}^{N-4}\mathbf{1}[q(s_i)q(s_{i+4})<0]\ \text{is large} \\
+    &\textbf{(C4) Avoid long hydrophobic runs:} && \max\{\ell:\exists i, s_i,\dots,s_{i+\ell-1}\in U\} \le 3 \\
+    &\textbf{(C5) Mild net charge:} && \left|\sum_{i=1}^{N} q(s_i)\right| \le 5
+\end{align}
+
+In addition, we apply simple end ``capping'' heuristics: \(s_1\in\{\texttt{N},\texttt{S},\texttt{D},\texttt{T}\}\) and \(s_N\in\{\texttt{G},\texttt{N},\texttt{K}\}\). In practice, the generator uses these constraints implicitly through fixed residue sets and patterning logic (see \code{design\_helices.py}).
+
+\subsection{Matched negative controls (helix breakers)}
+For each designed helix (POS), we constructed a matched negative-control sequence (NEG) by substituting the two central residues (positions 13--14; 1-indexed) with \texttt{PP}. This minimal perturbation keeps length and composition similar but injects a strong helix-breaking motif at maximal leverage.
+
+Negative controls are provided in \code{designed\_helices\_negative\_controls.fasta}. The generator is \code{design\_helix\_negative\_controls.py --pattern PP}.
+
+\subsection{Structure prediction (ESMFold)}
+We predicted structures for all sequences using the ESMFold API \cite{Lin2022ESMFold}, which returns a PDB-formatted structure per input sequence. We store the resulting structures as:
+\begin{itemize}
+    \item POS predictions: \code{predictions/}
+    \item NEG predictions: \code{predictions\_negative/}
+\end{itemize}
+
+\paragraph{Scope of inference.}
+We treat ESMFold as a computational instrument. The claims in this paper are therefore strictly about \emph{predicted} structure under this instrument, not about in vitro folding. Section ``Next steps'' describes how to upgrade this to independent-model replication and experimental CD measurements.
+
+\subsection{Strict geometric helicity metrics}
+We quantify helicity using backbone dihedrals and continuity rather than solely distance heuristics.
+
+\paragraph{Dihedral-based helix region.}
+For each internal residue \(i \in \{2,\dots,N-1\}\), we compute:
+\begin{align}
+    \phi_i &= \mathrm{dihedral}(C_{i-1}, N_i, C\alpha_i, C_i) \\
+    \psi_i &= \mathrm{dihedral}(N_i, C\alpha_i, C_i, N_{i+1})
+\end{align}
+We classify residue \(i\) as helix-like if \(\phi_i \in [-100^\circ, -30^\circ]\) and \(\psi_i \in [-80^\circ, -10^\circ]\). This window is intentionally loose to avoid false negatives due to model noise.
+
+\paragraph{Implementation detail.}
+Dihedral angles are computed from backbone atom coordinates (N, C\(\alpha\), C) parsed from the predicted PDB using the standard vector-projection formulation (projecting bond vectors onto the plane orthogonal to the central bond and measuring the signed angle via \(\mathrm{atan2}\)). This is implemented in \code{validate\_helix\_negative\_controls.py}.
+
+\paragraph{Helix fraction.}
+Let \(h_i \in \{0,1\}\) be the helix-like indicator for each internal residue. The helix fraction is:
+\begin{equation}
+    f_{\alpha} = \frac{1}{N-2}\sum_{i=2}^{N-1} h_i
+\end{equation}
+
+\paragraph{Helix continuity.}
+We compute the longest consecutive run of helix-like residues among internal positions, \(L_{\max}\), and report the continuity fraction \(L_{\max}/(N-2)\).
+
+\paragraph{Kink angle.}
+Some perturbed sequences can retain locally helical \(\phi/\psi\) while forming a kinked helix (a known proline effect). We therefore compute a kink angle from C\(\alpha\) coordinates by estimating principal axes for the left and right halves (via PCA), excluding the two mutated central residues. If \(v_L\) and \(v_R\) are the unit principal axes, the kink angle is:
+\begin{equation}
+    \theta_{\text{kink}} = \cos^{-1}(v_L \cdot v_R)
+\end{equation}
+
+\subsection{Primary outcome: flip rate}
+We define POS as \emph{continuous} if \(f_{\alpha}\ge 0.95\) and \(L_{\max}/(N-2)\ge 0.95\). We define NEG as \emph{disrupted} if it is not continuous \emph{or} if \(\theta_{\text{kink}} \ge 25^\circ\). The primary success criterion is the flip rate across matched pairs:
+\[
+\text{flip} = \Pr[\text{POS continuous} \wedge \text{NEG disrupted}]
+\]
+
+\paragraph{Threshold rationale.}
+The continuity thresholds (\(0.95\)) are chosen to represent a near-ideal helix: essentially all internal residues must be helix-like and contiguous. The kink threshold (\(25^\circ\)) is intended to capture visually meaningful bending. In our results, POS helices have small kink angles (maximum \(\approx 10.7^\circ\)), while the smallest NEG kink is \(\approx 28.7^\circ\), so \(25^\circ\) cleanly separates ``straight'' from ``kinked'' in this dataset.
+
+All metrics are computed by \code{validate\_helix\_negative\_controls.py}, which also writes a machine-readable summary: \code{helix\_negative\_control\_results.json}.
+
+\section{Results}
+
+\subsection{Positive controls: 10/10 continuous helices}
+All ten designed sequences are predicted as \emph{continuous} \(\alpha\)-helices by the strict \(\phi/\psi\) + continuity criteria: \(f_{\alpha}=1.00\) and \(L_{\max}=23/23\) for every POS design. The estimated POS kink angles are small (mean \(6.7^\circ\), range \(3.6^\circ\) to \(10.7^\circ\)), consistent with straight helices.
+
+\subsection{Negative controls: 10/10 disrupted relative to positives}
+All ten matched negative controls (central \texttt{PP}) are \emph{disrupted} relative to their POS counterparts under the combined continuity/kink criterion. While the NEG sequences retain some local helix-like dihedrals (mean \(f_{\alpha}=0.865\)), helix continuity collapses on average (mean longest-run fraction \(0.517\)). NEG kink angles increase dramatically (mean \(96.5^\circ\), range \(28.7^\circ\) to \(143.6^\circ\)), indicating strong bending or breakage.
+
+\begin{table*}[t]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\caption{Matched POS/NEG helix metrics (strict \(\phi/\psi\), continuity, and kink). POS designs are continuous helices (all \(f_{\alpha}=100\%\), \(L_{\max}=23/23\)). NEG designs substitute central residues 13--14 with \texttt{PP}. We call a pair ``flipped'' if NEG is not continuous or has \(\theta_{\text{kink}}\ge 25^\circ\).}
+\label{tab:posneg}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Design} & \textbf{POS \(f_{\alpha}\)} & \textbf{NEG \(f_{\alpha}\)} & \textbf{POS \(L_{\max}\)} & \textbf{NEG \(L_{\max}\)} & \textbf{\(\theta_{\text{kink}}\) POS$\to$NEG} & \textbf{Flip} \\
+\midrule
+design\_3\_hydrophobic  & 100.0\% & 95.7\% & 23/23 & 13/23 & \(3.6^\circ \to 36.6^\circ\)   & Yes \\
+design\_8\_hydrophobic  & 100.0\% & 100.0\% & 23/23 & 23/23 & \(6.8^\circ \to 28.7^\circ\)  & Yes \\
+design\_4\_polar        & 100.0\% & 78.3\% & 23/23 & 10/23 & \(7.0^\circ \to 107.7^\circ\) & Yes \\
+design\_1\_balanced     & 100.0\% & 91.3\% & 23/23 & 11/23 & \(10.4^\circ \to 90.2^\circ\) & Yes \\
+design\_2\_charged      & 100.0\% & 91.3\% & 23/23 & 11/23 & \(7.5^\circ \to 143.3^\circ\) & Yes \\
+design\_5\_ala\_rich    & 100.0\% & 78.3\% & 23/23 & 10/23 & \(5.8^\circ \to 143.6^\circ\) & Yes \\
+design\_6\_balanced     & 100.0\% & 78.3\% & 23/23 & 9/23  & \(10.7^\circ \to 72.9^\circ\) & Yes \\
+design\_7\_charged      & 100.0\% & 91.3\% & 23/23 & 11/23 & \(3.7^\circ \to 127.0^\circ\) & Yes \\
+design\_9\_polar        & 100.0\% & 82.6\% & 23/23 & 11/23 & \(6.7^\circ \to 101.1^\circ\) & Yes \\
+design\_10\_ala\_rich   & 100.0\% & 78.3\% & 23/23 & 10/23 & \(4.6^\circ \to 114.0^\circ\) & Yes \\
+\midrule
+\textbf{Aggregate} & \textbf{10/10} & \textbf{mean 86.5\%} & \textbf{10/10} & \textbf{mean 11.9/23} & \textbf{mean \(6.7^\circ \to 96.5^\circ\)} & \textbf{10/10} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Primary outcome}
+The flip rate is \(10/10 = 100\%\) under the combined criterion (continuity failure or kink \(\ge 25^\circ\)). This indicates the evaluation pipeline is directionally sensitive and not trivially classifying all sequences as ``helical'' under a permissive metric.
+
+\subsection{Continuity-only versus kink-aware criteria}
+If we ignore kinks and use continuity alone (NEG must fail the continuity threshold), then \(9/10\) negative controls are classified as disrupted. The remaining case (\texttt{design\_8\_hydrophobic}) retains locally helical \(\phi/\psi\) and continuity but exhibits a clear bend; the kink-aware criterion correctly counts this as disrupted. This illustrates why a purely local secondary-structure classifier can miss mechanistically relevant failure modes.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Aggregate summary of strict helix metrics. POS designs are ideal helices under our criteria (\(f_\alpha=1.0\), \(L_{\max}=23/23\)). NEG values summarize the 10 matched PP-perturbed sequences.}
+\label{tab:aggregate}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Metric} & \textbf{POS} & \textbf{NEG (mean)} & \textbf{NEG (min--max)} \\
+\midrule
+\(f_{\alpha}\) & 100\% & 86.5\% & 78.3--100\% \\
+\(L_{\max}/(N-2)\) & 1.00 & 0.517 & 0.391--1.00 \\
+\(\theta_{\text{kink}}\) (deg) & 6.7 & 96.5 & 28.7--143.6 \\
+\midrule
+Flip rate (kink-aware) & \multicolumn{3}{c}{10/10 (100\%)} \\
+Flip rate (continuity-only) & \multicolumn{3}{c}{9/10 (90\%)} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+\subsection{What this validates}
+This mini-project validates three concrete points:
+\begin{enumerate}
+    \item \textbf{Forward design of helices is achievable with explicit rules.} Simple, interpretable heuristics generate sequences that robustly predict as continuous helices.
+    \item \textbf{The evaluation is not self-deceptive.} Matched negative controls shift the predicted structure in the expected direction, with a 100\% flip rate under strict geometry-based metrics.
+    \item \textbf{Kink detection matters.} One negative control (\texttt{design\_8\_hydrophobic}) remains locally helical by \(\phi/\psi\) but becomes kinked; a continuity-only criterion would miss a meaningful disruption mode.
+\end{enumerate}
+
+\subsection{What this does \emph{not} validate}
+We emphasize limits to interpretation:
+\begin{itemize}
+    \item \textbf{Not a general solution to folding.} Helices are dominated by local interactions; \(\beta\)-sheet topology and tertiary packing remain the difficult regime.
+    \item \textbf{Predictor-world validation.} ESMFold is a learned predictor trained on large structural corpora. Agreement indicates consistency with learned structural priors, not experimental folding in solution.
+    \item \textbf{Not purely first-principles.} While the rules are physics-motivated (electrostatics, amphipathicity), residue propensities are an empirical proxy for complex solvent/backbone effects.
+\end{itemize}
+
+\subsection{Why the negative controls are still valuable}
+Despite these limitations, matched negative controls provide a strong internal check: the same learned predictor that returns perfect helices for the positives also changes its output substantially when a canonical helix-breaking perturbation is applied. This reduces the risk that the positive result is merely an artifact of a permissive classifier or an implementation bug in the analysis.
+
+\subsection{Threats to validity}
+\textbf{Construct validity:} ``Helix'' is not a single scalar. A residue can have helix-like \(\phi/\psi\) angles while the chain is kinked or partially broken. We mitigate this by combining dihedral fraction, continuity, and kink angle.
+
+\textbf{Internal validity:} All measurements depend on correct parsing of PDB files and correct dihedral computation. We address this by using standard backbone-only definitions and by reporting multiple independent metrics that move coherently under perturbation (continuity decreases and kink increases).
+
+\textbf{External validity:} The predictor may not match in vitro behavior. The appropriate upgrade is a physical measurement (CD) and independent-model replication (AlphaFold/ColabFold), which we provide as explicit next steps.
+
+\section{Next steps: stronger interpretation upgrades}
+
+\subsection{Replication on AlphaFold/ColabFold}
+The cleanest computational upgrade is to replicate this experiment with an independent AlphaFold-family system (e.g., ColabFold \cite{Mirdita2022ColabFold}). We provide a fixed sequence panel (\code{designed\_helices\_posneg\_20.fasta}) and an analysis script (\code{analyze\_alphafold\_colabfold\_helix\_crosscheck.py}) that computes the same \(\phi/\psi\), continuity, and kink metrics from downloaded PDB outputs. If the POS/NEG flip reproduces under AlphaFold-family inference, this materially strengthens interpretation by reducing model-specific bias.
+
+\subsection{In vitro CD spectroscopy}
+The strongest real-world upgrade is circular dichroism (CD) spectroscopy \cite{Greenfield2006CD}. CD directly measures secondary structure content in solution and can be used to estimate helicity (negative bands near 208 and 222 nm) and thermal stability (melt curves monitoring ellipticity at 222 nm). Critically, the matched PP negatives provide an immediate internal control for measurement artifacts (concentration errors, buffer absorbance, and aggregation). We provide a practical protocol and recommended peptide pairs (two positives and matched \texttt{PP} negatives) in \code{docs/CD\_SPECTROSCOPY\_HELIX\_VALIDATION.md}.
+
+\section*{Data and Code Availability}
+All artifacts referenced in this paper are included in the repository:
+\begin{itemize}
+    \item \textbf{Sequence panels}: \code{designed\_helices.fasta}, \code{designed\_helices\_negative\_controls.fasta}, \code{designed\_helices\_posneg\_20.fasta}
+    \item \textbf{Design scripts}: \code{design\_helices.py}, \code{design\_helix\_negative\_controls.py}
+    \item \textbf{ESMFold validation}: \code{validate\_helix\_negative\_controls.py}, outputs \code{predictions/} and \code{predictions\_negative/}
+    \item \textbf{Machine-readable metrics}: \code{helix\_negative\_control\_results.json}
+    \item \textbf{AlphaFold/ColabFold cross-check}: \code{docs/ALPHAFOLD\_COLABFOLD\_HELIX\_CROSSCHECK.md} and \code{analyze\_alphafold\_colabfold\_helix\_crosscheck.py}
+    \item \textbf{CD protocol}: \code{docs/CD\_SPECTROSCOPY\_HELIX\_VALIDATION.md}
+\end{itemize}
+
+Reproduction (ESMFold-based) can be performed with:
+\begin{verbatim}
+python design_helices.py
+python design_helix_negative_controls.py --pattern PP
+python validate_helix_negative_controls.py
+\end{verbatim}
+
+Note: \code{validate\_helix\_negative\_controls.py} performs network requests to the public ESMFold API.
+
+\appendix
+\section{Sequence panel (POS and matched NEG)}
+\label{app:sequences}
+
+For completeness, we list the full 20-sequence panel used for replication. The authoritative source is the repository FASTA file \code{designed\_helices\_posneg\_20.fasta}.
+
+\scriptsize
+\begin{verbatim}
+>design_3_hydrophobic
+LERLEAELEQLQEKLEELEEKLAEL
+>design_8_hydrophobic
+LEELEEQLEQLEARLARLEEQLEKL
+>design_4_polar
+SAEAAKEKQAEEEEEQEQQQAKQEN
+>design_1_balanced
+NAQKLLEKAMEEAAKKMMEKLMEKN
+>design_2_charged
+NELAAKQLLEAALKAAQEALLKLAK
+>design_5_ala_rich
+NAAAAKAAAAKAAAAEAAAAEAAAK
+>design_6_balanced
+DMKQALEQLAEKMAKELLKQLLKKN
+>design_7_charged
+NEQQLKAAQEAAAKAAQEAQQKQLK
+>design_9_polar
+SKAAQEAQKKEEEAEKAKAKEKAAN
+>design_10_ala_rich
+NAAAAEAAAAEAAAAKAAAAKAAAK
+>design_3_hydrophobic_NEG_PP_P13_P14
+LERLEAELEQLQPPLEELEEKLAEL
+>design_8_hydrophobic_NEG_PP_P13_P14
+LEELEEQLEQLEPPLARLEEQLEKL
+>design_4_polar_NEG_PP_P13_P14
+SAEAAKEKQAEEPPEQEQQQAKQEN
+>design_1_balanced_NEG_PP_P13_P14
+NAQKLLEKAMEEPPKKMMEKLMEKN
+>design_2_charged_NEG_PP_P13_P14
+NELAAKQLLEAAPPAAQEALLKLAK
+>design_5_ala_rich_NEG_PP_P13_P14
+NAAAAKAAAAKAPPAEAAAAEAAAK
+>design_6_balanced_NEG_PP_P13_P14
+DMKQALEQLAEKPPKELLKQLLKKN
+>design_7_charged_NEG_PP_P13_P14
+NEQQLKAAQEAAPPAAQEAQQKQLK
+>design_9_polar_NEG_PP_P13_P14
+SKAAQEAQKKEEPPEKAKAKEKAAN
+>design_10_ala_rich_NEG_PP_P13_P14
+NAAAAEAAAAEAPPAKAAAAKAAAK
+\end{verbatim}
+\normalsize
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}
+
+

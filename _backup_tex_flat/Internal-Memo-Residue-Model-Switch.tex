@@ -1,0 +1,278 @@
+\documentclass[11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs}
+\usepackage{geometry}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\geometry{margin=1in}
+
+\definecolor{codebg}{RGB}{248,248,248}
+\definecolor{codefg}{RGB}{25,25,25}
+
+\lstset{
+  basicstyle=\ttfamily\small\color{codefg},
+  backgroundcolor=\color{codebg},
+  frame=single,
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  tabsize=2
+}
+
+% --- Notation ---
+\newcommand{\phig}{\varphi}
+\newcommand{\lnphi}{\ln\phig}
+\newcommand{\Fgap}{\mathcal{F}}
+
+\title{Internal Memo: Mass-Residue Model Switch\\
+\large Separating the literal SM RG residue from the Recognition/structural residue}
+\author{Recognition Physics (internal) --- workspace: \texttt{reality}}
+\date{December 2025}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This memo documents a forced correction to the Single-Anchor mass-residue story in the repository.
+A collaborator requested an explicit reproduction of the empirical residue $f_i^{\mathrm{exp}}$ using
+the QCD/QED $\beta$-functions and mass anomalous dimensions (as the paper text claims).
+When implemented literally, the Standard-Model residue is orders of magnitude too small to match
+the large closed-form band values $\Fgap(Z)$.
+
+The correct ``no cheating'' architecture is therefore a model split:
+\emph{(i)} a \textbf{literal Standard-Model RG residue} $f_i^{RG}$ (small; depends on endpoints and scheme),
+and \emph{(ii)} a \textbf{Recognition/structural residue} $f_i^{Rec}:=\Fgap(Z_i)$ (large; integer-organized; zero-parameter).
+We formalize the incompatibility as a Lean theorem (a no-go inequality), add a reproducible RG-evaluator script,
+and update the appendix so future work cannot conflate these objects.
+\end{abstract}
+
+\tableofcontents
+
+\section{Trigger: collaborator objection and what we tested}
+
+The collaborator objection was specific:
+\begin{quote}
+``Write the QCD/QED beta functions, evaluate $f_i^{\exp}$ using the paper’s integral definition, and check whether
+$\phig^{f_i}$ reproduces physical masses / whether $f_i(\mu_\star,m_i)$ lands on $\Fgap(Z)$. It won’t.''
+\end{quote}
+
+This is the right scientific posture: if the paper claims to compute $f_i^{\exp}$ from Standard-Model running,
+we must be able to reproduce that computation transparently and non-circularly.
+
+\section{Definitions (what the paper text says vs.\ what the framework needs)}
+
+\subsection{Constants and display function}
+
+The Recognition framework fixes
+\[
+\phig=\frac{1+\sqrt{5}}{2},\qquad
+\lambda=\ln\phig,\qquad
+\kappa=\phig,
+\]
+and defines the closed form
+\[
+\Fgap(Z)\;=\;\frac{\ln\!\bigl(1+Z/\phig\bigr)}{\ln\phig}.
+\]
+Canonical band values are
+\[
+\Fgap(24)\approx 5.740,\qquad \Fgap(276)\approx 10.692,\qquad \Fgap(1332)\approx 13.953.
+\]
+
+\subsection{Literal SM RG residue (``$f^{RG}$'')}
+
+In the SM, the running mass obeys (conventionally)
+\[
+\frac{d\ln m}{d\ln\mu}=-\gamma_m(\mu)
+\quad\Longrightarrow\quad
+m(\mu)=m(\mu_0)\exp\!\left(-\int_{\ln\mu_0}^{\ln\mu}\gamma_m(\mu')\,d\ln\mu'\right).
+\]
+The Single-Anchor paper text (see \texttt{Papers-tex/Masses-Paper1-Single-Anchor-updated.txt})
+defines a dimensionless residue (here named $f^{RG}$ to avoid ambiguity):
+\begin{equation}
+f_i^{RG}(\mu_\star,\mu_{\mathrm{end}})
+\;:=\;\frac{1}{\ln\phig}\int_{\ln\mu_\star}^{\ln\mu_{\mathrm{end}}}\gamma_i(\mu)\,d\ln\mu,
+\label{eq:frg}
+\end{equation}
+with $\gamma_i=\gamma_m^{\mathrm{QCD}}(\alpha_s(\mu),n_f(\mu))+\gamma_m^{\mathrm{QED}}(\alpha(\mu),Q_i,\dots)$.
+
+\subsection{Recognition/structural residue (``$f^{Rec}$'')}
+
+Independent of SM perturbation theory, the Recognition/structural band value is
+\begin{equation}
+f_i^{Rec}(\mu_\star)\;:=\;\Fgap(Z_i),
+\label{eq:frec}
+\end{equation}
+where $Z_i$ is the integer determined by $(Q_i,\text{sector})$ via the fixed $Z$-map.
+
+\paragraph{Key point.}
+Equations~\eqref{eq:frg} and~\eqref{eq:frec} define \emph{different mathematical objects} unless a nontrivial theorem
+bridges them. The remainder of this memo shows that the naive identification $f^{RG}\stackrel{?}{=}\Fgap(Z)$ is false.
+
+\section{Reproduction: explicit $\beta/\gamma$ evaluation and the observed mismatch}
+
+\subsection{What we implemented}
+
+We implemented the QCD/QED pieces exactly as the paper text writes them in Appendix~B:
+\begin{itemize}
+  \item QCD: $a_s=\alpha_s/\pi$, $n_f$ stepping, 4-loop $\beta_s(a_s)$ and 4-loop $\gamma_m^{\mathrm{QCD}}(a_s)$
+        in the numeric SU(3) form.
+  \item QED: $a_e=\alpha/\pi$, 2-loop $\gamma_m^{\mathrm{QED}}(a_e;Q_i,S_2(\mu))$ as written.
+  \item Policy: baseline $\alpha$ frozen at $M_Z$ (as one baseline policy explicitly described in the paper).
+\end{itemize}
+
+The evaluator is:
+\begin{itemize}
+  \item \texttt{tools/eval\_f\_exp\_rg.py} (dependency-free; RK4 integration in $t=\ln\mu$).
+\end{itemize}
+
+\subsection{Representative outputs}
+
+Running
+\[
+\texttt{python3 tools/eval\_f\_exp\_rg.py}
+\]
+prints, e.g.\ (baseline policy):
+\begin{center}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+species & endpoint $\mu_{\mathrm{end}}$ & $f^{RG}$ & $\Fgap(Z)$ & $f^{RG}-\Fgap(Z)$ \\
+\midrule
+$e$ & $m_e$ & $0.049$ & $13.953$ & $-13.904$ \\
+$u$ & $2\,\mathrm{GeV}$ & $0.482$ & $10.692$ & $-10.210$ \\
+$d$ & $2\,\mathrm{GeV}$ & $0.476$ & $5.740$ & $-5.263$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Interpretation.}
+This is not a rounding issue; it is an \emph{order-of-magnitude} issue.
+The literal perturbative integral is $\mathcal{O}(10^{-2}\text{--}10^0)$,
+while the closed-form bands are $\mathcal{O}(10)$.
+No conventional $10^{-6}$ tolerance can reconcile them.
+
+\paragraph{Second issue (equal-$Z$ degeneracy).}
+If one interprets $f_i$ literally as Eq.~\eqref{eq:frg} with $\mu_{\mathrm{end}}=m_i$,
+then equal-$Z$ families \emph{cannot} be degenerate at $10^{-6}$ because the integration endpoint differs
+($m_e\neq m_\mu\neq m_\tau$, etc.). This again indicates the paper’s $f_i$ cannot be Eq.~\eqref{eq:frg}.
+
+\section{Decision: model split (no cheating, zero parameters)}
+
+Given the above, we make the following internal decision:
+\begin{enumerate}
+  \item Treat $f^{RG}$ (literal SM residue) as a genuine, small transport quantity.
+  \item Treat $f^{Rec}$ as the Recognition/structural band value $f^{Rec}=\Fgap(Z)$.
+  \item Do \emph{not} introduce an arbitrary fitted coupling constant to force $f^{RG}$ into $f^{Rec}$.
+  \item Instead, acknowledge that the paper’s identification conflated two different objects and must be rewritten
+        if it is to remain physically honest.
+\end{enumerate}
+
+This preserves the \textbf{zero-parameter} character of Recognition Science: we do not add knobs; we remove a false equivalence.
+
+\section{Motivation for introducing \texorpdfstring{$f^{Rec}$}{fRec} (and why it is not ``cheating'')}
+
+The model split does \emph{not} introduce a new fitted constant. It makes explicit what the Recognition framework was already using implicitly:
+\begin{itemize}
+  \item a \textbf{discrete invariant} $Z_i\in\mathbb{Z}_{\ge 0}$ determined by $(Q_i,\text{sector})$ via a fixed dictionary; and
+  \item a \textbf{canonical scaling unit} $\phig$ already fixed by the Recognition spine.
+\end{itemize}
+
+Once $Z$ and $\phig$ are fixed, a Recognition-side residue is simply the map that converts an \emph{integer landing coordinate} into a \emph{dimensionless exponent} on a $\phig$-ladder.
+The chosen closed form
+\[
+f^{Rec}(Z)\;=\;\Fgap(Z)\;=\;\frac{\ln(1+Z/\phig)}{\ln\phig}
+\]
+is motivated by three parameter-free requirements:
+\begin{enumerate}
+  \item \textbf{Normalization at the anchor.} $Z=0$ should imply $f^{Rec}=0$ (no shift at the anchor baseline).
+        Indeed $\Fgap(0)=0$.
+  \item \textbf{Monotone order preservation.} Larger discrete structure ($Z$) must not map to a smaller residue.
+        $\Fgap$ is strictly increasing in $Z\ge 0$.
+  \item \textbf{Multiplicative scale interpretation.} The exponent should represent a multiplicative scale factor in $\phig$-units.
+        Writing in base $\phig$ makes this explicit:
+        \[
+        \phig^{\,\Fgap(Z)} \;=\; \exp(\ln\phig\cdot \Fgap(Z)) \;=\; 1 + Z/\phig.
+        \]
+        So $\Fgap(Z)$ is literally the base-$\phig$ logarithm of an affine-integer quantity, with no extra parameters.
+\end{enumerate}
+
+\paragraph{Interpretive takeaway.}
+$f^{Rec}$ is not a new physical coupling; it is a \emph{Recognition-side coordinate} (a display map) on the discrete invariant $Z$,
+expressed in the already-fixed scaling unit $\phig$.
+
+\section{Verification of \texorpdfstring{$f^{Rec}$}{fRec} properties (Lean-checked)}
+
+Because $f^{Rec}$ is definitional in Lean (it is \texttt{RSBridge.gap}), we can verify its mathematical properties directly.
+We added:
+\begin{itemize}
+  \item \texttt{IndisputableMonolith/RSBridge/GapProperties.lean}:
+        proves in Lean that $\Fgap(0)=0$, that $\Fgap$ is strictly increasing on $Z\ge 0$,
+        and that $\Fgap(24)<\Fgap(276)<\Fgap(1332)$ (band ordering).
+  \item \texttt{IndisputableMonolith/Physics/ElectronMass/Necessity.lean}:
+        already contains a numerical interval proof that $13.953 < \Fgap(1332) < 13.954$.
+  \item \texttt{IndisputableMonolith/Physics/MassResidueNoGo.lean}:
+        proves a no-go inequality showing any ``small'' residue (e.g.\ $|x|\le 0.1$) cannot match $\Fgap(1332)$ within micro-tolerance.
+\end{itemize}
+
+\section{What changed in the repository}
+
+\subsection{Reproducibility tooling}
+\begin{itemize}
+  \item Added \texttt{tools/eval\_f\_exp\_rg.py}: explicit evaluator for the paper-text $\beta/\gamma$ kernels.
+  \item Added \texttt{docs/functionf\_rg\_check.md}: concise write-up of the reproduction and its implications.
+\end{itemize}
+
+\subsection{Documentation update}
+\begin{itemize}
+  \item Updated \texttt{Papers-tex/Single-Anchor-Function-f-Lean-Appendix.tex} to include the sanity check:
+        the literal SM $\gamma_m$ integral does \emph{not} yield $\Fgap(Z)$.
+\end{itemize}
+
+\subsection{Lean formalization}
+\begin{itemize}
+  \item Added \texttt{IndisputableMonolith/Physics/MassResidueNoGo.lean}:
+        a theorem showing that any ``small'' residue (e.g.\ $|x|\le 0.1$) cannot be within $10^{-6}$ of $\mathrm{gap}(1332)$.
+  \item Updated \texttt{IndisputableMonolith/Physics/RecognitionCoupling.lean}:
+        clarified the definition of ``recognition strength'' as a ratio without asserting universality,
+        and removed remaining proof placeholders.
+\end{itemize}
+
+\section{Why this strengthens (not weakens) Recognition Science}
+
+\begin{itemize}
+  \item \textbf{Scientific integrity:} We no longer ask standard perturbative RG to do something it cannot do.
+  \item \textbf{Falsifiability:} We have a precise, reproducible, externalizable check that any reviewer can run.
+  \item \textbf{Zero-parameter discipline:} We avoid adding a fitted constant to patch an inconsistency.
+  \item \textbf{Clear architecture:} The framework now has explicit interfaces:
+        \textit{SM transport} vs.\ \textit{Recognition structural law}.
+\end{itemize}
+
+\section{Next steps}
+
+\begin{enumerate}
+  \item \textbf{Paper rewrite}: replace the ambiguous $f_i$ definition with explicit $f^{RG}$ vs.\ $f^{Rec}$ objects,
+        and state any conjectured bridge as a conjecture (with a test protocol), not as an identity.
+  \item \textbf{Lean strengthening}: add analogous no-go lemmas for $Z=24$ and $Z=276$ (the other bands).
+  \item \textbf{Certified numerics}: if desired, upgrade the ``smallness'' premise (e.g.\ $|f^{RG}_e|\le 0.1$)
+        from a chosen bound to a certificate imported from an external audited computation and checked in Lean.
+\end{enumerate}
+
+\appendix
+\section{Repo pointers (quick)}
+
+\begin{itemize}
+  \item Paper text with kernels: \texttt{Papers-tex/Masses-Paper1-Single-Anchor-updated.txt} (Appendix B).
+  \item RG evaluator: \texttt{tools/eval\_f\_exp\_rg.py}.
+  \item Repro write-up: \texttt{docs/functionf\_rg\_check.md}.
+  \item Lean no-go theorem: \texttt{IndisputableMonolith/Physics/MassResidueNoGo.lean}.
+  \item Lean coupling definition: \texttt{IndisputableMonolith/Physics/RecognitionCoupling.lean}.
+\end{itemize}
+
+\end{document}
+
+

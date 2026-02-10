@@ -1,0 +1,572 @@
+\documentclass[11pt]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{fancyhdr}
+% \usepackage{titlesec}
+
+% Geometry
+\geometry{margin=1in}
+
+% Hyperref setup
+\hypersetup{
+  colorlinks=true,
+  linkcolor=darkblue,
+  urlcolor=darkblue,
+  citecolor=darkblue
+}
+\definecolor{darkblue}{rgb}{0,0,0.5}
+
+% Requirement level helpers
+\newcommand{\MUST}{\textbf{MUST}}
+\newcommand{\SHOULD}{\textbf{SHOULD}}
+\newcommand{\MAY}{\textbf{MAY}}
+\providecommand{\coloneqq}{\mathrel{:=}}
+
+% Header/Footer
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\textbf{Project Nautilus} | Power Testbed MVP}
+\lhead{Engineering Specification}
+\cfoot{\thepage}
+% Avoid fancyhdr headheight warnings
+\setlength{\headheight}{14pt}
+\addtolength{\topmargin}{-2pt}
+
+% Title
+\title{\textbf{Project Nautilus — Power Testbed MVP Spec}\\(Generator-Mode Evaluation Platform)}
+\author{Project Nautilus Engineering Team}
+\date{February 1, 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document defines the engineering specification for the \textbf{Nautilus Power Testbed MVP}, a remote-operated, fully instrumented platform designed to validate generator-mode operation of rotating-field devices. Unlike ad-hoc experiments, this testbed is designed as a \emph{metrology instrument} first and a power source second. It enforces strict energy accounting, automatic null-hypothesis testing, and layered safety protocols to produce auditable, uncertainty-bounded evidence of non-trivial energy gain. The specification targets a \textbf{10 kW continuous / 25 kW peak} envelope at up to \textbf{600 VDC}, optimizing for high-Q resonant operation, rapid iteration, and undeniable signal-to-noise ratios.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Introduction and Strategic Intent}
+
+Project Nautilus aims to transition Recognition Science (RS) from theoretical physics to engineered reality. The critical path to this transition lies in demonstrating \emph{Metric Engineering}—specifically, the ability to extract energy from the vacuum by ordering it via a resonant rotating field (the ``Vacuum Pump'' hypothesis).
+
+Historical attempts (Searl, Podkletnov) relied on spinning physical matter (magnets, superconductors), which introduces vibration, thermal noise, and material defects that destroy the phase coherence required for the effect. To maximize the probability of success, Nautilus explicitly favors a \textbf{Solid-State Virtual Rotor (SSVR)} architecture. By replacing moving parts with precise, computer-controlled electromagnetic fields, we maximize coherence, tunability, and safety.
+
+To avoid the trap of ambiguous results, the Nautilus Power Testbed is designed not merely to ``make power,'' but to \textbf{manufacture credible evidence}.
+
+The strategic intent of this MVP is to build a single, golden-standard test cell that can:
+\begin{enumerate}
+    \item \textbf{Safely Drive} solid-state virtual rotors to their resonant limits.
+    \item \textbf{Rigorously Measure} energy balance with a closed accounting loop.
+    \item \textbf{Automatically Reject} artifacts via pre-registered null tests.
+    \item \textbf{Scale} the technology from milliwatt curiosities to kilowatt industrial relevance.
+\end{enumerate}
+
+\section{MVP Deliverable: The ``Precision 10kW'' Standard}
+
+The MVP is defined as a single, integrated rack system and test cell. The choice of a \textbf{10 kW continuous / 25 kW peak} envelope is deliberate and strategic.
+
+\subsection{Primary DUT: The Solid-State Virtual Rotor (SSVR)}
+The reference Device Under Test (DUT) is not a mechanical rotor, but a \textbf{multi-layer PCB stack} (approx. 200--300mm diameter) containing precise $\phi$-spiral coil geometries.
+\begin{itemize}
+    \item \textbf{Why Solid State?} Matter is noisy; fields are clean. A virtual rotor has zero friction, zero vibration, and can ``spin'' at relativistic speeds simply by changing the commutation frequency.
+    \item \textbf{Why PCB?} Lithographic etching allows for micron-level geometric precision that machining cannot match.
+    \item \textbf{Why Tunable?} A software-defined rotor allows sweeping millions of configuration parameters (pole count, speed, phase) in a single day to find the resonance, rather than machining a new rotor for every guess.
+\end{itemize}
+
+\subsection{Why 10 kW?}
+\begin{itemize}
+    \item \textbf{Undeniable Signal}: At 10 kW, thermal drift, sensor noise, and RF interference are negligible errors relative to the signal. If the system consumes 8 kW and outputs 10 kW, the 2 kW delta is physically massive—it cannot be explained away as measurement error.
+    \item \textbf{Iteration Speed}: Systems larger than 25 kW typically require liquid cooling, arc-flash suits, and dedicated substations. A 10 kW air-cooled system fits in a standard server rack, runs on standard lab power, and allows hardware iterations in days rather than months.
+    \item \textbf{Safety Management}: While 10 kW is lethal if mishandled, the energy release during a catastrophic failure is containable within a standard blast enclosure, unlike megawatt-class systems.
+\end{itemize}
+
+\subsection{System Capabilities}
+The delivered system will be capable of:
+\begin{itemize}
+    \item Driving a solid-state phased array (SSVR) with arbitrary 8-tick commutation schedules.
+    \item Extracting output power into a controlled load, regulating the ``back-action'' on the core.
+    \item Measuring $E_{\text{in}}$, $E_{\text{out}}$, and $\Delta E$ with a real-time uncertainty budget.
+    \item Failing safely (without destroying the prototype) upon loss-of-load or thermal runaway.
+    \item Producing a cryptographically signed ``Run Bundle'' for every experiment, ensuring data provenance.
+\end{itemize}
+
+\section{Requirements Matrix and Verification Plan}
+
+This section translates the MVP intent into \textbf{testable requirements}. Each requirement has a verification method: \emph{Inspection} (I), \emph{Analysis} (A), \emph{Test} (T), or \emph{Demonstration} (D).
+
+\subsection{MVP requirements (non-exhaustive, high-signal)}
+
+\begin{table}[h]
+\centering
+\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}p{0.10\linewidth}p{0.54\linewidth}p{0.12\linewidth}p{0.18\linewidth}@{}}
+\toprule
+\textbf{ID} & \textbf{Requirement} & \textbf{Level} & \textbf{Verify} \\
+\midrule
+REQ-001 & Operation is remote-first: no human presence in the test cell is required during energized runs. & \MUST & D/T \\
+REQ-002 & Input and output boundaries are explicitly defined and measured using simultaneous $V(t)$ and $I(t)$ on a shared time base. & \MUST & I/T \\
+REQ-003 & Energy is computed by samplewise real-power integration (no RMS-only substitutions): $p(t)=V(t)I(t)$, $E=\int p(t)\,dt$. & \MUST & A/T \\
+REQ-004 & Inter-channel time alignment after calibration is better than 1~$\mu$s for all accounting channels. & \MUST & T \\
+REQ-005 & Accounting channels sample at $\ge$100~kS/s and use documented anti-alias filtering matched to the sampling plan. & \MUST & I/T \\
+REQ-006 & Electrical envelope supports 0--600~VDC, 10~kW continuous, and 25~kW peak bursts ($\le 10$~s). & \MUST & T \\
+REQ-007 & HV bus includes controlled precharge and contactor isolation with explicit safe-state behavior. & \MUST & T \\
+REQ-008 & Output path includes a fast dump load ($\ge$25~kW) and a hardware clamp/crowbar for overvoltage protection. & \MUST & T \\
+REQ-009 & Independent watchdog (separate power/clock where feasible) executes a mitigation ladder on overvoltage/overcurrent/thermal runaway/loss-of-load. & \MUST & T \\
+REQ-010 & A runbook engine executes declarative Run Plans and supports matched-control A/B sequencing and gating. & \MUST & D/T \\
+REQ-011 & Each run produces a Signed Run Bundle containing config snapshot, raw streams, derived outputs, and gate outcomes. & \MUST & I/D \\
+REQ-012 & MVP includes at least four matched controls: detuned, load-only, geometry-neutral, and cable/ground shuffle. & \MUST & D \\
+REQ-013 & Every report includes an uncertainty estimate $u(\Delta E)$ and discloses assumptions used to compute it. & \MUST & A \\
+REQ-014 & The system enters a latched safe state on fault and requires an explicit reset/re-arm procedure. & \MUST & T \\
+\midrule
+REQ-015 & Optional: external timestamping/anchoring of run digests (not required for MVP). & \SHOULD & D \\
+REQ-016 & Optional: redundant sensing (e.g., secondary current sensor) to detect sensor faults. & \SHOULD & I/T \\
+\bottomrule
+\end{tabular}
+\caption{MVP requirements and verification methods.}
+\end{table}
+
+\subsection{IP alignment (internal)}
+The above requirements map directly to the docket families: metrology and artifact rejection (NTL-PROV-010/011), provenance (NTL-PROV-012), generator pickup and load shaping (NTL-PROV-013/014), strict accounting (NTL-PROV-015), thermal diagnostics (NTL-PROV-016), detuning governor (NTL-PROV-017), and watchdog/dump-load safety (NTL-PROV-018).
+
+\section{Electrical Envelope and Architecture}
+
+The electrical architecture is optimized for high-Q resonant operation, which often favors higher voltages and lower currents to minimize $I^2R$ losses in the drive coils.
+
+\subsection{Input Supply (Drive Side)}
+The input stage provides the energy to establish and maintain the rotating field.
+\begin{itemize}
+    \item \textbf{Bus Architecture}: High-voltage DC bus (HVDC) with active precharge and contactor isolation.
+    \item \textbf{Voltage Range}: \textbf{0--600 VDC}. Higher voltage reduces current for a given power level and improves efficiency in high-Q inductive loads.
+    \item \textbf{Current Range}: envelope-dependent; design for \textbf{0--50~A} continuous at high bus voltages, with peak capability up to \textbf{200~A} at lower voltages for short bursts. Define a configurable hardware current limit $I_{\text{max}}$ used by safety interlocks.
+    \item \textbf{Driver Technology}: \textbf{GaN or SiC FETs} are preferred to achieve high switching frequency, tight phase control, and low timing jitter. The driver must support programmable dead-time and edge shaping to balance coherence, efficiency, and EMI.
+    \item \textbf{Power Capacity}: 10 kW continuous, with a \textbf{25 kW peak} capability for transient pulses.
+\end{itemize}
+
+\subsection{Output Path (Extraction Side)}
+The output stage is the critical interface for harvesting energy. It must handle the complex, potentially high-frequency AC waveforms induced in the pickup coils.
+\begin{itemize}
+    \item \textbf{Topology}: Pickup $\rightarrow$ Rectification $\rightarrow$ DC Buffer $\rightarrow$ Load Interface.
+    \item \textbf{Dump Load}: A dedicated, fast-switching resistive load bank rated for \textbf{$\ge$ 25 kW}. This is crucial for safety: if the external load disconnects, the dump load must instantly absorb the energy to prevent voltage spikes.
+    \item \textbf{Crowbar/Clamp}: A hardware-level voltage clamp (thyristor/IGBT) to short the bus if voltage exceeds safe limits, protecting the expensive drive electronics.
+\end{itemize}
+
+\subsection{Grounding and EMI Strategy}
+Given the high-frequency pulsed nature of the drive, EMI management is paramount.
+\begin{itemize}
+    \item \textbf{Star Ground}: A single central ground point to prevent ground loops.
+    \item \textbf{Isolation}: All measurement front-ends (voltage probes, current shunts) must be galvanically isolated from the DAQ system.
+    \item \textbf{Shielding}: All power cabling runs in shielded conduit; the DUT is housed in a Faraday cage.
+\end{itemize}
+
+\section{Metrology and Instrumentation}
+
+The ``product'' of this testbed is data. Therefore, the instrumentation stack is non-negotiable.
+
+\subsection{Measurement Boundaries}
+\label{sec:boundaries}
+To prevent ambiguity, we define explicit boundaries:
+\begin{itemize}
+    \item \textbf{Input Boundary}: The terminals where DC power enters the driver inverter. We do not measure ``at the wall'' (which includes power supply inefficiencies), nor do we measure ``at the coil'' (which ignores driver losses). We measure the \emph{total electrical energy invested} to create the field.
+    \item \textbf{Output Boundary}: The terminals where DC power leaves the rectification stage to the load.
+    \item \textbf{The Golden Rule}: Voltage and current must be measured \textbf{simultaneously} on the \textbf{same time base} for both input and output. Power is integrated sample-by-sample ($p(t) = v(t) \cdot i(t)$) to capture harmonic power flow correctly.
+\end{itemize}
+
+\subsection{Data Acquisition (DAQ) Specs}
+\begin{itemize}
+    \item \textbf{Timebase}: A single master clock distributes synchronization pulses to all digitizers. Inter-channel alignment must be calibrated to better than \textbf{1 $\mu$s} (Tier-0 minimum); for high-frequency SSVR runs, target \textbf{$< 100$~ns}.
+    \item \textbf{Sample Rate}: Minimum \textbf{100 kS/s} per channel (Tier-0 minimum). For SSVR operation where significant power-flow content exists above 10~kHz, \textbf{$\ge 1$~MS/s} is recommended. The effective bandwidth must be justified by measured spectra and matched anti-alias filtering.
+    \item \textbf{Sensors}:
+    \begin{itemize}
+        \item \textbf{Current}: Precision coaxial shunts are preferred over Hall sensors for their bandwidth and lack of drift.
+        \item \textbf{Voltage}: High-voltage differential probes with documented frequency response.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Artifact Rejection Sensors}
+To prove that an effect is real, we must prove it is \emph{not} an artifact.
+\begin{itemize}
+    \item \textbf{Thermal}: Fast thermocouples on coils, switches, and bus bars. We compute $dT/dt$ in real-time to detect thermal runaway.
+    \item \textbf{EMI}: Near-field probes monitor radiated noise. If a ``power anomaly'' correlates perfectly with an EMI burst, the run is flagged as suspect.
+    \item \textbf{Vibration}: An accelerometer on the DUT fixture ensures that mechanical resonance isn't mistaken for electrical effects (e.g., via microphonics).
+\end{itemize}
+
+\section{Energy Accounting and Uncertainty (Data-Gated)}
+
+This MVP is designed so that any claim of ``generator mode'' is defined in terms of \textbf{measurable energy balance} with an explicit uncertainty bound. The testbed never assumes an effect exists; it computes an accounting result and then applies quality gates and matched controls to decide whether the result is credible.
+
+\subsection{Power and energy definitions}
+
+At the input and output boundaries (Section~\ref{sec:boundaries}), define:
+\begin{align}
+P_{\text{in}}(t) &= V_{\text{in}}(t)\, I_{\text{in}}(t), \\
+P_{\text{out}}(t) &= V_{\text{out}}(t)\, I_{\text{out}}(t).
+\end{align}
+
+Energy over an accounting window $[t_1,t_2]$ is computed by integration:
+\begin{align}
+E_{\text{in}} &= \int_{t_1}^{t_2} P_{\text{in}}(t)\, dt, \\
+E_{\text{out}} &= \int_{t_1}^{t_2} P_{\text{out}}(t)\, dt.
+\end{align}
+
+Define the net energy balance:
+\begin{equation}
+\Delta E \coloneqq E_{\text{out}} - E_{\text{in}}.
+\end{equation}
+
+\paragraph{Stored energy correction (minimum viable).}
+If the system includes appreciable stored energy (DC bus capacitance, inductors, buffers), the accounting window must include a correction term:
+\begin{equation}
+\Delta E_{\text{stored}} \coloneqq E_{\text{stored}}(t_2) - E_{\text{stored}}(t_1),
+\end{equation}
+so that the corrected balance is $\Delta E_{\text{corr}} = E_{\text{out}} - E_{\text{in}} - \Delta E_{\text{stored}}$. In MVP, $\Delta E_{\text{stored}}$ should be computed from measured bus voltages (and known capacitances) and included in the uncertainty budget.
+
+\subsection{Accounting windows (how we avoid self-deception)}
+
+The runbook defines accounting windows explicitly. Minimum recommended windows:
+\begin{itemize}
+  \item \textbf{Baseline window}: device unpowered, sensors running (offset and drift characterization).
+  \item \textbf{Ramp window}: drive ramp and load soft-connect ramp (excluded from main accounting unless explicitly modeled).
+  \item \textbf{Steady window}: resonance lock held, load stable (primary accounting window).
+  \item \textbf{Cooldown window}: post-run drift/offset check.
+\end{itemize}
+
+The report must state which window(s) were used for $\Delta E$ and why.
+
+\subsection{Uncertainty budget (required output)}
+
+Every reported $\Delta E$ must include an uncertainty estimate $u(\Delta E)$ and a list of contributing terms. The budget is not a formality: it is the mechanism that makes results defensible.
+
+\begin{table}[h]
+\centering
+\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}p{0.34\linewidth}p{0.50\linewidth}p{0.10\linewidth}@{}}
+\toprule
+\textbf{Contribution} & \textbf{What it captures} & \textbf{Type} \\
+\midrule
+Current measurement gain/offset & Shunt calibration error, amplifier gain/offset, temperature coefficient & A/T \\
+Voltage measurement gain/offset & HV probe calibration error, divider drift, common-mode limitations & A/T \\
+Time skew / latency mismatch & Residual timing error between $V$ and $I$ channels affecting $V\cdot I$ & T \\
+Bandwidth and phase response & Phase error and attenuation at switching/harmonic frequencies & A \\
+Aliasing and filtering mismatch & Under-sampling or insufficient anti-alias causing power bias & A/T \\
+Numerical integration error & Discretization of $\int p(t)\,dt$ under finite sampling & A \\
+\bottomrule
+\end{tabular}
+\caption{Representative uncertainty components (MVP).}
+\end{table}
+
+\paragraph{Reporting metric.}
+The report should include a normalized score (illustrative):
+\[
+z \coloneqq \frac{\Delta E_{\text{corr}}}{u(\Delta E_{\text{corr}})}.
+\]
+This is not a claim of statistical significance by itself; it is a compact way to track whether the observed balance is large relative to the known uncertainty.
+
+\subsection{Traceability to IP}
+This section is aligned with NTL-PROV-015 (strict accounting) and supports credibility claims for the entire power product line.
+
+\section{Commissioning and Calibration Procedures (MVP)}
+
+The MVP is only as credible as its calibration. Commissioning is therefore treated as a first-class deliverable: the testbed is not considered operational until calibration artifacts exist and pass acceptance criteria.
+
+\subsection{Commissioning sequence (high-level)}
+\begin{enumerate}
+  \item \textbf{Mechanical and wiring inspection}: torque checks, connector keying, labeling, strain relief, ground bonding.
+  \item \textbf{Interlock verification}: door/E-stop/coolant-flow/smoke/overtemp interlocks trip as designed.
+  \item \textbf{Precharge and contactor test}: verify controlled precharge ramp and safe discharge behavior.
+  \item \textbf{DAQ integrity test}: verify sampling, channel mapping, timestamp monotonicity, and storage throughput.
+  \item \textbf{Accounting calibration}: calibrate $V/I$ channels, timing alignment, and compute an uncertainty budget.
+  \item \textbf{Fault injection tests}: intentionally trigger representative faults (loss-of-load, overvoltage) and record mitigation response.
+\end{enumerate}
+
+\subsection{Time alignment calibration (required)}
+Because real power uses $V(t)I(t)$, timing skew between voltage and current channels can create systematic bias. The MVP must implement and document a timing calibration that produces per-channel delay corrections.
+
+Minimum viable procedure (illustrative):
+\begin{enumerate}
+  \item Inject a reference waveform (edge-rich square wave or pulse train) that is simultaneously visible on all relevant channels.
+  \item Estimate relative delays via cross-correlation and/or edge timestamping.
+  \item Store delay corrections in \texttt{calibration.json} and apply them prior to computing $p(t)$.
+  \item Re-run the procedure at the start and end of a measurement day to bound drift.
+\end{enumerate}
+
+\subsection{Electrical sensor calibration (required)}
+\begin{itemize}
+  \item \textbf{Voltage}: calibrate differential probes/dividers against a traceable reference at multiple points (e.g., 50~V, 200~V, 400~V, 600~V). Record gain/offset and uncertainty.
+  \item \textbf{Current}: calibrate shunts (or transducers) using a traceable current source or a calibrated shunt standard. Record gain/offset, temperature coefficient, and uncertainty.
+  \item \textbf{Bandwidth/phase}: characterize the frequency response of the measurement chain sufficiently to justify the sampling and filtering choices used in accounting.
+\end{itemize}
+
+\subsection{Thermal sensor calibration (minimum viable)}
+Thermal channels are used both for safety and for artifact rejection. At minimum:
+\begin{itemize}
+  \item verify each sensor is physically attached and responds plausibly to controlled heating/cooling;
+  \item record baseline noise and drift over a fixed interval;
+  \item set conservative $dT/dt$ thresholds for runaway detection and validate the trip path.
+\end{itemize}
+
+\subsection{Accounting sanity check (required acceptance test)}
+Before any DUT experiment is considered meaningful, the platform must demonstrate that on a purely resistive dummy load and/or a simulated pickup source, the measured balance satisfies:
+\[
+\Delta E_{\text{corr}} \approx 0 \quad \text{within} \quad u(\Delta E_{\text{corr}})
+\]
+across repeated runs and across the primary operating envelope. This is the minimum credibility bar.
+
+\section{Control and Safety Architecture}
+
+The system is divided into two independent planes: the \textbf{Control Plane} (which tries to make the system work) and the \textbf{Safety Plane} (which tries to stop it from exploding).
+
+\subsection{Control Plane (Primary Controller)}
+This is the ``brain'' of the experiment. It runs the runbook.
+\begin{itemize}
+    \item Generates the complex 8-tick commutation schedules.
+    \item Performs frequency/phase sweeps to find resonance.
+    \item Manages the ``Soft Connect'' load ramp, gradually increasing power extraction to stabilize the core without stalling it.
+\end{itemize}
+
+\subsection{Safety Plane (Independent Watchdog)}
+This is the ``nervous system''—a hardware-based watchdog that does not rely on the primary controller's software state.
+\begin{itemize}
+    \item \textbf{Independence}: It has its own power supply, its own clock, and its own sensors.
+    \item \textbf{Hard Thresholds}: It monitors for Bus Overvoltage, Overcurrent, Thermal Runaway ($dT/dt > \text{limit}$), and the specific ``Loss-of-Load'' signature (Voltage $\uparrow$, Current $\downarrow$).
+    \item \textbf{Mitigation Ladder}: Upon detecting a fault, it executes a prioritized sequence:
+    \begin{enumerate}
+        \item \textbf{Detune}: Inject phase noise to kill the resonance (De-Q).
+        \item \textbf{Dump}: Fire the dump load to drain the bus.
+        \item \textbf{Clamp}: Fire the crowbar if voltage is still rising.
+        \item \textbf{Kill}: Open the main contactors.
+    \end{enumerate}
+    \item \textbf{Latched State}: Once tripped, the system locks down until a human operator manually resets it.
+\end{itemize}
+
+\subsubsection{Recommended safety thresholds (initial defaults)}
+The specific numerical thresholds are platform-dependent and must be tuned during commissioning; however, the MVP must include explicit defaults and test evidence that each threshold triggers the intended mitigation. Let $V_{\text{bus,max}}$ denote the configured maximum bus voltage for the selected envelope (e.g., 600~V for Precision 10kW, 200~V for Tier-0, 60~V for Tier-0 Lite).
+
+\begin{table}[h]
+\centering
+\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}p{0.32\linewidth}p{0.22\linewidth}p{0.38\linewidth}@{}}
+\toprule
+\textbf{Hazard} & \textbf{Initial default} & \textbf{Action} \\
+\midrule
+Bus overvoltage (warn) & $V_{\text{bus}} > 1.02\,V_{\text{bus,max}}$ & Detune + engage dump load (soft) \\
+Bus overvoltage (trip) & $V_{\text{bus}} > 1.05\,V_{\text{bus,max}}$ & Dump load + driver disable (hard) \\
+Bus overvoltage (crowbar) & $V_{\text{bus}} > 1.08\,V_{\text{bus,max}}$ & Crowbar clamp + contactor open \\
+Bus overcurrent & $I_{\text{bus}} > I_{\text{max}}$ (configurable by envelope) & Driver disable + contactor open \\
+Thermal runaway & $dT/dt > \gamma$ (e.g., 1--2$^\circ$C/s) & Detune + power derate; if persistent, shutdown \\
+Loss-of-load signature & $I_{\text{load}}\downarrow$ and $dV_{\text{bus}}/dt\uparrow$ & Immediate dump load + detune \\
+Heartbeat timeout & $\tau_{\text{hb}} > 50$~ms & Hardware kill + dump load \\
+\bottomrule
+\end{tabular}
+\caption{Illustrative initial safety thresholds. Values are starting points; engineering tuning required.}
+\end{table}
+
+\subsubsection{Fault handling timing budget (guidance)}
+Where feasible, the highest-severity protections (overvoltage/overcurrent) should be implemented with \emph{hardware-fast paths} (comparators and hardwired kill lines) so response does not depend on firmware scheduling under EMI.
+\begin{itemize}
+  \item \textbf{Comparator trip to driver disable}: target $< 10~\mu$s.
+  \item \textbf{Dump load engagement}: target $< 100~\mu$s from loss-of-load detect.
+  \item \textbf{Crowbar clamp}: target $< 100~\mu$s after crowbar threshold.
+  \item \textbf{Contactor open}: target $< 50$~ms (mechanical constraint) after hard fault.
+\end{itemize}
+
+\subsubsection{Reset and recovery procedure (minimum viable)}
+\begin{enumerate}
+  \item Verify $V_{\text{bus}}$ is below a safe threshold (e.g., $< 50$~V) and that precharge resistors have discharged the bus.
+  \item Verify temperatures are within safe limits and $dT/dt$ is near baseline.
+  \item Capture and archive the fault run bundle (raw + derived + gate outcomes).
+  \item Perform a scripted interlock test (door/E-stop/coolant flow) and watchdog self-test.
+  \item Explicitly re-arm the watchdog, then re-enable contactors and proceed with a conservative bring-up run.
+\end{enumerate}
+
+\section{Software and Operations}
+
+\subsection{Run Orchestration}
+Experiments are not run ad-hoc. They are defined as declarative \textbf{Run Plans} (JSON/YAML) that specify the geometry, schedule, load profile, and pass/fail criteria. The software engine executes these plans automatically.
+
+\subsection{Null Tests and Matched Controls}
+To ensure scientific rigor, the runbook engine automatically interleaves \textbf{Control Runs} with \textbf{Active Runs}. The MVP must support:
+\begin{itemize}
+    \item \textbf{Detuned Control}: Running the exact same power profile but at an off-resonant frequency.
+    \item \textbf{Load-Only Control}: Driving the load using a standard power supply (simulating the pickup) to characterize the extraction efficiency baseline.
+    \item \textbf{Geometry-Neutral Control}: Running the drive electronics into a dummy load (no coil) to quantify switching losses.
+\end{itemize}
+
+\subsection{Provenance and Auditability}
+Every single run produces a \textbf{Signed Run Bundle}. This is a zip archive containing the raw data, the config snapshot, the firmware hash, and a cryptographic signature. This ensures that data cannot be cherry-picked or modified after the fact. If the hash doesn't match the chosen anchor (e.g., internal notarization or a distributed ledger), the data is invalid.
+
+\section{Run Bundle and Deterministic Replay (Minimum Schema)}
+
+The MVP must treat every run as a first-class artifact: a bundle that can be re-analyzed, audited, and replayed. This section specifies the minimum bundle contents and the canonicalization rules required to prevent ``configuration drift'' from invalidating results.
+
+\subsection{Run bundle structure (required files)}
+At minimum, each run bundle contains:
+\begin{itemize}
+  \item \textbf{manifest}: a machine-readable manifest (e.g., \texttt{manifest.json}) listing every file and its digest;
+  \item \textbf{config snapshots}: \texttt{config.json}, \texttt{schedule.json}, \texttt{calibration.json}, \texttt{safety.json};
+  \item \textbf{raw streams}: synchronized binary or CSV logs for $V/I$ accounting channels and auxiliary channels (thermal/EMI/vibration);
+  \item \textbf{derived outputs}: computed $p(t)$, $E_{\text{in}}$, $E_{\text{out}}$, $\Delta E$, $u(\Delta E)$, plots, and summaries;
+  \item \textbf{gate outcomes}: pass/fail for every quality gate and matched-control label for the run;
+  \item \textbf{signature}: a signature file and public key identifier (implementation-defined).
+\end{itemize}
+
+\subsection{Canonical configuration snapshot (what must be captured)}
+The canonical snapshot must include enough information that another team can reproduce the \emph{intent} and the \emph{waveform realization}:
+\begin{itemize}
+  \item DUT identifiers (device ID, revision, serials) and fixture identifiers;
+  \item geometry ID and parameters relevant to the run;
+  \item schedule ID and schedule parameters (intent layer);
+  \item waveform realization parameters (dead-time, edge shaping, current limits, protections);
+  \item clock/timing calibration (per-channel latency corrections, jitter bounds);
+  \item sensor metadata (placement, sampling rate, filters, channel mapping);
+  \item calibration constants and their uncertainties;
+  \item safety envelope parameters (thresholds, stop criteria, governor settings);
+  \item software identifiers (firmware hashes, analysis version hashes).
+\end{itemize}
+
+\subsection{Integrity and signatures (minimum viable)}
+The bundle must include:
+\begin{itemize}
+  \item a digest per file (e.g., SHA-256);
+  \item a manifest digest;
+  \item a signature over the manifest digest (e.g., Ed25519 or ECDSA).
+\end{itemize}
+Optional enhancements include Merkle trees for efficient partial disclosure and external timestamping/anchoring.
+
+\subsection{Example run plan (illustrative)}
+Below is a non-normative example of a minimal Run Plan structure:
+\begin{verbatim}
+{
+  "run_id": "2026-02-01T12:34:56Z__A17",
+  "dut": { "device_id": "DUT-001", "rev": "A", "serial": "0007" },
+  "geometry_id": "GEO-PHI-SPIRAL-275MM-K1",
+  "schedule_id": "SCHED-8TICK-V1",
+  "drive": { "v_bus": 420, "limit_a": 40, "sweep_hz": [1000, 5000] },
+  "load_profile": { "mode": "soft_connect", "target_kw": 5.0, "ramp_s": 10.0 },
+  "controls": { "ab_label": "DETUNED_CONTROL", "random_seed": 1337 },
+  "gates": { "clip": true, "time_align_us_max": 1.0, "dvdt_max": 50.0 }
+}
+\end{verbatim}
+
+\subsection{Deterministic replay}
+Deterministic replay means: given the signed config snapshots (including timing calibration), a future run can re-execute the same schedule intent and achieve waveform realization within specified tolerances. Replays must produce their own signed run bundles and a diff report against the original.
+
+\section{Budgetary Cost Estimate (Prototype Validation Testbed)}
+
+This section provides an \emph{order-of-magnitude} estimate to build a single prototype validation cell matching this specification. Costs vary widely based on (i) how much is purchased as COTS (commercial off-the-shelf) vs custom power electronics, (ii) the metrology rigor required (``nice'' vs ``audit-grade''), and (iii) facility constraints (test cell, ventilation, fire containment, EMI shielding).
+
+\subsection{What is included (and excluded)}
+\textbf{Included:} one test cell/rack, HV bus and protections, dump load/crowbar/contactor stack, DAQ + probes + sensors sufficient to satisfy the accounting requirements, primary control + watchdog hardware, runbook + signed run bundles, and commissioning/calibration labor.
+
+\textbf{Excluded by default:} dedicated building upgrades (new service transformers/substation work), utility interconnect hardware for grid export, and large-scale manufacturing tooling. One or more DUT prototypes may be required for meaningful validation; those are estimated separately.
+
+\subsection{Cost drivers}
+\begin{itemize}
+  \item \textbf{Metrology stack}: high-end power analyzers / digitizers, isolated front ends, calibrated shunts/probes, and timing infrastructure.
+  \item \textbf{Safety hardening}: fast protection hardware (crowbar/dump load switches), independent watchdog, interlock system, and containment enclosure.
+  \item \textbf{Engineering labor}: integration, calibration, software (runbook + analysis + provenance), and test/commissioning.
+\end{itemize}
+
+\subsection{Line-item estimate (prototype cell, one-off build)}
+\begin{table}[h]
+\centering
+\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}p{0.34\linewidth}p{0.20\linewidth}p{0.40\linewidth}@{}}
+\toprule
+\textbf{Category} & \textbf{Budget (USD)} & \textbf{Notes} \\
+\midrule
+HV power + energy handling & \$50k--\$200k & 0--600V programmable supply, bus caps, precharge, contactors, wiring, enclosures \\
+Driver / inverter stage & \$25k--\$250k & COTS inverter (motor-drive-class acceptable) vs custom GaN/SiC inverter + controls \\
+Dump load + crowbar/clamp & \$15k--\$150k & Fast dump switching and hardware clamp; tuned to transient energy \\
+Instrumentation (V/I) & \$25k--\$250k & Shunts, HV probes, isolation, calibration standards \\
+DAQ + timing & \$20k--\$250k & Simultaneous sampling, time alignment, storage throughput \\
+Thermal/EMI/vibration sensors & \$5k--\$100k & Thermocouples/RTDs, IR camera (optional), EMI probes, accelerometers \\
+Test cell + safety interlocks & \$25k--\$300k & Fire containment, remote ops, E-stops, door interlocks, ventilation \\
+Compute + software infra & \$10k--\$100k & Industrial PC, storage, runbook/analysis/provenance plumbing \\
+Integration + commissioning labor & \$250k--\$2.0M & 2--6 engineers for 2--6 months (fully loaded) \\
+\midrule
+\textbf{Subtotal (testbed cell)} & \textbf{\$425k--\$3.35M} & Order-of-magnitude; overlaps between categories possible \\
+\bottomrule
+\end{tabular}
+\caption{Order-of-magnitude prototype cost estimate for one validation cell.}
+\end{table}
+
+\subsection{DUT prototype allowance (separate)}
+The testbed is infrastructure. For an initial validation campaign, also budget:
+\begin{itemize}
+  \item \textbf{SSVR Prototypes (PCB-based)}: \$5k--\$25k (PCB fabrication, high-copper heavy oz boards, assembly). This is significantly cheaper than machined mechanical rotors.
+  \item \textbf{Fixturing}: \$5k--\$15k (non-conductive, thermal-managed mounting).
+\end{itemize}
+
+\subsection{Practical budget bands (recommended)}
+\begin{itemize}
+  \item \textbf{COTS-heavy ``credible'' MVP}: \$250k--\$750k (fastest path; uses more commercial instruments).
+  \item \textbf{Audit-grade credibility build}: \$1M--\$3M (more redundancy, calibrated standards, stronger containment).
+  \item \textbf{Facility-grade / pre-product cell}: \$5M+ (multiple cells, higher power, extensive shielding and operations).
+\end{itemize}
+
+\subsection{Smaller-scale option (bench validation cell)}
+Yes: you can run an earlier validation campaign at materially smaller scale \emph{without changing the scientific rules}. The key is to keep the same accounting discipline (boundaries, synchronized $V/I$, uncertainty budget, matched controls, signed run bundles) while reducing stored energy, fault energy, and facility demands.
+
+\paragraph{Recommended bench envelope (Tier-0).}
+\begin{itemize}
+  \item \textbf{Power}: 0.5--2~kW continuous (5~kW peak bursts $\le 2$~s).
+  \item \textbf{Bus voltage}: 0--200~VDC (simplifies safety and COTS sourcing).
+  \item \textbf{Dump load}: 2--5~kW with fast switching.
+  \item \textbf{Watchdog/crowbar}: still required, but sized for lower fault energy.
+\end{itemize}
+
+\paragraph{Ultra-lean bench envelope (Tier-0 Lite).}
+If your primary goal is ``Searl-scale replication'' and signature discovery (cooling, anomalous electrical pickup, self-acceleration signatures) rather than immediate 10~kW throughput, you can start even smaller \emph{while preserving the metrology rules}.
+\begin{itemize}
+  \item \textbf{Power}: 0.1--1~kW continuous (2~kW peak bursts $\le 1$~s).
+  \item \textbf{Bus voltage}: 0--60~VDC (materially reduces shock/arc risk and COTS cost).
+  \item \textbf{Dump load}: 1--2~kW fast-switched load (still required for loss-of-load regimes).
+  \item \textbf{Watchdog}: still required (OV/OC/thermal/loss-of-load), but can be simpler due to lower fault energy.
+\end{itemize}
+
+\paragraph{What you learn at Tier-0.}
+Tier-0 is primarily for: proving the measurement pipeline, proving the runbook + A/B controls, characterizing EMI/thermal confounds, and validating that any apparent gain persists under artifact rejection. It also allows rapid iteration on geometry/schedules at low risk.
+
+\paragraph{What Tier-0 cannot fully answer.}
+If the effect (if real) turns on only above certain field strengths, frequencies, or coupled energy scales, Tier-0 may fail to reach the regime. In that case, Tier-0 still de-risks the metrology and safety stack before scaling to 10~kW.
+
+\paragraph{Tier-0 budget band.}
+For a bench-scale build, the all-in prototype cost typically compresses to:
+\begin{itemize}
+  \item \textbf{Ultra-lean Tier-0 Lite (incremental)}: \$25k--\$100k (assumes you already own meaningful metrology assets such as a power analyzer / digitizer, probes, and calibration aids; focuses spend on safety and integration).
+  \item \textbf{COTS-heavy Tier-0}: \$75k--\$250k (single bench cell, minimal containment).
+  \item \textbf{Higher-credibility Tier-0}: \$250k--\$750k (better DAQ, more redundancy, more containment).
+\end{itemize}
+The main costs that do \emph{not} scale down are software, calibration discipline, and engineering integration time.
+
+\section{Conclusion and Build Order}
+
+The Nautilus Power Testbed MVP is a machine for generating truth. By constraining the scope to a 10 kW envelope and focusing heavily on metrology and safety, we create a platform that can rapidly iterate on the core physics while providing the extraordinary evidence required for extraordinary claims.
+
+\textbf{Recommended Build Sequence:}
+\begin{enumerate}
+    \item \textbf{Bench Validation}: Build the DAQ and timebase first. Prove you can measure DC and AC power accurately on dummy loads.
+    \item \textbf{Safety Integration}: Build the Watchdog, Dump Load, and Contactor board. Verify it trips correctly on simulated faults.
+    \item \textbf{Drive Integration}: Connect the primary inverter and drive a dummy inductive load. Verify 600V operation and thermal management.
+    \item \textbf{Full Loop}: Install the first \textbf{SSVR PCB Prototype}. Run the ``Soft Connect'' sequence.
+    \item \textbf{Automation}: Enable the A/B runbook engine and signed reporting.
+\end{enumerate}
+
+\end{document}

@@ -1,0 +1,3716 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{fontspec}
+\setmainfont{Libertinus Serif}
+\setsansfont{Libertinus Sans}
+\setmonofont{DejaVu Sans Mono}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,mathtools}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Sbb}{\mathbb{S}}
+\usepackage{hyperref}
+\usepackage{bookmark}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue}
+\usepackage{xcolor}
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false
+}
+
+\title{Reader’s guide for a co-author/editor (added for sharing)}
+\author{(generated from Markdown; shareable working document)}
+\date{\today}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+This PDF is a shareable rendering of \texttt{\detokenize{docs/RM2U_BET_2_EXECUTION_PLAN.md}} intended for a mathematician co-author who will edit and help close the remaining gates.
+It is written as an \textbf{execution plan} (not a finished paper): it turns a large proof idea into a sequence of checkable gates, each with a minimal acceptance test and an explicit dependency graph.
+
+
+\subsection{What this document is (and is not)}
+
+
+\begin{itemize}
+\item \textbf{What it is}: a “proof engineering notebook” that keeps TeX, Lean, and the research dependency graph aligned.
+\item \textbf{What it is not}: a polished exposition of Navier–Stokes, nor a complete proof. You’ll see many items phrased as \emph{Hypotheses}—those are the deliberate \emph{interfaces} we either prove later or explicitly declare as blockers.
+\end{itemize}
+
+
+\subsection{How to read it quickly}
+
+
+\begin{itemize}
+\item \textbf{Start at “0. Canonical anchors”} to see the fixed TeX and Lean reference points this plan is allowed to use.
+\item \textbf{Then read “1. Definition of Done”} to understand the concrete mathematical and Lean end-state for Bet 2.
+\item \textbf{Skim “4. Multi-session execution roadmap”} for the intended order of attack and what each session must output.
+\item \textbf{Keep an eye on “6. Pivot triggers”}: these are “fail-fast” guardrails that prevent hidden circularity (e.g. accidentally re-importing C2/UEWE/RM2 as if it were new progress).
+\end{itemize}
+
+
+\subsection{Legend / conventions}
+
+
+\begin{itemize}
+\item \textbf{TeX anchors} like \texttt{\detokenize{lem:*}}, \texttt{\detokenize{cor:*}}, \texttt{\detokenize{thm:*}}, \texttt{\detokenize{rem:*}} refer to items in \texttt{\detokenize{navier-dec-12-rewrite.tex}}.
+\item \textbf{Lean anchors} refer to concrete symbols under \texttt{\detokenize{IndisputableMonolith/NavierStokes/RM2U/}}.
+\item \textbf{Hypothesis blocks} are \emph{interfaces} (specifications). If a hypothesis is marked “blocked,” the doc records exactly one blocking dependency (the smallest missing lemma we can currently identify).
+\item \textbf{Acceptance tests} are short, mechanical checks meant to prevent “hand-wave drift.” If an acceptance test can’t be met, the plan demands we either (i) tighten the statement, or (ii) record a single blocker and stop.
+\end{itemize}
+
+
+\subsection{How to co-author with this document (practical editing workflow)}
+
+
+\begin{itemize}
+\item \textbf{Canonical source}: treat \texttt{\detokenize{docs/RM2U_BET_2_EXECUTION_PLAN.md}} as the source of truth; the PDF is generated for sharing/review.
+\item \textbf{When you “prove a hypothesis”}: upgrade it to a Lemma/Proposition/Theorem block \emph{in the same doc} (or move it into the manuscript TeX), and update the dependency/acceptance-test lines so the plan stays executable.
+\item \textbf{Single-blocker discipline}: if a step fails, record exactly one minimal missing lemma (not a list). This keeps the next action crisp.
+\item \textbf{No hidden circularity}: if a step implicitly requires C2/UEWE/U-decay/RM2 compactness, label it as such and trigger the pivot logic rather than burying it.
+\item \textbf{Lean is bookkeeping, not PDE}: the Lean files primarily encode the dependency graph via Prop-only interfaces and “bookkeeping lemmas” (no analytic content); this is meant to prevent logical drift as the TeX side evolves.
+\end{itemize}
+
+
+\subsection{What the workflow demonstrates (why this is useful to share)}
+
+
+This document is meant to make the working style auditable:
+
+
+\begin{itemize}
+\item \textbf{Decomposition}: split a hard theorem into small gates with explicit input/output contracts.
+\item \textbf{Bidirectional alignment}: every TeX gate has a Lean-facing signature (often Prop-only) so the dependency graph is enforced by the typechecker.
+\item \textbf{No hidden imports}: if something needs C2/UEWE/U-decay/RM2 compactness, it must be stated as such (pivot trigger).
+\item \textbf{One-blocker discipline}: each blocked gate records \textbf{one} minimal blocker to keep the next step crisp.
+\end{itemize}
+
+
+\subsection{Status snapshot (updated 2025-12-23)}
+
+\noindent\textbf{High-level state of the art (this project).}
+We now have a referee-checkable \emph{reduction} of essentially every local closure attempt to one global tail/tightness gate.
+The document is therefore in “go/no-go” mode: we do not proceed by optimism; we proceed by \textbf{certifying the first unavoidable global estimate}.
+
+\begin{itemize}
+\item \textbf{What is solid (proved / classical in the current writeup)}:
+  the two brick lemmas (\texttt{\detokenize{lem:tail_biot_savart_affine_core}}, \texttt{\detokenize{lem:l2_shell_tests_detect_l2_component}})
+  and the forcing decompositions/IBP identities that expose the true obstruction (e.g.\ \texttt{\detokenize{lem:forcing_pairing_no_absvalues_pivot}}).
+
+\item \textbf{Certified pivots (fail-fast diagnostics already executed)}:
+  \begin{itemize}
+  \item K-ODE route: the “approximate Riccati defect” derivation collapses at a pressure-Hessian/\(\sigma_+\) estimate
+    (\texttt{\detokenize{lem:attempt_derive_approx_riccati_defect_pivot}}), i.e. into C2/U-decay.
+  \item RM2U/Bet-1/Family-A coefficient-energy routes: forcing control and boundary-term integrability collapse into the same C2/U-decay bottleneck
+    (\texttt{\detokenize{lem:familyA_pivot_to_C2}}, \texttt{\detokenize{lem:bet1_boundary_integrability_pivot_to_C2}}), and there is no hidden algebraic cancellation
+    (\texttt{\detokenize{lem:forcing_pairing_no_absvalues_pivot}}).
+  \item “\(\ell=2\) dynamical instability” and “\(\ell=2\) Lamb-vector depletion” as replacement theorems: both collapse into global finite-budget/tightness control
+    (\texttt{\detokenize{lem:attempt_prop_l2_instability_pivot_to_C2}}, \texttt{\detokenize{lem:attempt_l2_lamb_vector_depletion_pivot_to_RTD}}).
+  \item UEWE via log-weighted enstrophy (“\(\beta=2\) truth serum”): pivots at the outer transport/boundary flux terms as \(R\to\infty\)
+    (\texttt{\detokenize{lem:UEWE_log_weighted_enstrophy_pivot_to_RTD}}).
+  \end{itemize}
+
+\item \textbf{Single remaining global blocker (the real bottleneck)}:
+  a genuine \textbf{tightness / no-multi-bubble} mechanism in blow-up variables (RTD/UEWE/RM2U-tail),
+  i.e. a theorem that upgrades “tail bounded” to “tail small” uniformly in the running-max blow-up sequence.
+  This is explicitly \emph{not} implied by the automatic running-max bounds (two-bubble counterexample:
+  \texttt{\detokenize{lem:RTD_not_from_runningmax_bounds}}).
+
+\item \textbf{Next best step (if continuing)}:
+  target RTD/UEWE directly as a standalone global theorem, in whichever equivalent form is most checkable in classical PDE terms:
+  \texttt{\detokenize{hyp:relative_tail_depletion_blowup}} (RTD),
+  the UEWE bound \(\sup_{t\le 0}\int_{|x|\ge 1}(|\omega|^2/|x|^2+|\nabla\omega|^2)<\infty\) (Theorem \texttt{\detokenize{thm:RM2U-weighted-enstrophy-target}} in the alternative manuscript),
+  or uniform exterior \(L^2_x\) control of the tail velocity/Lamb vector.
+\end{itemize}
+
+
+\section{RM2U Bet 2 — Rigorous Execution Plan (multi‑session)}
+
+
+\textbf{Bet 2 = self‑falsification / backward contradiction.}\\
+We assume “parasitic export persists” (tail‑flux does \textbf{not} vanish) and drive a contradiction with the running‑max \textbf{finite budget} constraints.
+
+
+This doc is deliberately TeX‑anchored and Lean‑signature‑ready: each step ends with a checkable deliverable.
+
+
+
+\bigskip\hrule\bigskip
+
+
+\subsection{0. Canonical anchors (do not drift)}
+
+
+\subsubsection{0.1 TeX anchors in \texttt{navier-dec-12-rewrite.tex}}
+
+
+\begin{itemize}
+\item \textbf{RM2U coefficient PDE}: \texttt{\detokenize{lem:Ab-evolution}} (\texttt{\detokenize{eq:Ab-PDE}}, \texttt{\detokenize{eq:Ab-forcing}})
+\item \textbf{Energy identity behind coercive bound}: \texttt{\detokenize{rem:Ab-energy-identity}}
+\item \textbf{Tail strain moment is the obstruction}: \texttt{\detokenize{lem:tail-strain-formula}}, \texttt{\detokenize{cor:RM2-equivalence}}
+\item \textbf{RM2U closure from coercive bound}: \texttt{\detokenize{thm:RM2U-closure-from-coercive}}
+\item \textbf{The explicit “missing conversion” note}: \texttt{\detokenize{rem:l2-instability-open}}
+\item \textbf{Running‑max finite budget inequality (maximizers)}: \texttt{\detokenize{rem:runningmax-injection-constraint}}
+\item \textbf{“Payment engine” on \(\{\rho\approx 1\}\)} (signed injection / diffusion cost):
+\item \texttt{\detokenize{lem:injection-damping-balance}}
+\item \texttt{\detokenize{lem:superlevel-selection}}, \texttt{\detokenize{cor:superlevel-selection-simplified}}
+\item \texttt{\detokenize{rem:superlevel-selection-block}}, \texttt{\detokenize{rem:superlevel-time-fraction-sign}}
+\item \texttt{\detokenize{rem:sigma-minus-paid-by-diffusion}}, \texttt{\detokenize{rem:rho32-errors-small-scale}}
+\item \textbf{Heuristic barrier vs tail forcing}: \texttt{\detokenize{rem:RM2U-spectral-gap-heuristic}}
+\item \textbf{(Placeholder in the draft)}: Proposition \texttt{\detokenize{prop:l2-instability}} is referenced but not defined; this bet aims to supply it.
+\end{itemize}
+
+
+\subsubsection{0.2 Lean anchors (already in repo)}
+
+
+\begin{itemize}
+\item Bet‑2 interface: \texttt{\detokenize{RM2U.NonParasitism.Bet2SelfFalsificationHypothesis}}
+\item Tail‑flux: \texttt{\detokenize{RM2U.Core.TailFluxVanish}}
+\item Bet‑2 ⇒ non‑parasitism: \texttt{\detokenize{RM2U.NonParasitism.nonParasitism_of_bet2}}
+\item Coercive ⇒ RM2Closed: \texttt{\detokenize{RM2U.RM2Closure.rm2Closed_of_coerciveL2Bound}}
+\item End‑to‑end wrapper (once coercive step exists): \texttt{\detokenize{RM2U.NonParasitism.rm2Closed_of_bet2}}
+\item Coercive-step interface (explicit energy/forcing assumptions) + proved theorem:
+  \texttt{\detokenize{RM2U.EnergyIdentity.TailFluxVanishImpliesCoerciveHypothesis}} and
+  \texttt{\detokenize{RM2U.EnergyIdentity.coerciveL2Bound_of_tailFluxVanish}}
+\end{itemize}
+
+
+
+\bigskip\hrule\bigskip
+
+
+\subsection{1. “Definition of Done” for Bet 2}
+
+
+\subsubsection{1.1 Mathematical done (TeX / community-facing)}
+
+
+Add a referee‑checkable statement (and proof) that can replace the missing reference:
+
+
+\begin{quote}
+\textbf{Proposition \texttt{\detokenize{prop:l2-instability}} (Dynamical instability of the ℓ=2 tail).}\\
+For a running‑max/vorticity‑normalized ancient element, any non‑zero persistent ℓ=2 tail moment forces a contradiction with the running‑max budget; therefore the ℓ=2 tail strain moment vanishes (or is forced into an integrable class strong enough to close RM2).
+\end{quote}
+
+
+We will treat “vanishes” vs “\(L^2_t\)” as two graded targets:
+
+
+\begin{itemize}
+\item \textbf{Target T‑strong}: \(S(0,t)\equiv 0\) for all \(t\le 0\).
+\item \textbf{Target T‑weak (still closes RM2 subsequentially)}: \(S(0,\cdot)\in L^2((-\infty,0])\) (see \texttt{\detokenize{thm:RM2-from-tail-L2}}).
+\end{itemize}
+
+
+\subsubsection{1.2 Lean done (repo-facing)}
+
+
+At the abstract time‑slice level:
+
+
+\begin{itemize}
+\item Provide a concrete instance of \texttt{\detokenize{Bet2SelfFalsificationHypothesis P}} for the coefficient profile \texttt{\detokenize{P}}
+  associated to the RM2U ℓ=2 coefficient.
+\end{itemize}
+
+
+This implies \texttt{\detokenize{NonParasitismHypothesis P}} automatically.
+
+
+
+\bigskip\hrule\bigskip
+
+
+\subsection{1.3 Critical dependency hazard (avoid circularity)}
+
+
+Some “running‑max ancient element” statements in the TeX (notably the pointwise identification
+\texttt{\detokenize{|ω∞(0,t)| = 1}} for all \texttt{\detokenize{t}} in the proof of \texttt{\detokenize{lem:runningmax-sup-freeze-3d}}) explicitly note they
+use a \textbf{local compactness step} that is \emph{itself} obstructed by RM2 (the affine/harmonic mode).
+
+
+For Bet 2 to be logically clean, we must \textbf{not} assume pointwise-in-time, pointwise-in-space
+facts that already require RM2. Therefore we will run Bet 2 in one of two logically safe modes:
+
+
+\begin{itemize}
+\item \textbf{Mode (M‑seq): “pre‑limit” contradiction on the running‑max rescaled sequence}\\
+  Prove that persistent ℓ=2 export along the rescaled sequence forces a violation of the running‑max
+  normalization \emph{before} taking any fixed‑frame limit. This avoids needing the blocked compactness step.
+\item \textbf{Mode (M‑limit‑with‑affine): “limit” contradiction with affine mode kept explicit}\\
+  Work with a limit object that includes the affine/harmonic correction as part of the state
+  (i.e. do not quotient it out prematurely). Bet 2 then aims to show that this affine mode must be
+  zero / integrable, thereby closing RM2.
+\end{itemize}
+
+
+\textbf{Rule:} every lemma in Sessions S1–S3 must declare which mode it is using.
+
+
+\subsubsection{1.3.1 Mode cheat sheet (when to use which)}
+
+
+\begin{itemize}
+\item \textbf{Use Mode (M‑limit‑with‑affine)} if you want statements that match the manuscript language
+  “affine/harmonic obstruction coefficient” directly. This is the most faithful route to a
+  replacement for \texttt{\detokenize{prop:l2-instability}}.
+\item \textbf{Use Mode (M‑seq)} if you want to avoid \emph{any} reliance on fixed‑frame compactness/limits.
+  This is safest logically, but will require carrying “approximate maximizer” errors and
+  uniform-in-\texttt{\detokenize{k}} bookkeeping.
+\end{itemize}
+
+
+
+\bigskip\hrule\bigskip
+
+
+\subsection{2. What Bet 2 must \emph{actually} prove (the core logical move)}
+
+
+Bet 2 is only real if we can produce a monotone/contradiction mechanism of the form:
+
+
+\begin{quote}
+\textbf{(B2‑Core)} If tail export persists in the ℓ=2 sector (formalized as \texttt{\detokenize{¬TailFluxVanish}} or an equivalent lower bound), then some \textbf{nonnegative functional} \(J(t)\) must grow backward in time at a rate incompatible with running‑max normalization.
+\end{quote}
+
+
+\texttt{\detokenize{rem:l2-instability-open}} identifies the gap precisely:
+
+
+\begin{itemize}
+\item identify the correct ℓ=2 component that generates the obstruction; and
+\item upgrade “sign at one time/model” into \textbf{uniform backward‑time decay/integrability} for the tail moment.
+\end{itemize}
+
+
+We already have the identification mechanism in TeX:
+
+
+\begin{itemize}
+\item \texttt{\detokenize{lem:tail-strain-formula}} + \texttt{\detokenize{thm:RM2U-closure-from-coercive}} show
+  \(\Sigma_b^{1,\infty}(t)=\int_1^\infty A_b(r,t)\,dr/r\) controls the tail strain \(S(0,t)\).
+\end{itemize}
+
+
+So Bet 2 is now entirely about the second bullet: finding \(J(t)\) and proving the evolution inequality.
+
+
+\subsubsection{2.1 “Known identities” we are allowed to treat as fixed targets}
+
+
+These are the concrete algebraic relations Bet 2 should lean on (they already appear explicitly in TeX):
+
+
+\begin{itemize}
+\item \textbf{Tail strain as the obstruction:} for tail vorticity \(\Omega\) supported in \(|w|>1\),
+  the tail strain at the origin is (TeX \texttt{\detokenize{lem:tail-strain-formula}})
+  \[
+  S_{tail}(0)
+  =-\frac{3}{8\pi}\int_{|w|>1}\frac{(w\times\Omega(w))\otimes w+w\otimes(w\times\Omega(w))}{|w|^5}\,dw.
+  \]
+\item \textbf{Directional contraction equals the log‑critical shell moment:} for \(b\in S^2\),
+  \[
+  b\cdot S_{tail}(0,t)b=\frac{3}{4\pi}\,\Sigma_b^{1,\infty}(t),
+  \qquad
+  \Sigma_b^{1,\infty}(t):=\int_1^\infty \frac{A_b(r,t)}{r}\,dr,
+  \]
+  and \(A_b(r,t)=\int_{S^2}\omega(r\theta,t)\cdot\Phi_b(\theta)\,d\theta\).
+  (This computation is used in the proof of TeX \texttt{\detokenize{thm:RM2U-closure-from-coercive}}.)
+\end{itemize}
+
+
+Bet 2 should be written so these identities are “plugs” rather than re-derivations.
+
+
+
+\bigskip\hrule\bigskip
+
+
+\subsection{3. Candidate contradiction functionals (choose one; don’t multiply work)}
+
+
+All candidates must be:
+
+
+\begin{itemize}
+\item \textbf{nonnegative}, and
+\item \textbf{linked to the ℓ=2 tail moment} (via a quantitative inequality),
+\item \textbf{constrained by running‑max} (directly or via a bounded “budget” quantity).
+\end{itemize}
+
+
+\subsubsection{3.1 Candidate family A: ℓ=2 coefficient energies (truncated in radius)}
+
+
+Use the PDE \texttt{\detokenize{eq:Ab-PDE}} and the energy identity (\texttt{\detokenize{rem:Ab-energy-identity}}) on a finite interval \texttt{\detokenize{[1,R]}}:
+
+
+\begin{itemize}
+\item \(E_{b,R}(t) := \int_1^R |A_b(r,t)|^2 r^2\,dr\).
+\end{itemize}
+
+
+Then compute \(dE_{b,R}/dt\) and keep the boundary flux at \texttt{\detokenize{R}} explicit:
+
+
+\begin{itemize}
+\item the boundary term at \texttt{\detokenize{R}} is the “tail flux” object (the one Option‑A is built around).
+\end{itemize}
+
+
+\textbf{Bet 2 goal in this family:} show persistent nonzero boundary flux forces backward growth of \(E_{b,R}\) fast enough to contradict some a priori bound available under running‑max normalization.
+
+\paragraph{Family A diagnostic (pivot check): where forcing control collapses into C2/U-decay.}
+
+\begin{lstlisting}
+\begin{lemma}[Attempt: Family A energy route collapses into C2/U-decay (pivot trigger)]\label{lem:familyA_pivot_to_C2}
+Fix $b\in\Sbb^2$ and $R>1$. Let $A(r,t):=A_b^\infty(r,t)$ and $\mathcal F(r,t):=\mathcal F_b(r,t)$ satisfy the $A_b$ PDE
+\(\eqref{eq:Ab-PDE}\)--\(\eqref{eq:Ab-forcing}\) in \texttt{navier-dec-12-rewrite.tex}.
+Define
+\[
+E_{b,R}(t):=\int_1^R |A(r,t)|^2 r^2\,dr,
+\qquad
+B(r,t):=(-A(r,t))\,(r^2\partial_r A(r,t)).
+\]
+Then the finite-$R$ energy identity (see \texttt{book/docs/navier-dec-12-rewrite-alternative.tex},
+Lemma~\texttt{\detokenize{\ref{lem:Ab-energy-identity-finiteR}}}) reads
+\[
+\frac12\frac{d}{dt}E_{b,R}(t)\;+\;\int_{1}^{R}\Bigl(|\partial_r A|^2\,r^2+6|A|^2\Bigr)\,dr
+\;=\;\int_{1}^{R}\mathcal F\,A\,r^2\,dr\;+\;B(1,t)-B(R,t).
+\tag{$\star$}
+\]
+
+\smallskip
+\noindent\textbf{Attempted contradiction from nonvanishing tail flux.}
+The ``tail flux'' event is precisely that $B(R,t)$ (or a normalized version of it) does not vanish as $R\to\infty$ on a time-thick set.
+To turn such a persistence into a contradiction with boundedness of $E_{b,R}(t)$ (which is finite for each fixed $R$ under $\|\omega^\infty\|_\infty<\infty$),
+one must control the \emph{forcing work term} in $(\star)$ in a way that allows it to be absorbed by the coercive dissipation:
+\[
+\left|\int_{1}^{R}\mathcal F\,A\,r^2\,dr\right|
+\ \le\ \frac12\int_{1}^{R}\Bigl(|\partial_r A|^2\,r^2+6|A|^2\Bigr)\,dr\ +\ \mathsf{Err}_R(t),
+\tag{$\dagger$}
+\]
+with $\mathsf{Err}_R(t)$ controlled uniformly in $R$ and (crucially) \emph{without} importing global tail decay.
+
+\smallskip
+\noindent\textbf{Where the pivot trigger fires.}
+In the current manuscript architecture, the only available mechanism that yields a scale-consistent bound of the form $(\dagger)$
+for the ancient element is the \textbf{$\sigma$-decomposition + tail/decay gate}, which quantitatively controls the positive stretching injection
+\[
+\iint_{Q_r}\rho^{3/2}\sigma_+\quad\text{as }r\downarrow 0
+\]
+(Theorem~C2-closure, conditional on U-decay/RTD).
+Equivalently: controlling the forcing work term $\int \mathcal F\,A\,r^2$ without losing on large radii requires suppressing
+the tail/harmonic/affine contributions to $\mathcal F$, and the only known way to do that in the current framework is via
+the C2/U-decay mechanism.
+
+Therefore the Family A route hits the same bottleneck as the K-ODE route: it collapses into controlling
+\(\iint \rho^{3/2}\sigma_+\) (hence into C2/U-decay/RTD). This certifies the \textbf{P-C2 pivot trigger}.
+\end{lemma}
+\end{lstlisting}
+
+\paragraph{No-absolute-values diagnostic: the forcing pairing has no hidden structural cancellation.}
+
+\begin{lstlisting}
+\begin{lemma}[Attempt: no-absolute-values rewrite of the forcing work term still exposes the same tail/tightness gate]\label{lem:forcing_pairing_no_absvalues_pivot}
+Fix $t\le 0$, $b\in\Sbb^2$, and write $A(r):=A_b^\infty(r,t)$ and $\mathcal F(r):=\mathcal F_b(r,t)$
+from \(\eqref{eq:Ab-PDE}\)--\(\eqref{eq:Ab-forcing}\).
+Let $Y_b(\theta):=(b\cdot\theta)^2-\frac13$ and define the (time-slice) $\ell=2$ Lamb-vector coefficients
+\[
+G(r):=\int_{\Sbb^2}(u^\infty\times\omega^\infty)(r\theta,t)\cdot\nabla_{\!S}Y_b(\theta)\,d\theta,
+\qquad
+H(r):=\int_{\Sbb^2}(u^\infty\times\omega^\infty)(r\theta,t)\cdot\theta\;Y_b(\theta)\,d\theta.
+\]
+Then the RM2U forcing admits the exact representation (see \texttt{navier-dec-12-rewrite.tex}, Remark \texttt{\detokenize{rem:curl-coupling-RM2U}}):
+\[
+\mathcal F(r)=\frac{1}{2r}\frac{d}{dr}\bigl(r\,G(r)\bigr)-\frac{3}{r}\,H(r).
+\tag{$\Diamond$}
+\]
+Consequently, the forcing work term in the $A_b$ energy identity has the exact integration-by-parts formula
+(see \texttt{book/docs/navier-dec-12-rewrite-alternative.tex}, Lemma \texttt{\detokenize{\ref{lem:forcing-pairing-GH}}}):
+\[
+\int_{1}^{R}\mathcal F(r)\,A(r)\,r^2\,dr
+=\frac12\Bigl[r\,A(r)\,(rG(r))\Bigr]_{r=1}^{r=R}
+-\frac12\int_{1}^{R}\bigl(A(r)+rA'(r)\bigr)\,(rG(r))\,dr
+-3\int_{1}^{R}r\,A(r)\,H(r)\,dr.
+\tag{$\clubsuit\clubsuit$}
+\]
+Equivalently, absorbing the $H$ term into a Hardy gauge (Lemma \texttt{\detokenize{\ref{lem:forcing-pairing-Hardy-gauge}}})
+one can rewrite $\mathcal F(r)=\frac{1}{2r}\frac{d}{dr}(r\widetilde G(r))$, hence
+\[
+\int_{1}^{R}\mathcal F\,A\,r^2\,dr
+=\frac12\Bigl[r\,A(r)\,(r\widetilde G(r))\Bigr]_{r=1}^{r=R}
+-\frac12\int_{1}^{R}\bigl(A(r)+rA'(r)\bigr)\,(r\widetilde G(r))\,dr.
+\tag{$\clubsuit\clubsuit\clubsuit$}
+\]
+
+\smallskip
+\noindent\textbf{Conclusion (fail-fast).}
+The identities $(\clubsuit\clubsuit)$--$(\clubsuit\clubsuit\clubsuit)$ show that, beyond an explicit boundary contribution,
+the forcing pairing is an \emph{indefinite bulk bilinear form} involving $(A+rA')$ paired with $rG$ (or $r\widetilde G$)
+and $A$ paired with $rH$.
+There is no remaining spherical-harmonic orthogonality or incompressibility identity that forces these bulk terms to vanish,
+and there is no sign structure visible at the level of this exact decomposition.
+Therefore, any attempt to control (or absorb) $\int_1^R \mathcal F A r^2dr$ even \emph{without} taking absolute values
+still requires a genuine tail/tightness mechanism that controls the $\ell=2$ Lamb-vector coefficients
+$rG,rH$ (equivalently, the degree-$2$ part of $u_{>1}^\infty\times\omega^\infty$ in an exterior $L^2_x$ norm).
+In the current manuscript architecture, this is precisely the RTD/UEWE/C2-type global gate.
+\end{lemma}
+\end{lstlisting}
+
+\paragraph{Candidate new theorem: $\ell=2$ Lamb-vector depletion (a direct replacement for RTD/U-decay at the forcing level).}
+
+\begin{lstlisting}
+\begin{definition}[Proposed $\ell=2$ Lamb-vector depletion gate]\label{def:l2_lamb_vector_depletion_gate}
+Let $(u^\infty,p^\infty)$ be the running-max ancient element and write $\omega^\infty:=\curl u^\infty$.
+Let $u_{\le 1}^\infty(\cdot,t)$ be the truncated Biot--Savart field generated by $\omega^\infty(\cdot,t)$ on $\{|y|\le 1\}$, and set
+\[
+u_{>1}^\infty(\cdot,t):=u^\infty(\cdot,t)-u_{\le 1}^\infty(\cdot,t)
+\]
+(cf. \texttt{book/docs/navier-dec-12-rewrite-alternative.tex}, Remark \texttt{\detokenize{\ref{rem:BS-core-vs-tail-RM2U}}}).
+
+For each $b\in\Sbb^2$ let $Y_b(\theta):=(b\cdot\theta)^2-\frac13$ and define the \emph{tail Lamb-vector coefficients}
+\[
+G_b^{\mathrm{tail}}(r,t):=\int_{\Sbb^2}(u_{>1}^\infty\times\omega^\infty)(r\theta,t)\cdot\nabla_{\!S}Y_b(\theta)\,d\theta,
+\qquad
+H_b^{\mathrm{tail}}(r,t):=\int_{\Sbb^2}(u_{>1}^\infty\times\omega^\infty)(r\theta,t)\cdot\theta\;Y_b(\theta)\,d\theta.
+\]
+
+We say the \textbf{$\ell=2$ Lamb-vector depletion gate} holds if there exists $C<\infty$ such that
+\[
+\sup_{t\le 0}\ \sup_{b\in\Sbb^2}\ \int_{1}^{\infty}\Bigl(|r\,G_b^{\mathrm{tail}}(r,t)|^2+|r\,H_b^{\mathrm{tail}}(r,t)|^2\Bigr)\,dr\ \le\ C.
+\]
+\end{definition}
+
+\begin{lemma}[If $\ell=2$ Lamb-vector depletion holds, the forcing pairing is uniformly form-bounded (hence no RTD is needed at this step)]\label{lem:l2_lamb_vector_depletion_implies_pairing_bound}
+Assume the gate in Definition~\ref{def:l2_lamb_vector_depletion_gate} holds with constant $C$.
+Then for each $t\le 0$ there exists a constant $C_\mathcal F(t)<\infty$ such that for all $b\in\Sbb^2$ and all $R>1$,
+\[
+\left|\int_{1}^{R}\mathcal F_b(r,t)\,A_b^\infty(r,t)\,r^2\,dr\right|\ \le\ C_\mathcal F(t),
+\]
+where $A_b^\infty$ and $\mathcal F_b$ are the projected coefficient and forcing from \(\eqref{eq:Ab-PDE}\)--\(\eqref{eq:Ab-forcing}\).
+In particular, this supplies exactly the uniform-in-$R$ forcing-pairing bound required in the RM2U time-slice energy interface
+(\texttt{IndisputableMonolith/NavierStokes/RM2U/ProjectedPDE.lean}, \texttt{ProjectedPDEPairingHypothesisAt.hForcePair}).
+\end{lemma}
+
+\begin{proof}[Proof sketch]
+Fix $t,b$ and write $A(r):=A_b^\infty(r,t)$, $G(r):=G_b(r,t)$, $H(r):=H_b(r,t)$ as in Lemma~\ref{lem:forcing_pairing_no_absvalues_pivot}.
+Decompose $G=G^{\mathrm{core}}+G^{\mathrm{tail}}$ and $H=H^{\mathrm{core}}+H^{\mathrm{tail}}$ with $u^\infty=u_{\le 1}^\infty+u_{>1}^\infty$.
+
+The core contribution satisfies
+\(\sup_b\int_1^\infty (|rG_b^{\mathrm{core}}|^2+|rH_b^{\mathrm{core}}|^2)\,dr\le C_0\)
+by the purely classical Biot--Savart decay estimate (see \texttt{book/docs/navier-dec-12-rewrite-alternative.tex}, Lemma \texttt{\detokenize{\ref{lem:GH-core-L2}}}).
+By the assumed tail gate, the same bound holds for the tail part; hence for this fixed time $t$,
+\[
+\sup_{b\in\Sbb^2}\int_1^\infty (|rG_b|^2+|rH_b|^2)\,dr\ \le\ C_0+C.
+\]
+Now apply the exact identity \((\clubsuit\clubsuit)\) from Lemma~\ref{lem:forcing_pairing_no_absvalues_pivot} and Cauchy--Schwarz:
+\[
+\left|\int_{1}^{R}(A+rA')\,(rG)\,dr\right|
+\le \left(\int_{1}^{R}|A+rA'|^2\,dr\right)^{1/2}\left(\int_{1}^{R}|rG|^2\,dr\right)^{1/2},
+\]
+\[
+\left|\int_{1}^{R}r\,A\,H\,dr\right|
+\le \left(\int_{1}^{R}|A|^2\,dr\right)^{1/2}\left(\int_{1}^{R}|rH|^2\,dr\right)^{1/2}.
+\]
+Since \(\int_1^R |A+rA'|^2\lesssim \int_1^R (|A'|^2r^2+|A|^2)\,dr + |RA(R)|^2+|A(1)|^2\) by integration by parts,
+and since \(\int_1^\infty (|rG|^2+|rH|^2)\,dr\) is finite uniformly in $b$, the right-hand side is bounded by a constant depending only on the
+time-slice energy of $A$ and the gate constant. This yields a bound uniform in $R$ for each fixed $t$, as claimed.
+\end{proof}
+
+\begin{lemma}[Attempt: proving $\ell=2$ Lamb-vector depletion unconditionally collapses into the same global tail/tightness bottleneck]\label{lem:attempt_l2_lamb_vector_depletion_pivot_to_RTD}
+There is no purely local (running-max) mechanism currently available in the program that proves Definition~\ref{def:l2_lamb_vector_depletion_gate}
+for the running-max ancient element.
+Any proof attempt reduces immediately to controlling an \emph{exterior} $L^2_x$ norm of the tail velocity (or tail Lamb vector),
+which is exactly an RTD/UEWE-type tightness input.
+\end{lemma}
+
+\begin{proof}[Fail-fast proof attempt]
+Fix $t\le 0$ and abbreviate $\omega:=\omega^\infty(\cdot,t)$ and $v:=u_{>1}^\infty(\cdot,t)$.
+By Cauchy--Schwarz on $\Sbb^2$ and finite-dimensionality of $\ell=2$, one has for each $r\ge 1$ and each $b\in\Sbb^2$
+\[
+|G_b^{\mathrm{tail}}(r,t)|+|H_b^{\mathrm{tail}}(r,t)|\ \lesssim\ \|(v\times\omega)(r\cdot,t)\|_{L^2(\Sbb^2)}.
+\]
+Multiplying by $r$, squaring, and integrating in $r$ gives the classical implication
+\[
+\sup_{b\in\Sbb^2}\int_{1}^{\infty}\bigl(|rG_b^{\mathrm{tail}}|^2+|rH_b^{\mathrm{tail}}|^2\bigr)\,dr
+\ \lesssim\ \int_{|x|\ge 1}|(v\times\omega)(x,t)|^2\,dx
+\ \le\ \|\omega\|_{L^\infty}^2\int_{|x|\ge 1}|v(x,t)|^2\,dx
+\]
+(see \texttt{book/docs/navier-dec-12-rewrite-alternative.tex}, Lemmas \texttt{\detokenize{\ref{lem:rGH-L2-from-vxw}}} and \texttt{\detokenize{\ref{lem:rGH-L2-from-kinetic}}}).
+
+Thus, to prove Definition~\ref{def:l2_lamb_vector_depletion_gate} it suffices to prove a uniform-in-time exterior kinetic energy bound
+\(\sup_{t\le 0}\int_{|x|\ge 1}|u_{>1}^\infty(x,t)|^2dx<\infty\)
+(or a uniform exterior $L^2_x$ bound on $u_{>1}^\infty\times\omega^\infty$).
+
+\smallskip
+\noindent
+\textbf{Stop / pivot trigger:} no such exterior $L^2_x$ control follows from the running-max bounds
+(\(\|\omega^\infty\|_{L^\infty}\le 1\) and scale-critical local \(L^{3/2}\) control), because these allow non-decaying affine/harmonic
+velocity modes and translation bubbling in blow-up variables. In particular, rigid rotation shows that bounded vorticity alone does not control
+the $r$-weighted coefficients (alternative manuscript, Remark \texttt{\detokenize{\ref{rem:rigid-rotation-breaks-rGH}}}).
+Therefore, establishing the depletion gate requires a genuinely global tightness mechanism excluding such tail modes,
+i.e. an RTD/UEWE/RM2U-type assumption (equivalently: tail boundedness \emph{must} be upgraded to tail smallness).
+\end{proof}
+\end{lstlisting}
+
+\paragraph{UEWE attempt via a log-weighted enstrophy identity (the $\beta=2$ ``truth serum'').}
+
+\begin{lstlisting}
+\begin{lemma}[Attempt: log-weighted enstrophy identity exposes the $\beta=2$ defect and pivots at the outer transport/boundary terms]\label{lem:UEWE_log_weighted_enstrophy_pivot_to_RTD}
+Let $(u,p)$ be a smooth incompressible Navier--Stokes solution on $\R^3\times(t_1,t_2)$ and let $\omega:=\curl u$.
+Fix a basepoint $x_0\in\R^3$ and radii $0<\lambda<R$.
+Let $\phi_{\lambda,R}(x)$ be the standard cutoff log-weight supported on the annulus $\{\lambda\le |x-x_0|\le 2R\}$:
+\[
+\phi_{\lambda,R}(x):=\chi_{\lambda,R}(|x-x_0|)\,\log\!\Bigl(\frac{|x-x_0|}{\lambda}\Bigr),
+\]
+with $\chi_{\lambda,R}\equiv 1$ on $2\lambda\le |x-x_0|\le R$ and supported on $\{\lambda\le |x-x_0|\le 2R\}$
+(see \texttt{book/docs/navier-dec-12-rewrite-alternative.tex}, Lemma \texttt{\detokenize{\ref{lem:log-weighted-enstrophy-identity}}}).
+Then the weighted enstrophy balance yields, on any $t_a<t_b$,
+\[
+\int_{t_a}^{t_b}\int_{2\lambda\le |x-x_0|\le R}\frac{|\omega(x,t)|^2}{|x-x_0|^2}\,dx\,dt
+\ \lesssim\ 
+\Delta_{\mathrm{time}}(\lambda,R)
+\ +\ \mathcal I_{\mathrm{stretch}}(\lambda,R)
+\ +\ \mathcal I_{\mathrm{transport}}(\lambda,R)
+\ +\ \mathcal I_{\mathrm{bdry}}(\lambda,R),
+\tag{$\spadesuit$}
+\]
+where:
+\begin{itemize}
+\item $\Delta_{\mathrm{time}}(\lambda,R)$ is the time-endpoint term
+\(\int |\omega(x,t_b)|^2\phi_{\lambda,R}(x)dx-\int |\omega(x,t_a)|^2\phi_{\lambda,R}(x)dx\),
+\item $\mathcal I_{\mathrm{stretch}}(\lambda,R):=\int_{t_a}^{t_b}\int (\omega\cdot\nabla u)\cdot\omega\ \phi_{\lambda,R}\,dx\,dt$,
+\item $\mathcal I_{\mathrm{transport}}(\lambda,R):=\int_{t_a}^{t_b}\int |\omega|^2\ u\cdot\nabla\phi_{\lambda,R}\,dx\,dt$,
+\item $\mathcal I_{\mathrm{bdry}}(\lambda,R)$ is an explicit boundary-layer error supported only on
+\(\{\lambda\le |x-x_0|\le 2\lambda\}\cup\{R\le |x-x_0|\le 2R\}\).
+\end{itemize}
+
+\smallskip
+\noindent\textbf{Fail-fast pivot.}
+Even under the running-max bound $|\omega|\le 1$, there is no way to send $R\to\infty$ in $(\spadesuit)$ using only local scale-critical control:
+the outer boundary-layer density obeys $|\mathcal E^{\mathrm{bdry}}_{\lambda,R}|\lesssim (1+\log(R/\lambda))R^{-2}\mathbf 1_{\{R\le r\le 2R\}}$,
+so a trivial bound gives $\mathcal I_{\mathrm{bdry}}(\lambda,R)\lesssim (1+\log(R/\lambda))\,R\,(t_b-t_a)$, which diverges as $R\to\infty$ unless one has
+genuine tail smallness of $|\omega|^2$ on $\{R\le |x-x_0|\le 2R\}$.
+Similarly, controlling $\mathcal I_{\mathrm{transport}}(\lambda,R)$ requires a uniform control of the outer transport flux of $|\omega|^2$,
+which is exactly a tightness/UEWE/RTD-type input in blow-up variables (``tail boundedness $\Rightarrow$ tail smallness'').
+
+Therefore, the log-weighted identity provides a precise analytic reduction of UEWE to controlling the outer transport/boundary terms, but it does not
+close UEWE unconditionally. Any successful proof must supply a genuinely new global mechanism to control these outer terms.
+\end{lemma}
+\end{lstlisting}
+
+\paragraph{Bet 1 diagnostic (pivot check): boundary-term integrability collapses into the same C2/U-decay bottleneck.}
+
+\begin{lstlisting}
+\begin{lemma}[Attempt: Bet 1 boundary-term integrability collapses into C2/U-decay (pivot trigger)]\label{lem:bet1_boundary_integrability_pivot_to_C2}
+Fix $b\in\Sbb^2$, $t\le 0$, and write $A(r):=A_b^\infty(r,t)$ and $\mathcal F(r):=\mathcal F_b(r,t)$ as in
+\(\eqref{eq:Ab-PDE}\)--\(\eqref{eq:Ab-forcing}\) in \texttt{navier-dec-12-rewrite.tex}.
+Define the boundary term
+\[
+B(r):=(-A(r))\,(r^2A'(r)).
+\]
+
+\smallskip
+\noindent\textbf{Bet 1 goal.}
+Bet 1 aims to prove $B\in L^1((1,\infty))$ and $B'\in L^1((1,\infty))$, so that $B(r)\to 0$ as $r\to\infty$ by the already-formalized
+``zero-skew at infinity'' lemma (Lean: \texttt{SkewHarmGate.zeroSkewAtInfinity\_of\_integrable}).
+
+\smallskip
+\noindent\textbf{First obstruction: the $B'$ structure exposes tail interaction terms.}
+Using the PDE \eqref{eq:Ab-PDE}, the alternative manuscript records the pointwise identity (Remark ``Structure of $B'$''):
+\[
+B'(r)
+=-|A'(r)|^2\,r^2\;-\;6|A(r)|^2\;-\;r^2A(r)\,(\partial_tA)(r,t)\;+\;r^2A(r)\,\mathcal F(r).
+\tag{$\clubsuit$}
+\]
+Hence, even if one has good control of the coercive integrands $|A'|^2r^2$ and $|A|^2$, proving the \emph{absolute} integrability
+\(\int_1^\infty |B'(r)|dr<\infty\) forces control of the two tail-interaction terms
+\[
+\int_1^\infty r^2|A(r)|\,|\partial_tA(r,t)|\,dr,
+\qquad
+\int_1^\infty r^2|A(r)|\,|\mathcal F(r)|\,dr.
+\tag{$\heartsuit$}
+\]
+
+\smallskip
+\noindent\textbf{Where the pivot trigger fires.}
+Controlling the forcing-pairing term in $(\heartsuit)$ (and similarly controlling $\partial_tA$ through the PDE) requires a scale-consistent
+bound that suppresses the tail/harmonic/affine contribution to $\mathcal F$ at large radii.
+This is exactly the same analytic bottleneck as in Lemma~\ref{lem:familyA_pivot_to_C2}:
+the only mechanism available in the current manuscript framework that yields such a forcing suppression is the
+$\sigma$-decomposition plus a global tail/decay gate, i.e. vanishing positive injection
+\(\iint \rho^{3/2}\sigma_+\) (C2/U-decay/RTD).
+
+Therefore, the Bet 1 route (boundary-term integrability) also collapses into controlling \(\iint \rho^{3/2}\sigma_+\),
+certifying the \textbf{P-C2 pivot trigger}.
+\end{lemma}
+\end{lstlisting}
+
+
+\subsubsection{3.2 Candidate family B: tail strain moment energy}
+
+
+The obstruction is \(S(0,t)\) (matrix). Consider:
+
+
+\begin{itemize}
+\item \(J(t) := \|S(0,t)\|_{\mathrm{op}}^2\) or \(\|S(0,t)\|_{\mathrm{F}}^2\).
+\end{itemize}
+
+
+\textbf{Bet 2 goal in this family:} show \(J(t)\) cannot be persistently nonzero over \((-\infty,0]\) because it forces positive stretching at maximizers; combine with \texttt{\detokenize{rem:runningmax-injection-constraint}} + a scale‑critical “finite total cost” statement to contradict infinite history.
+
+
+This family naturally ties to RS “finite budget over infinite history”.
+
+
+\subsubsection{3.3 Candidate family C: self‑stretching functional \(I[\omega]\)}
+
+
+Use:
+
+
+\begin{itemize}
+\item \(I[\omega] := \int_{\mathbb R^3} (\omega\cdot\nabla u)\cdot\omega\,dx\),
+  whose sign is computed for a canonical ℓ=2 toroidal model (\texttt{\detokenize{prop:l2-selfstretch-example}}).
+\end{itemize}
+
+
+\textbf{Bet 2 goal in this family:} prove a \emph{robust} implication “nonzero ℓ=2 tail ⇒ \(I[\omega^\infty(t)]\ge c>0\) on many times”, then relate \(I\) to an evolution constraint coming from running‑max normalization.
+
+
+This route is risky unless we can make the sign robust beyond one model profile.
+
+
+
+\bigskip\hrule\bigskip
+
+
+\subsection{3.4 Strawman commitment (default) — choose Family B first}
+
+
+Unless we explicitly decide otherwise, we will treat \textbf{Family B (tail strain energy)} as the
+default Bet‑2 path, because:
+
+
+\begin{itemize}
+\item it is exactly the RM2 obstruction object (via \texttt{\detokenize{lem:tail-strain-formula}} / \texttt{\detokenize{cor:RM2-equivalence}});
+\item it is naturally “budget visible” through stretching at top vorticity level
+  (\texttt{\detokenize{rem:runningmax-injection-constraint}});
+\item it avoids relying on robustness of a model-profile sign computation.
+\end{itemize}
+
+
+This is a \emph{plan commitment}, not a claim that the proof works yet.
+
+
+
+\bigskip\hrule\bigskip
+
+
+\subsection{3.5 Mechanism skeleton (Family B): “either-sign costs money”}
+
+
+This is the cleanest RS-shaped mechanism we can currently articulate in fully PDE terms:
+
+
+\begin{enumerate}
+\item \textbf{Export persists ⇒ tail strain persists.}\\
+   In the fixed-frame language, “export” is exactly the affine/harmonic obstruction coefficient,
+   i.e. the tail strain moment \(S_{tail}(0,t)\) from \texttt{\detokenize{lem:tail-strain-formula}}.
+\item \textbf{Tail strain persists ⇒ stretching at top vorticity level has persistent size/sign.}\\
+   The stretching scalar is \(\sigma=(S\xi\cdot\xi)\). Bet 2 needs a bridge from \texttt{\detokenize{S_tail}} to \texttt{\detokenize{σ}}
+   on a set where \(\rho\approx 1\). This is the hard geometric step.
+\item \textbf{Either sign of stretching on \(\{\rho\approx 1\}\) forces a compensating payment.}
+\end{enumerate}
+
+
+\begin{itemize}
+\item If \(\sigma\) is persistently \textbf{positive} near top level, the running‑max maximizer inequality
+     (\texttt{\detokenize{rem:runningmax-injection-constraint}}) forces payment by either \texttt{\detokenize{|\nabla ξ|^2}} or \texttt{\detokenize{-Δρ}}.
+\item If \(\sigma\) is persistently \textbf{negative} near top level, the superlevel-set selection mechanism
+     (\texttt{\detokenize{rem:sigma-minus-paid-by-diffusion}}) says cancellation by \(\sigma_-\) is only possible if one pays
+     a \textbf{transition-band diffusion cost} in \texttt{\detokenize{|∇(ρ^{3/4})|^2}}.
+\end{itemize}
+
+
+\begin{enumerate}
+\item \textbf{Infinite history + persistent export ⇒ infinite total payment.}\\
+   This is the literal “finite budget over infinite history” punchline.
+\item \textbf{We still need a finite-payment bound in the running‑max setting.}\\
+   The manuscript currently obtains such a bound for C2 using an additional global gate (U‑decay).
+   Bet 2 succeeds only if we can bound the relevant payment \emph{without} reimporting that same gate.
+\end{enumerate}
+
+
+\textbf{What this skeleton buys:} it makes the missing research lemma(s) explicit:
+
+
+\begin{itemize}
+\item a bridge from \texttt{\detokenize{S_tail}} to a persistent lower bound on \texttt{\detokenize{σ}} on top-level regions, and
+\item a finite-budget bound that prevents “infinite payment” without assuming U‑decay.
+\end{itemize}
+
+
+
+\bigskip\hrule\bigskip
+
+
+\subsection{3.6 Technical enabler: “maximizer” arguments on \(\mathbb R^3\) without decay}
+
+
+Many key inequalities (e.g. \texttt{\detokenize{rem:runningmax-injection-constraint}}) are stated at \textbf{maximizers} of
+\(\rho(\cdot,t)\). On \(\mathbb R^3\), even for smooth bounded \(\rho\), the supremum need not be attained.
+
+
+To keep Bet 2 rigorous, we commit to one of these techniques whenever a “maximizer” is invoked:
+
+
+\begin{itemize}
+\item \textbf{(Max‑A) Penalized maximizer (attainment by coercive perturbation).}\\
+  For fixed \(t\), define \(\rho_\varepsilon(x,t):=\rho(x,t)-\varepsilon|x|^2\). Then \(\rho_\varepsilon(\cdot,t)\)
+  attains a maximum at some \(x_{\varepsilon,t}\). At that point:
+  \[
+    \nabla\rho(x_{\varepsilon,t},t)=2\varepsilon x_{\varepsilon,t},\qquad
+    \Delta\rho(x_{\varepsilon,t},t)\le 6\varepsilon,
+  \]
+  so any “maximum-point” PDE inequality holds up to explicit \(O(\varepsilon)\) errors.
+\item \textbf{(Max‑B) Approximate maximizers / viscosity selection.}\\
+  Pick \(x_t\) with \(\rho(x_t,t)\ge \sup_x\rho(\cdot,t)-\varepsilon\) and apply a standard selection lemma
+  to obtain approximate first/second derivative control at \(x_t\). This is slightly more abstract than (Max‑A)
+  but equivalent in spirit.
+\end{itemize}
+
+
+\textbf{Why this matters for Bet 2:} it avoids silently assuming the (RM2‑blocked) pointwise statement
+“\(\sup_x\rho(\cdot,t)\) is attained at some \(x_t\)” and keeps the running‑max budget inequalities usable
+in Mode (M‑seq).
+
+
+\textbf{Deliverable to add early (S1/S2):} a short TeX lemma formalizing (Max‑A) and stating the
+approximate version of \texttt{\detokenize{rem:runningmax-injection-constraint}} with explicit \(\varepsilon\) errors.
+
+
+
+\bigskip\hrule\bigskip
+
+
+\subsection{3.7 What outputs actually suffice to close RM2 (don’t over-aim)}
+
+
+The manuscript itself records multiple sufficiency thresholds:
+
+
+\begin{itemize}
+\item \textbf{RM2 (subsequence) suffices for extraction:}\\
+\texttt{\detokenize{thm:RM2-from-tail-L2}} shows \texttt{\detokenize{S(0,·) ∈ L²_t}} implies boundedness of \texttt{\detokenize{S(0,t_k)}} along a subsequence
+  of times \(t_k\uparrow 0\). For some contradiction schemes, this subsequence control is already enough.
+\item \textbf{RM2 (uniform-in-time) is the cleanest closure:}\\
+  uniform boundedness of \texttt{\detokenize{S(0,t)}} (or equivalently of \texttt{\detokenize{Σ_b^{1,∞}(t)}} uniformly in \(t\)) gives the
+  crisp “fixed-frame compactness gate is closed” statement.
+\end{itemize}
+
+
+\textbf{Plan consequence:} we treat the “weak” outcome \(S\in L^2_t\) as a legitimate intermediate target,
+and only upgrade to uniform-in-time if the argument naturally provides it.
+
+
+
+\bigskip\hrule\bigskip
+
+
+\subsection{3.8 Bridge menu (Family B): how \texttt{S\_tail} becomes “budget-visible”}
+
+
+This section makes the \textbf{single hardest step} explicit: converting a persistent affine/tail strain
+coefficient into a persistent \textbf{cost} that the running‑max framework can charge.
+
+
+We treat two bridge routes as first‑class options (we may need both):
+
+
+\subsubsection{Bridge Route (B‑amp): amplitude / stretching scalar route}
+
+
+Goal: show persistent \texttt{\detokenize{S_tail}} forces persistent stretching magnitude on the top-level set,
+so the maximizer inequality + superlevel-selection payment machinery triggers.
+
+
+Key objects:
+
+
+\begin{itemize}
+\item \(\sigma = (S\xi\cdot\xi)\) (normal component of \(S\xi\))
+\item running‑max maximizer constraint (TeX \texttt{\detokenize{rem:runningmax-injection-constraint}})
+\item signed injection / diffusion payment machinery (TeX \texttt{\detokenize{lem:superlevel-selection}}, \texttt{\detokenize{rem:sigma-minus-paid-by-diffusion}})
+\end{itemize}
+
+
+Minimal deliverable for this route:
+
+
+\begin{itemize}
+\item a lemma of the form:
+  \[
+  \|S_{tail}(0,t)\|\ge \varepsilon\ \Rightarrow\ \exists\ \text{(top-level region)}\ \text{with}\ |\sigma|\ge c\varepsilon
+  \]
+  or else \texttt{\detokenize{|∇ξ|^2}} is large (which is itself a paid cost via the same machinery).
+\end{itemize}
+
+
+\subsubsection{Bridge Route (B‑dir): direction equation forcing route}
+
+
+Observation: even if \(\sigma\) is tuned small by choosing \(\xi\), the tangential component
+\texttt{\detokenize{H_sing = P_ξ(Sξ)}} can remain large. The direction equation is:
+
+
+\[
+\partial_t \xi - \Delta \xi + u\cdot\nabla\xi = |\nabla\xi|^2\,\xi + H,
+\qquad H_{\mathrm{sing}} = P_\xi(S\xi).
+\]
+
+
+This suggests a different contradiction shape:
+
+
+\begin{itemize}
+\item persistent \texttt{\detokenize{S_tail}} forces persistent \texttt{\detokenize{H_sing}} (unless \(\xi\) aligns with a null eigenvector),
+\item but the direction-locking mechanism demands small forcing at small scales,
+\item therefore the tail/affine mode cannot persist.
+\end{itemize}
+
+
+\textbf{Why this route is attractive:} it attacks the “escape hatch” where \(\sigma\approx 0\) pointwise.
+
+
+\textbf{Hard edge case:} if \(S_{tail}\) has an actual null eigenvector and \(\xi\) aligns with it,
+then both \(\sigma\) and \(H_{\mathrm{sing}}\) contributed by that component can vanish. In that case,
+we must argue we have effectively reduced to a 2D/degenerate scenario (and then other gates like \texttt{\detokenize{E}}
+may become relevant). We treat this as a named case in Section 3.9.
+
+
+
+\bigskip\hrule\bigskip
+
+
+\subsection{3.9 Case-analysis scaffold (so the plan doesn’t stall on one geometry)}
+
+
+Fix a time \(t\) and write \(S:=S_{tail}(0,t)\in\mathbb R^{3\times 3}_{sym,0}\).
+
+
+We expect Bet 2 to split into cases depending on:
+
+
+\begin{itemize}
+\item eigenstructure of \(S\) (full rank vs one small/zero eigenvalue),
+\item behavior of \(\xi\) on a top-level region \(\{\rho\ge 1-\eta\}\).
+\end{itemize}
+
+
+\subsubsection{Case C1: \(S\) has no small eigenvalue (uniformly nondegenerate)}
+
+
+Heuristic: \(S\xi\) is never small, so either \(|\sigma|\) or \(\|P_\xi(S\xi)\|\) must be \(\gtrsim \|S\|\)
+on any region where \(\xi\) is not fine-tuned. This feeds either Bridge (B‑amp) or (B‑dir).
+
+
+\subsubsection{Case C2: \(S\) has a small/zero eigenvalue and \(\xi\) aligns to kill the effect}
+
+
+This is the “stealth” scenario: if \(\xi\) is near the null eigenvector on \(\{\rho\approx 1\}\),
+then both \(\sigma\) and \(H_{\mathrm{sing}}\) contributed by \(S\) can be small.
+
+
+In this case, Bet 2 should explicitly attempt one of:
+
+
+\begin{itemize}
+\item (C2‑a) show that maintaining such alignment over a top-level region forces large \texttt{\detokenize{|∇ξ|^2}}
+  (recognition strain payment), or
+\item (C2‑b) show the flow has effectively reduced dimensionality (and redirect to \texttt{\detokenize{E}}-type Liouville input),
+  or
+\item (C2‑c) show the affine/tail coefficient must still decay in time (weak target \(L^2_t\)).
+\end{itemize}
+
+
+\subsubsection{Case C3: \(\xi\) varies to “track” a small-\(\sigma\) cone}
+
+
+Even if \(S\) is full rank, the set \(\{\xi:\xi\cdot S\xi\approx 0\}\) is a codimension‑1 curve on \(S^2\).
+If \(\xi\) tries to live near that set on \(\{\rho\approx 1\}\), it likely forces large \texttt{\detokenize{|∇ξ|^2}}.
+This is the most RS‑native case: “avoid paying injection by paying recognition strain instead.”
+
+
+\textbf{Plan point:} we should treat “large \texttt{\detokenize{|∇ξ|^2}} on top-level sets” as a \emph{successful outcome}
+(it is a paid cost in the same budget ledger).
+
+
+
+\bigskip\hrule\bigskip
+
+
+\subsection{3.10 “Ledger” view (RS → PDE): what is the budget, what is the payment?}
+
+
+Bet 2 becomes much easier to reason about if we keep an explicit accounting table.
+
+
+\subsubsection{3.10.1 Budget invariants we actually have}
+
+
+These are the items we can use without importing extra global decay gates:
+
+
+\begin{itemize}
+\item \textbf{Running‑max cap:} \(0\le \rho \le 1\) (and in the idealized statement, \(\sup_x\rho(\cdot,t)=1\)).
+\item \textbf{Local smoothness:} bounded vorticity implies local regularity on compact cylinders (TeX references around \texttt{\detokenize{lem:Linfty-vort-smooth}}).
+\item \textbf{Scale‑critical vorticity mass control:} the running‑max normalization gives uniform control of
+  \(\iint_{Q_r} |\omega|^{3/2}\) at small scales (TeX \texttt{\detokenize{lem:omega32-runningmax-automatic}}), which makes various lower-order
+  cutoff/time boundary errors \(O(r^3)\) (TeX \texttt{\detokenize{rem:rho32-errors-small-scale}}).
+\end{itemize}
+
+
+\subsubsection{3.10.2 Payment terms the PDE forces us to pay}
+
+
+On top-level/superlevel regions, the localized \(\rho^{3/2}\) identities charge:
+
+
+\begin{itemize}
+\item \textbf{Recognition strain payment:} \(\iint \rho^{3/2}|\nabla\xi|^2\) (direction coherence cost)
+\item \textbf{Magnitude diffusion payment:} \(\iint |\nabla(\rho^{3/4})|^2\) (band/transition cost)
+\item \textbf{Concavity payment at peaks:} \(-\Delta\rho\) at (approximate) maximizers (sharp peak cost)
+\end{itemize}
+
+
+These are exactly the “cost channels” in \texttt{\detokenize{rem:runningmax-injection-constraint}} and \texttt{\detokenize{rem:sigma-minus-paid-by-diffusion}}.
+
+
+\subsubsection{3.10.3 What Bet 2 must prove in ledger language}
+
+
+To get a contradiction, Bet 2 needs two ingredients:
+
+
+\begin{itemize}
+\item \textbf{(L‑lower)} persistent export ⇒ a \emph{uniform lower bound} on payment over a time set of positive measure
+  (e.g. per-cylinder payment ≥ c·ε).
+\item \textbf{(L‑upper)} a \emph{finite budget bound} that prevents paying that amount over an infinite time interval.
+\end{itemize}
+
+
+The current manuscript closes analogous loops for C2 using U‑decay; Bet 2 is a search for an alternative
+upper bound (or an alternative contradiction mechanism) that does not reimport U‑decay.
+
+
+\subsubsection{3.10.4 Candidate “finite payment” upper bounds (L‑upper) (where Bet 2 can win or fail)}
+
+
+This is the main place Bet 2 risks collapsing into C2/U‑decay. We keep candidate upper bounds explicit and
+grade them by plausibility and circularity.
+
+
+\textbf{Target shape:} an inequality of the form
+
+
+\[
+\int_{t_0-r^2}^{t_0}\int_{B_r(x_0)} \text{PaymentDensity} \;\le\; \mathbf{Budget}(r)
+\]
+
+
+with \(\mathbf{Budget}(r)\) scaling subcritically (e.g. \(O(r^3)\) or Carleson-small as \(r\downarrow 0\)),
+or a bound that forces the payment to be large only on a small fraction of times.
+
+
+Candidate sources:
+
+
+\begin{itemize}
+\item \textbf{(U‑1) “B‑gate controls payment” (dream outcome).}\\
+  Show that large top-level payment (either \(\rho^{3/2}|\nabla\xi|^2\) or \(|\nabla(\rho^{3/4})|^2\) on the band)
+  forces a comparably large scale-critical vorticity mass \(\iint_{Q_r}|\omega|^{3/2}\), contradicting the already‑automatic
+  running‑max bound (\texttt{\detokenize{lem:omega32-runningmax-automatic}}).
+\item \textbf{Pros:} would make Bet 2 truly independent of C2/U‑decay.
+\item \textbf{Cons:} nontrivial; likely false without extra structure, but worth testing.
+\item \textbf{(U‑2) “Direction equation damping bounds \texttt{\detokenize{|∇ξ|}} over infinite history.”}\\
+  Use the ancient direction equation energy/Bernstein mechanism (see the proof style around \texttt{\detokenize{thm:global-directional-locking}})
+  to obtain a genuine bound on \(\int_{-\infty}^0\!\!\int |\nabla\xi|^4\) (or similar), then convert it into a bound on
+  the ledger term \(\rho^{3/2}|\nabla\xi|^2\) on top-level regions.
+\item \textbf{Pros:} aligns with the RS idea “twist can’t persist in an ancient bounded profile.”
+\item \textbf{Cons:} must avoid assuming tail smallness of forcing (otherwise circular with RM2U itself).
+\item \textbf{(U‑3) “Band diffusion payment is controlled by a monotone quantity.”}\\
+  Try to bound \(\iint |\nabla(\rho^{3/4})|^2\) on cylinders by a quantity that is automatically bounded in the running‑max setting
+  (e.g. via the \(\rho^{3/2}\) identity plus small-scale error control in \texttt{\detokenize{rem:rho32-errors-small-scale}}).
+\item \textbf{Pros:} directly targets the payment that appears in \texttt{\detokenize{rem:sigma-minus-paid-by-diffusion}}.
+\item \textbf{Cons:} current TeX remarks indicate this is exactly where C2 gets stuck without extra global control.
+\item \textbf{(U‑4) “Pre-limit finite-window contradiction.”}\\
+  Work purely in Mode (M‑seq) on a fixed window \texttt{\detokenize{[-r^2,0]}}: show that persistent export forces a payment
+  that is too large compared to what the \emph{pre-blow-up} solution can supply on that physical time window.
+\item \textbf{Pros:} uses the fact the rescaled window corresponds to a vanishing physical time interval near \(t_k\).
+\item \textbf{Cons:} requires careful scaling bookkeeping; but it may be the cleanest non-circular way to produce an upper bound.
+\end{itemize}
+
+
+\textbf{Default recommendation for the next execution attempt:} start with \textbf{(U‑4)}.
+
+
+\begin{itemize}
+\item It matches the safest logical mode (M‑seq),
+\item it has a clear “finite-window” structure (one cylinder, one contradiction),
+\item it makes circularity easier to detect early.
+\end{itemize}
+
+
+\textbf{Fast filter (to avoid circularity):}
+
+
+\begin{itemize}
+\item If your chosen upper bound requires controlling \(\iint \rho^{3/2}\sigma_+\), you’ve rediscovered \textbf{C2} (pivot trigger P‑C2).
+\item If it requires UEWE/coercive \(\ell=2\) control, you’ve rediscovered \textbf{RM2U} (pivot trigger P‑UEWE).
+\item If it requires the fixed-frame limit without affine bookkeeping, you’ve hit \textbf{RM2} again (pivot trigger P‑compactness).
+\end{itemize}
+
+
+
+\bigskip\hrule\bigskip
+
+
+\subsection{3.11 Pre-limit formulation (Mode M‑seq): define the obstruction without taking the RM2-blocked limit}
+
+
+To keep Bet 2 non-circular, we should be able to state it directly on the running‑max rescaled sequence
+\(\omega^{(k)}\) without passing to a fixed-frame ancient limit.
+
+
+\subsubsection{3.11.1 Define a “tail strain coefficient” for each rescaled solution}
+
+
+Using the explicit Biot–Savart tail strain formula (TeX \texttt{\detokenize{lem:tail-strain-formula}}), for each rescaled vorticity
+\(\omega^{(k)}(\cdot,t)\) define a tail strain moment at the origin:
+
+
+\begin{itemize}
+\item split \(\omega^{(k)} = \omega^{(k)}_{\le 1} + \omega^{(k)}_{>1}\) by a fixed radial cutoff,
+\item let \(S^{(k)}_{tail}(0,t)\) be the symmetric gradient at the origin of the Biot–Savart velocity generated by \(\omega^{(k)}_{>1}\).
+\end{itemize}
+
+
+This definition is meaningful without any compactness assumption and matches the “affine/harmonic mode”
+coefficient used in the fixed-frame compactness discussion.
+
+
+\subsubsection{3.11.2 What “export persists” means in M‑seq form}
+
+
+Instead of a statement about a limit object, we can formulate persistence as:
+
+
+\begin{itemize}
+\item there exists \(\varepsilon>0\), a scale \(r_0>0\), and infinitely many indices \(k\) such that
+  on a time set \(E_k\subset[-r_0^2,0]\) of measure \(|E_k|\ge c_0 r_0^2\), we have
+  \(\|S^{(k)}_{tail}(0,t)\|\ge \varepsilon\) for all \(t\in E_k\).
+\end{itemize}
+
+
+This is deliberately “finite-window” and scale-normalized, so we can run a contradiction on a single cylinder.
+
+
+\subsubsection{3.11.3 Target contradiction in M‑seq form}
+
+
+Show that such persistence forces (for \(k\) large):
+
+
+\begin{itemize}
+\item either the running‑max normalization is violated at some later time (sup \(ρ^{(k)}\) exceeds 1),
+\item or a paid cost term becomes too large on that cylinder in a way that contradicts an available scale-critical bound.
+\end{itemize}
+
+
+This is the cleanest way to avoid using the RM2‑blocked fixed-frame limit.
+
+
+\subsection{4. Multi‑session execution roadmap (rigorous, checkable)}
+
+
+\subsubsection{Session S0 — Lock the configuration (this is the “last planning step”)}
+
+
+\textbf{Goal:} eliminate ambiguity so the next sessions produce proofs, not more branching.
+
+
+\textbf{Decisions to lock (with defaults):}
+
+
+\begin{itemize}
+\item \textbf{Mode}: default \textbf{(M‑seq)} (pre-limit contradiction; avoids RM2‑blocked compactness)
+\item \textbf{Target strength}: default \textbf{Weak} (\texttt{\detokenize{S ∈ L²_t}} or finite-window “no persistence” contradiction)
+\item \textbf{Export hypothesis}: default \textbf{E3 in finite-window form} (Section 3.11.2)
+\item \textbf{Bridge route}: default \textbf{(B‑amp)} first; keep \textbf{(B‑dir)} as the explicit escape-hatch handler
+\item \textbf{L‑upper candidate}: default \textbf{U‑4} (pre-limit finite-window contradiction)
+\end{itemize}
+
+
+\textbf{Acceptance test:} a 5-line “configuration block” is written at the top of the scratchpad/proof notes
+for the next session, and we do not change it mid-session without triggering a pivot note.
+
+
+\subsubsection{Session S1 — Specify the missing proposition and the export hypothesis precisely}
+
+
+\textbf{Deliverables:}
+
+
+\begin{itemize}
+\item Write down a concrete TeX proposition statement to replace the missing \texttt{\detokenize{prop:l2-instability}},
+  in \textbf{two versions} (strong/weak). Use the tail strain moment \texttt{\detokenize{S(0,t)}} from \texttt{\detokenize{lem:tail-strain-formula}}:
+\item \textbf{(S1‑Strong, strawman):} If the running‑max ancient element has a nontrivial ℓ=2 tail strain
+    moment at some time, then it violates the running‑max budget. Equivalently:
+    \[
+      \forall t\le 0,\quad S(0,t)=0.
+    \]
+\item \textbf{(S1‑Weak, strawman):} The ℓ=2 tail strain moment is forced into an integrability class:
+    \[
+      \int_{-\infty}^0 \|S(0,t)\|^2\,dt < \infty,
+    \]
+    which closes RM2 along a subsequence by \texttt{\detokenize{thm:RM2-from-tail-L2}}.
+\end{itemize}
+
+
+These are “strawman targets” that will likely need hypotheses; the point of S1 is to make those
+  hypotheses explicit instead of implicit.
+
+
+\paragraph{S1.1 Copy‑paste‑ready TeX proposition block (strawman)}
+
+
+This is the exact “placeholder replacement” we want to end up with in the manuscript. It is
+intentionally stated in a way that can be weakened/parameterized later.
+
+
+\begin{lstlisting}
+\begin{proposition}[Dynamical instability of the $\ell=2$ tail (strawman)]\label{prop:l2-instability}
+Let $(u^\infty,p^\infty)$ be a running-max/vorticity-normalized ancient element on $\mathbb R^3\times(-\infty,0]$,
+and let $S_{tail}(0,t)$ denote the $\ell=2$ tail strain moment at the origin defined by Lemma~\ref{lem:tail-strain-formula}
+(equivalently, the affine/harmonic obstruction coefficient in the fixed-frame compactness step).
+Then:
+\begin{enumerate}
+\item[(Strong)] $S_{tail}(0,t)\equiv 0$ for all $t\le 0$.
+\item[(Weak)] Alternatively (sufficient for RM2 subsequential closure), one has
+  $\int_{-\infty}^0 |S_{tail}(0,t)|^2\,dt < \infty$.
+\end{enumerate}
+\end{proposition}
+\end{lstlisting}
+
+\paragraph{S1.2 Fail-fast proof attempt (where the real bottleneck appears).}
+
+\begin{lstlisting}
+\begin{lemma}[Attempt: proving \texttt{prop:l2-instability} collapses into C2/U-decay (pivot trigger)]\label{lem:attempt_prop_l2_instability_pivot_to_C2}
+We attempt to prove Proposition~\ref{prop:l2-instability} from the running-max axioms alone
+(bounded vorticity + local scale-critical $L^{3/2}$ control), without assuming U-decay/RTD/UEWE.
+
+\smallskip
+\noindent\textbf{Step 0 (export hypothesis).}
+Assume (E3) in measurable form: there exist $\varepsilon_0>0$ and a measurable set $E\subset(-\infty,0]$ with $|E|>0$ such that
+\[
+\|S_{tail}(0,t)\|_{\mathrm{op}}\ \ge\ \varepsilon_0\qquad\forall t\in E.
+\tag{$\mathsf{Export}$}
+\]
+
+\smallskip
+\noindent\textbf{Step 1 (tail strain is affine forcing on the core).}
+By the brick lemma \texttt{lem:tail\_biot\_savart\_affine\_core}, for each fixed $t$ and each large $R$,
+the far-field velocity induced by $\omega^\infty\mathbf 1_{\{|y|\ge R\}}$ is harmonic on $B_1$ and admits an affine approximation
+$a(t)+A_R(t)x$ with $A_R(t)$ symmetric trace-free.
+Moreover $A_R(t)$ converges (as $R\to\infty$) to the tail strain matrix $S_{tail}(0,t)$ in operator norm.
+Thus $(\mathsf{Export})$ implies a persistent affine strain of size $\gtrsim\varepsilon_0$ acting on the core.
+
+\smallskip
+\noindent\textbf{Step 2 (bridge to a budget-visible lower bound).}
+To contradict running-max, we need to convert persistent affine strain into a persistent lower bound on
+the \emph{positive stretching injection} on a set where $\rho=|\omega|$ is near its top level:
+\[
+\iint_{Q_r(z_t)} \rho^{3/2}\,\sigma_+\ \gtrsim\ c(\varepsilon_0)\,r^5
+\quad\text{for many }t\in E\text{ and some radii }r\downarrow 0.
+\tag{$\mathsf{LB}$}
+\]
+The difficulty is geometric: $\sigma=\xi\cdot S\,\xi$, so the affine tail contribution is $\xi\cdot S_{tail}(0,t)\,\xi$.
+A lower bound of the form $(\mathsf{LB})$ requires (at minimum) control of:
+\begin{itemize}
+\item alignment of $\xi$ on the top band with a positive-eigenvector direction of $S_{tail}(0,t)$; and
+\item domination of the tail contribution over the near-field/stretching remainder on the relevant cylinders.
+\end{itemize}
+Any known way to guarantee these (e.g. small weighted direction energy on the top band, or vanishing tail/harmonic remainder in $\sigma$)
+re-introduces the global tail/decay mechanism.
+
+\smallskip
+\noindent\textbf{Step 3 (finite budget upper bound is exactly C2).}
+Even if one grants $(\mathsf{LB})$, turning it into a contradiction requires an \emph{upper} bound on the total available payment
+(finite budget over infinite history). In the manuscript, the only mechanism that upgrades the pointwise maximizer constraint
+\[
+\sigma(x_t,t)\ \le\ |\nabla\xi(x_t,t)|^2-\Delta\rho(x_t,t)
+\qquad\text{(Remark \texttt{rem:runningmax-injection-constraint})}
+\]
+into a uniform small-scale/infinite-history integral bound is Theorem C2-closure, which is conditional on U-decay/RTD.
+Equivalently: bounding the accumulated positive injection
+\(\sup_{z_0}\iint_{Q_r(z_0)}\rho^{3/2}\sigma_+\)
+without U-decay is precisely the C2 bottleneck.
+
+\smallskip
+\noindent\textbf{Pivot trigger.}
+The proof attempt therefore fires the same pivot trigger as the K-ODE and Bet-1/Family-A diagnostics:
+proving \texttt{prop:l2-instability} from running-max alone collapses into controlling \(\iint \rho^{3/2}\sigma_+\),
+i.e. into C2/U-decay/RTD (pivot trigger P-C2).
+\end{lemma}
+\end{lstlisting}
+
+
+\textbf{Notes:}
+
+
+\begin{itemize}
+\item In the first draft, we may need to add hypotheses (e.g. a quantified “export persists” condition,
+  or a mild time-regularity/integrability assumption). The key is that \emph{any} added hypotheses must
+  be stated explicitly and recorded as “this is what Bet 2 really needs.”
+\item If we operate in Mode (M‑seq), the proposition should be stated for the running‑max rescaled sequence
+  (uniform in \texttt{\detokenize{k}}) and then passed to the limit only after the contradiction is obtained.
+\item Pick the exact “export persists” hypothesis (choose one and stick to it):
+\item (E1) \texttt{\detokenize{¬TailFluxVanish}} for the RM2U coefficient profile,
+\item (E2) \texttt{\detokenize{limsup_{r→∞} |tailFlux(r,t)| ≥ ε}} on a set of times,
+\item (E3) a lower bound on \texttt{\detokenize{‖S(0,t)‖}} on a time interval.
+\end{itemize}
+
+
+\textbf{Default choice for Family B:} use (E3) in a measurable form:
+  there exists \texttt{\detokenize{ε>0}} and a time set \texttt{\detokenize{E ⊂ (-∞,0]}} of positive measure such that
+  \texttt{\detokenize{‖S(0,t)‖ ≥ ε}} for \texttt{\detokenize{t ∈ E}}.
+
+
+This avoids prematurely committing to a particular tail‑flux formulation while still encoding
+  “persistent export.”
+
+
+\textbf{Acceptance test:}
+
+
+\begin{itemize}
+\item New TeX snippet (can live initially in a doc) with a fully quantified proposition statement.
+\item A clear mapping to Lean interface:
+\item \texttt{\detokenize{Bet2SelfFalsificationHypothesis P}} corresponds to “(E1) implies False” at the time‑slice level.
+\end{itemize}
+
+
+\textbf{Additional acceptance (so Lean doesn’t drift):}
+
+
+\begin{itemize}
+\item Record the \emph{eventual} Lean-facing statement we want, even if it can’t be implemented yet:
+  Bet 2 will ultimately need a \textbf{time-parameterized} profile (something like \texttt{\detokenize{A : ℝ → ℝ → ℝ}}),
+  but we keep the current Lean interface as a guardrail:
+  the final theorem should produce \texttt{\detokenize{Bet2SelfFalsificationHypothesis}} for each fixed time-slice profile.
+\end{itemize}
+
+
+\textbf{New S1 deliverable (to prevent hidden circularity):}
+
+
+\begin{itemize}
+\item Explicitly choose \texttt{\detokenize{Mode (M‑seq)}} or \texttt{\detokenize{Mode (M‑limit‑with‑affine)}} for the rest of Bet 2.
+  Default recommendation: start in \textbf{(M‑seq)} until RM2 is closed.
+\end{itemize}
+
+
+\textbf{Refined default recommendation (after deeper audit):}
+
+
+\begin{itemize}
+\item Start in \textbf{Mode (M‑limit‑with‑affine)} if we can extract a limit \emph{modulo} the affine mode
+  without needing RM2. This keeps the “obstruction coefficient” explicit and avoids
+  “approximate maximum” bookkeeping.
+\item Fall back to \textbf{Mode (M‑seq)} only if the limit-with-affine extraction turns out to still
+  require the same missing estimates.
+\end{itemize}
+
+
+\subsubsection{Session S2 — Build the “bridge inequality” from export to budget‑visible quantity}
+
+
+\textbf{Goal:} connect the ℓ=2 tail obstruction to something the running‑max budget controls.
+
+
+\textbf{Candidate bridges (pick one):}
+
+
+\begin{itemize}
+\item (Br‑S) tail flux / Σ ⇒ tail strain:
+\item use \texttt{\detokenize{lem:tail-strain-formula}} + the Σ representation (already explicit in TeX).
+\item (Br‑σ) tail strain ⇒ positive stretching at maximizers:
+\item quantify how a nonzero affine strain component contributes to \(\sigma(x_t,t)\) at maximizers.
+\item (Br‑E) tail flux ⇒ growth of truncated energy \(E_{b,R}\):
+\item compute the sign contribution of boundary flux in the \(d/dt\) identity.
+\end{itemize}
+
+
+\textbf{Acceptance test:}
+
+
+\begin{itemize}
+\item One inequality of the form:
+  \[
+  \text{(export)} \;\Rightarrow\; \text{(lower bound on a budget-visible term)}
+  \]
+  with explicit constants and hypotheses stated.
+\end{itemize}
+
+
+\textbf{Strawman sub-lemma list (Family B):}
+
+
+\begin{itemize}
+\item \textbf{(Br‑σ1)} If \texttt{\detokenize{‖S(0,t)‖ ≥ ε}} then there exists a direction \texttt{\detokenize{b}} such that
+  \(b\cdot S(0,t)b \ge c\,\varepsilon\).
+\item \textbf{(Br‑σ2)} The direction \texttt{\detokenize{b}} can be aligned with a maximizer direction for the vorticity direction field
+  in a way that produces a lower bound on stretching scalar \texttt{\detokenize{σ(x_t,t)}} on a nontrivial region.
+  (This is where RS/CPM “local test” design matters: pick the right “test direction” tied to the maximizer.)
+  These are expected to be the hard geometric steps.
+\end{itemize}
+
+
+\textbf{New explicit sub-lemma (so we can actually use \texttt{\detokenize{rem:runningmax-injection-constraint}} rigorously):}
+
+
+\begin{itemize}
+\item \textbf{(Br‑max)} Replace “maximizer” by a penalized maximizer (Section 3.6, Max‑A) and show the running‑max
+  injection inequality holds with controlled \(O(\varepsilon)\) errors. This is required if we operate on
+  \(\mathbb R^3\) without decay/tightness assumptions.
+\end{itemize}
+
+
+\paragraph{S2.1 Copy‑paste TeX lemma (penalized maximizer version; first lemma to actually prove)}
+
+
+\begin{lstlisting}
+\begin{lemma}[Penalized maximizer version of the running-max injection constraint (proved)]\label{lem:runningmax-injection-penalized}
+Let $(u,p)$ be smooth on $\mathbb R^3\times I$ and write $\omega=\rho\xi$ on $\{\rho>0\}$ with $\rho=|\omega|\le 1$.
+Fix $t\in I$ and $\varepsilon>0$, and define $\rho_\varepsilon(x):=\rho(x,t)-\varepsilon|x|^2$.
+Let $x_{\varepsilon,t}$ be a maximizer of $\rho_\varepsilon$.
+\emph{Assume additionally} the time one-sided constraint
+\[
+\partial_t \rho(x_{\varepsilon,t},t)=\partial_t\rho_\varepsilon(x_{\varepsilon,t},t)\le 0
+\tag{H-t}
+\]
+(e.g. $t$ is a running-max time for $\sup_x\rho_\varepsilon(\cdot,t)$).
+Then evaluating the amplitude equation \eqref{eq:amplitude} at $(x_{\varepsilon,t},t)$ and using
+$\nabla\rho(x_{\varepsilon,t},t)=2\varepsilon x_{\varepsilon,t}$ gives the precise bound
+\[
+\sigma(x_{\varepsilon,t},t)
+\ \le\ |\nabla\xi(x_{\varepsilon,t},t)|^2
+\ -\ \frac{\Delta\rho(x_{\varepsilon,t},t)}{\rho(x_{\varepsilon,t},t)}
+\ +\ \frac{2\varepsilon\,u(x_{\varepsilon,t},t)\cdot x_{\varepsilon,t}}{\rho(x_{\varepsilon,t},t)}.
+\tag{*}
+\]
+In particular, on a top-level set where $\rho(x_{\varepsilon,t},t)\ge 1-\eta$ \emph{and} under a drift-control hypothesis
+\[
+|u(x_{\varepsilon,t},t)\cdot x_{\varepsilon,t}|\le M
+\tag{H-u}
+\]
+one obtains the schematic form
+\[
+\sigma(x_{\varepsilon,t},t)\ \le\ |\nabla\xi(x_{\varepsilon,t},t)|^2\ -\ \frac{\Delta\rho(x_{\varepsilon,t},t)}{\rho(x_{\varepsilon,t},t)}\ +\ C_{\eta,M}\,\varepsilon,
+\]
+which is the penalized-maximizer analogue of `rem:runningmax-injection-constraint`.
+\end{lemma}
+
+\begin{proof}
+Because $\rho(\cdot,t)$ is continuous and bounded while $-\varepsilon|x|^2\to-\infty$ as $|x|\to\infty$,
+the penalized function $\rho_\varepsilon(\cdot,t)$ attains a maximizer $x_{\varepsilon,t}$.
+At $x_{\varepsilon,t}$ we have $\nabla\rho_\varepsilon=0$ and $\Delta\rho_\varepsilon\le 0$, hence
+\[
+\nabla\rho(x_{\varepsilon,t},t)=2\varepsilon x_{\varepsilon,t}.
+\]
+On $\{\rho>0\}$ the amplitude equation is
+\[
+\partial_t\rho + u\cdot\nabla\rho - \Delta\rho \;=\; \rho(\sigma-|\nabla\xi|^2).
+\]
+Evaluate at $(x_{\varepsilon,t},t)$ and use (H-t) to bound $\partial_t\rho(x_{\varepsilon,t},t)\le 0$:
+\[
+\rho\,\sigma \;=\; \rho|\nabla\xi|^2 + \partial_t\rho + u\cdot\nabla\rho - \Delta\rho
+\ \le\ \rho|\nabla\xi|^2 + u\cdot\nabla\rho - \Delta\rho.
+\]
+Dividing by $\rho(x_{\varepsilon,t},t)>0$ and substituting $u\cdot\nabla\rho=2\varepsilon\,u\cdot x_{\varepsilon,t}$
+gives (*). If additionally $\rho\ge 1-\eta$ and $|u\cdot x_{\varepsilon,t}|\le M$, then
+\[
+\Bigl|\frac{2\varepsilon\,u\cdot x_{\varepsilon,t}}{\rho}\Bigr|
+\le \frac{2M}{1-\eta}\,\varepsilon,
+\]
+yielding the stated schematic bound.
+\end{proof}
+\end{lstlisting}
+
+
+\textbf{Why this is the right “first lemma”:}
+
+
+\begin{itemize}
+\item it makes the maximizer argument honest on \(\mathbb R^3\) (no attainment assumptions),
+\item it quantifies exactly what errors we must carry through in Mode (M‑seq),
+\item it is purely local/PDE and should be provable once the amplitude equation is in place.
+\end{itemize}
+
+
+\paragraph{S2.1.1 Proof sketch (and what hypotheses are \emph{actually} needed)}
+
+
+The clean way to prove a penalized-maximizer inequality is to apply the amplitude equation to the \textbf{penalized field}
+\(\rho_\varepsilon(x,t):=\rho(x,t)-\varepsilon|x|^2\), not to \(\rho\) alone.
+
+
+\begin{enumerate}
+\item \textbf{Penalized PDE.} From \texttt{\detokenize{\eqref{eq:amplitude}}},
+\[
+(\partial_t + u\cdot\nabla - \Delta)\rho
+  = \rho(\sigma-|\nabla\xi|^2).
+\]
+Since \((\partial_t + u\cdot\nabla - \Delta)(\varepsilon|x|^2)=2\varepsilon\,u\cdot x - 6\varepsilon\),
+we obtain
+\[
+(\partial_t + u\cdot\nabla - \Delta)\rho_\varepsilon
+  = \rho(\sigma-|\nabla\xi|^2)\ -\ 2\varepsilon\,u\cdot x\ +\ 6\varepsilon.
+\]
+\item \textbf{Spatial maximum identities.} At a spatial maximizer \(x_{\varepsilon,t}\) of \(\rho_\varepsilon(\cdot,t)\),
+we have
+\[
+\nabla\rho_\varepsilon(x_{\varepsilon,t},t)=0,\qquad \Delta\rho_\varepsilon(x_{\varepsilon,t},t)\le 0.
+\]
+Equivalently, \(\nabla\rho(x_{\varepsilon,t},t)=2\varepsilon x_{\varepsilon,t}\) and
+\(\Delta\rho(x_{\varepsilon,t},t)\le 6\varepsilon\).
+\item \textbf{Where the time-sign enters.} The “running‑max injection constraint” (as used in
+\texttt{\detokenize{rem:runningmax-injection-constraint}}) additionally needs a \textbf{one-sided time monotonicity} at the maximizer:
+\[
+\partial_t\rho_\varepsilon(x_{\varepsilon,t},t)\le 0.
+\]
+This is \emph{not automatic} from spatial maximality alone; it holds if \(t\) is chosen so that
+\(\sup_x\rho_\varepsilon(\cdot,t)\) cannot increase for slightly later times (a “running‑max time” for \(\rho_\varepsilon\)),
+or in the true running‑max ancient element setting where \(\sup_x\rho(\cdot,t)=1\) for all \(t\le 0\).
+\item \textbf{Conclusion (with explicit error terms).} Under the extra hypothesis \(\partial_t\rho_\varepsilon(x_{\varepsilon,t},t)\le 0\),
+evaluate the penalized PDE at \((x_{\varepsilon,t},t)\) and use \(\nabla\rho_\varepsilon=0\), \(\Delta\rho_\varepsilon\le 0\) to get
+\[
+0 \ge (\partial_t + u\cdot\nabla - \Delta)\rho_\varepsilon
+  = \rho(\sigma-|\nabla\xi|^2) - 2\varepsilon\,u\cdot x_{\varepsilon,t} + 6\varepsilon.
+\]
+Rearranging yields
+\[
+\sigma(x_{\varepsilon,t},t)
+\le |\nabla\xi(x_{\varepsilon,t},t)|^2
+\ -\ \frac{\Delta\rho(x_{\varepsilon,t},t)}{\rho(x_{\varepsilon,t},t)}
+\ +\ \frac{2\varepsilon\,u(x_{\varepsilon,t},t)\cdot x_{\varepsilon,t}}{\rho(x_{\varepsilon,t},t)}.
+\]
+To recover a bound of the schematic form in the lemma statement, we keep the concavity term
+\(-\Delta\rho/\rho\) explicit, and we need one more input:
+either (i) a bound on the drift term \(|u\cdot x_{\varepsilon,t}|\) at the penalized maximizer, or
+(ii) a gauge choice/affine subtraction that removes the dangerous linear drift contribution.
+\end{enumerate}
+
+
+\textbf{Bottom line:} the \emph{real} lemma splits into three checkable sub-hypotheses:
+
+
+\begin{itemize}
+\item (H‑t) a time one-sided constraint \(\partial_t\rho_\varepsilon(x_{\varepsilon,t},t)\le 0\),
+\item (H‑u) control of the drift correction \(u\cdot x_{\varepsilon,t}\) at penalized maximizers (often via affine gauge),
+\item (H‑ρ) a lower bound on \(\rho(x_{\varepsilon,t},t)\) (automatic if we are on a top-level region \(\{\rho\ge 1-\eta\}\)).
+\end{itemize}
+
+
+In Bet 2 Mode (M‑seq), these are exactly the places the plan must be honest about what is “free” versus “gate”.
+
+
+\paragraph{S2.2 Next lemma targets (beyond S2.1) — turn tail strain into a cost on a cylinder}
+
+
+Once S2.1 is in place, the next step is to connect \texttt{\detokenize{S_tail}} to a \emph{paid} term on a small cylinder
+in a way that is compatible with the ledger (Section 3.10).
+
+
+\textbf{Lemma candidates (ordered by desirability):}
+
+
+\begin{itemize}
+\item \textbf{(L2‑A) Tail strain persistence ⇒ local strain persistence.}\\
+  If \(\|S^{(k)}_{tail}(0,t)\|\ge\varepsilon\) at the origin, show that for \(|x|\le c r\) one has
+  \(\|S^{(k)}_{tail}(x,t)\|\ge \varepsilon/2\) provided \(r\) is small enough (quantify using harmonicity of the tail velocity in \(B_1\)).
+  This uses only bounded vorticity and the fact the tail kernel is smooth on \(B_1\).
+\item \textbf{(L2‑B) Strain persistence ⇒ either stretching or tangential forcing persists on top-level sets.}\\
+  On \(\{\rho\ge 1-\eta\}\cap Q_r\), either
+  \(|\sigma|=(S\xi\cdot\xi)\) is \(\gtrsim \varepsilon\) on a positive-measure subset, or
+  \(\|P_\xi(S\xi)\|\) is \(\gtrsim \varepsilon\) on a positive-measure subset (Bridge menu 3.8 + cases 3.9).
+\item \textbf{(L2‑C) If \(\xi\) “tracks the null cone”, then \texttt{\detokenize{|∇ξ|^2}} pays.}\\
+  Implement Case C3: if \(\xi\) stays near \(\{\xi:\xi\cdot S\xi\approx 0\}\) on a region, then \(|\nabla\xi|^2\) must be large there.
+  This is the cleanest RS‑native “avoid injection ⇒ pay recognition strain” lemma.
+\end{itemize}
+
+
+\textbf{Acceptance test:} one of (L2‑A/B/C) is written as a fully quantified TeX lemma statement (even if hypotheses are “TODO”),
+and it is explicitly mapped to which payment channel it triggers in the ledger.
+
+
+\paragraph{Picked for U‑4 (default): L2‑A as the next concrete lemma statement}
+
+
+Because U‑4 is a finite-window, pre-limit contradiction, the most “checkable” next lemma is L2‑A:
+it upgrades persistence at one point into persistence on a small ball, enabling the cylinder-based payment estimates.
+
+
+\subparagraph{L2‑A (fully quantified TeX lemma statement; template)}
+
+
+\begin{lstlisting}
+\begin{lemma}[Local persistence of the tail strain (template)]\label{lem:tail-strain-local-persistence}
+Let $\Omega:\mathbb R^3\to\mathbb R^3$ be smooth, divergence-free, and supported in $\{|w|>1\}$.
+Assume the Biot--Savart velocity
+\[
+u(x):=\frac{1}{4\pi}\int_{\mathbb R^3}\frac{(x-w)\times \Omega(w)}{|x-w|^3}\,dw
+\]
+is well-defined and smooth on $B_1(0)$, and let $S(x):=\tfrac12(\nabla u(x)+\nabla u(x)^T)$ be its symmetric gradient.
+Assume moreover that $S$ is Lipschitz on $B_{1/2}(0)$ with Lipschitz constant $L$, i.e.
+\[
+\|S(x)-S(y)\|\le L|x-y| \qquad \forall x,y\in B_{1/2}(0).
+\]
+Then for any $\varepsilon>0$, if $\|S(0)\|\ge \varepsilon$ we have
+\[
+\|S(x)\|\ge \varepsilon/2 \qquad \forall x\in B_{\varepsilon/(2L)}(0)\cap B_{1/2}(0).
+\]
+\end{lemma}
+
+\begin{proof}
+Since $\xi$ is smooth and $\phi$ is time-independent, $t\mapsto \int_{B_\delta}\phi^2\xi(\cdot,t)$ is $C^1$ and hence $m$ is absolutely continuous.
+Differentiate under the integral sign and use the PDE to write
+\[
+\partial_t m(t)=\frac1M\int\phi^2\,\partial_t\xi
+=\frac1M\int\phi^2\Bigl(\Delta\xi-u\cdot\nabla\xi+|\nabla\xi|^2\xi+P_\xi(S\xi)+2(\nabla\log\rho)\cdot\nabla\xi\Bigr).
+\]
+For the diffusion term, integrate by parts (no boundary term since $\phi$ is compactly supported):
+\[
+\int\phi^2\Delta\xi
+=-\int \nabla(\phi^2)\cdot\nabla\xi
+=-\int 2\phi\,\nabla\phi\cdot\nabla\xi.
+\]
+For the transport term, use $\nabla\cdot u=0$ and integrate by parts:
+\[
+\int\phi^2\,u\cdot\nabla\xi
+=-\int (u\cdot\nabla\phi^2)\,\xi.
+\]
+Collecting yields the claimed identity and the explicit formula for $\mathsf{Err}_{\mathrm{cut}}$.
+
+For the bound, note that $M\sim \delta^3$ and $\|\nabla(\phi^2)\|_{L^2}\lesssim \delta^{1/2}\|\nabla\phi\|_\infty\lesssim \delta^{-1/2}$.
+By Cauchy--Schwarz,
+\[
+\Bigl|\frac{1}{M}\int 2\phi\,\nabla\phi\cdot\nabla\xi\Bigr|
+\lesssim \frac{1}{\delta^3}\,\|\nabla(\phi^2)\|_{L^2}\,\|\nabla\xi\|_{L^2(B_\delta)}
+\lesssim \delta^{-5/2}\|\nabla\xi\|_{L^2(B_\delta)},
+\]
+and similarly
+\[
+\Bigl|\frac{1}{M}\int (u\cdot\nabla\phi^2)\,\xi\Bigr|
+\lesssim \frac{1}{\delta^3}\,\|u\|_{L^2(B_\delta)}\,\|\nabla(\phi^2)\|_{L^2}
+\lesssim \delta^{-5/2}\|u\|_{L^2(B_\delta)},
+\]
+using $|\xi|=1$.
+
+Finally, on $E'$ we have $b=m/|m|$ with $|m|\ge 1/2$, so $b$ is absolutely continuous with derivative
+\[
+\partial_t b = \frac{\partial_t m}{|m|}-\frac{m(m\cdot \partial_t m)}{|m|^3}
+ = (I-b\otimes b)\,\partial_t m/|m|,
+\]
+as claimed.
+\end{proof}
+\end{lstlisting}
+
+
+\textbf{Acceptance test for L2‑A (what makes this nontrivial):}
+
+
+\begin{itemize}
+\item Provide an explicit bound for the Lipschitz constant \(L\) in terms of a \textbf{checkable tail size} of $\Omega$
+  (e.g. an explicit weighted integral or decay assumption). This is where any missing tail hypothesis must be stated.
+\end{itemize}
+
+
+\textbf{Ledger mapping:} L2‑A is a bridge-enabler; it doesn’t itself “pay,” but it allows any pointwise lower bound on the tail strain
+to be upgraded to a lower bound on a full ball, which then plugs into the superlevel/cylinder payment machinery.
+
+
+\subparagraph{L2‑A acceptance: a concrete “tail size ⇒ Lipschitz constant” candidate (so this isn’t vague)}
+
+
+Because the tail strain kernel has cancellations (as in TeX \texttt{\detokenize{lem:tail-strain-formula}}), one expects
+\texttt{\detokenize{S(x)}} to be not just harmonic but \emph{Lipschitz} on \(B_{1/2}\) under very mild tail size control.
+
+
+A concrete checkable tail size to try first is:
+
+
+\[
+\mathsf{Tail}_4(\Omega)\ :=\ \int_{|w|>1}\frac{|\Omega(w)|}{|w|^4}\,dw.
+\]
+
+
+Since \(|w|^{-4}\) is integrable in 3D, \(\mathsf{Tail}_4(\Omega)<\infty\) already holds under bounded vorticity:
+\(\mathsf{Tail}_4(\Omega)\le \|\Omega\|_\infty\int_{|w|>1}|w|^{-4}dw <\infty\).
+
+
+\textbf{Acceptance target:} prove a bound of the form
+
+
+\[
+\sup_{x\in B_{1/2}}|\nabla S(x)|\ \le\ C\,\mathsf{Tail}_4(\Omega),
+\]
+
+
+which implies the Lipschitz constant \(L\le C\,\mathsf{Tail}_4(\Omega)\) in \texttt{\detokenize{lem:tail-strain-local-persistence}}.
+
+
+If this bound goes through with only \(\|\Omega\|_\infty\) (using \(\mathsf{Tail}_4(\Omega)\lesssim \|\Omega\|_\infty\)),
+then L2‑A becomes essentially “free” under the running‑max bounded-vorticity input.
+
+
+\textbf{Proof sketch (why the bound is plausible):}
+
+
+\begin{itemize}
+\item For \(|x|\le \tfrac12\) and \(|w|>1\), the Biot–Savart kernel and its derivatives are smooth, with
+  \[
+  |\nabla_x^m\bigl((x-w)/|x-w|^3\bigr)|\ \lesssim_m\ |w|^{-2-m}.
+  \]
+\item The strain \(S(x)=\tfrac12(\nabla u+\nabla u^T)\) is a first \(x\)-derivative of the Biot–Savart integral;
+  hence \(\nabla S(x)\) is a \textbf{second} \(x\)-derivative of that integral.
+\item Differentiating under the integral sign (justified by the support separation \(|w|>1\) from \(|x|\le 1/2\))
+  gives an integrand bounded by \(C\,|\Omega(w)|\,|w|^{-4}\).
+\item Taking the supremum over \(|x|\le 1/2\) yields
+  \(\sup_{B_{1/2}}|\nabla S|\le C\int_{|w|>1}|\Omega(w)|\,|w|^{-4}\,dw = C\,\mathsf{Tail}_4(\Omega)\).
+\end{itemize}
+
+
+This is deliberately “estimate-only”: it does not use cancellations, so it should be robust.
+
+
+\begin{lstlisting}
+\begin{lemma}[Tail$_4$ controls Lipschitz of the tail strain on $B_{1/2}$ (proved)]\label{lem:tail4_controls_lipschitz_tail_strain}
+Let $\Omega:\R^3\to\R^3$ be smooth and assume the weighted tail size is finite:
+\[
+\mathsf{Tail}_4(\Omega)\ :=\ \int_{|w|>1}\frac{|\Omega(w)|}{|w|^4}\,dw\ <\ \infty.
+\]
+Define the (tail) Biot--Savart velocity for $|x|\le\tfrac12$ by
+\[
+u(x):=\frac{1}{4\pi}\int_{|w|>1}\frac{(x-w)\times \Omega(w)}{|x-w|^3}\,dw,
+\]
+and let $S(x):=\tfrac12(\nabla u(x)+\nabla u(x)^T)$ be the symmetric gradient.
+Then $u$ is smooth on $B_{1/2}$ and there exists an absolute constant $C$ such that
+\[
+\sup_{x\in B_{1/2}}|\nabla S(x)|\ \le\ C\,\mathsf{Tail}_4(\Omega).
+\]
+In particular, $S$ is Lipschitz on $B_{1/2}$ with constant $L\le C\,\mathsf{Tail}_4(\Omega)$:
+\[
+|S(x)-S(y)|\ \le\ C\,\mathsf{Tail}_4(\Omega)\,|x-y|\qquad\forall x,y\in B_{1/2}.
+\]
+\end{lemma}
+
+\begin{proof}[Proof sketch]
+For $|x|\le \tfrac12$ and $|w|>1$ one has $|x-w|\sim |w|$ uniformly, so the kernel
+\(
+K(x,w):=\frac{x-w}{|x-w|^3}
+\)
+and all its $x$-derivatives are smooth and satisfy pointwise bounds
+\[
+|\nabla_x^m K(x,w)|\ \lesssim_m\ |w|^{-2-m}.
+\]
+Since $u$ is the convolution of $K(x,w)$ with $\Omega(w)$ (up to the cross product), $S$ is a first $x$-derivative of $u$
+and $\nabla S$ is a second $x$-derivative of $u$.
+Differentiating under the integral sign gives an integrand bounded by $C|\Omega(w)|\,|w|^{-4}$ uniformly for $|x|\le 1/2$.
+Integrating over $|w|>1$ yields
+\(\sup_{B_{1/2}}|\nabla S|\le C\int_{|w|>1}|\Omega(w)|\,|w|^{-4}\,dw\),
+as claimed.
+\end{proof}
+\end{lstlisting}
+
+
+\subsubsection{Session S3 — Turn “budget-visible term” into an infinite-history contradiction}
+
+
+\textbf{Goal:} make “finite budget over infinite history” a literal inequality.
+
+
+Primary tool is \texttt{\detokenize{rem:runningmax-injection-constraint}} plus its propagation lemmas
+(\texttt{\detokenize{lem:thick-maximum}}, \texttt{\detokenize{lem:maxpoint-to-injection-region}}, …), which explain how persistent
+positive stretching at maximizers forces a positive‑measure injection region.
+
+
+\textbf{Default L‑upper choice (from 3.10.4):} try \textbf{U‑4} first.
+
+
+In Mode (M‑seq), U‑4 means:
+
+
+\begin{itemize}
+\item run the contradiction on a \emph{fixed rescaled cylinder} \(Q_r(0,0)\) (with \(r\le 1\)),
+\item translate any would-be “infinite payment” mechanism into a statement that already contradicts
+  available scale‑critical bounds on that cylinder (or contradicts the record-time normalization).
+\end{itemize}
+
+
+This avoids needing a global-in-time finite budget statement.
+
+
+\textbf{Two outcomes (both useful):}
+
+
+\begin{itemize}
+\item (C‑strong) derive a direct contradiction: budget-visible term can’t persist at all ⇒ export impossible.
+\item (C‑weak) derive an integrability class over time (e.g. \(L^2_t\)) strong enough to close RM2 subsequentially.
+\end{itemize}
+
+
+\textbf{Acceptance test:}
+
+
+\begin{itemize}
+\item A TeX lemma “persistent export ⇒ integral cost ≥ c·|I|” and a second lemma that the integral cost
+  is bounded (or cannot persist) for a running‑max ancient element.
+\end{itemize}
+
+
+\textbf{Strawman structure (Family B):}
+
+
+\begin{itemize}
+\item Use \texttt{\detokenize{rem:runningmax-injection-constraint}} at maximizers:
+  \[
+  \sigma(x_t,t)\le |\nabla\xi(x_t,t)|^2 - \Delta\rho(x_t,t).
+  \]
+  If a bridge lemma yields \texttt{\detokenize{σ(x_t,t) ≥ c ε}} on a positive-measure set of times,
+  then on those times either \texttt{\detokenize{|\nabla\xi|^2}} is large or \texttt{\detokenize{-Δρ}} is large.
+\item Propagate “large at a point” to “large on a region” using the thick-maximum machinery
+  (\texttt{\detokenize{lem:thick-maximum}} etc.) to obtain an integral lower bound on a cost density.
+\item Contradict an a priori scale-critical bound (or derive \texttt{\detokenize{L²_t}} control of \texttt{\detokenize{S(0,t)}} as the weak outcome).
+\end{itemize}
+
+
+\paragraph{S3.1 Concrete lemma chain for U‑4 (pre-limit, single cylinder)}
+
+
+In U‑4 we want a contradiction \textbf{inside one fixed rescaled cylinder} \(Q_r(0,0)\), avoiding any global-in-time
+budget statement. The right structure is:
+
+
+\begin{enumerate}
+\item persistence of export (\texttt{\detokenize{S_tail}}) on a time set in \([-r^2,0]\),
+\item select a “good” time/point where we can apply the penalized-max injection inequality (H‑t/H‑u/H‑ρ),
+\item convert export persistence into a lower bound on a \textbf{paid} term (one of the ledger payments),
+\item contradict a cylinder-scale upper bound (or declare it as a new explicit hypothesis and track it).
+\end{enumerate}
+
+
+Below are the next concrete lemmas to write/attempt.
+
+
+\subparagraph{(S3‑T) Time/point selection lemma (discharges H‑t without circularity)}
+
+
+\begin{lstlisting}
+\begin{lemma}[Select a low-Dini-derivative time in a high-value slice (proved)]\label{lem:select_runningmax_time_in_persistence}
+Let $I=[-r^2,0]$ and let $E\subset I$ be measurable with $|E|>0$.
+Let $f:I\to\mathbb R$ be Lipschitz, and let $m:=\operatorname*{ess\,sup}_{t\in E} f(t)$.
+Fix $\delta>0$ and set
+\[
+E_\delta \ :=\ \{t\in E:\ f(t)\ge m-\delta\}.
+\]
+Then $|E_\delta|>0$ and there exists $t_\ast\in E_\delta$ such that the upper right Dini derivative satisfies
+\[
+D^+ f(t_\ast)\ \le\ \frac1{|E_\delta|}\int_{E_\delta} (D^+ f(t))_+\,dt.
+\]
+In particular, if one has the bound
+\[
+\int_{E_\delta} (D^+ f(t))_+\,dt\ \le\ \delta\,|E_\delta|,
+\]
+then $D^+ f(t_\ast)\le \delta$.
+\end{lemma}
+
+\begin{proof}
+Since $m$ is the essential supremum on $E$, the set $E_\delta$ has positive measure.
+For Lipschitz $f$, Rademacher's theorem gives that $f$ is differentiable a.e. and in particular
+$D^+f$ exists a.e. and $(D^+f)_+\in L^1(I)$.
+Set $g(t):=(D^+f(t))_+$ (with any measurable representative).
+If $g(t)>\frac1{|E_\delta|}\int_{E_\delta}g$ held for a.e. $t\in E_\delta$, then integrating over $E_\delta$ would yield a contradiction.
+Hence there exists $t_\ast\in E_\delta$ with
+$g(t_\ast)\le \frac1{|E_\delta|}\int_{E_\delta}g$, and then $D^+f(t_\ast)\le g(t_\ast)$.
+The “in particular” clause is immediate.
+\end{proof}
+\end{lstlisting}
+
+
+\textbf{How this discharges (H‑t) (a clean envelope inequality):}
+
+
+If $f(t)=\sup_x \rho_\varepsilon(x,t)$ and for a given $t$ there exists a maximizer $x_{\varepsilon,t}$ with
+$f(t)=\rho_\varepsilon(x_{\varepsilon,t},t)$ and $\partial_t\rho_\varepsilon(x_{\varepsilon,t},t)$ exists, then
+\[
+\partial_t\rho_\varepsilon(x_{\varepsilon,t},t)\ \le\ D^+ f(t),
+\]
+since $f(t+h)\ge \rho_\varepsilon(x_{\varepsilon,t},t+h)$ for all $h>0$ and one takes $\limsup_{h\downarrow 0}$.
+Thus the conclusion $D^+f(t_\ast)\le \delta$ yields the approximate one-sided constraint
+$\partial_t\rho_\varepsilon(x_{\varepsilon,t_\ast},t_\ast)\le \delta$.
+
+
+\textbf{Proof sketch (one workable route):}
+
+
+\begin{itemize}
+\item If \(\rho\) is smooth on \(Q_r\) and the penalized maximizer \(x_{\varepsilon,t}\) stays in a fixed ball (true since
+  \(\rho\le 1\Rightarrow \varepsilon|x_{\varepsilon,t}|^2\le 1\)), then \(t\mapsto f(t)=\sup_x(\rho-\varepsilon|x|^2)\)
+  is locally Lipschitz on \([-r^2,0]\) with constant \(\lesssim \sup_{|x|\le 1/\sqrt\varepsilon}|\partial_t\rho(x,t)|\).
+\item A Lipschitz function is absolutely continuous, hence \(f'\in L^1\) and the set where \(f'(t)>\delta\) has measure
+  bounded by \(\operatorname{Var}(f)/\delta\).
+\item Since \(E\subset[-r^2,0]\) has positive measure, choose \(\delta\) so that \(E\) is not contained in \(\{f'>\delta\}\);
+  then pick \(t_\ast\in E\) where the upper Dini derivative of \(f\) is \(\le \delta\).
+\item Finally, relate the Dini derivative of \(f\) to \(\partial_t\rho_\varepsilon(x_{\varepsilon,t_\ast},t_\ast)\) at a penalized maximizer
+  (standard envelope derivative inequality), giving the desired approximate (H‑t).
+\end{itemize}
+
+
+\subparagraph{(S3‑U) Drift-control lemma (discharges H‑u in a local/affine gauge)}
+
+
+\begin{lstlisting}
+\begin{lemma}[Drift control from thickness + $L^2$ energy (proved)]\label{lem:drift_control_penalized}
+Fix $r>0$ and $\theta\in(0,1)$.
+Let $\tilde u(\cdot,t)\in L^2(B_r;\mathbb R^3)$ and let $G_t\subset B_r$ be measurable with $|G_t|\ge \theta |B_r|$.
+Then there exists a point $x_t\in G_t$ such that
+\[
+|\tilde u(x_t,t)|\ \le\ \sqrt{\frac{2}{\theta |B_r|}}\ \|\tilde u(\cdot,t)\|_{L^2(B_r)}
+\qquad\text{and hence}\qquad
+|\tilde u(x_t,t)\cdot x_t|\ \le\ r\,\sqrt{\frac{2}{\theta |B_r|}}\ \|\tilde u(\cdot,t)\|_{L^2(B_r)}.
+\]
+In particular, if one has the scale-critical bound
+\[
+\int_{B_r}|\tilde u(x,t)|^2\,dx\ \le\ M\,r\qquad\text{for all relevant }t,
+\]
+then for the selected points $x_t$ above one gets a uniform drift bound
+\[
+|\tilde u(x_t,t)\cdot x_t|\ \le\ C(\theta)\,\sqrt{M},
+\qquad C(\theta):=\sqrt{\frac{2}{\theta |B_1|}}.
+\]
+\end{lemma}
+
+\begin{proof}
+Let $\lambda:=\sqrt{\frac{2}{|G_t|}}\|\tilde u(\cdot,t)\|_{L^2(B_r)}$.
+By Chebyshev,
+\[
+|\{x\in B_r:\ |\tilde u(x,t)|>\lambda\}|
+\ \le\ \frac{1}{\lambda^2}\int_{B_r}|\tilde u(x,t)|^2\,dx
+\ =\ \frac{|G_t|}{2}.
+\]
+Hence the complement set $\{|\tilde u|\le\lambda\}$ intersects $G_t$, so choose $x_t\in G_t$ with $|\tilde u(x_t,t)|\le\lambda$.
+The dot-product bound follows from $|x_t|\le r$.
+Finally, using $|G_t|\ge \theta |B_r|=\theta |B_1| r^3$ and $\|\tilde u\|_{L^2(B_r)}\le \sqrt{Mr}$ yields the stated uniform bound.
+\end{proof}
+\end{lstlisting}
+
+
+\textbf{Acceptance test:} we must (i) specify the thickness mechanism that produces $G_t$ (usually a “thick maximum” lemma on the top band
+$\{\rho\ge 1-\eta\}$), and (ii) specify the scale-critical bound that yields $\int_{B_r}|\tilde u|^2\lesssim r$ in the chosen affine gauge.
+The lemma above itself is purely measure-theoretic + Cauchy–Schwarz/Chebyshev (“plumbing-clean”).
+
+
+\subparagraph{(S3‑B) Bridge: tail export ⇒ “σ or twist” on the top band (hypothesis interface)}
+
+
+This is the \textbf{first genuinely research-level bridge} in S3: it converts “tail strain persists” into a pointwise lower bound
+on either (i) stretching injection \(\sigma\) or (ii) direction twisting \(|\nabla\xi|^2\), at points where \(\rho\) is near its top band.
+We keep it isolated as a hypothesis interface so the rest of S3 is honest and modular.
+
+
+\begin{lstlisting}
+\begin{hypothesis}[Bridge: tail strain forces stretching-or-twist near the top band]\label{hyp:tail_strain_forces_sigma_or_twist}
+Fix $\eta\in(0,1/8)$.
+There exist constants $c_\sigma,c_\xi>0$ such that for any rescaled running-max cylinder solution on $Q_r(0,0)$
+and any parameters $(\varepsilon,\delta)$, the following holds:
+
+If for some time $t$ and some point $x\in B_\delta$ we have
+\[
+\rho(x,t)\ \ge\ 1-\eta
+\qquad\text{and}\qquad
+\|S^{(k)}_{\mathrm{tail}}(x,t)\|\ \ge\ \varepsilon/2,
+\]
+then at that same spacetime point either
+\[
+\sigma(x,t)\ \ge\ c_\sigma\,\varepsilon
+\qquad\text{or}\qquad
+|\nabla\xi(x,t)|^2\ \ge\ c_\xi\,\varepsilon^2.
+\]
+\end{hypothesis}
+\end{lstlisting}
+
+
+\textbf{Acceptance test:} we must pin down the precise definition of \(\sigma\) in our running-max variables (e.g. \(\sigma=\xi\cdot S\,\xi\)),
+and confirm the constants are scale-consistent. If proving this bridge collapses into C2, trigger the pivot.
+
+
+\textbf{Research focus (how to actually try to prove S3‑B):}
+
+
+The bridge is the first place where we truly need a new geometric argument. Here is the cleanest way to structure it so we
+don’t accidentally “solve C2 by stealth”.
+
+
+\begin{itemize}
+\item \textbf{Default shot (commitment for this execution run): start with Route (B‑ξ).}\\
+  Rationale: (i) it targets the always-nonnegative payment channel \(\rho^{3/2}|\nabla\xi|^2\) directly, (ii) it is robust to sign issues
+  in \(\sigma\), and (iii) if it collapses into a C2-type estimate we will detect that quickly (pivot trigger P‑C2).
+  Route (B‑σ) becomes the fallback if we discover a clean alignment/sign mechanism at maximizers.
+\item \textbf{(B‑0) Fix the exact definition of \(\sigma\)} (no drift):
+\item In vorticity variables \(\omega=\rho\xi\) with \(|\xi|=1\), the amplitude equation is
+    \[
+    \partial_t\rho + u\cdot\nabla\rho - \Delta\rho = \rho(\sigma-|\nabla\xi|^2),
+    \]
+    where \(\sigma := \xi\cdot S\,\xi\) and \(S=\tfrac12(\nabla u+\nabla u^T)\) is the strain.
+\item Decompose \(S = S_{\mathrm{core}} + S_{\mathrm{tail}}\) using the same core/tail split as in the manuscript’s tail strain moment.
+    The assumption in S3 is about \(\|S_{\mathrm{tail}}\|\), but \(\sigma\) involves the \textbf{quadratic form} \(\xi\cdot S_{\mathrm{tail}}\xi\),
+    which can be small even when \(\|S_{\mathrm{tail}}\|\) is large if \(\xi\) is aligned with a compressive/near-null direction.
+\item \textbf{(B‑1) Two-way route to a usable statement} (pick one):
+\item \textbf{Route (B‑σ): stretching case.} Prove that on a positive-measure subset of the top band, the vorticity direction cannot stay
+    aligned with compressive directions of \(S_{\mathrm{tail}}\); hence \(\sigma\gtrsim\varepsilon\) somewhere in the top band.
+    This is a \emph{sign + alignment persistence} problem.
+\item \textbf{Route (B‑ξ): twisting case.} Prove that if \(\xi\) avoids the stretching directions of \(S_{\mathrm{tail}}\) across a region where
+    \(S_{\mathrm{tail}}\) is large and slowly varying (L2‑A gives Lipschitz control), then \(\xi\) must rotate fast, forcing
+    \(|\nabla\xi|^2\gtrsim\varepsilon^2\) in that region. This is a \emph{direction-forcing ⇒ gradient lower bound} problem.
+\item \textbf{(B‑ξ.0) A pointwise trichotomy we can always use (pure algebra, no PDE):}
+\end{itemize}
+
+
+Even before any dynamics, there is a purely algebraic decomposition at a point:
+for any symmetric matrix $S$ and any unit vector $\xi$,
+\[
+S\xi = (\xi\cdot S\xi)\,\xi \;+\; (I-\xi\otimes\xi)\,S\xi,
+\qquad
+|S\xi|^2 = (\xi\cdot S\xi)^2 + |(I-\xi\otimes\xi)S\xi|^2.
+\]
+Thus if $|S\xi|\gtrsim \varepsilon$ then either the quadratic form $\sigma=\xi\cdot S\xi$ is $\gtrsim\varepsilon$ in magnitude,
+or the perpendicular forcing term $(I-\xi\otimes\xi)S\xi$ is $\gtrsim\varepsilon$ in magnitude.
+The remaining obstruction is the “null alignment” case $|S\xi|\ll \varepsilon$, which corresponds to $\xi$ lying close to a null
+direction of $S$ (e.g. the middle eigenvector when $\lambda_2\approx 0$).
+
+
+\begin{itemize}
+\item \textbf{(B‑ξ.1) Minimal interface to bypass the null-alignment case (hypothesis):}
+\end{itemize}
+
+
+\begin{lstlisting}
+\begin{hypothesis}[No persistent null-alignment on the top band]\label{hyp:no_persistent_null_alignment}
+Fix $\eta\in(0,1/8)$. There exists $c_*>0$ such that whenever $\rho(x,t)\ge 1-\eta$ and
+$\|S_{\mathrm{tail}}^{(k)}(x,t)\|\ge \varepsilon/2$ on a set $B_\delta\times E$, then on a positive-measure subset
+of $B_\delta\times E$ one has
+\[
+|S_{\mathrm{tail}}^{(k)}(x,t)\,\xi(x,t)|\ \ge\ c_*\,\varepsilon.
+\]
+\end{hypothesis}
+\end{lstlisting}
+
+
+\textbf{Lean symbol:} \texttt{\detokenize{Bet2U4.NoPersistentNullAlignmentHypothesis}}.
+
+
+This hypothesis isolates exactly the scenario where tail strain is large but “misses” the vorticity direction everywhere on the top band.
+If this hypothesis fails, we have discovered a new geometric regime (“vorticity rides the null cone of the tail strain”), which is itself
+a plausible pivot-to-E/2D mechanism.
+
+
+\textbf{Proof status (unconditional checklist item \#3):} currently \textbf{blocked}.
+This is a genuinely geometric alignment statement about the interaction of $\xi$ with the eigen-structure of $S_{\mathrm{tail}}$ on a
+time-thick top-band set. No known “bounded vorticity only” argument implies it; if it fails, we treat the resulting null-cone regime as an
+explicit new absorption/degenerate class to be eliminated (likely via an E/2D pivot).
+
+
+\textbf{Single blocker:} a proof (or sharp classification) of the null-cone alignment regime on time-thick top-band sets.
+
+
+\begin{itemize}
+\item \textbf{(B‑ξ.1a) Immediate algebraic consequence (proved; this is the handoff into Route (B‑σ) vs Route (B‑ξ)):}
+\end{itemize}
+
+
+\begin{lstlisting}
+\begin{lemma}[No-null-alignment $\Rightarrow$ (stretching magnitude) or (perpendicular tail forcing) on a subset (algebra)]\label{lem:no_null_alignment_implies_sigma_or_perp}
+Assume the hypotheses of \ref{hyp:no_persistent_null_alignment} at scale $r$ so that on a positive-measure subset
+$U\subset B_\delta\times E$ one has
+\(
+|S_{\mathrm{tail}}^{(k)}(x,t)\,\xi(x,t)|\ge c_*\,\varepsilon
+\).
+Then on the same set $U$ one has the pointwise implication:
+\[
+|(\xi\cdot S_{\mathrm{tail}}^{(k)}\xi)(x,t)|\ \ge\ \frac{c_*}{\sqrt2}\,\varepsilon
+\qquad\text{or}\qquad
+|(I-\xi\otimes\xi)\,S_{\mathrm{tail}}^{(k)}(x,t)\,\xi(x,t)|\ \ge\ \frac{c_*}{\sqrt2}\,\varepsilon.
+\]
+\end{lemma}
+
+\begin{proof}
+At a point $(x,t)\in U$, apply the identity
+\(
+|S\xi|^2=(\xi\cdot S\xi)^2+|(I-\xi\otimes\xi)S\xi|^2
+\)
+with $S=S_{\mathrm{tail}}^{(k)}(x,t)$ and $\xi=\xi(x,t)$.
+If both terms on the right were $<\frac12|S\xi|^2$, then their sum would be $<|S\xi|^2$, a contradiction. Taking square-roots gives the claim.
+\end{proof}
+\end{lstlisting}
+
+
+\begin{itemize}
+\item \textbf{(B‑ξ.2) Forcing ⇒ payment interface (what Route (B‑ξ) really needs):}
+\end{itemize}
+
+
+\begin{lstlisting}
+\begin{hypothesis}[Perpendicular tail forcing pays for twist on the top band]\label{hyp:forcing_to_twist_payment_on_top_band}
+Fix $\eta\in(0,1/8)$. There exists $c>0$ such that for any cylinder $Q_r(0,0)$,
+if on a set $B_\delta\times E\subset B_r\times[-r^2,0]$ with $|E|\ge c_0 r^2$ one has $\rho\ge 1-\eta$ and
+\[
+|(I-\xi\otimes\xi)\,S_{\mathrm{tail}}^{(k)}(x,t)\,\xi(x,t)|\ \ge\ c_*\,\varepsilon
+\qquad\text{for all }(x,t)\in B_\delta\times E,
+\]
+then the normalized **twist-or-band** payment obeys
+\[
+\mathsf{Pay}_\xi(r)\;+\;\mathsf{Pay}_\rho(r)\ \ge\ c\,\varepsilon^2,
+\]
+where
+\[
+\mathsf{Pay}_\xi(r):=\frac1{r^2}\iint_{Q_r}\rho^{3/2}|\nabla\xi|^2,
+\qquad
+\mathsf{Pay}_\rho(r):=\frac1{r^2}\,\eta^{-1}\iint_{Q_r\cap\{1-2\eta<\rho<1-\eta\}}|\nabla(\rho^{3/4})|^2.
+\]
+\end{hypothesis}
+\end{lstlisting}
+
+
+\textbf{Reality check (important): magnitude-only forcing does \emph{not} automatically force spatial twist.}
+There is a genuine “rigid rotation mode” obstruction: if (locally) $\rho$ is essentially constant and $S_{\mathrm{tail}}$ is essentially
+constant in space, one can have $\xi=\xi(t)$ spatially constant (so $\nabla\xi\equiv 0$ and $\mathsf{Pay}_\xi=\mathsf{Pay}_\rho=0$) while
+the tangential forcing $P_\xi(S_{\mathrm{tail}}\xi)$ remains nonzero and is absorbed by a purely time-dependent rotation of $\xi$.
+Therefore, \textbf{proving \texttt{\detokenize{\ref{hyp:forcing_to_twist_payment_on_top_band}}} as stated requires a specifically Navier–Stokes / Biot–Savart input}
+that rules out this “pure-rotation cancellation” regime for the \emph{tail} forcing.
+
+
+\textbf{Minimal missing input (explicit interface; this is what we must actually prove next):}
+
+
+\begin{lstlisting}
+\begin{hypothesis}[Tail forcing cannot be absorbed by a rigid-rotation mode on the top band]\label{hyp:no_rigid_rotation_absorption}
+Fix $\eta\in(0,1/8)$. There exists $c>0$ such that for any rescaled running-max cylinder solution on $Q_r(0,0)$:
+if on $B_\delta\times E$ (with $|E|\ge c_0 r^2$) one has $\rho\ge 1-\eta$ and
+\[
+|(I-\xi\otimes\xi)\,S_{\mathrm{tail}}^{(k)}(x,t)\,\xi(x,t)|\ \ge\ c_*\,\varepsilon,
+\]
+then either
+\[
+\mathsf{Pay}_\xi(r)+\mathsf{Pay}_\rho(r)\ \ge\ c\,\varepsilon^2
+\]
+or else the solution on $Q_r$ lies in an explicit “affine/rigid” structural class (time-dependent rotation / affine mode)
+that is independently ruled out for running-max ancient elements (by a separate E/2D-type or affine-mode ODE contradiction).
+\end{hypothesis}
+\end{lstlisting}
+
+
+\textbf{Lean symbol:} \texttt{\detokenize{Bet2U4.NoRigidRotationAbsorptionHypothesis}}.
+
+
+\textbf{Acceptance test:} either (i) prove the original \texttt{\detokenize{\ref{hyp:forcing_to_twist_payment_on_top_band}}} directly, or (ii) prove the weaker but
+still-useful \texttt{\detokenize{\ref{hyp:no_rigid_rotation_absorption}}} by \emph{classifying} the rigid-rotation absorption regime and then killing it with a clean
+ODE/structure argument. If the classification reduces to “$\xi$ constant direction on the top band”, that is an E/2D pivot trigger.
+
+
+\textbf{Proof status (unconditional checklist item \#4):} currently \textbf{blocked}.
+We have the TeX engines for the classification lemma \texttt{\detokenize{\ref{lem:rigid_rotation_absorption_implies_structure}}}
+(items (i)–(iii) and the averaged-direction ODE template), but closing this hypothesis unconditionally
+requires completing the absorption-kill (K‑ODE) or an E/2D elimination for the resulting explicit class.
+
+
+\textbf{Single blocker:} rule out the explicit absorption class output by Lemma~\texttt{\detokenize{\ref{lem:rigid_rotation_absorption_implies_structure}}} uniformly as $r\downarrow 0$
+(K‑ODE affine-mode contradiction or K‑E quasi‑2D elimination).
+
+
+\textbf{Concrete “classification” lemmas to shoot next (so this doesn’t stay hand-wavy):}
+
+
+\begin{lstlisting}
+\begin{lemma}[Small twist payment forces near-constancy of $\xi$ on the top band (time-slice form; proved)]\label{lem:small_pay_xi_implies_xi_near_constant}
+Fix $\eta\in(0,1/8)$ and $\delta>0$. Let $t$ be a time such that $\rho(\cdot,t)\ge 1-\eta$ on $B_\delta$.
+Then for any unit vector $b_t\in \Sbb^2$ minimizing $\int_{B_\delta}|\xi(\cdot,t)-b|^2$ one has
+\[
+\int_{B_\delta}|\xi(x,t)-b_t|^2\,dx\ \le\ C\,\delta^2\int_{B_\delta}|\nabla\xi(x,t)|^2\,dx,
+\]
+with a universal constant $C$.
+In particular, if $\int_{B_\delta}\rho(x,t)^{3/2}|\nabla\xi(x,t)|^2\,dx$ is small, then $\xi(\cdot,t)$ is $L^2$-close to a constant
+direction on $B_\delta$.
+\end{lemma}
+
+\begin{proof}
+Let $B:=B_\delta$ and write $f(x):=\xi(x,t)\in \R^3$, so $|f|=1$ a.e. on $B$.
+Let $\mu:=f_B:=\frac1{|B|}\int_B f$ be the spatial average, so $|\mu|\le 1$.
+
+\smallskip
+\noindent\textbf{Step 1 (Poincar\'e for the unconstrained best constant).}
+By the (vector-valued) Poincar\'e inequality on balls,
+\[
+\int_B |f-\mu|^2 \ \le\ C_P\,\delta^2 \int_B |\nabla f|^2,
+\]
+with a universal constant $C_P$ depending only on the dimension.
+
+\smallskip
+\noindent\textbf{Step 2 (relate the best unit vector to the average).}
+For any unit vector $b\in\Sbb^2$,
+\[
+\int_B |f-b|^2
+=\int_B |f|^2 + \int_B|b|^2 - 2 b\cdot\int_B f
+=2|B| - 2|B|\,(b\cdot \mu).
+\]
+Thus minimizing over $|b|=1$ is equivalent to maximizing $b\cdot\mu$, and a minimizer is $b_t=\mu/|\mu|$ if $\mu\neq 0$
+(and any $b_t\in\Sbb^2$ if $\mu=0$).
+In either case, the minimum value is
+\[
+\int_B |f-b_t|^2 \ =\ 2|B|\,(1-|\mu|).
+\]
+On the other hand,
+\[
+\int_B|f-\mu|^2
+=\int_B|f|^2 - 2\mu\cdot\int_B f + \int_B|\mu|^2
+=|B|\,(1-|\mu|^2).
+\]
+Since $0\le |\mu|\le 1$, we have $1-|\mu|\le 1-|\mu|^2$, hence
+\[
+\int_B|f-b_t|^2 = 2|B|\,(1-|\mu|)\ \le\ 2|B|\,(1-|\mu|^2)=2\int_B|f-\mu|^2.
+\]
+Combining with Step 1 gives
+\[
+\int_B|f-b_t|^2\ \le\ 2C_P\,\delta^2\int_B|\nabla f|^2,
+\]
+which is the claimed estimate with $C:=2C_P$.
+
+\smallskip
+\noindent\textbf{Weighted-to-unweighted.}
+If $\rho(\cdot,t)\ge 1-\eta$ on $B$, then $\rho^{3/2}\ge (1-\eta)^{3/2}$ on $B$, hence
+\[
+\int_B|\nabla\xi|^2 \ \le\ (1-\eta)^{-3/2}\int_B \rho^{3/2}|\nabla\xi|^2,
+\]
+so small weighted twist energy implies small unweighted twist energy, and therefore $\xi(\cdot,t)$ is $L^2$-close to the constant
+direction $b_t$.
+\end{proof}
+\end{lstlisting}
+
+
+\begin{lstlisting}
+\begin{lemma}[Rigid-rotation absorption regime implies an explicit “ODE + affine tail” structure (target)]\label{lem:rigid_rotation_absorption_implies_structure}
+Fix $\eta\in(0,1/8)$, $r\le 1$, and a top-band persistence set $B_\delta\times E\subset B_r\times[-r^2,0]$ with $|E|\ge c_0 r^2$
+on which $\rho\ge 1-\eta$.
+Assume also the perpendicular tail forcing lower bound
+\[
+|(I-\xi\otimes\xi)\,S_{\mathrm{tail}}^{(k)}(x,t)\,\xi(x,t)|\ \ge\ c_*\,\varepsilon
+\qquad\forall (x,t)\in B_\delta\times E.
+\]
+Assume finally that the normalized payments are small:
+\[
+\mathsf{Pay}_\xi(r)+\mathsf{Pay}_\rho(r)\ \le\ \kappa\,\varepsilon^2
+\qquad\text{for some sufficiently small }\kappa=\kappa(\eta,c_0).
+\]
+Then there exists a subset $E'\subset E$ with $|E'|\ge \tfrac12|E|$ and a measurable map $b:E'\to\Sbb^2$ such that:
+\begin{enumerate}
+\item[(i)] (\textbf{Near-constancy in space}) For every $t\in E'$,
+  \[
+  \int_{B_\delta}|\xi(x,t)-b(t)|^2\,dx\ \le\ C\,\delta^2\int_{B_\delta}|\nabla\xi(x,t)|^2\,dx
+  \ \lesssim_\eta\ \delta^2\int_{B_\delta}\rho(x,t)^{3/2}|\nabla\xi(x,t)|^2\,dx.
+  \]
+\item[(ii)] (\textbf{Rigid-rotation absorption ODE}) The direction $b(t)$ approximately satisfies (in a weak/distributional sense on $E'$)
+  \[
+  \partial_t b(t)\ \approx\ (I-b(t)\otimes b(t))\,S_{\mathrm{tail}}^{(k)}(0,t)\,b(t),
+  \]
+  i.e. the tail forcing is absorbed by a predominantly \emph{time-dependent} rotation of an almost-spatially-constant direction field.
+\item[(iii)] (\textbf{Affine tail on the ball}) The tail velocity/strain field on $B_\delta$ is well-approximated by its affine Taylor
+  polynomial determined by $S_{\mathrm{tail}}^{(k)}(0,t)$, uniformly for $t\in E'$ (this is where harmonicity of the tail velocity on
+  $B_1$ is used).
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}[Proof sketch / reduction]
+Assume $\mathsf{Pay}_\xi(r)+\mathsf{Pay}_\rho(r)\le \kappa\varepsilon^2$ on $Q_r$.
+
+\smallskip
+\noindent\textbf{Step 1 (choose good times).}
+By Fubini + Chebyshev, there exists a subset $E'\subset E$ with $|E'|\ge \tfrac12|E|$ such that for every $t\in E'$
+the time-slice direction energy on $B_\delta$ is small:
+\[
+\int_{B_\delta}\rho(x,t)^{3/2}|\nabla\xi(x,t)|^2\,dx\ \lesssim\ \kappa\,\varepsilon^2\,\delta^2
+\qquad(\text{after calibrating }\delta\sim r).
+\]
+(If needed, intersect with the analogous “small band diffusion at time $t$” set coming from $\mathsf{Pay}_\rho$.)
+
+\smallskip
+\noindent\textbf{Step 2 (spatial near-constancy).}
+For each $t\in E'$, define $b(t)\in\Sbb^2$ to be a minimizer of $\int_{B_\delta}|\xi(\cdot,t)-b|^2$.
+Then Lemma~\ref{lem:small_pay_xi_implies_xi_near_constant} gives (i).
+
+\smallskip
+\noindent\textbf{Step 3 (average-ODE and absorption).}
+Apply Lemma~\ref{lem:avg_direction_ode_template} on $B_\delta\times E'$ with a cutoff $\phi$ supported in $B_\delta$.
+Use (i) to replace $\xi$ by $b(t)$ in the averaged forcing term, and bound the cutoff errors by the same time-slice energies
+coming from $\mathsf{Pay}_\xi,\mathsf{Pay}_\rho$.
+This yields an approximate ODE for $b(t)$ driven by the averaged tangential forcing.
+
+\smallskip
+\noindent\textbf{Step 4 (affine tail).}
+Use the tail Lipschitz estimate (Lemma~\ref{lem:tail4_controls_lipschitz_tail_strain} or its cylinder version)
+to replace $S_{\mathrm{tail}}^{(k)}(x,t)$ on $B_\delta$ by its center value $S_{\mathrm{tail}}^{(k)}(0,t)$ up to an error $O(\delta)$,
+closing item (iii) and simplifying the RHS in the ODE to the stated “absorption” form in (ii).
+\end{proof}
+\end{lstlisting}
+
+
+\textbf{Acceptance test (for \texttt{\detokenize{\ref{lem:rigid_rotation_absorption_implies_structure}}}):}
+\begin{itemize}
+\item (i) is now proved (Lemma~\texttt{\detokenize{\ref{lem:small_pay_xi_implies_xi_near_constant}}}) once we pick $E'$ as the set of times where the
+      time-slice twist energy is small (Chebyshev/Fubini).
+\item (iii) should be standard from harmonicity: on $B_\delta$, the tail velocity is harmonic so Taylor/Cauchy estimates bound the remainder
+      by higher-derivative norms; we will state the needed derivative control as a hypothesis if it is not automatic from the tail truncation.
+\item (ii) is the true “rigid-rotation absorption” step: integrate the direction equation against test functions on $B_\delta$,
+      use (i) to replace $\xi$ by $b(t)$ in the forcing term, and bound drift/diffusion boundary errors by \(\mathsf{Pay}_\xi,\mathsf{Pay}_\rho\).
+\end{itemize}
+
+
+\textbf{Next concrete lemma (what we should try to prove immediately): the averaged-direction ODE.}
+
+
+\begin{lstlisting}
+\begin{lemma}[Averaged direction obeys an ODE driven by averaged tangential forcing (proved)]\label{lem:avg_direction_ode_template}
+Fix $\delta>0$ and let $\phi\in C_c^\infty(B_\delta)$ satisfy $\phi\equiv 1$ on $B_{\delta/2}$ and $\|\nabla\phi\|_{L^\infty}\lesssim \delta^{-1}$.
+Let $(\rho,\xi,u)$ be smooth on $B_\delta\times I$ with $\rho>0$, $|\xi|=1$, and $\nabla\cdot u=0$,
+satisfying the exact projected direction equation
+\[
+\partial_t \xi + u\cdot\nabla\xi - \Delta\xi
+= |\nabla\xi|^2\xi \;+\; P_\xi(S\xi)\;+\;2(\nabla\log\rho)\cdot\nabla\xi
+\qquad\text{on }B_\delta\times I.
+\]
+Define the normalized weighted spatial average and its unit-normalization
+\[
+M:=\int_{B_\delta}\phi(x)^2\,dx,\qquad
+m(t):=\frac{1}{M}\int_{B_\delta}\phi(x)^2\,\xi(x,t)\,dx,
+\qquad
+b(t):=\frac{m(t)}{|m(t)|}\in \Sbb^2\quad\text{whenever }m(t)\neq 0.
+\]
+Then $m$ is absolutely continuous on $I$ and for a.e. $t\in I$ one has the identity
+\[
+\partial_t m(t)
+= \frac{1}{M}\int_{B_\delta}\phi^2\Bigl(|\nabla\xi|^2\xi + P_\xi(S\xi)+2(\nabla\log\rho)\cdot\nabla\xi\Bigr)\,dx
+\;+\; \mathsf{Err}_{\mathrm{cut}}(t),
+\]
+where the cutoff/drift error is explicitly
+\[
+\mathsf{Err}_{\mathrm{cut}}(t)
+= -\frac{1}{M}\int_{B_\delta} 2\phi\,\nabla\phi\cdot\nabla\xi\,dx
+\;+\;\frac{1}{M}\int_{B_\delta}(u\cdot\nabla\phi^2)\,\xi\,dx,
+\]
+and satisfies the bound
+\[
+|\mathsf{Err}_{\mathrm{cut}}(t)|
+\ \lesssim\ \delta^{-5/2}\Bigl(\|u(\cdot,t)\|_{L^2(B_\delta)}+\|\nabla\xi(\cdot,t)\|_{L^2(B_\delta)}\Bigr).
+\]
+Moreover, if $|m(t)|\ge 1/2$ on a measurable $E'\subset I$, then $b\in W^{1,1}(E')$ and for a.e. $t\in E'$,
+\[
+\partial_t b(t)
+\;=\; (I-b(t)\otimes b(t))\,\partial_t m(t)\,/\,|m(t)|.
+\]
+\end{lemma}
+
+\begin{proof}
+Since $\xi$ is smooth and $\phi$ is time-independent, $t\mapsto \int_{B_\delta}\phi^2\xi(\cdot,t)$ is $C^1$ and hence $m$ is absolutely continuous.
+Differentiate under the integral sign and use the PDE to write
+\[
+\partial_t m(t)=\frac1M\int_{B_\delta}\phi^2\,\partial_t\xi
+=\frac1M\int_{B_\delta}\phi^2\Bigl(\Delta\xi-u\cdot\nabla\xi+|\nabla\xi|^2\xi+P_\xi(S\xi)+2(\nabla\log\rho)\cdot\nabla\xi\Bigr)\,dx.
+\]
+For the diffusion term, integrate by parts (no boundary term since $\phi$ is compactly supported):
+\[
+\int_{B_\delta}\phi^2\Delta\xi\,dx
+=-\int_{B_\delta}\nabla(\phi^2)\cdot\nabla\xi\,dx
+=-\int_{B_\delta} 2\phi\,\nabla\phi\cdot\nabla\xi\,dx.
+\]
+For the transport term, use $\nabla\cdot u=0$ and integrate by parts:
+\[
+\int_{B_\delta}\phi^2\,u\cdot\nabla\xi\,dx
+=-\int_{B_\delta} (u\cdot\nabla\phi^2)\,\xi\,dx.
+\]
+Collecting yields the claimed identity and the explicit formula for $\mathsf{Err}_{\mathrm{cut}}$.
+
+For the bound, note that $M\sim \delta^3$ and $\|\nabla(\phi^2)\|_{L^2(B_\delta)}\lesssim \delta^{1/2}\|\nabla\phi\|_\infty\lesssim \delta^{-1/2}$.
+By Cauchy--Schwarz,
+\[
+\Bigl|\frac{1}{M}\int_{B_\delta} 2\phi\,\nabla\phi\cdot\nabla\xi\,dx\Bigr|
+\lesssim \frac{1}{\delta^3}\,\|\nabla(\phi^2)\|_{L^2(B_\delta)}\,\|\nabla\xi\|_{L^2(B_\delta)}
+\lesssim \delta^{-5/2}\|\nabla\xi\|_{L^2(B_\delta)}.
+\]
+Similarly,
+\[
+\Bigl|\frac{1}{M}\int_{B_\delta} (u\cdot\nabla\phi^2)\,\xi\,dx\Bigr|
+\lesssim \frac{1}{\delta^3}\,\|u\|_{L^2(B_\delta)}\,\|\nabla(\phi^2)\|_{L^2(B_\delta)}
+\lesssim \delta^{-5/2}\|u\|_{L^2(B_\delta)},
+\]
+using $|\xi|=1$.
+
+Finally, on $E'$ we have $b=m/|m|$ with $|m|\ge 1/2$, so $b$ is absolutely continuous with derivative
+\[
+\partial_t b = \frac{\partial_t m}{|m|}-\frac{m(m\cdot \partial_t m)}{|m|^3}
+ = (I-b\otimes b)\,\partial_t m/|m|,
+\]
+as claimed.
+\end{proof}
+\end{lstlisting}
+
+
+\textbf{Acceptance test:} we should be able to prove Lemma~\texttt{\detokenize{\ref{lem:avg_direction_ode_template}}} purely from integration by parts and Poincar\'e,
+with no global inputs. The only “nontrivial” step is bookkeeping the cutoff errors and keeping the scaling explicit.
+This lemma is the engine behind item (ii) in Lemma~\texttt{\detokenize{\ref{lem:rigid_rotation_absorption_implies_structure}}}.
+
+
+\begin{lstlisting}
+\begin{lemma}[Dichotomy: persistent perpendicular tail forcing either pays or enters the absorption class]\label{lem:forcing_payment_or_absorption}
+Fix $\eta\in(0,1/8)$ and assume the setup of Hypothesis~\ref{hyp:forcing_to_twist_payment_on_top_band} at scale $r\le 1$:
+there exist $\delta\in(0,r)$ and a time set $E\subset[-r^2,0]$ with $|E|\ge c_0 r^2$ such that on $B_\delta\times E$,
+\[
+\rho\ge 1-\eta
+\qquad\text{and}\qquad
+|(I-\xi\otimes\xi)\,S_{\mathrm{tail}}^{(k)}\,\xi|\ \ge\ c_*\,\varepsilon.
+\]
+Then there exists a constant $c>0$ (depending only on $\eta,c_0$) such that either
+\[
+\mathsf{Pay}_\xi(r)+\mathsf{Pay}_\rho(r)\ \ge\ c\,\varepsilon^2
+\]
+or else the explicit absorption conclusion of Lemma~\ref{lem:rigid_rotation_absorption_implies_structure} holds
+(i.e. existence of $E'\subset E$ and a map $b:E'\to\Sbb^2$ with properties (i)–(iii)).
+\end{lemma}
+
+\begin{proof}[One-line proof]
+If $\mathsf{Pay}_\xi(r)+\mathsf{Pay}_\rho(r)\ge c\,\varepsilon^2$ we are done.
+Otherwise choose $\kappa$ in Lemma~\ref{lem:rigid_rotation_absorption_implies_structure} and apply that lemma to enter the absorption class.
+\end{proof}
+\end{lstlisting}
+
+
+At this point, the Bet2/U-4 route reduces to a single question:
+can we rule out the absorption class uniformly as $r\downarrow 0$?
+
+
+\begin{lstlisting}
+\begin{hypothesis}[Absorption class is impossible for running-max ancient elements]\label{hyp:absorption_class_impossible}
+Fix $\eta\in(0,1/8)$ and $\varepsilon_0>0$.
+There exists $r_0=r_0(\eta,\varepsilon_0)>0$ such that for all $0<r\le r_0$,
+the absorption conclusion of Lemma~\ref{lem:rigid_rotation_absorption_implies_structure} cannot hold at level $\varepsilon_0$
+for the running-max cylinder (in particular, not on any time set $E$ with $|E|\ge c_0 r^2$).
+\end{hypothesis}
+\end{lstlisting}
+
+
+\textbf{How to try to kill the absorption class (two concrete paths):}
+
+
+\begin{itemize}
+\item \textbf{(K‑ODE) ODE/affine-mode contradiction (preferred if possible):}
+\item Use (ii) + (iii) to show the local flow is dominated by an explicit affine mode determined by $S_{\mathrm{tail}}^{(k)}(0,t)$.
+\item Derive an ODE for the corresponding affine coefficient (compare to TeX Lemma \texttt{\detokenize{lem:linear-mode-ODE}}) and show it is incompatible with
+    (a) ancientness, and/or (b) bounded vorticity + running-max normalization.
+\item \textbf{Missing input to isolate if stuck:} a bound on the time-variation of $S_{\mathrm{tail}}^{(k)}(0,t)$ on $[-r^2,0]$
+    (or a statement that it is approximately constant on short windows), so the ODE can be closed.
+\item \textbf{(K‑E) Quasi‑2D pivot (safe fallback):}
+\item Show that on sufficiently small cylinders $Q_r$, the absorption class forces $\xi$ to be close to a \emph{single}
+    constant direction on a positive-measure subset (combine (i) with a short-time bound on $b(t)$).
+\item Conclude the flow is locally quasi‑2D and invoke the E/2D Liouville elimination mechanism to rule it out.
+\item \textbf{Missing input to isolate if stuck:} a quantitative “quasi‑2D on a cylinder ⇒ triviality” interface,
+    which may depend on backward uniqueness / Liouville inputs (gate E).
+\end{itemize}
+
+
+\paragraph{K‑ODE — make the “affine mode” explicit (interfaces + targets)}
+
+
+\begin{lstlisting}
+\begin{hypothesis}[Time-variation control of the tail strain on a short window]\label{hyp:tail_strain_time_variation}
+There exists a modulus $\omega:(0,1]\to(0,\infty)$ with $\omega(r)\to 0$ as $r\downarrow 0$ such that for every rescaled cylinder $Q_r$,
+\[
+\sup_{t,s\in[-r^2,0]} \bigl\|S_{\mathrm{tail}}^{(k)}(0,t)-S_{\mathrm{tail}}^{(k)}(0,s)\bigr\|
+\ \le\ \omega(r).
+\]
+\end{hypothesis}
+\end{lstlisting}
+
+
+\begin{lstlisting}
+\begin{hypothesis}[Bridge input for Hypothesis~\ref{hyp:tail_strain_time_variation}: uniform $L^2$ time-modulus for the tail vorticity]\label{hyp:tail_vorticity_L2_time_modulus}
+For the running-max rescaled sequence (or ancient element) on $Q_1$, define the \emph{tail vorticity}
+\[
+\Omega^{(k)}(w,t):=\omega^{(k)}(w,t)\mathbf{1}_{\{|w|>1\}}.
+\]
+Assume:
+\begin{enumerate}
+\item[(i)] (\textbf{Well-definedness}) For every $k$ and every $t\in[-1,0]$, one has \(\Omega^{(k)}(\cdot,t)\in L^2(\R^3)\).
+\item[(ii)] (\textbf{Scale-consistent time modulus}) There exists a modulus $\mu:(0,1]\to(0,\infty)$ with $\mu(r)\to 0$ as $r\downarrow 0$
+such that for every $0<r\le 1$ and every $k$,
+\[
+\sup_{t,s\in[-r^2,0]}\ \|\Omega^{(k)}(\cdot,t)-\Omega^{(k)}(\cdot,s)\|_{L^2(\R^3)}\ \le\ \mu(r).
+\]
+\end{enumerate}
+\end{hypothesis}
+\end{lstlisting}
+
+
+\textbf{Lean symbol:} \texttt{\detokenize{Bet2U4.TailVorticityL2TimeModulusHypothesis}} (alias of \texttt{\detokenize{Bet2U4.TailStrainTimeVariationHypothesis}} on the tail signal).
+
+
+\textbf{Proof status (unconditional checklist item \#5):} currently \textbf{blocked}.
+For the running-max rescaled sequence we have $\|\omega^{(k)}\|_{L^\infty}\lesssim 1$ and local smoothness on compact cylinders,
+but converting that into a \emph{uniform-in-$k$} time-modulus in $L^2(\R^3;\{|w|>1\})$ is a real global/tail regularity statement.
+If we can only prove a weaker time-modulus in a different norm, we should restate this hypothesis accordingly and redo
+Lemma~\texttt{\detokenize{\ref{lem:tail_vorticity_L2_time_modulus_implies_tail_strain_time_variation}}} with the matching dual kernel norm.
+
+
+\textbf{Single blocker:} prove a uniform-in-$k$ time modulus for the tail vorticity in an $L^2$-type tail norm (or restate the hypothesis in the weakest norm
+that still controls the tail strain moment pairing).
+
+
+\begin{lstlisting}
+\begin{lemma}[Bridge: Hypothesis~\ref{hyp:tail_vorticity_L2_time_modulus} $\Rightarrow$ Hypothesis~\ref{hyp:tail_strain_time_variation}]\label{lem:tail_vorticity_L2_time_modulus_implies_tail_strain_time_variation}
+Assume Hypothesis~\ref{hyp:tail_vorticity_L2_time_modulus}. Define $S_{\mathrm{tail}}^{(k)}(0,t)$ by the explicit tail moment formula
+(Lemma~\ref{lem:tail-strain-formula} in \texttt{navier-dec-12-rewrite.tex}) applied to $\Omega^{(k)}(\cdot,t)$.
+Then Hypothesis~\ref{hyp:tail_strain_time_variation} holds with modulus
+\[
+\omega(r):=C_{\mathrm{BS}}\mu(r),
+\]
+where $C_{\mathrm{BS}}$ is the $L^2$ norm of the kernel in Lemma~\ref{lem:tail_strain_time_variation_from_mildness} (universal).
+\end{lemma}
+\end{lstlisting}
+
+
+\begin{lstlisting}
+\begin{lemma}[Tail strain time-variation from a single $L^2$-continuity input (proved)]\label{lem:tail_strain_time_variation_from_mildness}
+Let $\omega:\R^3\times[-1,0]\to\R^3$ be such that the truncated tail field
+\[
+\Omega(\cdot,t):=\omega(\cdot,t)\mathbf{1}_{\{|w|>1\}}
+\]
+lies in $L^2(\R^3)$ for every $t\in[-1,0]$, and assume the map $t\mapsto \Omega(\cdot,t)$ is uniformly continuous as a map
+$[-1,0]\to L^2(\R^3)$.
+Define the tail strain moment at the origin by the explicit Biot--Savart $\ell=2$ formula (Lemma~\ref{lem:tail-strain-formula} in
+\texttt{navier-dec-12-rewrite.tex}):
+\[
+S_{\mathrm{tail}}(0,t)
+:=-\frac{3}{8\pi}\int_{|w|>1}\frac{(w\times\Omega(w,t))\otimes w+w\otimes(w\times\Omega(w,t))}{|w|^5}\,dw.
+\]
+Then $t\mapsto S_{\mathrm{tail}}(0,t)$ is uniformly continuous on $[-1,0]$. In particular, for every $0<r\le 1$,
+\[
+\sup_{t,s\in[-r^2,0]}\bigl\|S_{\mathrm{tail}}(0,t)-S_{\mathrm{tail}}(0,s)\bigr\|
+\ \le\ \omega_{\mathrm{tail}}(r)
+\quad\text{with}\quad
+\omega_{\mathrm{tail}}(r)\to 0\ \text{as }r\downarrow 0,
+\]
+so Hypothesis~\ref{hyp:tail_strain_time_variation} holds (with $S_{\mathrm{tail}}^{(k)}$ replaced by this $S_{\mathrm{tail}}$).
+\end{lemma}
+
+\begin{proof}
+Write the moment as a linear pairing $S_{\mathrm{tail}}(0,t)=\int_{|w|>1}K(w)\,\Omega(w,t)\,dw$ where the matrix-valued kernel $K$ is the
+linear map in $\Omega$ appearing in the displayed formula. Pointwise one has
+\[
+\|K(w)\|\ \lesssim\ |w|^{-3},
+\]
+hence $K\in L^2(\{|w|>1\})$ because $\int_{|w|>1}|w|^{-6}\,dw<\infty$.
+Therefore Cauchy--Schwarz gives, for any $t,s\in[-1,0]$,
+\[
+\bigl\|S_{\mathrm{tail}}(0,t)-S_{\mathrm{tail}}(0,s)\bigr\|
+\le \|K\|_{L^2(\{|w|>1\})}\,\|\Omega(\cdot,t)-\Omega(\cdot,s)\|_{L^2(\R^3)}.
+\]
+Uniform continuity of $t\mapsto\Omega(\cdot,t)$ in $L^2$ implies uniform continuity of $t\mapsto S_{\mathrm{tail}}(0,t)$.
+Finally define
+\[
+\omega_{\mathrm{tail}}(r)
+:=\|K\|_{L^2(\{|w|>1\})}\cdot
+\sup_{\substack{t,s\in[-1,0]\\ |t-s|\le r^2}}\|\Omega(\cdot,t)-\Omega(\cdot,s)\|_{L^2(\R^3)}.
+\]
+Then $\omega_{\mathrm{tail}}(r)\to 0$ as $r\downarrow 0$ and the stated bound holds.
+\end{proof}
+\end{lstlisting}
+
+
+\textbf{Acceptance test (unconditional-proof guard):}
+the proof of Lemma~\texttt{\detokenize{\ref{lem:tail_strain_time_variation_from_mildness}}} must use only (a) time-continuity of $\omega$ in a norm that
+dominates the \(|w|^{-4}\) tail pairing (e.g. $L^2$ works by Cauchy--Schwarz since \(\int_{|w|>1}|w|^{-8}<\infty\)),
+and (b) the explicit tail moment formula.
+If it silently imports higher regularity at $t=0$ or global Sobolev control, we keep it as a hypothesis interface and proceed with a different K‑ODE closure.
+
+
+\begin{lstlisting}
+\begin{hypothesis}[Absorption class implies an approximate 2.5D linear mode with a small Riccati defect (single blocker)]\label{hyp:absorption_implies_approx_riccati_defect}
+Assume the absorption conclusion of Lemma~\ref{lem:rigid_rotation_absorption_implies_structure} holds on $Q_r$ at level $\varepsilon_0$.
+After a \emph{fixed} rigid motion (rotation + Galilean shift), there exist functions
+\[
+\alpha_r,\ b_r \in W^{1,\infty}([-(r/2)^2,0])
+\]
+such that on the smaller cylinder $Q_{r/2}$ the third velocity component admits the decomposition
+\[
+u_3(x,t)=\alpha_r(t)+b_r(t)\,x_3 + w_r(x,t),
+\]
+and the following two estimates hold:
+\begin{enumerate}[(i)]
+\item (\textbf{Small remainder}) the remainder is small in a scale-invariant $H^1$ sense:
+\[
+\frac{1}{r}\iint_{Q_{r/2}}|\nabla w_r|^2\ \le\ \mathrm{Err}(r),
+\]
+for some rate function $\mathrm{Err}:(0,1]\to[0,\infty)$ with $\mathrm{Err}(r)\to 0$ as $r\downarrow 0$ along the absorption cylinders.
+\item (\textbf{Approximate Riccati closure with controlled defect}) the linear-mode coefficient obeys
+\[
+\sup_{t\in[-(r/2)^2,0]}\bigl|\dot b_r(t)+b_r(t)^2\bigr|\ \le\ \mathrm{Err}(r),
+\]
+and the rate is controlled by already-paid quantities plus the tail-affine remainder:
+\[
+\mathrm{Err}(r)\ \le\ C\Bigl(\mathsf{Pay}_\xi(r)^{1/2}+\mathsf{Pay}_\rho(r)^{1/2}+r\Bigr),
+\]
+with a constant $C$ independent of $r$.
+\end{enumerate}
+\end{hypothesis}
+\end{lstlisting}
+
+\paragraph{Attempted derivation of the Riccati defect (pivot check; stop at first C2 dependence)}
+
+\begin{lstlisting}
+\begin{lemma}[Attempt: the Riccati defect reduces to a pressure-Hessian estimate (pivot trigger)]\label{lem:attempt_derive_approx_riccati_defect_pivot}
+Assume the absorption conclusion of Lemma~\ref{lem:rigid_rotation_absorption_implies_structure} holds on $Q_r$ and assume we have
+an approximate linear-mode decomposition of $u_3$ as in Hypothesis~\ref{hyp:absorption_implies_approx_riccati_defect}(i).
+Let $b_r(t):=(\partial_3 u_3)(0,t)$ be the basepoint linear coefficient.
+
+Then differentiating the third Navier--Stokes equation and evaluating at the basepoint gives the identity
+\[
+\dot b_r(t) + b_r(t)^2
+= -(\partial_{33}p)(0,t)\;+\;\mathsf{Err}_{\mathrm{nl}}(r,t),
+\]
+where $\mathsf{Err}_{\mathrm{nl}}$ collects the non-2.5D remainder terms (transport/diffusion of $\partial_3 u_3$ and the mixed term
+$(\partial_3 u)\cdot\nabla u_3 - b_r^2$).
+
+If one could bound $|\mathsf{Err}_{\mathrm{nl}}(r,t)|$ purely by the already-paid quantities
+$\mathsf{Pay}_\xi(r),\mathsf{Pay}_\rho(r)$ and the tail-affine remainder $O(r)$, then the remaining obstruction to
+Hypothesis~\ref{hyp:absorption_implies_approx_riccati_defect}(ii) is controlling the pressure Hessian term $(\partial_{33}p)(0,t)$.
+
+\smallskip
+\noindent\textbf{Where the pivot trigger fires.}
+By the pressure Poisson law $\Delta p = -\partial_i u_j\,\partial_j u_i$, the quantity $(\partial_{33}p)(0,t)$ is a Calder\'on--Zygmund singular integral
+of the quadratic form $\partial_i u_j\,\partial_j u_i(\cdot,t)$ with kernel $\sim |x|^{-3}$.
+Splitting into near-field and far-field contributions shows that to make $(\partial_{33}p)(0,t)$ small at scale $r$
+one needs a scale-consistent smallness control of a local \emph{unweighted} budget term of the form
+\[
+\frac{1}{r^2}\iint_{Q_{2r}} \bigl(|\sigma|+|\nabla\xi|^2\bigr)\,dx\,dt
+\quad\text{(or equivalently }\frac{1}{r^2}\iint_{Q_{2r}}|\nabla u|^2\,dx\,dt\text{ up to constants).}
+\]
+In the current running-max framework, the only available mechanism that controls this budget without additional global decay is the
+\emph{vanishing positive injection} (C2/U-decay) gate:
+\[
+\frac{1}{r^2}\iint_{Q_{2r}} \rho^{3/2}\,\sigma_+ \ \to\ 0\qquad(r\downarrow 0),
+\]
+which is exactly the C2 pivot point (\texttt{\detokenize{hyp:C2_vanishing_injection}} / \texttt{\detokenize{hyp:U4_vanishing_injection_rate}}).
+
+Therefore, the first nontrivial step in proving Hypothesis~\ref{hyp:absorption_implies_approx_riccati_defect}(ii) already collapses into controlling
+\(\iint \rho^{3/2}\sigma_+\): the attempt certifies the \textbf{P-C2 pivot trigger}.
+\end{lemma}
+\end{lstlisting}
+
+\begin{lstlisting}
+\begin{lemma}[K-ODE gate: absorption $\Rightarrow$ local affine gauge + approximate Riccati mode (proved modulo one blocker)]\label{lem:absorption_implies_affine_ansatz}
+Fix $r\in(0,1]$ and assume the absorption conclusion of Lemma~\ref{lem:rigid_rotation_absorption_implies_structure} holds on $Q_r$ at level $\varepsilon_0$.
+Assume Hypothesis~\ref{hyp:absorption_implies_approx_riccati_defect}.
+
+Define the affine gauge by the first-order Taylor polynomial at the basepoint:
+\[
+a_r(t):=u(0,t),\qquad A_r(t):=\nabla u(0,t),\qquad \ell_{0,r}(x,t):=a_r(t)+A_r(t)x.
+\]
+Then $\mathrm{tr}\,A_r(t)=0$ for all $t$ (since $\nabla\cdot u\equiv 0$).
+Define the scalar linear mode (basepoint linear coefficient)
+\[
+b_r(t):=e_3\cdot A_r(t)\,e_3 = (\partial_3 u_3)(0,t).
+\]
+Then on $Q_{r/2}$:
+\begin{enumerate}
+\item[(i)] (Scale-critical small remainder) one has
+\[
+\frac{1}{r}\iint_{Q_{r/2}}|\nabla(u-\ell_{0,r})|^2 \ \le\ \delta(r),
+\qquad
+\delta(r):=C r^6 \sup_{Q_{r/2}}|\nabla^2 u|^2\ \xrightarrow{r\downarrow 0}\ 0,
+\]
+for an absolute constant $C$.
+\item[(ii)] (Approximate Riccati mode) the scalar $b_r$ satisfies the approximate Riccati ODE on $[-(r/2)^2,0]$:
+\[
+\bigl|\dot b_r(t)+b_r(t)^2\bigr|\ \le\ \mathrm{Err}(r),
+\]
+where $\mathrm{Err}(r)\to 0$ as $r\downarrow 0$ and is controlled as in Hypothesis~\ref{hyp:absorption_implies_approx_riccati_defect}.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+\textbf{(i)} Fix $(x,t)\in Q_{r/2}$. Since $\ell_{0,r}(\cdot,t)$ is the first-order Taylor polynomial of $u(\cdot,t)$ at $x=0$,
+Taylor’s theorem gives
+\[
+\nabla u(x,t)-\nabla u(0,t)
+=\int_0^1 \nabla^2 u(\theta x,t)[x]\,d\theta.
+\]
+Hence
+\[
+|\nabla(u-\ell_{0,r})(x,t)|
+=|\nabla u(x,t)-\nabla u(0,t)|
+\le |x|\sup_{B_{r/2}}|\nabla^2 u(\cdot,t)|
+\le \tfrac{r}{2}\sup_{Q_{r/2}}|\nabla^2 u|.
+\]
+Squaring and integrating over $Q_{r/2}$ (whose spacetime volume is $\sim r^5$) yields
+\[
+\iint_{Q_{r/2}}|\nabla(u-\ell_{0,r})|^2
+\le C r^7 \sup_{Q_{r/2}}|\nabla^2 u|^2.
+\]
+Dividing by $r$ gives the stated bound. The limit $\delta(r)\to 0$ follows from smoothness of $u$ at the basepoint.
+
+\smallskip
+\textbf{(ii)} This is exactly the “approximate Riccati closure with controlled defect” conclusion in
+Hypothesis~\ref{hyp:absorption_implies_approx_riccati_defect}(ii).
+\end{proof}
+\end{lstlisting}
+
+
+\textbf{Lean symbol (spec interface):} \texttt{\detokenize{Bet2U4.AbsorptionImpliesAffineAnsatzHypothesis}}.
+
+
+\textbf{Proof status (unconditional checklist item \#6):} currently \textbf{blocked}.\\
+\textbf{Single blocker (K-ODE):} prove Hypothesis~\texttt{\detokenize{\ref{hyp:absorption_implies_approx_riccati_defect}}}
+(approximate 2.5D linear mode + Riccati defect bound with $\mathrm{Err}(r)\to 0$).
+Once the Riccati defect is uniformly small along arbitrarily small absorption cylinders, the ODE instability mechanism can be made quantitative
+to rule out the absorption class (no C2/U-decay import required).
+
+
+\begin{lstlisting}
+\begin{lemma}[Affine-mode ODE contradiction (now a one-line corollary)]\label{lem:affine_mode_ode_contradiction}
+Assume the conclusion of Lemma~\ref{lem:absorption_implies_affine_ansatz} holds for a running-max ancient cylinder at arbitrarily small scales $r\downarrow 0$.
+Then the running-max ancient element is impossible (contradiction with vorticity normalization and/or ancientness), by applying the Riccati mode in
+Lemma~\ref{lem:absorption_implies_affine_ansatz}(iii) and the ancient-solution sign constraints (compare \texttt{navier-dec-12-rewrite.tex},
+Lemma~\texttt{\detokenize{\ref{lem:linear-mode-ODE}}} and Lemma~\texttt{\detokenize{\ref{lem:E1-b-negative-impossible}}}).
+\end{lemma}
+\end{lstlisting}
+
+
+\textbf{Lean symbol (spec interface):} \texttt{\detokenize{Bet2U4.AffineAnsatzImpossibleHypothesis}}.
+
+
+\textbf{Proof status (unconditional checklist item \#7):} this is no longer a separate blocker.\\
+Once Lemma~\texttt{\detokenize{\ref{lem:absorption_implies_affine_ansatz}}} supplies a closed Riccati mode,
+the contradiction reduces to the explicit ODE analysis already present in \texttt{\detokenize{navier-dec-12-rewrite.tex}}.
+
+
+\textbf{Acceptance test for K‑ODE:} if we can’t prove Hypothesis~\texttt{\detokenize{\ref{hyp:tail_strain_time_variation}}} from bounded vorticity + tail control,
+we should keep it as an explicit interface and move to K‑E.
+
+
+\paragraph{K‑E — reduce absorption to the 2D/E gate}
+
+
+\begin{lstlisting}
+\begin{lemma}[Absorption class implies quasi-2D on a smaller cylinder (fully quantified target)]\label{lem:absorption_implies_quasi2d}
+Fix $\eta\in(0,1/8)$ and $\varepsilon_0>0$.
+There exist $\theta\in(0,1/8)$ and $\delta_{\mathrm{abs}}=\delta_{\mathrm{abs}}(\eta,\varepsilon_0,c_0,c_*)>0$ such that:
+for any $r\in(0,1]$, if the absorption conclusion of Lemma~\ref{lem:rigid_rotation_absorption_implies_structure} holds on $Q_r$ at level
+$\varepsilon_0$ (hence there is a time set $E'\subset[-r^2,0]$ with $|E'|\ge \tfrac12|E|\ge \tfrac{c_0}{2}r^2$ and a map
+$b:E'\to\Sbb^2$ satisfying items (i)–(iii)),
+then there exist a unit vector $b_0\in\Sbb^2$ and a time set $I_0\subset E'$ with $|I_0|\ge \tfrac{c_0}{4}r^2$ such that
+\[
+\int_{B_{\theta r}} \rho(x,t)^{3/2}\,|\xi(x,t)-b_0|^2\,dx\ \le\ \delta_{\mathrm{abs}}\,(\theta r)^3
+\qquad\forall t\in I_0.
+\]
+Equivalently,
+\[
+\iint_{B_{\theta r}\times I_0} \rho^{3/2}\,|\xi-b_0|^2\ \le\ \delta_{\mathrm{abs}}\,(\theta r)^5.
+\]
+\end{lemma}
+\end{lstlisting}
+
+
+\begin{lstlisting}
+\begin{hypothesis}[Backward uniqueness for bounded mild Navier--Stokes (Lei--Yang--Yuan, IMRN 2024)]\label{hyp:backward_uniqueness_NS_LYY}
+Let $(u_1,p_1)$ and $(u_2,p_2)$ be bounded mild solutions on $\mathbb R^3\times[0,T]$ with bounded vorticities.
+If $u_1(\cdot,T)=u_2(\cdot,T)$, then $(u_1,\nabla p_1)=(u_2,\nabla p_2)$ on $\mathbb R^3\times[0,T]$.
+\end{hypothesis}
+\end{lstlisting}
+
+
+\begin{lstlisting}
+\begin{hypothesis}[E-gate bridge (pure LYY/symmetry propagation): quasi-2D forces an exact symmetry of the final data]\label{hyp:E_quasi2d_to_exact_symmetry}
+There exists $\delta_E>0$ such that if a running-max ancient element on $Q_1$ satisfies
+\(\iint_{Q_1}\rho^{3/2}|\xi-b_0|^2\le \delta_E\)
+for some $b_0\in\Sbb^2$, then there exists a \emph{nontrivial} Euclidean symmetry $g$ (translation/rotation/reflection)
+such that the final-time data is exactly $g$-invariant:
+\[
+u(\cdot,0)\ =\ g_\# u(\cdot,0).
+\]
+Equivalently, if we define the symmetry-pushforward solution $u^g(x,t):=(g_\# u)(x,t)$ on $Q_1$,
+then \(u^g(\cdot,0)=u(\cdot,0)\).
+
+\smallskip
+\noindent\textbf{Intended choice of $g$ (to force “2D”):}
+take $g$ to be translation by a nonzero vector parallel to $b_0$, so $g$-invariance means the flow is independent of the $b_0$-direction.
+\end{hypothesis}
+\end{lstlisting}
+
+
+\begin{lstlisting}
+\begin{hypothesis}[E-gate elimination of the symmetry class]\label{hyp:E_symmetry_class_impossible}
+No nontrivial running-max ancient element can be invariant (even at a single time-slice) under a nontrivial translation,
+equivalently no nontrivial translation-invariant running-max ancient element exists.
+\end{hypothesis}
+\end{lstlisting}
+
+
+\begin{lstlisting}
+\begin{hypothesis}[E-gate (Lei--Yang--Yuan backward uniqueness): quasi-2D cylinder implies triviality]\label{hyp:E_quasi2d_elimination}
+Assume Hypothesis~\ref{hyp:backward_uniqueness_NS_LYY}, Hypothesis~\ref{hyp:E_quasi2d_to_exact_symmetry}, and
+Hypothesis~\ref{hyp:E_symmetry_class_impossible}.
+Then no nontrivial running-max ancient element can satisfy the quasi-2D smallness event
+\(\iint_{Q_1}\rho^{3/2}|\xi-b_0|^2\le \delta_E\) for any $b_0\in\Sbb^2$.
+\end{hypothesis}
+\end{lstlisting}
+
+
+\textbf{Acceptance test for K‑E (LYY endpoint):}
+- \texttt{\detokenize{hyp:backward_uniqueness_NS_LYY}} must be tied to a single concrete import target:
+  \texttt{\detokenize{docs/lit/papers/2024-lei-yang-yuan-backward-uniqueness-final-data.md}} (Theorem 1.1, IMRN 2024).
+- We must spell out (and either prove or isolate) the \textbf{solution-class bridge} needed to apply LYY:
+  bounded mild on $\mathbb R^3\times[-1,0]$ + bounded vorticity (and any extra global bounds they require).
+- The only genuinely hard geometric bridge is now localized to \texttt{\detokenize{\ref{hyp:E_quasi2d_to_exact_symmetry}}}:
+  “small weighted direction variance on $Q_1$ forces an \emph{exact} translation symmetry at $t=0$”.
+  \textbf{Reality check (unconditional-proof guard):} this is extremely strong and very likely false if the only input is an $L^2$-type
+  smallness of $\xi-b_0$ on a cylinder. We keep it as an explicit interface (so the dependency is honest), but we do \textbf{not} plan to
+  rely on it for an unconditional proof unless we later upgrade the absorption output to a genuinely rigidity-level statement at $t=0$.
+  Accordingly, the main unconditional elimination effort should prioritize \textbf{K‑ODE}.
+- \texttt{\detokenize{lem:absorption_implies_quasi2d}} must output exactly the smallness predicate used in
+  \texttt{\detokenize{\ref{hyp:E_quasi2d_to_exact_symmetry}}} after rescaling to $Q_1$ (no hidden norms).
+
+
+If proving (ii)+(iii) forces a C2-type bound (e.g. control of $\iint\rho^{3/2}\sigma_+$), we stop and pivot: this would certify that
+Route (B-$\xi$) collapses into a C2-strength estimate.
+
+
+This is the cleanest “Route (B‑ξ)” target: it only talks about the tail forcing term and the paid channel \(\rho^{3/2}|\nabla\xi|^2\).
+If proving it requires exactly a C2-type estimate on \(\sigma_+\), we trigger the pivot.
+
+
+\begin{itemize}
+\item \textbf{(B‑ξ.1) Concrete first lemma to attempt (integrated version, avoids pointwise eigenvector language):}
+\end{itemize}
+
+
+\begin{lstlisting}
+\begin{lemma}[Tail strain forcing implies twist payment on the top band (target for Route (B-$\xi$))]\label{lem:tail_strain_forcing_implies_twist_payment}
+Fix $\eta\in(0,1/8)$ and $r\le 1$. Let $(\rho,\xi,u)$ be a rescaled running-max cylinder solution on $Q_r(0,0)$ with $\rho\le 1$.
+Assume there is a time set $E\subset[-r^2,0]$ with $|E|\ge c_0 r^2$ and a radius $\delta\in(0,r)$ such that
+\[
+\rho(x,t)\ge 1-\eta \ \text{ and }\ \|S_{\mathrm{tail}}^{(k)}(x,t)\|\ge \varepsilon/2
+\qquad\forall (x,t)\in (B_\delta\times E).
+\]
+Assume furthermore that on $\{\rho>0\}$ the direction equation holds in the exact form obtained from $\omega=\rho\xi$:
+\[
+\partial_t\xi + u\cdot\nabla\xi - \Delta\xi
+\;=\; (I-\xi\otimes\xi)\,S\,\xi \;+\; \frac{2}{\rho}\,(\nabla\rho\cdot\nabla)\xi.
+\]
+Assume additionally that the perpendicular tail forcing is uniformly present on the top band:
+\[
+|(I-\xi\otimes\xi)\,S_{\mathrm{tail}}^{(k)}(x,t)\,\xi(x,t)|\ \ge\ c_*\,\varepsilon
+\qquad\forall (x,t)\in (B_\delta\times E).
+\]
+Then there exists $c>0$ (depending only on $\eta,c_0$) such that the normalized twist-or-band payment obeys
+\[
+\mathsf{Pay}_\xi(r)\;+\;\mathsf{Pay}_\rho(r)\ \ge\ c\,\varepsilon^2.
+\]
+\end{lemma}
+\end{lstlisting}
+
+
+\textbf{Acceptance test:} either prove this lemma cleanly (best case), or isolate the \emph{single} missing analytic input as a hypothesis interface
+(\texttt{\detokenize{hyp:forcing_to_twist_payment_on_top_band}}) and record whether it is equivalent to a known C2 endpoint.
+
+
+\begin{itemize}
+\item \textbf{(B‑2) The minimal “direction forcing ⇒ gradient” interface we may need} (keep it explicit):
+  If we go Route (B‑ξ), we should isolate a single analytic lemma of the form:
+  \[
+  |(I-\xi\otimes\xi)S_{\mathrm{tail}}\xi|\ \gtrsim\ \varepsilon
+  \quad\Longrightarrow\quad
+  \iint_{Q_r}\rho^{3/2}|\nabla\xi|^2\ +\ \eta^{-1}\iint_{Q_r\cap\{1-2\eta<\rho<1-\eta\}}|\nabla(\rho^{3/4})|^2
+  \ \gtrsim\ \varepsilon^2 r^2,
+  \]
+  i.e. the tail strain produces a nontrivial forcing term in the \(\xi\)-equation that must be “paid for” by the \(\rho^{3/2}|\nabla\xi|^2\)
+  channel (and, if necessary, by the transition-band diffusion channel \(|\nabla(\rho^{3/4})|^2\)). If we can’t prove this without invoking
+  a full C2-type estimate, we declare it as a hypothesis interface and track the pivot.
+\item \textbf{(B‑3) Acceptance target for S3‑B (what “proved” means):}
+  Provide either:
+\item a \emph{time-slice pointwise} lemma: \(\|S_{\mathrm{tail}}\|\ge\varepsilon\) and \(\rho\ge 1-\eta\) imply \(\sigma\ge c\varepsilon\) or
+    \(|\nabla\xi|^2\ge c\varepsilon^2\), \textbf{or}
+\item a \emph{cylinder-integrated} lemma (often easier): persistence on \(E\) implies
+    \[
+    \frac1{r^2}\iint_{Q_r}\rho^{3/2}|\nabla\xi|^2 \ \ge\ c\,\varepsilon^2,
+    \]
+    unless there is a positive-measure subset of times where \(\sigma\ge c\varepsilon\) at top-band points.
+  Either version is sufficient to feed into S3‑P.
+\end{itemize}
+
+
+\subparagraph{(S3‑P) Export ⇒ payment lower bound (the actual “self-falsification” step)}
+
+
+This is the main new lemma Bet 2 needs. In U‑4 language:
+
+
+\begin{lstlisting}
+\begin{hypothesis}[S3‑P splitter (interface; Lean: \texttt{Bet2U4.ExportSplitHypothesis})]\label{hyp:export_split}
+Fix abstract predicates
+\(
+\mathsf{ExportEvent},\mathsf{ForcingEvent},\mathsf{NegativeSigmaEvent},\mathsf{ConcavityEvent}:\R_{>0}\times(0,1]\to\{\text{true,false}\}.
+\)
+Assume that for all $\varepsilon>0$ and $r\in(0,1]$,
+\[
+\mathsf{ExportEvent}(\varepsilon,r)\ \Longrightarrow\
+\mathsf{ForcingEvent}(\varepsilon,r)\ \lor\ \mathsf{NegativeSigmaEvent}(\varepsilon,r)\ \lor\ \mathsf{ConcavityEvent}(\varepsilon,r).
+\]
+\end{hypothesis}
+\end{lstlisting}
+
+
+\begin{lstlisting}
+\begin{lemma}[Persistence of tail export forces cylinder payment (template)]\label{lem:export_forces_payment_on_cylinder}
+Fix $r\le 1$. Assume that on a time set $E\subset[-r^2,0]$ of measure $|E|\ge c_0 r^2$ we have
+$\|S^{(k)}_{tail}(0,t)\|\ge \varepsilon$.
+Assume the local persistence lemma `lem:tail-strain-local-persistence` holds with a radius $\delta=\delta(\varepsilon)$,
+so that $\|S^{(k)}_{tail}(x,t)\|\ge \varepsilon/2$ for all $|x|\le \delta$ and $t\in E$.
+
+Assume also:
+\begin{itemize}
+\item the maximizer-selection + drift-control lemmas (S3‑T/S3‑U) needed to apply `lem:runningmax-injection-penalized`
+      on a positive-measure subset of $E$;
+\item the “no persistent null alignment” hypothesis \ref{hyp:no_persistent_null_alignment};
+\item the “no rigid-rotation absorption” hypothesis \ref{hyp:no_rigid_rotation_absorption}
+      (equivalently: apply Lemma~\ref{lem:forcing_payment_or_absorption} to reduce perpendicular forcing to
+      payment-or-absorption);
+\item (optional, if needed) a single hypothesis turning persistent *negative* injection on $\{\rho\approx 1\}$ into band payment:
+\end{itemize}
+
+\begin{hypothesis}[Negative injection on the top band forces band diffusion payment]\label{hyp:negative_sigma_forces_band_payment}
+Fix $\eta\in(0,1/8)$. There exists $c>0$ such that for any $Q_r(0,0)$,
+if on a set $B_\delta\times E$ with $|E|\ge c_0 r^2$ one has $\rho\ge 1-\eta$ and
+\[
+\sigma(x,t)\ \le\ -c_*\varepsilon \qquad\forall (x,t)\in B_\delta\times E,
+\]
+then the normalized band diffusion payment obeys
+\[
+\mathsf{Pay}_\rho(r)\ :=\ \frac1{r^2}\,\eta^{-1}\iint_{Q_r\cap\{1-2\eta<\rho<1-\eta\}}|\nabla(\rho^{3/4})|^2\ \ge\ c\,\varepsilon^2.
+\]
+\end{hypothesis}
+
+Define the **normalized cylinder payments**
+\[
+\mathsf{Pay}_\xi(r)\ :=\ \frac1{r^2}\iint_{Q_r}\rho^{3/2}|\nabla\xi|^2,
+\qquad
+\mathsf{Pay}_\rho(r)\ :=\ \frac1{r^2}\,\eta^{-1}\iint_{Q_r\cap\{1-2\eta<\rho<1-\eta\}}|\nabla(\rho^{3/4})|^2.
+\]
+
+Then at least one of the following “outcomes” holds on the cylinder $Q_r$ (with constants independent of $r$):
+\begin{enumerate}
+\item[(P1)] (recognition strain) $\mathsf{Pay}_\xi(r)\ \ge\ c_1\,\varepsilon^2$,
+\item[(P2)] (band diffusion) $\mathsf{Pay}_\rho(r)\ \ge\ c_2\,\varepsilon^2$,
+\item[(A)]  (absorption class) the explicit absorption conclusion of Lemma~\ref{lem:rigid_rotation_absorption_implies_structure}
+            holds (equivalently: the `AbsorptionClass` predicate holds at $(\varepsilon,r)$),
+\item[(P3)] (peak concavity) there exists a time $t_\ast\in E$ such that at a (penalized) maximizer,
+  $-\Delta\rho(\cdot,t_\ast)$ is $\gtrsim \varepsilon$ on a nontrivial ball (so its space integral on $B_r$ is $\gtrsim \varepsilon r^3$).
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}[Proof sketch]
+Use Hypothesis~\ref{hyp:no_persistent_null_alignment} to promote $\|S_{\mathrm{tail}}\|\gtrsim\varepsilon$ on $B_\delta\times E$
+to a positive-measure subset $U\subset B_\delta\times E$ where $|S_{\mathrm{tail}}\xi|\gtrsim \varepsilon$.
+On $U$, decompose
+\[
+S_{\mathrm{tail}}\xi = (\xi\cdot S_{\mathrm{tail}}\xi)\,\xi + (I-\xi\otimes\xi)\,S_{\mathrm{tail}}\xi,
+\]
+so either $|\sigma|=|\xi\cdot S_{\mathrm{tail}}\xi|\gtrsim \varepsilon$ or $|(I-\xi\otimes\xi)S_{\mathrm{tail}}\xi|\gtrsim \varepsilon$.
+
+If the perpendicular forcing is $\gtrsim\varepsilon$ on a time-thick top-band set, invoke
+Hypothesis~\ref{hyp:no_rigid_rotation_absorption} (equivalently Lemma~\ref{lem:forcing_payment_or_absorption})
+to obtain either a payment lower bound (P1/P2) or the absorption conclusion (A).
+
+Otherwise, $|\sigma|\gtrsim\varepsilon$ on a time-thick top-band set. If $\sigma\le -c\varepsilon$ there, apply
+Hypothesis~\ref{hyp:negative_sigma_forces_band_payment} to obtain (P2).
+If not, then on a positive-measure subset of times one has $\sigma\ge c\varepsilon$ at selected near-max times/points (from S3‑T/S3‑U),
+and the penalized maximizer inequality `lem:runningmax-injection-penalized` forces either large $|\nabla\xi|^2$ or large $-\Delta\rho$.
+In the latter case, thick-maximum propagation yields the “peak concavity” outcome (P3).
+\end{proof}
+\end{lstlisting}
+
+
+\textbf{Acceptance test:} the proof must be a \emph{three-case} bookkeeping argument:
+(i) if the perpendicular forcing is large on the top band, invoke \texttt{\detokenize{\ref{hyp:no_rigid_rotation_absorption}}} (or Lemma~\texttt{\detokenize{\ref{lem:forcing_payment_or_absorption}}})
+to get either (P1)/(P2) or (A);
+(ii) if $\sigma$ is uniformly negative on the top band, invoke \texttt{\detokenize{\ref{hyp:negative_sigma_forces_band_payment}}} to get (P2);
+(iii) otherwise the running-max injection inequality at selected near-max times forces (P3) via $-\Delta\rho$.
+Any additional analytic input beyond these three named hypotheses is considered “hidden C2” and triggers a pivot.
+
+
+\textbf{Proof status (unconditional checklist item \#2):} currently \textbf{blocked}.\\
+\textbf{Single blocker:} prove the S3‑P splitter Hypothesis~\texttt{\detokenize{\ref{hyp:export_split}}} (Lean: \texttt{\detokenize{Bet2U4.ExportSplitHypothesis}}) for the running-max rescaled cylinder sequence,
+without importing C2/UEWE.
+
+
+\subparagraph{(S3‑Q) Cylinder-scale upper bound (the U‑4 contradiction point)}
+
+
+Finally, U‑4 needs a cylinder-scale upper bound that rules out the payments (P1–P3) on \(Q_r\) for \(r\) small.
+If we cannot prove it from already‑automatic running‑max bounds, we name it as a single explicit hypothesis:
+
+
+\begin{lstlisting}
+\begin{hypothesis}[U-4 cylinder payment bound (template)]\label{hyp:U4_payment_upper_bound}
+Fix $\eta\in(0,1/8)$.
+There exists a function $\beta_\eta(r)\to 0$ as $r\downarrow 0$ such that for every rescaled running-max solution,
+the **normalized** cylinder payments obey
+\[
+\mathsf{Pay}_\xi(r)\ +\ \mathsf{Pay}_\rho(r)\ \le\ \beta_\eta(r).
+\]
+\end{hypothesis}
+\end{lstlisting}
+
+
+\textbf{Proof sketch status (honest):}
+This is \emph{not} currently proved from bounded vorticity or from the running-max normalization alone.
+It is exactly a \emph{vanishing Carleson} (VMO-type) statement for the nonnegative defect measure
+\(\rho^{3/2}|\nabla\xi|^2\) plus the transition-band diffusion measure \(|\nabla(\rho^{3/4})|^2\).
+Absent an external rigidity mechanism, it can fail even for smooth bounded-vorticity flows near vorticity zeros.
+
+
+\textbf{Proof status (unconditional checklist item \#1):} currently \textbf{blocked}.\\
+\textbf{Single blocker:} prove the U‑4 injection/payment-control package (Hypotheses~\texttt{\detokenize{\ref{hyp:U4_vanishing_injection_rate}}}
+and \texttt{\detokenize{\ref{hyp:U4_payrho_controlled_by_injection_rate}}}) for the running-max rescaled sequence
+(or else change the U‑4 payment normalization as discussed below).
+
+
+\textbf{PayRho sub-status (we updated this gate):} \texttt{\detokenize{\ref{hyp:U4_payrho_controlled_by_injection_rate}}} is now written as a clean
+interface with explicit definitions of $\mathsf{Pay}_\rho$ and $\mathsf{injRate}$, and its proof sketch reduces it (via
+Corollary~\texttt{\detokenize{\ref{cor:band-payment-simplified}}} in \texttt{navier-dec-12-rewrite.tex}) to the single missing analytic step
+\texttt{\detokenize{\ref{hyp:U4_band_budget_controlled_by_injection_rate}}}.  If \texttt{\detokenize{\ref{hyp:U4_band_budget_controlled_by_injection_rate}}} collapses into
+C2/UEWE/U-decay, treat that as the explicit pivot trigger.
+
+
+\begin{lstlisting}
+\begin{hypothesis}[Vanishing positive injection on small cylinders (C2-stretch gate; scale-invariant form)]\label{hyp:C2_vanishing_injection}
+There exists a function $\alpha:(0,1]\to[0,\infty)$ with $\alpha(r)\to 0$ as $r\downarrow 0$ such that for every rescaled running-max solution,
+every cylinder center $z_0\in\R^3\times(-\infty,0]$, and every $0<r\le 1$,
+\[
+\iint_{Q_r(z_0)}\rho(x,t)^{3/2}\,\sigma_+(x,t)\,dx\,dt\ \le\ \alpha(r).
+\]
+\end{hypothesis}
+\end{lstlisting}
+
+
+\textbf{Cross-reference / scaling check:} in \texttt{\detokenize{navier-dec-12-rewrite.tex}} the (currently open) “C2 stretch hypothesis”
+is recorded as \texttt{\detokenize{\eqref{eq:C2-stretch-hyp}}} in Lemma~\texttt{\detokenize{\ref{lem:C2-closure-from-stretch}}}:
+\(\iint_{Q_r}\rho^{3/2}\sigma_+\le \alpha(r)\) with $\alpha(r)\to 0$. We have now matched that scale-invariant formulation here.
+Note that our U‑4 “payments” were normalized by \(r^{-2}\); if we keep that normalization, then \texttt{\detokenize{\ref{hyp:C2_vanishing_injection}}} alone does
+\emph{not} force \(\mathsf{Pay}_\xi(r)+\mathsf{Pay}_\rho(r)\to 0\) unless we additionally know the damping integrals are \(o(r^2)\).
+Therefore, for an unconditional route, either:
+(i) we redefine the U‑4 payments without the extra \(r^{-2}\) normalization (so vanishing follows from the scale-invariant C2 gate), or
+(ii) we prove a genuinely stronger “rate” version of \texttt{\detokenize{\ref{hyp:C2_vanishing_injection}}}. We treat this normalization choice as a
+first-order design decision (pivot trigger P‑C2).
+
+
+\begin{lstlisting}
+\begin{hypothesis}[Rate-strengthened vanishing positive injection (U-4 compatible form)]\label{hyp:U4_vanishing_injection_rate}
+There exists a function $\gamma:(0,1]\to[0,\infty)$ with $\gamma(r)\to 0$ as $r\downarrow 0$ such that for every rescaled running-max solution,
+every cylinder center $z_0\in\R^3\times(-\infty,0]$, and every $0<r\le 1$,
+\[
+\frac{1}{r^2}\iint_{Q_r(z_0)}\rho(x,t)^{3/2}\,\sigma_+(x,t)\,dx\,dt\ \le\ \gamma(r).
+\]
+\end{hypothesis}
+\end{lstlisting}
+
+
+\begin{lstlisting}
+\begin{hypothesis}[U-4 payments are controlled by the normalized positive injection rate (interface)]\label{hyp:U4_payments_controlled_by_injection_rate}
+Fix $\eta\in(0,1/8)$. There exist constants $C\ge 0$ and a function $\mathrm{Err}_\eta:(0,1]\to[0,\infty)$ with
+$\mathrm{Err}_\eta(r)\to 0$ as $r\downarrow 0$ such that for every rescaled running-max solution and every $0<r\le 1$,
+\[
+\mathsf{Pay}_\xi(r)+\mathsf{Pay}_\rho(r)\ \le\
+C\cdot\frac{1}{r^2}\iint_{Q_{2r}(0,0)}\rho(x,t)^{3/2}\,\sigma_+(x,t)\,dx\,dt\ +\ \mathrm{Err}_\eta(r).
+\]
+\end{hypothesis}
+\end{lstlisting}
+
+
+\textbf{Proof sketch status (honest):}\\
+For $\mathsf{Pay}_\xi$, this is consistent with the weighted-coherence estimate
+(\texttt{\detokenize{navier-dec-12-rewrite.tex}}, Lemma~\texttt{\detokenize{\ref{lem:weighted-coherence-bound}}}) plus running-max normalization $\rho\le 1$, which yields
+\[
+\mathsf{Pay}_\xi(r)\ \lesssim\ \frac{1}{r^2}\iint_{Q_{2r}} \rho^{3/2}\sigma_+\ +\ O(r).
+\]
+For $\mathsf{Pay}_\rho$, the known local band-payment inequalities (e.g. Corollary~\texttt{\detokenize{\ref{cor:band-payment-simplified}}} in
+\texttt{\detokenize{navier-dec-12-rewrite.tex}}) currently control the band diffusion by terms involving $\iint |\sigma|$ and $\iint |\nabla\xi|^2$ on a larger cylinder,
+and it is not yet proved that those can be reduced to the \emph{positive} weighted injection alone without importing the C2/U-decay gate.
+
+
+Accordingly, for U‑4 we isolate the remaining missing piece as the band-payment control interface
+Hypothesis~\texttt{\detokenize{\ref{hyp:U4_payrho_controlled_by_injection_rate}}}, and bundle it together with the injection-rate gate
+Hypothesis~\texttt{\detokenize{\ref{hyp:U4_vanishing_injection_rate}}} into the single named blocker
+Hypothesis~\texttt{\detokenize{\ref{hyp:U4_injection_payment_package}}}.
+
+
+\begin{lstlisting}
+\begin{lemma}[U-4 $\mathsf{Pay}_\xi$ control from weighted coherence (proved in \texttt{navier-dec-12-rewrite.tex})]\label{lem:U4_payxi_controlled_by_injection_rate}
+Assume the setting of the running-max rescaled cylinder solution on $Q_{2r}(0,0)$ with $\rho\le 1$ and $0<r\le 1$.
+Then there exists a universal constant $C$ such that
+\[
+\mathsf{Pay}_\xi(r)
+\ :=\ \frac1{r^2}\iint_{Q_r(0,0)}\rho^{3/2}|\nabla\xi|^2
+\ \le\ C\cdot\frac1{r^2}\iint_{Q_{2r}(0,0)}\rho^{3/2}\sigma_+\ +\ C\,r.
+\]
+\end{lemma}
+
+\begin{proof}[Proof sketch]
+Apply Lemma~\ref{lem:weighted-coherence-bound} in \texttt{navier-dec-12-rewrite.tex} with basepoint $(0,0)$.
+The lower-order terms are $r^{-2}\iint_{Q_{2r}}\rho^{3/2}\lesssim r^{-2}\cdot r^5\lesssim r^3$ and
+$\sup_t\int_{B_{2r}}\rho^{3/2}\lesssim r^3$ since $\rho\le 1$ and $|Q_{2r}|\sim r^5$.
+Dividing by $r^2$ yields the stated $O(r)$ error.
+\end{proof}
+\end{lstlisting}
+
+
+\textbf{Lean symbol (spec interface):} \texttt{\detokenize{Bet2U4.U4PayXiControlledByInjectionRateHypothesis}} (the Lean file keeps this as a Prop-only interface; the PDE proof lives in TeX).
+
+
+\begin{lstlisting}
+\begin{hypothesis}[U-4 $\mathsf{Pay}_\rho$ control by the normalized positive injection rate (interface)]\label{hyp:U4_payrho_controlled_by_injection_rate}
+Fix $\eta\in(0,1/8)$ and consider a rescaled running-max cylinder solution on $Q_{2}(0,0)$ with vorticity
+$\omega=\rho\,\xi$ (so $0\le \rho\le 1$ and $\rho(0,0)=1$) and stretching scalar $\sigma:=\xi\cdot S\xi$.
+Define the **normalized positive injection rate**
+\[
+\mathsf{injRate}(r)\ :=\ \frac1{r^2}\iint_{Q_r(0,0)}\rho(x,t)^{3/2}\,\sigma_+(x,t)\,dx\,dt,
+\]
+and the **normalized band-diffusion payment**
+\[
+\mathsf{Pay}_\rho(r)
+\ :=\ \frac1{r^2}\,\eta^{-1}\iint_{Q_r(0,0)\cap\{1-2\eta<\rho<1-\eta\}}|\nabla(\rho^{3/4})|^2\,dx\,dt.
+\]
+There exist a constant $C_\eta\ge 0$ and a function $\mathrm{Err}_{\rho,\eta}:(0,1]\to[0,\infty)$ with
+$\mathrm{Err}_{\rho,\eta}(r)\to 0$ as $r\downarrow 0$ such that for every rescaled running-max solution and every $0<r\le 1$,
+\[
+\mathsf{Pay}_\rho(r)\ \le\ C_\eta\cdot \mathsf{injRate}(2r)\ +\ \mathrm{Err}_{\rho,\eta}(r).
+\]
+\end{hypothesis}
+\end{lstlisting}
+
+
+\textbf{Lean symbol (spec interface):} \texttt{\detokenize{Bet2U4.U4PayRhoControlledByInjectionRateHypothesis}}.
+
+
+\textbf{Proof sketch (and honest status):} currently \textbf{blocked} on a single reduction step.\\
+\textbf{Single blocker (for this PayRho gate):} \texttt{\detokenize{\ref{hyp:U4_band_budget_controlled_by_injection_rate}}}.\\
+Apply Corollary~\texttt{\detokenize{\ref{cor:band-payment-simplified}}} in \texttt{navier-dec-12-rewrite.tex} at scale $r/2$ (so that the band integral is over $Q_r$)
+to obtain
+\[
+\eta^{-1}\iint_{Q_r(0,0)\cap\{1-2\eta<\rho<1-\eta\}}|\nabla(\rho^{3/4})|^2
+\ \lesssim_\eta\ r^3\ +\ \iint_{Q_{2r}(0,0)}\bigl(|\sigma|+|\nabla\xi|^2\bigr).
+\]
+Dividing by $r^2$ yields
+\[
+\mathsf{Pay}_\rho(r)\ \lesssim_\eta\ r\ +\ \frac1{r^2}\iint_{Q_{2r}(0,0)}\bigl(|\sigma|+|\nabla\xi|^2\bigr).
+\]
+Therefore, \texttt{\detokenize{\ref{hyp:U4_payrho_controlled_by_injection_rate}}} follows provided we can reduce the scale-critical “budget term”
+\(\frac1{r^2}\iint_{Q_{2r}}(|\sigma|+|\nabla\xi|^2)\) to the \textbf{positive weighted injection} \(\mathsf{injRate}(2r)\) up to an $o(1)$ error,
+without importing C2/UEWE/U-decay. We isolate that reduction as the single missing analytic input:
+
+
+\begin{lstlisting}
+\begin{hypothesis}[U-4 band-budget reduction to positive injection (single missing analytic step)]\label{hyp:U4_band_budget_controlled_by_injection_rate}
+Fix $\eta\in(0,1/8)$. There exist constants $C_\eta\ge 0$ and a function $\mathrm{Err}_{\mathrm{bud},\eta}:(0,1]\to[0,\infty)$ with
+$\mathrm{Err}_{\mathrm{bud},\eta}(r)\to 0$ as $r\downarrow 0$ such that for every rescaled running-max solution and every $0<r\le 1$,
+\[
+\frac1{r^2}\iint_{Q_{2r}(0,0)}\bigl(|\sigma|+|\nabla\xi|^2\bigr)\,dx\,dt
+\ \le\ C_\eta\cdot \mathsf{injRate}(2r)\ +\ \mathrm{Err}_{\mathrm{bud},\eta}(r).
+\]
+\end{hypothesis}
+\end{lstlisting}
+
+
+\textbf{Lean symbol (spec interface):} \texttt{\detokenize{Bet2U4.U4BandBudgetControlledByInjectionRateHypothesis}} (added below).
+
+
+\textbf{Proof status (honest):} currently \textbf{blocked}, and very likely a \textbf{pivot trigger}.\\
+Controlling the unweighted scale-critical budget \(\iint(|\sigma|+|\nabla\xi|^2)\) by the \emph{positive} weighted injection
+\(\iint\rho^{3/2}\sigma_+\) appears to require (at minimum) a mechanism that suppresses the tail and harmonic/affine
+contributions to \(\sigma\) (cf.\ the $\sigma$-decomposition and Gate~S discussion in \texttt{navier-dec-12-rewrite.tex}),
+and/or a separate argument eliminating the curl-free affine mode. If proving \texttt{\detokenize{\ref{hyp:U4_band_budget_controlled_by_injection_rate}}}
+silently imports C2/UEWE/U-decay, treat that as the explicit “Bet2 collapses into that gate” pivot.
+
+
+\subparagraph{RTD — Relative tail depletion in blow-up variables (global tail gate)}
+
+\textbf{Why RTD is the earliest unconditional pivot trigger.}
+The PayRho reduction \texttt{\detokenize{\ref{hyp:U4_band_budget_controlled_by_injection_rate}}} is blocked because the unweighted budget term
+\(\frac1{r^2}\iint(|\sigma|+|\nabla\xi|^2)\) can contain borderline contributions from:
+(i) the far-field Biot--Savart tail, and (ii) the curl-free harmonic/affine mode.
+Any attempt to bound those terms purely by \(\mathsf{injRate}(r)=r^{-2}\iint\rho^{3/2}\sigma_+\) risks silently re-importing C2/U-decay/UEWE.
+
+\smallskip
+\noindent
+\textbf{Single global gate (named): RTD.}
+We therefore promote the missing global input to a \emph{standalone} hypothesis in the blow-up variables.
+
+\begin{lstlisting}
+\begin{hypothesis}[Relative tail depletion in blow-up variables (global gate)]\label{hyp:relative_tail_depletion_blowup}
+Let $(u,p)$ be a smooth Navier--Stokes solution on $\R^3\times[0,T^*)$ with $T^*<\infty$.
+Let $(x_k,t_k,\lambda_k)$ be a running-max blow-up sequence with $\lambda_k:=|\omega(x_k,t_k)|^{-1/2}$ and define the rescaled vorticities
+\[
+\omega^{(k)}(y,s):=\lambda_k^2\,\omega(x_k+\lambda_k y,\ t_k+\lambda_k^2 s)
+\qquad (y\in\R^3,\ s\le 0).
+\]
+There exists a decreasing envelope $h:[1,\infty)\to(0,1]$ with $h(R)\to 0$ as $R\to\infty$ and
+\[
+\int_1^{\infty}\frac{h(R)}{R}\,dR\ <\ \infty
+\]
+such that for every $R\ge 1$,
+\[
+\sup_{k}\ \sup_{s\le 0}\ \sup_{|y|\ge R}\ |\omega^{(k)}(y,s)|\ \le\ h(R).
+\tag{RTD}
+\]
+Equivalently (unwinding the rescaling), for every $R\ge 1$,
+\[
+\sup_{k}\ \sup_{t\le t_k}\ \sup_{|x-x_k|\ge \lambda_k R}\ \frac{|\omega(x,t)|}{|\omega(x_k,t_k)|}\ \le\ h(R).
+\tag{RTD'}
+\]
+\end{hypothesis}
+\end{lstlisting}
+
+\smallskip
+\noindent
+\textbf{Immediate consequence (bookkeeping): RTD $\Rightarrow$ U-decay.}
+This is exactly Lemma~\texttt{\detokenize{\ref{lem:decay-inheritance}}} / Eq.~\texttt{\detokenize{\eqref{eq:relative-tail-depletion}}} in
+\texttt{navier-dec-12-rewrite.tex}.
+
+\begin{lstlisting}
+\begin{lemma}[RTD implies U-decay of the ancient limit (proved)]\label{lem:RTD_implies_U_decay}
+Assume Hypothesis~\ref{hyp:relative_tail_depletion_blowup} and assume $\omega^{(k)}\to\omega^\infty$ locally uniformly on $\R^3\times(-\infty,0]$.
+Then
+\[
+|\omega^\infty(y,s)|\ \le\ h(|y|)\qquad\forall (y,s)\in\R^3\times(-\infty,0],
+\]
+and the log-tail integrability condition in the U-decay gate holds with $g=h$.
+\end{lemma}
+
+\begin{proof}
+Fix $(y,s)$ and set $R:=|y|$. By (RTD), $|\omega^{(k)}(y,s)|\le h(R)$ for all $k$; pass $k\to\infty$.
+\end{proof}
+\end{lstlisting}
+
+\smallskip
+\noindent
+\textbf{Two classical brick lemmas (used to attack RTD).}
+These are “off-the-shelf” harmonic analysis / spherical-harmonic linear algebra; they do not use any Navier--Stokes-specific input.
+
+\smallskip
+\noindent
+\textbf{Sanity check (fail-fast): RTD is \emph{not} implied by the automatic running-max bounds.}
+Even if we grant the two canonical “automatic” inheritances from running-max (bounded vorticity and the scale-critical local \(L^{3/2}\) vorticity budget),
+RTD can still fail purely by a \emph{second bubble at infinity in blow-up variables}. This is why RTD/UEWE must be treated as a separate global gate.
+
+\begin{lstlisting}
+\begin{lemma}[Sanity check: bounded vorticity + local critical $L^{3/2}$ control do \emph{not} imply RTD (multi-bubble counterexample)]\label{lem:RTD_not_from_runningmax_bounds}
+There exists a sequence of smooth, divergence-free vorticity fields
+$\{\omega^{(k)}\}_{k\ge 1}$ on $\R^3\times(-\infty,0]$ such that:
+\begin{enumerate}[(i)]
+\item (Uniform $L^\infty$ bound) $\sup_k\|\omega^{(k)}\|_{L^\infty(\R^3\times(-\infty,0])}\le 1$.
+\item (Uniform scale-critical local $L^{3/2}$ budget) There exists $K_0<\infty$ such that for every $k$,
+\[
+\sup_{z_0\in\R^3\times(-\infty,0]}\ \sup_{0<r\le 1}\ r^{-2}\iint_{Q_r(z_0)}|\omega^{(k)}|^{3/2}\,dx\,dt\ \le\ K_0.
+\]
+\item (Failure of RTD) For every decreasing envelope $h(R)\to 0$ as $R\to\infty$ one has
+\[
+\sup_{k}\ \sup_{s\le 0}\ \sup_{|y|\ge R}|\omega^{(k)}(y,s)|\ \not\le\ h(R)
+\qquad\text{for all large }R.
+\]
+\end{enumerate}
+\end{lemma}
+%
+\begin{proof}[Proof sketch (explicit two-bubble construction)]
+Choose any smooth divergence-free $f:\R^3\to\R^3$ supported in $B_1(0)$ with $\|f\|_\infty\le 1$ and $|f(0)|=1$.
+Let $R_k\to\infty$ and define $\omega^{(k)}(y,s):=f(y)+f(y-R_k e_1)$ (independent of $s$).
+Since the supports are disjoint for $k$ large, $\|\omega^{(k)}\|_\infty=\|f\|_\infty\le 1$, proving (i).
+For (ii), on each $Q_r$ with $r\le 1$, the integrand is bounded by $1$ and $\omega^{(k)}$ is supported in at most two unit balls, so
+$\iint_{Q_r}|\omega^{(k)}|^{3/2}\lesssim r^5$, hence $r^{-2}\iint_{Q_r}\lesssim r^3\le 1$.
+For (iii), given $R$ choose $k$ so that $R_k\ge R+1$; then $|\omega^{(k)}(R_k e_1,0)|=|f(0)|=1$.
+\end{proof}
+\end{lstlisting}
+
+\smallskip
+\noindent
+\textbf{RTD: inheritance vs self-falsification (diagnostic).}
+There are two natural ways one might hope to close RTD without assuming it.
+The next two lemmas isolate the \emph{first} missing input in each route.
+
+\begin{lstlisting}
+\begin{lemma}[Attempt: inheriting RTD from physical-space decay fails; one needs a no-multi-bubble/tightness mechanism (pivot trigger)]\label{lem:RTD_inheritance_pivot}
+Let $(u,p)$ be a smooth Navier--Stokes solution on $\R^3\times[0,T^*)$ with compactly supported $u_0$,
+and let $(x_k,t_k,\lambda_k)$ be a running-max blow-up sequence with rescaled vorticities
+\[
+\omega^{(k)}(y,s)=\lambda_k^2\,\omega(x_k+\lambda_k y,t_k+\lambda_k^2 s).
+\]
+Even if one knows a strong physical-space decay statement at each fixed time
+(\emph{e.g.} Gaussian decay $|\omega(x,t)|\lesssim e^{-|x|^2/(Ct)}$ for $t>0$),
+this does \emph{not} imply RTD in blow-up variables, because for fixed $R$ the region
+\(|y|\ge R\) corresponds to the physical annulus \(|x-x_k|\ge \lambda_k R\), which \emph{shrinks to the blow-up center} as $k\to\infty$.
+
+Therefore, any inheritance proof of RTD must supply a genuinely new mechanism that rules out
+``secondary bubbles'' at distance $O(\lambda_k R)$ from $x_k$, uniformly in $k$ and in backward times.
+Equivalently: one must prove a blow-up-variable tightness statement, which is (up to reformulation) RTD itself.
+\end{lemma}
+\end{lstlisting}
+
+\begin{lstlisting}
+\begin{lemma}[Attempt: RTD via self-falsification reduces to a dynamical-instability / finite-budget lemma (pivot trigger)]\label{lem:RTD_self_falsification_pivot}
+A self-falsification approach to RTD would argue:
+``if a tail persists in blow-up variables (e.g. a persistent nonzero $\ell=2$ tail strain moment, or nonvanishing tail flux in the $A_b$ energy identity),
+then some nonnegative functional $J(t)$ must grow backward and contradict the running-max constraints.''
+
+In the current manuscript architecture, making this implication rigorous requires at least one of:
+\begin{enumerate}[(i)]
+\item a new \emph{dynamical instability} proposition in the $\ell=2$ sector that upgrades a model-profile self-stretching sign
+into a coercive, robust monotonicity inequality for a tail functional (the missing `prop:l2-instability` discussed in
+\texttt{book/docs/navier-dec-12-rewrite-alternative.tex}, Remark~\texttt{\detokenize{\ref{rem:l2-instability-open}}}); or
+\item a \emph{finite-budget} bound that prevents ``infinite payment over infinite history'' for the running-max rescaled sequence
+without assuming U-decay/RTD (in the current draft, the only established way to obtain such a bound is the C2 closure mechanism,
+which is conditional on U-decay/RTD).
+\end{enumerate}
+
+Thus, absent a new instability/monotonicity lemma of type (i) or a new unconditional finite-budget lemma of type (ii),
+self-falsification collapses back into the same global gate (C2/U-decay/RTD). This is the pivot trigger.
+\end{lemma}
+\end{lstlisting}
+
+\begin{lstlisting}
+\begin{lemma}[Attempt: an \emph{unconditional} C2 closure collapses into a tail/tightness gate (pivot trigger)]\label{lem:C2_unconditional_pivot_to_RTD}
+Recall the C2 target (in blow-up variables / for the running-max ancient element):
+there exists a modulus $\alpha(r)\to 0$ as $r\downarrow 0$ such that
+\[
+\sup_{z_0}\ \iint_{Q_r(z_0)}\rho^{3/2}\,\sigma_+\ \le\ \alpha(r).
+\tag{C2}
+\]
+
+\smallskip
+\noindent\textbf{Near-field is not the obstruction.}
+In the current manuscript architecture (see \texttt{navier-dec-12-rewrite.tex}, Theorem~C2-closure),
+the stretching scalar $\sigma$ is decomposed into a near-field part and a tail part.
+The near-field contribution is Carleson-small at small scales under the running-max bound $\|\omega\|_\infty\le 1$
+(this is the same mechanism as near-field forcing depletion: small scales + bounded vorticity $\Rightarrow$ $O(r^5)$).
+
+\smallskip
+\noindent\textbf{Tail boundedness is available, but tail smallness is not.}
+The tail term is (up to harmless frozen-direction dependence) a Calder\'on--Zygmund truncation of $\omega$:
+it admits $L^p$ boundedness uniformly in the truncation scale $r$,
+but this yields only \emph{boundedness} of the tail contribution in critical norms, not \emph{smallness} as $r\downarrow 0$
+(cf.\ \texttt{book/docs/navier-dec-12-rewrite-alternative.tex}, Lemma~\texttt{\detokenize{\ref{lem:tail-bounded}}} and surrounding discussion).
+
+\smallskip
+\noindent\textbf{Where the pivot trigger fires.}
+To upgrade boundedness to the vanishing modulus $\alpha(r)\to 0$ in (C2), one must suppress the tail/harmonic/affine contribution
+to $\sigma$ at small scales. In the current framework, every such suppression is (up to reformulation) a
+\emph{tail/tightness gate in blow-up variables}:
+relative tail depletion (RTD), U-decay, UEWE/RM2U, or an equivalent ``no multi-bubble / no export'' mechanism.
+
+Therefore, an attempt to prove C2 \emph{unconditionally} does not bypass RTD:
+it simply relocates the same missing global input to the step ``tail boundedness $\Rightarrow$ tail smallness''.
+This certifies that the C2-vs-RTD choice is not two independent targets: closing C2 requires (at least) an RTD-type tail gate.
+\end{lemma}
+\end{lstlisting}
+
+\smallskip
+\noindent
+\textbf{Verdict / next best step.}
+Inheritance offers no leverage beyond restating RTD as a no-multi-bubble/tightness gate.
+Therefore the best next step is to pursue the self-falsification direction by isolating and attempting the smallest checkable missing statement:
+prove (or explicitly assume as a single named interface) the $\ell=2$ \emph{dynamical instability} proposition
+(`prop:l2-instability` / Remark~\texttt{\detokenize{\ref{rem:l2-instability-open}}} in the alternative manuscript).
+If that attempt again forces a C2-type estimate, we have a definitive certification that RTD/C2 is the true bottleneck.
+
+\begin{lstlisting}
+\begin{lemma}[Tail Biot--Savart is harmonic on the core and admits an affine approximation]\label{lem:tail_biot_savart_affine_core}
+Fix $R\ge 2$ and let $\Omega:\R^3\to\R^3$ be smooth, divergence-free, and bounded.
+Define the tail vorticity $\Omega_{\ge R}:=\Omega\,\mathbf 1_{\{|y|\ge R\}}$ and the associated Biot--Savart velocity
+\[
+u_{\ge R}(x):=\frac{1}{4\pi}\int_{|y|\ge R}\frac{(x-y)\times \Omega(y)}{|x-y|^3}\,dy.
+\]
+Then on the core ball $B_1(0)$:
+\begin{enumerate}[(i)]
+\item $u_{\ge R}$ is smooth, divergence-free, and curl-free. In particular $u_{\ge R}$ is harmonic on $B_1$.
+\item Let $a:=u_{\ge R}(0)$ and $A:=\nabla u_{\ge R}(0)$. Then $A$ is symmetric and trace-free.
+\item (Quantitative affine approximation.) There is an absolute constant $C$ such that for all $x\in B_1$,
+\[
+\bigl|u_{\ge R}(x) - (a + A x)\bigr|
+\ \le\ C\,|x|^2 \int_{|y|\ge R}\frac{|\Omega(y)|}{|y|^4}\,dy.
+\]
+In particular, if $|\Omega|\le \|\Omega\|_\infty$, then
+\[
+\sup_{x\in B_1}\bigl|u_{\ge R}(x) - (a + A x)\bigr|
+\ \le\ C\,\|\Omega\|_\infty \cdot R^{-1}.
+\]
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}[Proof (sketch, fully classical)]
+Because $\Omega_{\ge R}$ vanishes on $B_R$, we have $\curl u_{\ge R}=\Omega_{\ge R}=0$ and $\dv u_{\ge R}=0$ on $B_1$,
+so $u_{\ge R}$ is harmonic there.
+Support separation ($|x|\le 1<|y|$) makes the Biot--Savart kernel smooth in $x$ and allows differentiation under the integral sign
+for $\nabla^2 u_{\ge R}$ with an integrand bounded by $C|\Omega(y)|\,|y|^{-4}$.
+Thus $\sup_{B_1}|\nabla^2 u_{\ge R}|\le C\int_{|y|\ge R}|\Omega(y)|\,|y|^{-4}dy$.
+Taylor’s theorem with remainder gives the affine approximation bound. Curl-free implies $\nabla u_{\ge R}$ is symmetric; divergence-free implies $\mathrm{tr}(\nabla u_{\ge R})=0$.
+\end{proof}
+\end{lstlisting}
+
+\begin{lstlisting}
+\begin{lemma}[$\ell=2$ transverse shell tests detect the $\ell=2$ transverse component]\label{lem:l2_shell_tests_detect_l2_component}
+For $b\in \Sbb^2$ define the $\ell=2$ transverse test field on $\Sbb^2$
+\[
+\Phi_b(\theta):=(b\cdot\theta)(\theta\times b).
+\]
+Let $V:=\mathrm{span}\{\Phi_b:\ b\in\Sbb^2\}\subset L^2(\Sbb^2;\R^3)$ and let $P_V$ be the $L^2$ orthogonal projection onto $V$.
+Then $V$ is finite-dimensional and there exists a constant $c_0>0$ such that for every $g\in L^2(\Sbb^2;\R^3)$,
+\[
+\sup_{b\in \Sbb^2}\left|\int_{\Sbb^2} g(\theta)\cdot \Phi_b(\theta)\,d\theta\right|
+\ \ge\ c_0\,\|P_V g\|_{L^2(\Sbb^2)}.
+\]
+\end{lemma}
+
+\begin{proof}[Proof (finite-dimensional norm equivalence)]
+Since $V$ is finite-dimensional, choose finitely many directions $b_1,\dots,b_N$ so that $\{\Phi_{b_j}\}$ spans $V$.
+All norms on $V$ are equivalent, so $\|f\|_{L^2}\le c_0^{-1}\max_j|\langle f,\Phi_{b_j}\rangle|$ for $f\in V$.
+Apply this to $f=P_V g$ and use $\langle P_V g,\Phi_{b_j}\rangle=\langle g,\Phi_{b_j}\rangle$.
+\end{proof}
+\end{lstlisting}
+
+\smallskip
+\noindent
+\textbf{Two closure routes (kill switches).}
+\begin{itemize}
+\item \textbf{Kill K‑ODE (preferred)}: persistent far-field vorticity $\Rightarrow$ persistent affine/tail forcing $\Rightarrow$ enter the absorption/affine class
+      $\Rightarrow$ \emph{Riccati/ODE contradiction} (see the “K‑ODE” chain around Lemma~\texttt{\detokenize{\ref{lem:absorption_implies_affine_ansatz}}}).
+\item \textbf{Kill Payment (fallback)}: tail forcing $\Rightarrow$ twist/band payment lower bound $\Rightarrow$ contradict a cylinder-scale payment upper bound.
+      This route is currently \emph{treacherous}: the upper bound tends to collapse into C2/U-decay unless RTD (or an equivalent tail-suppression gate) is already available.
+\end{itemize}
+
+\smallskip
+\noindent
+\textbf{Payment route (lower-bound step) — best possible formulation + single blocker.}
+The naive statement “persistent tail forcing $\Rightarrow$ large \(\iint \rho^{3/2}|\nabla\xi|^2\)” is false because tail forcing can be absorbed by a
+purely time-dependent rotation of an almost-spatially-constant direction field (“rigid rotation absorption”).
+Accordingly, the strongest honest interface is the dichotomy already isolated earlier as
+\texttt{\detokenize{hyp:no_rigid_rotation_absorption}}:
+\[
+\text{(persistent perpendicular tail forcing on the top band)}
+\ \Longrightarrow\
+\text{(twist/band payment)}\ \lor\ \text{(enter an explicit absorption class)}.
+\]
+Thus the \emph{single blocker} for making the Payment lower bound unconditional is exactly the K‑ODE kill:
+rule out the absorption class via \texttt{\detokenize{lem:absorption_implies_affine_ansatz}} (affine ansatz + Riccati contradiction).
+
+\smallskip
+\noindent
+\textbf{Concrete “next lemma” (co-author-ready).}
+Treat \texttt{\detokenize{lem:absorption_implies_affine_ansatz}} as the \emph{one} K‑ODE lemma to shoot:
+it bundles the affine-gauge extraction and the Riccati-mode closure into a single checkable gate.
+If this lemma can be proved (even under the mild auxiliary regularity stated there), the program becomes unconditional \emph{without} needing a separate
+PayRho band-budget reduction.
+
+\smallskip
+\noindent
+\textbf{Current best-route recommendation (co-author-facing).}
+\emph{Prioritize Kill K‑ODE.} It targets an explicit structured class (affine/absorbing dynamics) and, if it closes, it removes the need to prove a
+separate PayRho band-budget reduction. The Payment route is best treated as a diagnostic: if it forces C2/U-decay, that is the explicit pivot trigger.
+
+
+\begin{lstlisting}
+\begin{hypothesis}[U-4 injection/payment package (single named blocker)]\label{hyp:U4_injection_payment_package}
+Assume Hypothesis~\ref{hyp:U4_vanishing_injection_rate} and Hypothesis~\ref{hyp:U4_payrho_controlled_by_injection_rate}.
+(Together with Lemma~\ref{lem:U4_payxi_controlled_by_injection_rate}, this yields Hypothesis~\ref{hyp:U4_payment_upper_bound}.)
+\end{hypothesis}
+\end{lstlisting}
+
+
+\begin{lstlisting}
+\begin{lemma}[U-4 injection rate $\Rightarrow$ U-4 payment upper bound (template)]\label{lem:U4_payment_upper_bound_of_U4_vanishing_injection_rate}
+Assume Hypotheses~\ref{hyp:U4_vanishing_injection_rate} and \ref{hyp:U4_payrho_controlled_by_injection_rate}.
+Then Hypothesis~\ref{hyp:U4_payment_upper_bound} holds.
+\end{lemma}
+
+\begin{proof}[Proof sketch]
+By Lemma~\ref{lem:U4_payxi_controlled_by_injection_rate} and Hypothesis~\ref{hyp:U4_vanishing_injection_rate} (applied at scale $2r$),
+\[
+\mathsf{Pay}_\xi(r)\ \lesssim\ \gamma(2r)\ +\ O(r).
+\]
+By Hypothesis~\ref{hyp:U4_payrho_controlled_by_injection_rate} and Hypothesis~\ref{hyp:U4_vanishing_injection_rate},
+\[
+\mathsf{Pay}_\rho(r)\ \lesssim_\eta\ \gamma(2r)\ +\ \mathrm{Err}_{\rho,\eta}(r).
+\]
+Adding yields \(\mathsf{Pay}_\xi(r)+\mathsf{Pay}_\rho(r)\to 0\) as \(r\downarrow 0\), which is exactly Hypothesis~\ref{hyp:U4_payment_upper_bound}.
+\end{proof}
+\end{lstlisting}
+
+
+\textbf{Acceptance test (unconditional checklist item \#1):}
+- Either (i) prove \texttt{\detokenize{\ref{hyp:U4_payment_upper_bound}}} directly from a scale-critical estimate already available for the running-max rescaled
+  sequence (best case), or
+- (ii) prove the two-input route: \texttt{\detokenize{\ref{hyp:U4_vanishing_injection_rate}}} plus the band-payment control interface
+  \texttt{\detokenize{\ref{hyp:U4_payrho_controlled_by_injection_rate}}} (and use Lemma~\texttt{\detokenize{\ref{lem:U4_payxi_controlled_by_injection_rate}}} for $\mathsf{Pay}_\xi$),
+  yielding \texttt{\detokenize{\ref{hyp:U4_payment_upper_bound}}} by Lemma~\texttt{\detokenize{\ref{lem:U4_payment_upper_bound_of_U4_vanishing_injection_rate}}}, or
+- (iii) prove a weaker but sufficient version: for every fixed $\varepsilon_0>0$ there exists $r_0(\varepsilon_0,\eta)$ such that
+  \(\mathsf{Pay}_\xi(r)+\mathsf{Pay}_\rho(r)\le \varepsilon_0\) for all $0<r\le r_0\),
+  and track exactly which known “gate” it is equivalent to (C2/UEWE/RM2U).
+If neither is possible, then U‑4 cannot close unconditionally and Bet2 collapses into that gate.
+
+
+\textbf{Fast go/no-go for “unconditional”:} by Corollary~\texttt{\detokenize{\ref{cor:band-payment-simplified}}} in \texttt{navier-dec-12-rewrite.tex},
+\texttt{\detokenize{\ref{hyp:U4_payrho_controlled_by_injection_rate}}} reduces to the single missing budget-reduction hypothesis
+\texttt{\detokenize{\ref{hyp:U4_band_budget_controlled_by_injection_rate}}}. If proving \texttt{\detokenize{\ref{hyp:U4_band_budget_controlled_by_injection_rate}}}
+forces C2/UEWE/U-decay, treat that as an explicit pivot trigger (Bet2 collapses into that gate).
+
+
+\subparagraph{(S3‑C) One-cylinder contradiction lemma (U‑4 closure)}
+
+
+This is the “end of Session S3” statement: combine (S3‑P) and (S3‑Q).
+
+
+\begin{lstlisting}
+\begin{lemma}[U-4 contradiction from persistent export (template)]\label{lem:U4_contradiction_from_export}
+Assume the hypotheses of Lemma~\ref{lem:export_forces_payment_on_cylinder} and Hypothesis~\ref{hyp:U4_payment_upper_bound}
+hold for a fixed $\eta\in(0,1/8)$ and some $\varepsilon_0>0$.
+Then persistent export at level $\varepsilon_0$ is impossible: there is no $r\le 1$ and measurable $E\subset[-r^2,0]$ with
+$|E|\ge c_0 r^2$ such that $\|S^{(k)}_{tail}(0,t)\|\ge \varepsilon_0$ for all $t\in E$.
+\end{lemma}
+\end{lstlisting}
+
+
+\textbf{Acceptance test:} the proof is a one-line calibration argument:
+take $\varepsilon\le \varepsilon_0$, choose $r$ small so that $\beta_\eta(r) < \min(c_1,c_2)\varepsilon^2$ and also $r\ge \delta(\varepsilon)$,
+then (S3‑P) contradicts (S3‑Q). (We must explicitly check that \(\delta(\varepsilon)\to 0\) as \(\varepsilon\to 0\), which is true if
+\(\delta(\varepsilon)=\varepsilon/(2L)\) with \(L\) independent of \(\varepsilon\).)
+
+
+\textbf{Lean packaging note (checklist item \#8):}
+the abstract U‑4 contradiction is now mirrored by a pure-bookkeeping lemma in
+\texttt{\detokenize{IndisputableMonolith/NavierStokes/RM2U/NonParasitism.lean}}:
+\texttt{\detokenize{Bet2U4.U4NoExportHypothesis.of_u4}} and \texttt{\detokenize{RM2U.bet2SelfFalsification_of_u4}}.
+What remains (and is genuinely PDE/compactness) is the bridge from the time-slice profile statement
+\texttt{\detokenize{¬TailFluxVanish}} to an \texttt{\detokenize{ExportEvent}} occurring at arbitrarily small scales (\texttt{\detokenize{Bet2U4.TailFluxNonVanishImpliesExportAtSmallScales}}).
+
+
+\begin{lstlisting}
+\begin{hypothesis}[Tail-flux nonvanishing $\Rightarrow$ export at arbitrarily small scales (bridge interface)]\label{hyp:tailflux_nonvanish_implies_export_at_small_scales}
+Fix an abstract predicate $\mathsf{ExportEvent}:(0,\infty)\times(0,1]\to\{\text{true,false}\}$.
+Assume that for the running-max rescaled sequence (or limiting ancient element),
+\[
+\neg\ \mathrm{TailFluxVanish}\ \Longrightarrow\
+\exists \varepsilon_0>0\ \ \forall r_0\in(0,1]\ \ \exists r\in(0,r_0]\ \text{such that}\ \mathsf{ExportEvent}(\varepsilon_0,r).
+\]
+\end{hypothesis}
+\end{lstlisting}
+
+
+\textbf{Lean symbol:} \texttt{\detokenize{Bet2U4.TailFluxNonVanishImpliesExportAtSmallScales}}.
+
+
+\textbf{Proof status (unconditional checklist item \#8):} Lean bookkeeping is \textbf{done}, but the PDE bridge is \textbf{blocked}.\\
+\textbf{Single blocker:} prove \texttt{\detokenize{TailFluxNonVanishImpliesExportAtSmallScales}} for the running-max rescaled sequence.
+
+
+\subsubsection{Session S4 — Package the result into the repo (docs + Lean signature)}
+
+
+\textbf{Deliverables:}
+
+
+\begin{itemize}
+\item Update \texttt{\detokenize{docs/RM2U_BET_2_ATTACK.md}} to end with the exact lemma statement you proved (or are now targeting).
+\item Update \texttt{\detokenize{docs/RM2U_NEXT_LEMMA.md}} if the “next lemma” has changed shape.
+\item Optionally add a more refined Lean interface if we discover Bet 2 naturally splits into two sub‑lemmas
+  (but keep \emph{all} hypotheses in \texttt{\detokenize{RM2U.NonParasitism}}).
+\end{itemize}
+
+
+\textbf{Acceptance test:}
+
+
+\begin{itemize}
+\item A single “shoot-at-this” Lean statement (signature only is OK) that corresponds 1‑to‑1 with the TeX proposition.
+\end{itemize}
+
+
+
+\bigskip\hrule\bigskip
+
+
+\subsection{5. Risk register (how this can fail, explicitly)}
+
+
+\begin{itemize}
+\item \textbf{Circularity risk:} Bet 2 collapses into C2 (or UEWE) and therefore does not close RM2U independently.
+  We will treat that as a discovery and update the dependency graph accordingly.
+\item \textbf{Sign robustness risk:} any argument relying on \(I[\omega]\ge 0\) must be made stable beyond a toy profile.
+\item \textbf{Control-at-maximizers risk:} converting a nonzero tail strain into uniform statements at maximizers may require
+  extra regularity bounds along maximizers (not currently derived in the TeX, see remarks near C2).
+\item \textbf{Time‑regularity escape hatch:} the endpoint maximal-regularity/time-regularity route (\texttt{\detokenize{rem:RM2-l2-moment}})
+  might become the “real” missing theorem if Bet 2 can’t supply a clean monotone contradiction.
+\item \textbf{Missing-notes risk:} the draft references external working notes/files (e.g. \texttt{\detokenize{P0_PLAN_ONE_CORE_DOMINANCE.md}},
+  \texttt{\detokenize{WORK_L2_SELF_STRETCHING.tex}}) that are not currently in this repo. Bet 2 must remain executable without them:
+  any dependency on those notes must be re-derived into this repository (as a lemma/proof or as a doc).
+\end{itemize}
+
+
+
+\bigskip\hrule\bigskip
+
+
+\subsection{6. Pivot triggers (so we don’t burn months on the wrong target)}
+
+
+Bet 2 is allowed to “fail fast” in a disciplined way.
+
+
+We pivot away from the Family‑B self‑falsification route if, by the end of Sessions S1–S2, we discover:
+
+
+\begin{itemize}
+\item \textbf{(P‑C2) The bridge step is equivalent to C2:}\\
+  our attempted bridge from \texttt{\detokenize{S_tail}} to a persistent lower bound on \texttt{\detokenize{σ_+}} on \(\{\rho\approx 1\}\) requires
+  exactly the same missing control of \texttt{\detokenize{\iint ρ^{3/2} σ_+}} that the manuscript currently closes only using U‑decay.
+\item \textbf{(P‑UEWE) The bridge step is equivalent to UEWE/RM2U already:}\\
+  i.e. proving it would already imply the coercive ℓ=2 bound or UEWE in a circular way.
+\item \textbf{(P‑compactness) The mode choice collapses:}\\
+  neither Mode (M‑seq) nor Mode (M‑limit‑with‑affine) can be executed without assuming the very fixed‑frame
+  compactness RM2 is supposed to provide.
+\end{itemize}
+
+
+If any pivot trigger fires, the plan is:
+
+
+\begin{itemize}
+\item switch to \textbf{Family A} (ℓ=2 coefficient energy / boundary flux) or to the \textbf{time‑regularity} route
+  flagged in TeX \texttt{\detokenize{rem:RM2-l2-moment}}, and update the dependency graph in \texttt{\detokenize{docs/RM2U_NEXT_LEMMA.md}}.
+\end{itemize}
+
+
+
+\bigskip\hrule\bigskip
+
+
+\subsection{7. Diminishing returns + how to prompt the AI to work on this}
+
+
+\subsubsection{7.1 Should we keep fortifying the plan?}
+
+
+We have now completed the \textbf{last high‑value fortification round}:
+
+
+\begin{itemize}
+\item default choices are recorded in \textbf{Session S0} (Mode/Target/Export/L‑upper),
+\item the L‑upper candidates are explicit (Section 3.10.4),
+\item S2 has a concrete next lemma list beyond the penalized-max lemma.
+\item \textbf{Diminishing returns trigger (when to stop planning and start executing):}
+\item we have a \emph{single} next lemma to prove (already present: \texttt{\detokenize{lem:runningmax-injection-penalized}}),
+\item we have a \emph{single} candidate L‑upper bound selected (U‑1…U‑4),
+\item we have a named pivot trigger if it collapses into C2/UEWE/RM2.
+\end{itemize}
+
+
+We’re now at that trigger: the best progress comes from \textbf{actually attempting the lemmas}, not adding more prose.
+
+
+\subsubsection{7.2 Prompt template (copy/paste)}
+
+
+When you want me to work on Bet 2, use a prompt that pins down: \textbf{mode}, \textbf{target strength}, and \textbf{deliverable}.
+
+
+Here are three templates that work well.
+
+
+\paragraph{Template A — “Work the next session”}
+
+
+Use this when you want me to advance the plan by one session step.
+
+
+\begin{quote}
+Context: we are working on RM2U Bet 2. Read \texttt{\detokenize{docs/RM2U_BET_2_EXECUTION_PLAN.md}} and follow it.\\
+Mode: (M‑seq) or (M‑limit‑with‑affine). Target: (Weak) or (Strong).\\
+Task: execute Session S2 (or S3) and produce the deliverables + acceptance tests.\\
+Constraints: keep all missing pieces isolated as hypothesis interfaces in \texttt{\detokenize{RM2U.NonParasitism}}; don’t introduce sorries/axioms.
+\end{quote}
+
+
+\paragraph{Template B — “Prove/clean up one lemma”}
+
+
+Use this when you want a concrete proof artifact (TeX or Lean) rather than planning.
+
+
+\begin{quote}
+Prove (or at least fully derive) the lemma \texttt{\detokenize{lem:runningmax-injection-penalized}} from \texttt{\detokenize{docs/RM2U_BET_2_EXECUTION_PLAN.md}}.\\
+Output: a clean TeX proof sketch plus (if feasible) the Lean skeleton signature we’d eventually implement.\\
+Also update the execution plan doc with any missing hypotheses discovered.
+\end{quote}
+
+
+\paragraph{Template C — “Sanity check for circularity”}
+
+
+Use this when you’re worried a route is secretly C2/UEWE.
+
+
+\begin{quote}
+Evaluate candidate upper bound (U‑X) from Section 3.10.4 of \texttt{\detokenize{docs/RM2U_BET_2_EXECUTION_PLAN.md}}.\\
+Tell me whether it collapses into C2, UEWE, or RM2, and if so, trigger the pivot and propose the next-best route.
+\end{quote}
+
+
+\subsubsection{7.3 Minimal context to include if you want fast progress}
+
+
+If you include just these file pointers, I can move quickly:
+
+
+\begin{itemize}
+\item \texttt{\detokenize{docs/RM2U_BET_2_EXECUTION_PLAN.md}}
+\item \texttt{\detokenize{docs/RM2U_NEXT_LEMMA.md}}
+\item \texttt{\detokenize{navier-dec-12-rewrite.tex}} (anchors listed in Section 0.1)
+\item Lean: \texttt{\detokenize{IndisputableMonolith/NavierStokes/RM2U/{Core,EnergyIdentity,RM2Closure,NonParasitism}.lean}}
+\end{itemize}
+
+
+\end{document}

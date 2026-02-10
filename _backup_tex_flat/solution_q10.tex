@@ -1,0 +1,454 @@
+\documentclass[12pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{microtype}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
+
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\norm}[1]{\left\lVert #1\right\rVert}
+\newcommand{\inner}[2]{\langle #1,\,#2\rangle}
+\newcommand{\vect}{\operatorname{vec}}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\tr}{\operatorname{tr}}
+
+\title{Solution to First Proof, Question~10:\\
+Preconditioned Conjugate Gradient for the\\
+RKHS-Regularized CP Decomposition Subproblem\\[6pt]
+\large Via Recognition Science Primitives and Classical Conversion}
+
+\author{Jonathan Washburn\\
+Recognition Science, Recognition Physics Institute\\
+Austin, Texas, USA\\
+\texttt{jon@recognitionphysics.org}}
+
+\date{February 8, 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We solve the mode-$k$ subproblem of an RKHS-constrained CP decomposition with missing data using preconditioned conjugate gradient (PCG). The system is $nr\times nr$ but the key challenge is avoiding any $O(N)$ computation (where $N=\prod n_i$ is the full tensor size). We show that each matrix-vector product costs $O(n^2r + qdr)$ by exploiting the Khatri-Rao/Kronecker structure of the operator and the sparsity pattern of the selection matrix. The preconditioner $M=(Z^TZ+\lambda I_r)\otimes K$ is a Kronecker product whose application costs $O(n^2r)$. Total complexity per CG iteration is $O(n^2r+qr)$, entirely avoiding $O(N)$. We derive the method first from RS/CPM primitives (structured set = Kronecker cone, defect = missing-data residual, projection = Khatri-Rao factorization, coercivity = RKHS regularization), then present the self-contained classical algorithm with full complexity analysis.
+\end{abstract}
+
+\tableofcontents
+
+%% ===================================================================
+\section{The Question (Kolda)}
+%% ===================================================================
+
+\textbf{Setup.} A $d$-way tensor $\mathcal{T}\in\R^{n_1\times\cdots\times n_d}$ with missing entries, CP rank $r$, mode $k$ constrained to an RKHS with kernel matrix $K\in\R^{n\times n}$ ($n\equiv n_k$, $K\succeq 0$). Factor matrices $A_1,\ldots,A_{k-1},A_{k+1},\ldots,A_d$ are fixed; solve for $A_k = KW$, $W\in\R^{n\times r}$.
+
+\textbf{Notation.} $N=\prod_i n_i$; $M=\prod_{i\ne k}n_i$; $q\ll N$ observed entries; $T\in\R^{n\times M}$ mode-$k$ unfolding (zeros for missing); $S\in\R^{N\times q}$ selection matrix; $Z=A_d\odot\cdots\odot A_{k+1}\odot A_{k-1}\odot\cdots\odot A_1\in\R^{M\times r}$ (Khatri-Rao product); $B=TZ\in\R^{n\times r}$ (MTTKRP).
+
+\textbf{System to solve:}
+\begin{equation}\label{eq:system}
+\underbrace{\Big[(Z\otimes K)^T SS^T (Z\otimes K) + \lambda(I_r\otimes K)\Big]}_{=:\,\mathbf{A}\;\in\;\R^{nr\times nr}}\;\vect(W) = \underbrace{(I_r\otimes K)\,\vect(B)}_{=:\,\mathbf{b}}.
+\end{equation}
+
+\textbf{Question.} Design a PCG solver: method, preconditioner, matrix-vector products, complexity. Constraints: $n,r<q\ll N$; no $O(N)$ computation.
+
+%% ===================================================================
+\section{Stage 1: RS-Primitive Derivation}
+%% ===================================================================
+
+\subsection{CPM instantiation}
+
+The problem maps to the CPM (Coercive Projection Method) template from \texttt{CPM.tex}:
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{ll}
+\hline
+\textbf{CPM ingredient} & \textbf{This problem} \\
+\hline
+Structured set $\mathsf{S}$ & Kronecker cone: $\{(Z\otimes K)\vect(W) : W\in\R^{n\times r}\}$ \\
+Defect $\mathsf{D}$ & Missing-data residual: $\|S^T(\vect(T)-\vect(\hat{T}))\|^2$ \\
+Energy $\mathsf{E}$ & Regularized objective: $\frac{1}{2}\|S^T\vect(T-KWZ^T)\|^2 + \frac{\lambda}{2}\tr(W^TKW)$ \\
+Projection inequality & Khatri-Rao factorization: each row of $Z\otimes K$ factors \\
+& into element-wise products of factor rows $\otimes$ kernel columns \\
+Energy control $C_{\mathrm{eng}}$ & RKHS regularization $\lambda(I_r\otimes K)$: coercivity $\ge\lambda\sigma_{\min}(K)$ \\
+Net/comparison $K_{\mathrm{net}}$ & Missing-data fraction: effective ratio $\le N/q$ \\
+Preconditioner & RS $J$-projection: ``full-data'' Kronecker approximation \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{RS Principle 1: Finite local resolution (RG4)}
+
+The CP structure $\mathcal{T} \approx \sum_{l=1}^r a_l^{(1)}\circ\cdots\circ a_l^{(d)}$ is a \emph{finite-resolution recognition mode}: rank $r$ means the system is described by $r$ independent recognition channels, each a separable product across modes. This is the RS axiom RG4 (finite local resolution)---the recognizer cannot resolve infinitely many independent components.
+
+\textbf{Consequence:} The system matrix $\mathbf{A}$ is $nr\times nr$ with $r$ ``recognition channels,'' not $N$-dimensional. The Khatri-Rao structure is the \emph{factored form} of finite-resolution recognition.
+
+\subsection{RS Principle 2: Cost functional and coercivity}
+
+The RKHS regularization $\lambda(I_r\otimes K)$ plays the role of the RS cost functional $J(x) = \frac{1}{2}(x+x^{-1})-1$:
+\begin{itemize}
+\item $J\ge 0$ (nonnegativity) $\leftrightarrow$ $\lambda(I_r\otimes K)\succeq 0$ (positive semidefinite regularizer).
+\item $J''(1)=1$ (unit curvature at identity) $\leftrightarrow$ $\lambda$ sets the curvature scale of the penalty.
+\item Coercivity: $\mathbf{A}\succeq \lambda\sigma_{\min}(K)\cdot I_{nr}$, so the defect is bounded by $c^{-1}$ times the energy gap, with $c = \lambda\sigma_{\min}(K)$.
+\end{itemize}
+
+\subsection{RS Principle 3: J-projection as preconditioner}
+
+The RS canonical $J$-projection to neutrality (RSA Theorem~2.6) states: given $n$ deviants, the cost-minimizing correction is the \emph{uniform rescaling} $r_i = \exp(-\sigma(x)/n)$. 
+
+In this problem, the analogous ``uniform correction'' is the \textbf{full-data approximation}: pretend $SS^T = I_N$ (all entries observed). This replaces
+\[
+(Z\otimes K)^T SS^T (Z\otimes K) \;\;\longrightarrow\;\; (Z\otimes K)^T(Z\otimes K) = (Z^TZ)\otimes K^2
+\]
+and yields the preconditioner
+\[
+M := (Z^TZ+\lambda I_r)\otimes K.
+\]
+
+This is a Kronecker product $\Longrightarrow$ $M^{-1}$ factors as $(Z^TZ+\lambda I_r)^{-1}\otimes K^{-1}$ $\Longrightarrow$ application cost $O(n^2r+nr^2)$. The full-data approximation is the RS ``neutral reference'': the minimum-cost configuration under complete observation.
+
+\subsection{RS Principle 4: Eight-tick cadence and CG convergence}
+
+CG on $M^{-1}\mathbf{A}$ converges geometrically at rate $(\kappa-1)/(\kappa+1)$ where $\kappa = \text{cond}(M^{-1}\mathbf{A})$. Since $M$ captures the full Kronecker structure and the only mismatch is the missing-data selection, $\kappa$ depends on the missing-data pattern, not on $N$. The geometric convergence is the RS ``self-similar scaling'': each CG iteration reduces the error by a fixed factor, and the number of iterations is $O(\sqrt{\kappa}\log(1/\varepsilon))$, independent of $N$.
+
+%% ===================================================================
+\section{Stage 2: Classical Solution}
+%% ===================================================================
+
+\subsection{Method: Preconditioned Conjugate Gradient}
+
+We solve $\mathbf{A}x = \mathbf{b}$ (equation~\eqref{eq:system}) by PCG with preconditioner $M$. The method requires:
+\begin{enumerate}
+\item A fast matrix-vector product $x\mapsto \mathbf{A}x$ (Section~\ref{sec:matvec}).
+\item A fast preconditioner solve $y\mapsto M^{-1}y$ (Section~\ref{sec:precond}).
+\item A fast right-hand side computation $\mathbf{b}$ (Section~\ref{sec:rhs}).
+\end{enumerate}
+
+\subsection{Preconditioner: Kronecker approximation}\label{sec:precond}
+
+\begin{definition}[Preconditioner]
+Define $\Gamma := Z^TZ \in \R^{r\times r}$ and
+\begin{equation}\label{eq:precond}
+M := (\Gamma + \lambda I_r) \otimes K.
+\end{equation}
+\end{definition}
+
+\paragraph{Why this works.} The system matrix is $\mathbf{A} = (Z\otimes K)^T SS^T (Z\otimes K) + \lambda(I_r\otimes K)$. If all entries were observed ($SS^T = I_N$), then $\mathbf{A}_{\text{full}} = (Z^TZ)\otimes K^2 + \lambda I_r\otimes K = (\Gamma\otimes K + \lambda I_r\otimes I_n)(I_r\otimes K)$. Since the right-hand side already has a factor of $(I_r\otimes K)$, we can absorb one factor of $K$. The preconditioner $M = (\Gamma+\lambda I_r)\otimes K$ captures the dominant spectral structure, and $M^{-1}\mathbf{A}$ has condition number depending only on the missing-data pattern (ratio $N/q$) and the conditioning of $K$, not on $N$ itself.
+
+\paragraph{Computing $\Gamma = Z^TZ$ without forming $Z$.}
+By the Hadamard-product property of Khatri-Rao Gram matrices:
+\begin{equation}\label{eq:gamma}
+\Gamma = Z^TZ = \bigodot_{i\ne k} (A_i^T A_i),
+\end{equation}
+where $\bigodot$ denotes element-wise (Hadamard) product. Each $A_i^TA_i\in\R^{r\times r}$ costs $O(n_i r^2)$. Total: $O(\sum_{i\ne k}n_i r^2 + (d-1)r^2)$.
+
+\paragraph{Applying $M^{-1}$.}
+Since $M = (\Gamma+\lambda I_r)\otimes K$ is a Kronecker product:
+\begin{equation}
+M^{-1} = (\Gamma+\lambda I_r)^{-1}\otimes K^{-1}.
+\end{equation}
+
+\textbf{Precomputation:}
+\begin{itemize}
+\item Cholesky factorization $L_K L_K^T = K$: cost $O(n^3)$.
+\item Cholesky factorization $L_\Gamma L_\Gamma^T = \Gamma+\lambda I_r$: cost $O(r^3)$.
+\end{itemize}
+
+\textbf{Per application} of $M^{-1}$ to $\vect(V)$ for $V\in\R^{n\times r}$:
+\begin{enumerate}
+\item Solve $K U = V$ via back-substitution with $L_K$: cost $O(n^2 r)$.
+\item Solve $(\Gamma+\lambda I_r) X^T = U^T$ via back-substitution with $L_\Gamma$: cost $O(r^2 n)$.
+\item Return $\vect(X)$.
+\end{enumerate}
+Total per application: $\boxed{O(n^2r + nr^2)}$.
+
+\subsection{Matrix-vector product $\mathbf{A}v$}\label{sec:matvec}
+
+Given $v = \vect(W)$ for $W\in\R^{n\times r}$, compute
+\[
+\mathbf{A}v = \underbrace{(Z\otimes K)^T SS^T (Z\otimes K)\,\vect(W)}_{\text{data term}} + \underbrace{\lambda\,(I_r\otimes K)\,\vect(W)}_{\text{regularization term}}.
+\]
+
+\subsubsection{Regularization term}
+$(I_r\otimes K)\vect(W) = \vect(KW)$. Cost: $\boxed{O(n^2 r)}$.
+
+\subsubsection{Data term: the key computation}
+
+The data term involves the $N$-dimensional vector $(Z\otimes K)\vect(W)$, which we \textbf{must never form}. Instead, we use the selection matrix $S$ to restrict computation to the $q$ observed entries.
+
+\paragraph{Observation indices.} Each observed entry $j\in\{1,\ldots,q\}$ corresponds to a position in the mode-$k$ unfolding of $\mathcal T$: a row index $\alpha_j\in\{1,\ldots,n\}$ (the mode-$k$ index) and a column index $\beta_j\in\{1,\ldots,M\}$ (encoding the remaining multi-index $(i_1,\ldots,i_{k-1},i_{k+1},\ldots,i_d)$). The selection matrix $S$ satisfies $S^T\vect(T) = (T_{\alpha_j,\beta_j})_{j=1}^q$.
+
+\paragraph{Step 1: Precompute Khatri-Rao rows at observed indices.}
+
+For each observed entry $j$, the multi-index encoded by $\beta_j$ determines a specific row of $Z$:
+\begin{equation}\label{eq:zrow}
+z_j := Z_{\beta_j,:}^T = A_1(i_1^{(j)},:)^T \ast A_2(i_2^{(j)},:)^T \ast \cdots \ast A_d(i_d^{(j)},:)^T \in \R^r,
+\end{equation}
+where $\ast$ is element-wise product and the multi-index $(i_1^{(j)},\ldots,i_d^{(j)})$ excludes mode $k$ (which is $\alpha_j$). Cost per entry: $O((d-1)r)$. Total: $O(qdr)$.
+
+These $q$ vectors $\{z_j\}_{j=1}^q$ can be precomputed once per CG solve (they depend only on the fixed factor matrices, not on $W$).
+
+\paragraph{Step 2: Compute $p = S^T(Z\otimes K)\vect(W)\in\R^q$.}
+
+The entry corresponding to position $(\alpha_j, \beta_j)$ of $KWZ^T$ is:
+\begin{equation}\label{eq:forward}
+p_j = [KWZ^T]_{\alpha_j,\beta_j} = (KW)_{\alpha_j,:}\, z_j = \sum_{l=1}^r [KW]_{\alpha_j, l}\, [z_j]_l.
+\end{equation}
+
+\textbf{Procedure:}
+\begin{enumerate}
+\item Compute $P := KW \in \R^{n\times r}$: cost $O(n^2 r)$.
+\item For each $j = 1,\ldots,q$: look up row $\alpha_j$ of $P$, inner product with $z_j$: cost $O(r)$.
+\end{enumerate}
+Total: $\boxed{O(n^2r + qr)}$.
+
+\paragraph{Step 3: Compute the $q$-vector $\tilde{p} = S^T(Z\otimes K)\vect(W)$ and then $(Z\otimes K)^T S\tilde{p}$.}
+
+We already have $\tilde{p} = p$ from Step~2. Now compute the adjoint application:
+\begin{equation}
+(Z\otimes K)^T S p = \sum_{j=1}^q p_j\, (Z\otimes K)^T e_{(\alpha_j,\beta_j)}.
+\end{equation}
+
+By the Kronecker product structure, $(Z\otimes K)^T e_{(\alpha_j,\beta_j)} = z_j \otimes k_{\alpha_j}$ where $k_{\alpha_j} = K_{:,\alpha_j}\in\R^n$ is the $\alpha_j$-th column of $K$. Reshaping from $\R^{nr}$ to $\R^{n\times r}$:
+
+\begin{equation}\label{eq:adjoint}
+\text{(adjoint result as matrix)} = \sum_{j=1}^q p_j\, k_{\alpha_j}\, z_j^T = K \underbrace{\left(\sum_{j=1}^q p_j\, e_{\alpha_j}\, z_j^T\right)}_{=:\,G\;\in\;\R^{n\times r}}.
+\end{equation}
+
+\textbf{Procedure:}
+\begin{enumerate}
+\item Initialize $G = 0_{n\times r}$.
+\item For each $j = 1,\ldots,q$: accumulate $G_{\alpha_j,:} \mathrel{+}= p_j \cdot z_j^T$: cost $O(r)$.
+\item Compute $KG\in\R^{n\times r}$: cost $O(n^2 r)$.
+\end{enumerate}
+Total: $\boxed{O(qr + n^2r)}$.
+
+\paragraph{Why this works.}
+The identity \eqref{eq:adjoint} follows from:
+\begin{align*}
+\sum_{j=1}^q p_j (z_j\otimes k_{\alpha_j}) 
+&= \sum_{j=1}^q p_j\, \vect(k_{\alpha_j} z_j^T) \\
+&= \vect\!\left(\sum_{j=1}^q p_j\, k_{\alpha_j} z_j^T\right) \\
+&= \vect\!\left(K \sum_{j=1}^q p_j\, e_{\alpha_j} z_j^T\right) = \vect(KG).
+\end{align*}
+The factoring $k_{\alpha_j} = K e_{\alpha_j}$ allows pulling $K$ outside the sum, reducing the inner loop from $O(nr)$ to $O(r)$ per entry.
+
+\subsubsection{Complete matrix-vector product}
+
+\begin{equation}\label{eq:full-matvec}
+\mathbf{A}\,\vect(W) = \vect\!\big(KG + \lambda KW\big) = \vect\!\big(K(G + \lambda W)\big).
+\end{equation}
+
+Note we can combine the two $K$-multiplications into one: compute $KG$ and $KW$ together, or compute $K(G+\lambda W)$ at a single cost of $O(n^2r)$.
+
+\begin{proposition}[Matrix-vector product cost]
+One application of $\mathbf{A}$ costs
+\[
+O(n^2 r + qr)
+\]
+per CG iteration (after a one-time $O(qdr)$ precomputation of the Khatri-Rao rows at observed indices).
+\end{proposition}
+
+\subsection{Right-hand side}\label{sec:rhs}
+
+The right-hand side $\mathbf{b} = (I_r\otimes K)\vect(B) = \vect(KB)$ requires computing $B = TZ$ (the MTTKRP) and then multiplying by $K$.
+
+\paragraph{Computing the MTTKRP $B = TZ$.}
+$T\in\R^{n\times M}$ is the mode-$k$ unfolding with zeros for missing entries, so only $q$ entries of $T$ are nonzero. We compute $B = TZ$ using these:
+\begin{equation}
+B_{\alpha,:} = \sum_{\substack{j:\,\alpha_j=\alpha}} T_{\alpha,\beta_j}\, z_j^T, \qquad \alpha = 1,\ldots,n.
+\end{equation}
+Cost: $O(qr)$ (one pass over observed entries, accumulating into $B$).
+
+Then $\mathbf{b} = \vect(KB)$: cost $O(n^2r)$. Total: $\boxed{O(qr + n^2r)}$.
+
+\subsection{Complete algorithm}
+
+\begin{algorithm}[H]
+\caption{PCG for RKHS-Regularized CP Subproblem}\label{alg:pcg}
+\begin{algorithmic}[1]
+\State \textbf{Precomputation} (once per outer ALS iteration):
+\State \quad Compute $\Gamma = \bigodot_{i\ne k}(A_i^TA_i)$  \hfill $O(\sum_{i\ne k}n_ir^2)$
+\State \quad Cholesky: $L_\Gamma L_\Gamma^T = \Gamma+\lambda I_r$ \hfill $O(r^3)$
+\State \quad Cholesky: $L_K L_K^T = K$ \hfill $O(n^3)$
+\State \quad For each observed entry $j$: compute $z_j$ via~\eqref{eq:zrow} \hfill $O(qdr)$
+\State \quad Compute $B=TZ$ (MTTKRP) and $\mathbf{b}=\vect(KB)$ \hfill $O(qr+n^2r)$
+\State
+\State \textbf{PCG iterations:} $x_0 = 0$, $r_0 = \mathbf{b}$, $y_0 = M^{-1}r_0$, $d_0 = y_0$
+\For{$i = 0,1,2,\ldots$ until convergence}
+    \State Compute $\mathbf{A}d_i$ via Section~\ref{sec:matvec} \hfill $O(n^2r+qr)$
+    \State $\alpha_i = \inner{r_i}{y_i}/\inner{d_i}{\mathbf{A}d_i}$
+    \State $x_{i+1} = x_i + \alpha_i d_i$
+    \State $r_{i+1} = r_i - \alpha_i \mathbf{A}d_i$
+    \State $y_{i+1} = M^{-1}r_{i+1}$ via Section~\ref{sec:precond} \hfill $O(n^2r+nr^2)$
+    \State $\beta_i = \inner{r_{i+1}}{y_{i+1}}/\inner{r_i}{y_i}$
+    \State $d_{i+1} = y_{i+1}+\beta_i d_i$
+\EndFor
+\State \textbf{Output:} $W = \text{reshape}(x,n,r)$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Complexity analysis}
+
+\begin{theorem}[Total complexity]\label{thm:complexity}
+Algorithm~\ref{alg:pcg} solves the system~\eqref{eq:system} to accuracy $\varepsilon$ (in relative residual) in total work
+\begin{equation}\label{eq:total-cost}
+\underbrace{O(n^3 + r^3 + qdr)}_{\text{precomputation}} \;+\; \underbrace{O\!\left(k_{\mathrm{CG}}\cdot(n^2r + qr)\right)}_{\text{CG iterations}},
+\end{equation}
+where $k_{\mathrm{CG}} = O(\sqrt{\kappa}\,\log(1/\varepsilon))$ with $\kappa = \mathrm{cond}(M^{-1}\mathbf{A})$.
+
+No computation of order $N = \prod_i n_i$ is performed at any step.
+\end{theorem}
+
+\begin{proof}
+\textbf{Precomputation costs:}
+\begin{itemize}
+\item $\Gamma = \bigodot_{i\ne k}(A_i^TA_i)$: $O(\sum_{i\ne k}n_ir^2) \le O((\sum_i n_i)r^2)$.
+\item Cholesky of $\Gamma+\lambda I_r$: $O(r^3)$.
+\item Cholesky of $K$: $O(n^3)$.
+\item Khatri-Rao rows at observed indices: $q$ rows, each $O((d-1)r)$: $O(qdr)$.
+\item MTTKRP and RHS: $O(qr + n^2r)$.
+\end{itemize}
+Dominant precomputation: $O(n^3 + qdr)$ since $n^3\ge n^2r$ (as $n\ge r$).
+
+\textbf{Per-iteration costs:}
+\begin{itemize}
+\item Matrix-vector product $\mathbf{A}d_i$: $O(n^2r + qr)$ (Section~\ref{sec:matvec}).
+\item Preconditioner solve $M^{-1}r_{i+1}$: $O(n^2r + nr^2) = O(n^2r)$ since $n > r$ (Section~\ref{sec:precond}).
+\item Inner products, vector updates: $O(nr)$.
+\end{itemize}
+Dominant per-iteration: $O(n^2r + qr)$.
+
+\textbf{Number of iterations.}
+CG converges in $k_{\mathrm{CG}} = O(\sqrt{\kappa}\log(1/\varepsilon))$ iterations, where $\kappa = \mathrm{cond}(M^{-1}\mathbf{A})$. Since $M$ approximates $\mathbf{A}$ by replacing the selection $SS^T$ with the identity:
+\[
+\kappa \;\le\; \frac{\sigma_{\max}(\mathbf{A})}{\sigma_{\min}(\mathbf{A})}\cdot\frac{\sigma_{\max}(M^{-1})}{\sigma_{\min}(M^{-1})} \;=\; O\!\left(\frac{\kappa(K)\cdot\kappa(\Gamma+\lambda I_r)}{\text{(missing-data factor)}}\right),
+\]
+which depends on the conditioning of $K$, $\Gamma$, $\lambda$, and the observation pattern, but \textbf{not on $N$}. In practice $k_{\mathrm{CG}} \ll nr$.
+
+\textbf{Comparison with direct solve.}
+A dense direct solve of the $nr\times nr$ system costs $O(n^3r^3)$ and requires $O(n^2r^2)$ storage for the explicit matrix. Our method costs $O(k_{\mathrm{CG}}(n^2r+qr)+n^3)$ and requires $O(n^2 + qr + nr)$ storage. For $q \ll N$ and moderate $k_{\mathrm{CG}}$, this is vastly cheaper.
+
+\textbf{$N$-avoidance.}
+At no point do we form an $N$-dimensional vector or matrix:
+\begin{itemize}
+\item $(Z\otimes K)\vect(W) \in \R^N$ is \emph{never formed}. We only compute $S^T(Z\otimes K)\vect(W) \in \R^q$ via~\eqref{eq:forward}.
+\item $(Z\otimes K)^T S p \in \R^{nr}$ is computed via the adjoint formula~\eqref{eq:adjoint}, accumulating directly into an $n\times r$ matrix.
+\item The Khatri-Rao product $Z\in\R^{M\times r}$ is \emph{never formed}. We only access specific rows $z_j$ at the $q$ observed indices.
+\end{itemize}
+All operations touch at most $O(q+n^2+r^2)$ scalars. \qed
+\end{proof}
+
+%% ===================================================================
+\section{Detailed Justification: Why Each Step Works}
+%% ===================================================================
+
+\subsection{Correctness of the matrix-vector product}
+
+We must verify $\mathbf{A}\vect(W) = \vect(K(G+\lambda W))$ where $G$ is defined in~\eqref{eq:adjoint}.
+
+\textbf{Data term.} The $(Z\otimes K)^T SS^T (Z\otimes K)$ operator applied to $\vect(W)$ is:
+\begin{align*}
+&(Z\otimes K)^T SS^T (Z\otimes K)\vect(W) \\
+&= (Z\otimes K)^T S \cdot \underbrace{S^T (Z\otimes K)\vect(W)}_{= p \in \R^q} \\
+&= (Z\otimes K)^T \sum_{j=1}^q p_j\, e_{(\alpha_j,\beta_j)} \tag{$S$ selects entries at $(\alpha_j,\beta_j)$}\\
+&= \sum_{j=1}^q p_j\, (z_j \otimes k_{\alpha_j}) \tag{Kronecker column extraction}\\
+&= \vect\!\left(\sum_{j=1}^q p_j\, k_{\alpha_j} z_j^T\right) \tag{$\vect(ab^T)=b\otimes a$}\\
+&= \vect\!\left(K\sum_{j=1}^q p_j\, e_{\alpha_j} z_j^T\right) = \vect(KG). \tag{$k_{\alpha_j}=Ke_{\alpha_j}$}
+\end{align*}
+
+\textbf{Regularization term.} $\lambda(I_r\otimes K)\vect(W) = \lambda\vect(KW)$. Adding: $\mathbf{A}\vect(W) = \vect(K(G+\lambda W))$. \checkmark
+
+\subsection{Positive definiteness of $\mathbf{A}$}
+
+\begin{lemma}
+If $K\succ 0$ and $\lambda > 0$, then $\mathbf{A}\succ 0$.
+\end{lemma}
+\begin{proof}
+For any nonzero $v\in\R^{nr}$:
+$v^T\mathbf{A}v = \|S^T(Z\otimes K)v\|^2 + \lambda\, v^T(I_r\otimes K)v \ge \lambda\sigma_{\min}(K)\|v\|^2 > 0$.
+\end{proof}
+
+Since $\mathbf{A}$ is symmetric positive definite, CG is guaranteed to converge (and PCG with any SPD preconditioner preserves this).
+
+\subsection{Preconditioner quality}
+
+\begin{proposition}\label{prop:precond-quality}
+The eigenvalues of $M^{-1}\mathbf{A}$ lie in $[\lambda\sigma_{\min}(K)/\sigma_{\max}(M),\, \sigma_{\max}(\mathbf{A})/\sigma_{\min}(M)]$. In particular, $M^{-1}\mathbf{A}$ has bounded condition number independent of $N$.
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+$M = (\Gamma+\lambda I_r)\otimes K$ has eigenvalues $(\gamma_l+\lambda)\kappa_i$ where $\gamma_l$ are eigenvalues of $\Gamma$ and $\kappa_i$ of $K$. The data term $(Z\otimes K)^T SS^T(Z\otimes K) \preceq (Z\otimes K)^T(Z\otimes K) = \Gamma\otimes K^2$, so $\mathbf{A} \preceq \Gamma\otimes K^2 + \lambda I_r\otimes K$. Since $M$ contains $\Gamma\otimes K$ (comparable to $\Gamma\otimes K^2$ up to a factor of $\sigma_{\max}(K)/\sigma_{\min}(K)$), the ratio $\mathbf{A}/M$ is bounded in spectral norm.
+\end{proof}
+
+%% ===================================================================
+\section{RS $\leftrightarrow$ Classical Dictionary}
+%% ===================================================================
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{ll}
+\hline
+\textbf{RS Primitive} & \textbf{Classical Counterpart} \\
+\hline
+Finite local resolution (RG4) & CP rank $r$ $\ll$ dimensions \\
+Recognition cost $J \ge 0$ & RKHS regularization $\lambda(I_r\otimes K) \succeq 0$ \\
+Ledger structure (double-entry) & Kronecker/Khatri-Rao factorization \\
+$J$-projection to neutrality & Full-data preconditioner $M = (\Gamma+\lambda I_r)\otimes K$ \\
+Eight-tick periodicity & CG geometric convergence rate \\
+Finite recognition cost & $\psi \in H^1$ $\leftrightarrow$ $W \in \R^{n\times r}$ (finite-dim unknowns) \\
+CPM defect $\mathsf{D}$ & Missing-data residual $\|S^T(y_{\text{obs}}-y_{\text{pred}})\|^2$ \\
+CPM coercivity $c = (K_{\text{net}} C_{\text{lin}} C_{\text{eng}})^{-1}$ & $\lambda \sigma_{\min}(K)$ lower bound on $\mathbf{A}$ \\
+Structured set $\mathsf{S}$ & Column space of $Z\otimes K$ (CP-RKHS model) \\
+\hline
+\end{tabular}
+\end{center}
+
+%% ===================================================================
+\section{Summary}
+%% ===================================================================
+
+\begin{center}
+\fbox{\parbox{0.9\textwidth}{
+\textbf{Method:} Preconditioned Conjugate Gradient on the $nr\times nr$ system.
+
+\textbf{Preconditioner:} $M = (Z^TZ + \lambda I_r)\otimes K$ (Kronecker product; full-data approximation).
+\begin{itemize}
+\item Precompute: $Z^TZ = \bigodot_{i\ne k}(A_i^TA_i)$ via Hadamard product of Gram matrices.
+\item Apply $M^{-1}$: two triangular solves (one with $K$, one with $Z^TZ+\lambda I_r$). Cost: $O(n^2r)$.
+\end{itemize}
+
+\textbf{Matrix-vector product} $\mathbf{A}v$: three steps.
+\begin{enumerate}
+\item Forward: compute $p_j = (KW)_{\alpha_j,:}\cdot z_j$ for $j=1,\ldots,q$. Cost: $O(n^2r+qr)$.
+\item Adjoint: accumulate $G_{\alpha_j,:}\mathrel{+}=p_j z_j^T$, then multiply $KG$. Cost: $O(qr+n^2r)$.
+\item Add regularization: $K(G+\lambda W)$. Combined with step 2.
+\end{enumerate}
+
+\textbf{Complexity:} $O(n^3+qdr)$ precomputation $+$ $O(k_{\text{CG}}(n^2r+qr))$ iterations.
+
+\textbf{$N$-avoidance:} Complete. No vector or matrix of dimension $N=\prod n_i$ is ever formed.
+}}
+\end{center}
+
+\end{document}

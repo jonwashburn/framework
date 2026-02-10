@@ -1,0 +1,115 @@
+% Recognition-Operator Commit Controller — Family F Patent (Method, System, Medium)
+\documentclass[12pt]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage{xcolor}
+
+\title{Recognition-Operator Commit Controller\\Family F Patent (Method, System, Medium)}
+\author{Jonathan Washburn}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{center}
+{\large Camera-Ready Patent Draft}\\[4pt]
+{\normalsize Path-Cost Computation from J; Commit Trigger at Collapse Threshold; Control Parameter Adjustment}
+\end{center}
+
+\section*{Field}
+This disclosure relates to control of periodic measurement and actuation pipelines. It provides a method, system, and non-transitory medium for computing a \emph{path cost} from a convex symmetric J-kernel, triggering \emph{commits} when the cost crosses a \emph{collapse threshold}, and adjusting control parameters (integration time, gate width, strobe phase) to optimize recognition-driven operation.
+
+\section*{Background}
+Measurement/actuation loops typically use fixed commit policies (time-based, amplitude thresholds) that ignore physical invariants and lead to drift, aliasing, or missed events. A recognition-native commit controller driven by a principled cost and equipped with adjustable control parameters can produce higher fidelity, reduced alias error, and consistent performance across devices and environments.
+
+\section*{Summary}
+Disclosed is a commit controller that:
+\begin{enumerate}[leftmargin=*]
+  \item computes a \textbf{path cost} $C$ from per-window observables using the convex symmetric kernel $J(x)=\tfrac12(x+1/x)-1$;
+  \item \textbf{triggers a commit} when $C\ge C_{\mathrm{th}}$ (collapse threshold) under policy constraints;
+  \item \textbf{adjusts control parameters} (integration time, gate width, strobe phase) to improve recognition quality and maintain neutrality/periodic invariance; and
+  \item emits signed logs of costs, commits, adjustments, and outcomes for audit and optimization.
+\end{enumerate}
+
+\section*{Definitions}
+\noindent\textbf{J-kernel.} $J(x)=\tfrac12(x+1/x)-1$ for $x>0$, a convex symmetric cost minimized at $x=1$.
+
+\noindent\textbf{Path cost.} An aggregate $C=\sum_{i\in \mathcal{W}} w_i\,J(x_i)$ over a window set $\mathcal{W}$ (e.g., an eight-tick block) for positive per-window observables $x_i$.
+
+\noindent\textbf{Collapse threshold.} A declared scalar $C_{\mathrm{th}}$ (policy-dependent) at which a \emph{commit} is triggered; hysteresis bands may be used to prevent chatter.
+
+\noindent\textbf{Control parameters.} Actuation or measurement parameters adjusted by the controller: integration time, gate width, strobe phase, and optionally dwell/slew under safety constraints.
+
+\noindent\textbf{Compliance artifacts.} Signed, hash-addressed logs including costs, threshold crossings, control adjustments, neutrality metrics, and results.
+
+\section*{Claims}
+\setlist[enumerate]{leftmargin=*,labelsep=0.5em,itemsep=0.6em,topsep=0.4em}
+
+\subsection*{Independent Claims}
+\begin{enumerate}
+\item \textbf{(Method)} A computer-implemented method for commit control in a measurement or actuation pipeline, comprising:
+\begin{enumerate}[label=(\alph*)]
+  \item computing a path cost $C=\sum_{i\in \mathcal{W}} w_i\,J(x_i)$ over a set of windows $\mathcal{W}$ for positive observables $x_i$, where $J(x)=\tfrac12(x+1/x)-1$;
+  \item triggering a \emph{commit} when $C\ge C_{\mathrm{th}}$ (collapse threshold) under policy constraints, and otherwise accumulating additional windows;
+  \item adjusting control parameters including at least one of: integration time, gate width, and strobe phase, to improve recognition quality and maintain periodic invariance and neutrality; and
+  \item emitting signed, hash-addressed logs including costs, threshold events, control adjustments, neutrality metrics, and outcomes.
+\end{enumerate}
+
+\item \textbf{(System)} A commit control system comprising one or more processors and memory configured to: (i) compute path costs with the J-kernel; (ii) trigger commits at a collapse threshold; (iii) adjust control parameters (integration time, gate width, strobe phase) per policy; and (iv) emit signed logs of operation.
+
+\item \textbf{(Non-transitory medium)} A non-transitory computer-readable medium storing instructions that, when executed by one or more processors, cause a system to perform the method of claim 1.
+\end{enumerate}
+
+\subsection*{Dependent Claims}
+\begin{enumerate}[resume]
+\item (Method) wherein the window set $\mathcal{W}$ is an eight-tick block with mirrored halves ($\delta_{i+4}=-\delta_i$) and neutrality ($\sum_{i=1}^{8}\delta_i=0$).
+\item (Method) wherein J-kernel inputs $x_i$ are derived from canonically factorized, dimensionless displays.
+\item (Method) wherein the collapse threshold $C_{\mathrm{th}}$ is tiered by policy with hysteresis bands to prevent commit chatter.
+\item (Method) further comprising energy accounting of commit/erase operations and enforcing safety envelopes on dwell and slew limits.
+\item (Method) wherein control parameters are selected by constrained optimization to reduce the next-block path cost subject to neutrality and timing constraints.
+\item (System) further comprising a timing engine producing eight-tick Gray-aligned schedules and a neutrality verifier providing a block-sum neutrality observable.
+\item (Method) wherein the controller rejects commits if neutrality or jitter budgets are violated in the current block, logging a failed-commit event.
+\item (Method) wherein control parameter updates are recorded with before/after values and effect sizes on path cost for learning or policy refinement.
+\item (System) wherein the compliance API exposes cost trajectories, threshold crossings, parameter adjustments, neutrality metrics, and signed outcomes.
+\item (Method) further comprising adaptive thresholding where $C_{\mathrm{th}}$ is adjusted within bounds based on recent cost statistics to maintain target commit rates.
+\end{enumerate}
+
+\section*{Brief Description of the Drawings}
+\begin{enumerate}[leftmargin=*]
+  \item Fig. 1: Path-cost computation over an eight-tick block with J-kernel aggregation.
+  \item Fig. 2: Commit trigger at collapse threshold with hysteresis bands.
+  \item Fig. 3: Control parameter adjustment loop (integration time, gate width, strobe phase).
+  \item Fig. 4: Timing/neutrality integration and compliance logging.
+\end{enumerate}
+
+\section*{Detailed Description}
+\subsection*{Path-Cost Computation}
+Per-window observables $x_i>0$ (e.g., ratio-based residuals) are aggregated with $J(x)=\tfrac12(x+1/x)-1$ to form a block-level path cost $C$. Windows may follow an eight-tick mirrored schedule to support neutrality. Robust weighting $w_i$ and aggregation may be used.
+
+\subsection*{Commit Triggering}
+The controller monitors $C$ and triggers a commit when $C\ge C_{\mathrm{th}}$ under policy constraints (e.g., neutrality satisfied, jitter within bounds). Hysteresis bands reduce chatter. Failed-commit conditions are logged with diagnostics.
+
+\subsection*{Control Parameter Adjustment}
+After a commit or at scheduled intervals, the controller adjusts one or more of: integration time, gate width, strobe phase. Adjustments are computed to reduce subsequent block costs while preserving periodic invariance, neutrality, and safety envelopes (dwell/slew limits). Optional energy accounting records commit/erase energetics.
+
+\subsection*{Compliance and Logging}
+Signed, hash-addressed logs include cost trajectories, threshold crossings, parameter adjustments with effect sizes, neutrality metrics, jitter statistics, and outcomes (commit accepted/rejected). A compliance API exposes these artifacts for audit and downstream optimization.
+
+\section*{Technical Effects}
+The commit controller yields faster, recognition-aligned commits; reduced alias/phase error through J-informed decisions; improved stability via neutrality/timing integration; and audit-ready records for reproducibility and policy refinement.
+
+\section*{Enablement and Best Mode}
+Reference implementations include: (i) a J-kernel aggregation module; (ii) a thresholding engine with hysteresis; (iii) a timing/neutrality interface; (iv) a parameter-optimization module under constraints; and (v) signed logging and compliance APIs. Benchmarks quantify commit latency, alias reduction, and stability across jitter.
+
+\section*{Alternative Embodiments}
+Window sets other than eight may be used in modalities with different constraints, provided periodic invariance and neutrality (or equivalent cancellation) are preserved. Parameter sets may be extended (e.g., detector gain) under safety policies.
+
+\section*{Legal Notice}
+All embodiments, features, and steps described herein may be combined in any operable permutation. Where means-plus-function is implicated, claims are intended to cover corresponding structures and their equivalents.
+
+\end{document}
+
+

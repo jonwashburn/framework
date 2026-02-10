@@ -1,0 +1,136 @@
+\documentclass[11pt,letterpaper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!70!black,
+  urlcolor=blue!70!black
+}
+
+\title{\textbf{Project Helios: ICF Data Request Checklist}\\
+\large (What to Provide to Validate RS Coherence-Controlled Fusion)}
+\author{Jonathan Washburn (Project Helios)}
+\date{2026-01-25}
+
+\begin{document}
+\maketitle
+
+\section*{Purpose (plain language)}
+We are building an \textbf{ICF-first control and audit system} that computes:
+\begin{itemize}
+  \item \textbf{\(C_\phi\)}: timing/phase alignment of a pulsed driver schedule (``\(\phi\)-coherence'').
+  \item \textbf{\(C_\sigma\)}: symmetry/synchronization derived from diagnostic mode ratios via the RS symmetry ledger.
+  \item \textbf{\(S = 1/(1 + C_\phi + C_\sigma)\)}: barrier scale factor.
+  \item \textbf{Enhancement \(E\)}: predicted multiplicative improvement in tunneling/reactivity proxy implied by \(S\).
+\end{itemize}
+
+This document specifies the \textbf{minimum shot-level diagnostics} needed to run the control/analysis pipeline on real facility data and produce auditable certificate bundles.
+
+\bigskip
+\noindent\textbf{Important:} we are not asking for classified design details. If raw data cannot be exported, we include a fallback ``reduced export'' option below.
+
+\section*{A. Minimum viable dataset (per shot)}
+\subsection*{A1. Shot identity + metadata}
+\begin{itemize}
+  \item \textbf{shot\_id}: unique shot identifier.
+  \item \textbf{timestamp} (ISO-8601): when the shot occurred.
+  \item \textbf{facility}: e.g.\ NIF, OMEGA, OMEGA-EP.
+  \item \textbf{target type / campaign} (free text ok).
+  \item \textbf{notes}: any caveats (diagnostic outages, known timing offsets, etc.).
+\end{itemize}
+
+\subsection*{A2. Pulse timing (for \(C_\phi\))}
+Provide two arrays of equal length \(N\) (units: seconds):
+\begin{itemize}
+  \item \textbf{expected\_pulse\_times[0..N-1]}: planned driver event times for the schedule.
+  \item \textbf{measured\_pulse\_times[0..N-1]}: measured driver event times from timing diagnostics.
+\end{itemize}
+
+Optional (improves fidelity, still minimal):
+\begin{itemize}
+  \item \textbf{channel\_phases[0..M-1]} (radians): phase angles for relevant channels in the timing window.
+  \item \textbf{channel\_time\_offsets[0..M-1]} (seconds): per-channel offsets / skews (if measured).
+  \item \textbf{jitter\_scale} (seconds): facility-defined scale for interpreting RMS timing jitter.
+  \item \textbf{skew\_scale} (seconds): facility-defined scale for interpreting RMS channel skew.
+\end{itemize}
+
+\subsection*{A3. Symmetry diagnostic mode ratios (for \(C_\sigma\))}
+Provide \(K\) mode ratios (dimensionless), plus \emph{definitions}:
+\begin{itemize}
+  \item \textbf{mode\_ratios[0..K-1]}: e.g.\ \(P_2/P_0\), \(P_4/P_0\), etc. (ideally all near 1.0).
+  \item \textbf{mode\_labels[0..K-1]}: strings describing each ratio (e.g.\ ``P2/P0'').
+  \item \textbf{mode\_weights[0..K-1]}: nonnegative weights for the symmetry ledger aggregation.
+\end{itemize}
+
+\subsection*{A4. Optional outcome proxies (for validation)}
+These are not required to compute \(C_\phi,C_\sigma,S,E\), but they are needed to test whether predicted enhancement correlates with performance:
+\begin{itemize}
+  \item \textbf{yield proxy}: neutron yield / burn proxy / alpha yield proxy (as allowed).
+  \item \textbf{bang time}, \textbf{\(\rho R\)} proxy, or other standard campaign metrics (as allowed).
+\end{itemize}
+
+\section*{B. Preferred file format}
+\subsection*{B1. One JSON per shot (recommended)}
+Filename: \texttt{shot\_<shot\_id>.json}
+
+\smallskip
+\noindent Minimal JSON structure (example):
+\begin{verbatim}
+{
+  "shot_id": "NIF-YYYYMMDD-####",
+  "timestamp": "2026-01-25T00:00:00Z",
+  "facility": "NIF",
+
+  "expected_pulse_times": [1.0e-9, 1.618e-9, 2.618e-9],
+  "measured_pulse_times": [1.00002e-9, 1.61798e-9, 2.61801e-9],
+
+  "mode_labels": ["P2/P0", "P4/P0"],
+  "mode_ratios": [1.03, 0.97],
+  "mode_weights": [0.5, 0.5],
+
+  "yield_proxy": null,
+  "notes": "ok"
+}
+\end{verbatim}
+
+\subsection*{B2. CSV (acceptable)}
+If CSV is easier, we can provide a schema on request. The key is keeping:
+\texttt{expected\_pulse\_times} and \texttt{measured\_pulse\_times} paired and ordered, and mode ratios labeled.
+
+\section*{C. Reduced export option (if raw arrays cannot be shared)}
+If you cannot export raw pulse times or mode ratios, provide instead:
+\begin{itemize}
+  \item \textbf{Computed \(C_\phi\)} (and the jitter RMS / scales used)
+  \item \textbf{Computed ledger value} (symmetry ledger) and resulting \textbf{\(C_\sigma\)}
+  \item \textbf{Calibration/provenance}: which diagnostics, which time windows, and any smoothing/filters applied
+  \item \textbf{Hashes} of the raw internal records (so we can cross-check consistency in an on-site audit)
+\end{itemize}
+
+\section*{D. Where this plugs into Project Helios}
+Once you have shot JSONs, we can ingest them into the control/analysis pipeline and emit:
+\begin{itemize}
+  \item \textbf{Per-shot certificates} with computed \(C_\phi,C_\sigma,S,E\) and theorem references.
+  \item \textbf{Validation plots/tables}: observed yield proxy vs predicted \(E\).
+\end{itemize}
+
+For development without facility data, a synthetic demo exists in the repo:
+\begin{itemize}
+  \item \texttt{python scripts/icf\_control\_demo.py}
+\end{itemize}
+
+\section*{E. Access pointers (public portals)}
+These sites document user access workflows (shot data is typically account-controlled):
+\begin{itemize}
+  \item NIF ``Shot RI Resources'': \url{https://lasers.llnl.gov/for-users/shot-ri-resources}
+  \item OMEGA ``Omega Users'': \url{https://www.lle.rochester.edu/omega-users/}
+\end{itemize}
+
+\end{document}
+

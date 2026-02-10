@@ -1,0 +1,57 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=*, itemsep=4pt, topsep=6pt}
+
+\title{\textbf{Author Response (Reproducibility / Computation Blockers)}\\[2mm]
+\large Response to: \textit{Referee Report (Computation Gaps / Blockers)}}
+\author{Authors}
+\date{January 27, 2026}
+
+\begin{document}
+\maketitle
+
+\section*{Summary}
+Thank you for the detailed, reproducible report and for explicitly localizing the failure region for the rectangle certification step.
+We agree with your bottom line: under the currently advertised audit parameters, the rectangle-based certification used in Lemma \texttt{lem:rect-cert} is \emph{not reproducible} on your Windows environment, and should be treated as a genuine audit blocker until resolved.
+
+\section*{(1) Pick certificate at $\sigma_0=0.599$}
+We appreciate your confirmation that the Pick certificate artifact regenerates \emph{exactly} (matching \texttt{delta\_cert} with difference $0.0$) and that the shipped verifier script hash matches the bundled sums.
+
+\section*{(2) Rectangle theta certification on $[0.6,0.7]\times[0,20]$}
+Your report indicates a mismatch between the shipped artifact (with \texttt{results.ok=True} and \texttt{failures\_len=0}) and a fresh Windows run under the same stated parameters (with \texttt{results.ok=False} and many terminal failures of type \texttt{theta\_not\_lt\_one\_min\_width}).
+The key point we take from your analysis is that the failures are \emph{terminal} under the current minimum box widths: additional wall-clock time with the same \texttt{--theta-min-*} thresholds and precision will not resolve them.
+
+\section*{Remediation plan (what we will change in the delivery)}
+We will address this in the delivery and paper as follows:
+\begin{itemize}
+  \item \textbf{Reference-environment rerun and publication of logs:}
+  rerun the rectangle certification on the reference environment used to ship the artifact (macOS, per \texttt{ENVIRONMENT.txt}), using the exact advertised command/parameters, and publish the full JSON output and logs.
+
+  \item \textbf{Cross-platform reproducibility target:}
+  rerun on Windows under pinned dependencies. If the advertised parameters fail on Windows, we will update the audit manifest to the \emph{stronger} parameters actually required for cross-platform reproduction (e.g.\ higher \texttt{--prec} and/or smaller \texttt{--theta-min-sigma-width}, \texttt{--theta-min-t-width}), and ship a regenerated artifact produced under those strengthened settings.
+
+  \item \textbf{Local certificate for the hard sub-rectangle:}
+  since the failures appear concentrated near $\sigma\in[0.69,0.70]$ and $t\in[18.40,18.46171875]$, we will add a targeted certificate (and command) for that sub-rectangle as a fast diagnostic and regression test, in addition to the full-rectangle run.
+
+  \item \textbf{Method-level fallback:}
+  if the strengthened-parameter approach fails even on the reference environment, we will treat the current statement of Lemma \texttt{lem:rect-cert} as unsupported by the verifier output and revise the proof pipeline accordingly (either weakening the claim or replacing that checkpoint with an alternative certification route).
+\end{itemize}
+
+\section*{Request (to speed diagnosis)}
+If you are willing to share them, the following would materially speed up triage:
+\begin{itemize}
+  \item Your full \texttt{theta\_certify\_*SLICE.json} output (or at least a representative excerpt of the failure boxes).
+  \item The full dependency/version printout for the arithmetic backend used at runtime (e.g.\ versions for \texttt{python-flint} and its linked libraries), in case the issue is a backend-version/platform interaction.
+\end{itemize}
+
+\section*{Closing}
+Thank you again for the careful reproduction attempt and for precisely pinning where the current delivery is not audit-robust.
+We will treat the rectangle certification as a hard reproducibility requirement and will update the artifact bundle and audit manifest so that independent reruns succeed under the stated parameters.
+
+\end{document}
+

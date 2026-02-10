@@ -1,0 +1,453 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm}
+
+\title{Prefix-Coherent Template Bookkeeping for Mesh Assemblies of Calibrated Sheets}
+\author{
+Jonathan Washburn\\
+Recognition Science\\
+Recognition Physics Institute\\
+\texttt{jon@recognitionphysics.org}\\
+Austin, Texas, USA
+}
+\date{}
+
+% --- Theorem environments ---
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+
+% --- Recognition Geometry macros (compatible, optional framing) ---
+\newcommand{\config}{\mathcal{C}}
+\newcommand{\events}{\mathcal{E}}
+
+% --- Notation ---
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\dist}{\operatorname{dist}}
+\newcommand{\Lip}{\operatorname{Lip}}
+\newcommand{\supp}{\operatorname{supp}}
+\newcommand{\diam}{\operatorname{diam}}
+\newcommand{\floorround}[1]{\left\lfloor #1 \right\rceil}
+
+% Euclidean norm
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We develop a global bookkeeping mechanism that produces face-to-face coherence for large families of localized calibrated sheets assembled on a cubical mesh. The key idea is a prefix-template selection rule: fix an ordered master list of transverse translation parameters for each direction label, and in each cell choose the active sheets as an initial prefix of that list.
+
+Under a slow-variation hypothesis on the integer prefix lengths across adjacent cells, we prove that the mismatch across any interior face is confined to short tails, producing an $O(h)$ face-edit regime in which the unmatched boundary mass is a controlled fraction of the matched boundary mass. We then show that the induced discrete transverse measures admit integral optimal couplings, enabling facewise pairings of sheets by integer transport plans.
+
+Finally, we package the construction into a global coherence theorem simultaneously across all direction labels produced by a stable dictionary decomposition of a cone-valued form field. This provides a deterministic alternative to solving large global assignment problems, and is designed specifically to interface with weighted flat-norm gluing estimates for microstructured calibrated currents.
+\end{abstract}
+
+\section{Introduction}
+
+In mesh-based constructions built from many local pieces (``sheets''), the local geometry is not the hard part; the hard part is \emph{global coherence}.
+Even if each cell contains a nicely controlled family of calibrated sheets, the union typically fails to glue across interior faces:
+the families on the two sides do not automatically match sheet-by-sheet, so boundaries appear on internal interfaces.
+
+A naive fix is to solve a large global assignment problem: decide, for every interior face, which sheet on one side should be paired with which sheet on the other.
+But this becomes combinatorially expensive and unstable when multiplicities vary from cell to cell.
+
+This paper isolates a deterministic alternative:
+\begin{quote}
+\emph{Fix one ordered master template of transverse parameters, and in each cell activate only an initial segment (a prefix) of that master list.}
+\end{quote}
+The ``prefix'' rule makes mismatch across a face \emph{explicit}: it can only occur in a terminal tail.
+If neighboring prefix lengths vary slowly, that tail is a small fraction (an $O(h)$ fraction in the regime relevant for cubical meshes of size $h$).
+
+The second ingredient is integer transport.
+The facewise matching problem can be phrased as an optimal transport problem between two atomic measures with \emph{integer} weights.
+We show such transport problems admit \emph{integral} optimal couplings, so an optimal plan can be realized as an honest pairing of unit masses (i.e.\ of sheets).
+
+\subsection*{Recognition Geometry framing (optional)}
+In Recognition Geometry terms, one can view this as a recognizer that turns a continuous ``mass budget'' configuration into a discrete event:
+the event is the set of activated template atoms.
+The prefix rule is a particularly rigid recognizer that makes mismatch structure transparent.
+
+\section{Discrete template model}
+
+We fix a mesh scale $h\in(0,1)$ and work with a cubical mesh $\{Q\}$ (in a chart or in a local Euclidean model).
+Two cubes $Q,Q'$ are \emph{neighbors} if they share an interior face $F=Q\cap Q'$.
+
+We isolate one direction label (one sheet family) first, then treat multiple labels in a later section.
+
+\subsection{Master template and prefixes}
+
+Fix a transverse parameter space $\R^{d_\perp}$ (in calibrated complex codimension-$p$ applications one has $d_\perp=2p$).
+Fix constants $C_0\ge 1$ and $\varrho\in(0,1)$.
+A \emph{master template} is an ordered sequence
+\[
+\mathbf{y}=(y_a)_{a\ge 1}\subset B_{C_0\varrho h}(0)\subset \R^{d_\perp}.
+\]
+
+\begin{definition}[Prefix measures]
+For each $N\in\N$, define the atomic prefix measure
+\[
+\nu^{(N)} := \sum_{a=1}^{N}\delta_{y_a}.
+\]
+For a cube $Q$, an \emph{integer prefix length} $N_Q\in\N$ activates the prefix $\{y_1,\dots,y_{N_Q}\}$, equivalently $\nu^{(N_Q)}$.
+\end{definition}
+
+\begin{remark}[Why the template radius scales like $\varrho h$]
+In the downstream geometric application, the transverse parameters encode small translations of a template at scale comparable to the cell diameter.
+Keeping $\norm{y_a}\lesssim \varrho h$ ensures that when face parameterizations vary by $O(h)$ between neighboring cells, the induced face displacement is $O(h^2)$.
+This is the scale that couples correctly with flat-norm and filling estimates.
+\end{remark}
+
+\subsection{Face restriction maps}
+
+A purely combinatorial prefix rule does not yet define how a sheet ``hits'' a face.
+For that we introduce \emph{face maps} that convert a transverse parameter $y$ into a face parameter $u$.
+
+Fix an interior face $F=Q\cap Q'$.
+Let $\Omega_F\subset\R^{d_F}$ denote the parameter domain on the face (the precise dimension $d_F$ is irrelevant for this paper).
+
+\begin{definition}[Face maps]
+A pair of face maps for the face $F=Q\cap Q'$ is a pair of maps
+\[
+\Phi_{Q,F},\,\Phi_{Q',F}: B_{C_0\varrho h}(0)\to \Omega_F
+\]
+that represent how the transverse parameter is seen on the face from the two sides.
+\end{definition}
+
+The only structural property we need is that adjacent face maps are close.
+
+\begin{definition}[Uniform face-map control]
+We say the face maps satisfy \emph{uniform control at mesh $h$} if there exist constants $C_{\Phi,0},C_\Phi\ge 1$ such that
+\[
+\norm{\Phi_{Q,F}}_{\mathrm{Lip}}+\norm{\Phi_{Q',F}}_{\mathrm{Lip}}\le C_{\Phi,0},
+\qquad
+\norm{\Phi_{Q,F}-\Phi_{Q',F}}_{\mathrm{Lip}}\le C_\Phi\, h,
+\]
+where $\norm{\cdot}_{\mathrm{Lip}}$ denotes the Lipschitz constant on $B_{C_0\varrho h}(0)$ with respect to the Euclidean norm.
+\end{definition}
+
+\begin{definition}[Induced face measures]
+Given a cube prefix length $N_Q$, define the induced face measure (from the $Q$ side) by
+\[
+\mu_{Q\to F} := (\Phi_{Q,F})_\# \nu^{(N_Q)}.
+\]
+Similarly, from the $Q'$ side $\mu_{Q'\to F}:=(\Phi_{Q',F})_\#\nu^{(N_{Q'})}$.
+\end{definition}
+
+\section{Slow variation and prefix mismatch decomposition}
+
+\subsection{Slow variation}
+
+The prefix rule is useful only if neighboring cubes choose comparable prefix lengths.
+
+\begin{definition}[Neighbor slow variation]
+Fix $\theta\in[0,1]$. We say prefix lengths vary slowly at scale $h$ if for every neighbor pair $Q\sim Q'$,
+\[
+|N_Q-N_{Q'}|\le \theta\, h\, \min\{N_Q,N_{Q'}\}.
+\]
+\end{definition}
+
+In applications, slow variation is typically produced by rounding a Lipschitz real target count.
+The following lemma is a clean, standalone version.
+
+\begin{lemma}[Slow variation under rounding of Lipschitz targets]
+Let $\{Q\}$ be a cubical mesh of side $h$ inside a coordinate chart.
+Let $f$ be a nonnegative Lipschitz function with $\Lip(f)\le L$ in that chart.
+Fix $m\ge 1$ and define real target counts
+\[
+n_Q := m\,h^{d_\perp}\, f(x_Q),
+\]
+where $x_Q\in Q$ is a chosen basepoint.
+Define integer counts by nearest-integer rounding $N_Q:=\floorround{n_Q}$.
+Then for adjacent cubes $Q\sim Q'$,
+\[
+|N_Q-N_{Q'}|\le L\,m\,h^{d_\perp+1}+1.
+\]
+If moreover $f\ge f_0>0$ and $m\,h^{d_\perp+1}\ge 2/f_0$, then there is a constant $C=C(L,f_0)$ such that
+\[
+|N_Q-N_{Q'}|\le C\,h\,N_Q.
+\]
+\end{lemma}
+
+\begin{proof}
+Nearest-integer rounding satisfies $|N_Q-N_{Q'}|\le |n_Q-n_{Q'}|+1$.
+By Lipschitz continuity, $|f(x_Q)-f(x_{Q'})|\le L\,\dist(x_Q,x_{Q'})\le Lh$ for neighbors, hence
+$|n_Q-n_{Q'}|\le m\,h^{d_\perp}\cdot Lh = L\,m\,h^{d_\perp+1}$.
+
+If $f\ge f_0$, then $n_Q\ge m\,h^{d_\perp}f_0$, so $N_Q\ge n_Q-1$.
+Under $m\,h^{d_\perp+1}\ge 2/f_0$ one has $m\,h^{d_\perp}f_0\ge 2/h$, hence $N_Q\ge 1/h$.
+Therefore $1\le hN_Q$, and
+\[
+|N_Q-N_{Q'}|\le L\,m\,h^{d_\perp+1}+1 \le \Bigl(\frac{L}{f_0}+1\Bigr)\,hN_Q.
+\]
+\end{proof}
+
+\subsection{Prefix mismatch decomposition}
+
+The key combinatorial point is that two prefixes differ only in a tail.
+
+\begin{proposition}[Prefix mismatch decomposition]
+Let $Q,Q'$ be neighboring cubes with prefix lengths $N_Q,N_{Q'}$.
+Let $N_{\min}:=\min\{N_Q,N_{Q'}\}$ and $N_{\max}:=\max\{N_Q,N_{Q'}\}$.
+Then the activated index sets decompose as a common prefix plus a tail:
+\[
+\{1,\dots,N_Q\}=\{1,\dots,N_{\min}\}\ \cup\ \{N_{\min}{+}1,\dots,N_Q\},
+\]
+\[
+\{1,\dots,N_{Q'}\}=\{1,\dots,N_{\min}\}\ \cup\ \{N_{\min}{+}1,\dots,N_{Q'}\}.
+\]
+In particular, the symmetric difference of the two activated sets is exactly the tail index set
+\[
+\{N_{\min}{+}1,\dots,N_{\max}\},
+\]
+which has cardinality $|N_Q-N_{Q'}|$.
+\end{proposition}
+
+\begin{proof}
+This is immediate from the definition of $N_{\min}$ and $N_{\max}$.
+\end{proof}
+
+\begin{corollary}[Tail size is an $O(h)$ fraction under slow variation]
+If the neighbor slow-variation bound $|N_Q-N_{Q'}|\le \theta h\,N_{\min}$ holds, then the mismatch tail has cardinality at most $\theta h\,N_{\min}$.
+Equivalently, the tail is a $\theta h$ fraction of the common prefix size.
+\end{corollary}
+
+\begin{proof}
+By the previous proposition, the tail cardinality is $|N_Q-N_{Q'}|$. Divide by $N_{\min}$.
+\end{proof}
+
+\subsection{Vertex-based prefixes (used in corner-exit schemes)}
+Some constructions attach templates at vertex stars rather than per-face.
+The same prefix logic applies, but with counts $N_{Q,v}$ indexed by cube $Q$ and vertex $v$ of $Q$.
+If adjacent cubes share an edge through $v$, requiring $|N_{Q,v}-N_{Q',v}|\le 1$ forces symmetric differences of size at most one,
+because the active sets are prefixes of one ordered master list.
+This reduces all local mismatch to adding or removing a single terminal atom, which is the simplest possible edit regime.
+
+\section{Face-level coherence up to $O(h)$ edits}
+
+Prefix mismatch becomes a geometric boundary mismatch only after one assigns a boundary ``weight'' to each activated index.
+We keep this abstract and isolate a hypothesis that is exactly what downstream gluing estimates need.
+
+Fix a face $F=Q\cap Q'$.
+Suppose that each activated index $a$ corresponds to a sheet trace on the face, and define a nonnegative weight $b_a(F)$ representing
+its boundary-mass contribution on $F$ (for example, the $(k-1)$-mass of a face slice current).
+
+Define the total face boundary weights on each side by
+\[
+B_Q(F):=\sum_{a=1}^{N_Q} b_a(F),\qquad B_{Q'}(F):=\sum_{a=1}^{N_{Q'}} b_a(F),
+\]
+and define the unmatched tail weight by
+\[
+B_{\mathrm{tail}}(F):=\sum_{a=N_{\min}+1}^{N_{\max}} b_a(F).
+\]
+
+\begin{definition}[$O(h)$ face-edit regime]
+We say the face $F$ is in the $O(h)$ face-edit regime if
+\[
+B_{\mathrm{tail}}(F)\le \theta_F\bigl(B_Q(F)+B_{Q'}(F)\bigr)
+\qquad\text{for some }\theta_F\lesssim h.
+\]
+\end{definition}
+
+The prefix scheme guarantees that \emph{all} mismatch is in the tail.
+The remaining question is whether the tail carries only an $O(h)$ fraction of the total face boundary weight.
+A sufficient condition is uniform comparability of per-sheet face weights.
+
+\begin{proposition}[Uniform weights force $O(h)$ face edits]
+Assume that for the face $F$ there exist constants $0<b_-\le b_+$ such that
+\[
+b_-\le b_a(F)\le b_+\qquad\text{for every activated index }a\le N_{\max}.
+\]
+Then
+\[
+\frac{B_{\mathrm{tail}}(F)}{B_Q(F)+B_{Q'}(F)}\ \le\ \frac{b_+}{2b_-}\cdot \frac{|N_Q-N_{Q'}|}{N_{\min}}.
+\]
+In particular, if neighbor slow variation holds with parameter $\theta$ then $F$ lies in the $O(h)$ face-edit regime with
+$\theta_F\le \frac{b_+}{2b_-}\theta h$.
+\end{proposition}
+
+\begin{proof}
+The tail contains exactly $|N_Q-N_{Q'}|$ indices, each with weight at most $b_+$, so $B_{\mathrm{tail}}(F)\le b_+|N_Q-N_{Q'}|$.
+On the other hand, the combined weight of the common prefix part is at least $2b_-N_{\min}$ (each side contains at least the first $N_{\min}$ indices).
+Thus $B_Q(F)+B_{Q'}(F)\ge 2b_-N_{\min}$, and the ratio bound follows.
+\end{proof}
+
+\begin{remark}[How corner-exit geometry supplies uniform weights]
+In the corner-exit sliver regime, each face slice comes from a uniformly fat simplex facet, and small-slope graph control transfers this
+to the realized sheets. The consequence is precisely a uniform comparability statement of the type assumed above.
+This paper isolates the bookkeeping and does not assume any particular geometric mechanism for obtaining it.
+\end{remark}
+
+\section{Integer optimal transport for atomic measures}
+
+We now address the matching step. Facewise coherence requires pairing sheet traces on $F$.
+This is naturally phrased as optimal transport between two atomic measures.
+
+\subsection{Kantorovich formulation with integer masses}
+
+Let $\{x_i\}_{i=1}^I$ and $\{y_j\}_{j=1}^J$ be finite point sets in a metric space (in applications $\R^{d_F}$).
+Let $m_i,n_j\in\Z_{\ge 0}$ satisfy $\sum_i m_i=\sum_j n_j$.
+Define atomic measures
+\[
+\mu:=\sum_{i=1}^I m_i \delta_{x_i},\qquad \nu:=\sum_{j=1}^J n_j\delta_{y_j}.
+\]
+Fix a nonnegative cost matrix $c_{ij}=c(x_i,y_j)$, for example $c_{ij}=\norm{x_i-y_j}$ in Euclidean space.
+
+A \emph{coupling} is a matrix $\pi=(\pi_{ij})$ with $\pi_{ij}\ge 0$ and
+\[
+\sum_{j=1}^J \pi_{ij}=m_i,\qquad \sum_{i=1}^I \pi_{ij}=n_j.
+\]
+The Kantorovich cost is $\sum_{i,j} c_{ij}\pi_{ij}$.
+An \emph{optimal coupling} minimizes this cost among all couplings.
+
+\begin{theorem}[Integral optimal couplings exist]
+If $m_i,n_j\in\Z_{\ge 0}$ then there exists an optimal coupling $\pi^\star$ with \emph{integer} entries $\pi^\star_{ij}\in\Z_{\ge 0}$.
+\end{theorem}
+
+\begin{proof}
+The feasible set is a polytope defined by the linear constraints above and inequalities $\pi_{ij}\ge 0$.
+The objective is linear, hence achieves its minimum at an extreme point of the feasible polytope.
+
+The constraint matrix is the node--arc incidence matrix of a bipartite flow network:
+there is a source connected to each $x_i$ with capacity $m_i$, each $x_i$ connects to each $y_j$ with arc flow $\pi_{ij}$,
+and each $y_j$ connects to a sink with demand $n_j$.
+Incidence matrices of directed graphs are totally unimodular, and this property is preserved under the standard bipartite flow formulation.
+With integer right-hand sides $(m_i)$ and $(n_j)$, every extreme point of the feasible polytope is integral.
+Therefore there exists an extreme-point minimizer, hence an optimal coupling, with integer entries.
+\end{proof}
+
+\begin{corollary}[Unit masses yield a permutation matching]
+If all masses are $m_i=n_j=1$ and $I=J=N$, then an integral coupling is exactly the indicator matrix of a permutation.
+Equivalently, the optimal transport problem reduces to a minimum-cost matching between $\{x_i\}$ and $\{y_j\}$.
+\end{corollary}
+
+\begin{proof}
+If each row and column sum equals $1$ and entries are nonnegative integers, each row and column contains exactly one $1$ and the rest $0$.
+\end{proof}
+
+\section{Facewise matched pairings and $W_1$ bounds from prefix coherence}
+
+We now specialize transport to the prefix situation, where both sides are induced from the \emph{same} master atoms but through two nearby face maps.
+
+\subsection{$W_1$ for unit-mass atomic measures}
+For unit-mass atomic measures with equal total mass $N$,
+\[
+\mu=\sum_{a=1}^N\delta_{u_a},
+\qquad
+\nu=\sum_{a=1}^N\delta_{v_a},
+\]
+define the equal-weight $W_1$ cost by
+\[
+W_1(\mu,\nu):=\min_{\sigma\in S_N}\sum_{a=1}^N \norm{u_a-v_{\sigma(a)}}.
+\]
+
+\subsection{Explicit prefix-induced coupling}
+Assume we have balanced the two sides of a face $F$ to a common prefix length $N_F$ (for example $N_F=N_{\min}$),
+and define
+\[
+\mu_{Q\to F}=(\Phi_{Q,F})_\#\nu^{(N_F)},\qquad
+\mu_{Q'\to F}=(\Phi_{Q',F})_\#\nu^{(N_F)}.
+\]
+Then there is a canonical \emph{integral} coupling obtained by matching each template index with itself:
+\[
+\pi_F:=\sum_{a=1}^{N_F}\delta_{\bigl(\Phi_{Q,F}(y_a),\,\Phi_{Q',F}(y_a)\bigr)}.
+\]
+This plan is integral and has marginals $\mu_{Q\to F}$ and $\mu_{Q'\to F}$.
+
+\begin{proposition}[Template-index coupling gives an $O(h^2 N_F)$ $W_1$ bound]
+Assume the uniform face-map control inequalities hold on $F=Q\cap Q'$.
+Then
+\[
+W_1(\mu_{Q\to F},\mu_{Q'\to F})\ \le\ C_\Phi\,C_0\,\varrho\,h^2\,N_F.
+\]
+\end{proposition}
+
+\begin{proof}
+By definition of $W_1$, any coupling gives an upper bound. Using the explicit coupling $\pi_F$,
+\[
+W_1(\mu_{Q\to F},\mu_{Q'\to F})
+\le \sum_{a=1}^{N_F}\norm{\Phi_{Q,F}(y_a)-\Phi_{Q',F}(y_a)}.
+\]
+By the Lipschitz bound on the difference and the template radius,
+\[
+\norm{\Phi_{Q,F}(y_a)-\Phi_{Q',F}(y_a)}\le \norm{\Phi_{Q,F}-\Phi_{Q',F}}_{\mathrm{Lip}}\,\norm{y_a}
+\le (C_\Phi h)\,(C_0\varrho h)=C_\Phi C_0\varrho h^2.
+\]
+Summing over $a=1,\dots,N_F$ yields the stated bound.
+\end{proof}
+
+\begin{remark}[Integral optimal plans versus explicit plans]
+The theorem on integral optimal couplings says an optimal plan can be chosen integral, hence realized as a genuine pairing.
+The explicit index-matching plan above need not be optimal, but it is often sufficient because its cost is already at the correct asymptotic scale $O(h^2 N_F)$
+under the face-map control hypotheses.
+\end{remark}
+
+\section{Simultaneous coherence across direction labels}
+
+In applications one has finitely many direction labels (for example a finite calibrated-direction dictionary).
+For each label $i\in\{1,\dots,M\}$ we fix:
+\begin{itemize}
+\item a master template $\mathbf{y}^{(i)}=(y^{(i)}_a)_{a\ge 1}\subset B_{C_0\varrho h}(0)\subset\R^{d_\perp}$,
+\item integer prefix lengths $N_{Q,i}$ per cube $Q$,
+\item and face maps $\Phi^{(i)}_{Q,F}$ on each face $F$ (these may depend on $i$ through the chosen template geometry).
+\end{itemize}
+
+\begin{theorem}[Global multi-label prefix coherence package]
+Assume that for each label $i$ the neighbor slow-variation bound
+\[
+|N_{Q,i}-N_{Q',i}|\le \theta_i\, h\, \min\{N_{Q,i},N_{Q',i}\}
+\]
+holds on every neighbor pair $Q\sim Q'$.
+Fix a face $F=Q\cap Q'$ and set $N_{F,i}:=\min\{N_{Q,i},N_{Q',i}\}$.
+Then, for each label $i$:
+\begin{enumerate}
+\item (Matched part) the two sides share a common activated prefix of length $N_{F,i}$, and the mismatch is confined to a tail of size $|N_{Q,i}-N_{Q',i}|$.
+\item (Face edits) if the face weights are uniformly comparable for label $i$ on $F$, then the unmatched tail weight is an $O(h)$ fraction of the total
+face boundary weight (an $O(h)$ face-edit regime).
+\item (Integer transport) if the face-map control inequalities hold for label $i$ on $F$, then the induced matched face measures satisfy
+\[
+W_1(\mu_{Q\to F,i},\mu_{Q'\to F,i})\ \le\ C_\Phi\,C_0\,\varrho\,h^2\,N_{F,i},
+\]
+and there exists an integral coupling between them.
+\end{enumerate}
+All constants are uniform in $Q,Q'$ and depend only on the fixed template/facemapping controls and the chosen slow-variation parameters $\theta_i$.
+\end{theorem}
+
+\begin{proof}
+Items (1) and (2) are immediate from the prefix mismatch decomposition and the uniform-weight face-edit proposition applied label-by-label.
+Item (3) is the template-index coupling bound combined with the general existence of integral optimal couplings.
+\end{proof}
+
+\begin{remark}[Where the integer counts $N_{Q,i}$ come from]
+A common source is a stable dictionary decomposition of a cone-valued form field:
+a real mass budget per label is computed in each cell and then rounded to an integer prefix length.
+The rounding lemma above shows that Lipschitz budgets produce slow-variation integer counts in the ``many pieces'' regime.
+This paper only needs the resulting slow-variation property, not the origin of the budgets.
+\end{remark}
+
+\section{What this module outputs (for downstream gluing)}
+
+The prefix-template bookkeeping provides, for each interior face $F=Q\cap Q'$ and each direction label $i$, the following data:
+\begin{itemize}
+\item a \emph{matched} prefix index set $\{1,\dots,N_{F,i}\}$ shared by both sides,
+\item an \emph{unmatched tail} index set of size $|N_{Q,i}-N_{Q',i}|$ (the only place edits can occur),
+\item and an \emph{integral transport plan} (often an explicit index-matching plan) between the matched face measures
+with $W_1$ cost bounded by $O(\varrho h^2 N_{F,i})$ under uniform face-map control.
+\end{itemize}
+This is exactly the type of input needed by weighted flat-norm gluing estimates: ``matched'' indices are transported with small displacement cost,
+and ``unmatched'' indices are treated as controlled insertions/deletions in an $O(h)$ edit regime.
+
+\section*{Conclusion}
+
+A single global ordering of transverse template atoms, combined with per-cell prefix activation, makes interface mismatch combinatorially explicit:
+it is always a tail. If prefix lengths vary slowly across neighbors, the tail is an $O(h)$ fraction. The resulting atomic measures on faces admit
+integral optimal transport plans, so facewise matchings can be realized as honest pairings. This bookkeeping layer replaces unstable global assignment problems
+with a deterministic, local, and quantitatively controlled scheme designed to plug into geometric-measure gluing estimates.
+
+\end{document}

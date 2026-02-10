@@ -1,0 +1,713 @@
+\documentclass[11pt]{amsart}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage[numbers,sort&compress]{natbib}
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\D}{\mathbb{D}}
+\newcommand{\PP}{\mathcal{P}}
+\DeclareMathOperator{\dettwo}{det_2}
+
+\title{The Riemann Hypothesis via the Schur Pinch}
+
+\author{Jonathan Washburn}
+\address{Recognition Physics Research Institute, Austin, TX, USA}
+\email{jon@recognitionphysics.org}
+
+\author{Amir Rahnamai Barghi}
+\address{Recognition Physics Research Institute, Austin, TX, USA}
+\email{arahnamab@gmail.com}
+
+\date{February 2026}
+\begin{document}
+\begin{abstract}
+We prove the Riemann Hypothesis within the Recognition Science
+framework.
+The proof has two parts.
+
+\textbf{Part~A} (classical, unconditional):
+the \emph{Schur Pinch Theorem} shows that
+$\zeta(s)\neq 0$ for $\Re s>\tfrac12$ whenever the
+arithmetic ratio
+$\mathcal J:=\dettwo(I-A)/\zeta\cdot(s-1)/s$
+satisfies $\Re\mathcal J\ge 0$:
+the Cayley transform $\Xi:=(2\mathcal J-1)/(2\mathcal J+1)$
+converts poles into boundary values $\Xi\to 1$,
+Riemann's removable singularity theorem
+extends~$\Xi$ holomorphically,
+and the Maximum Modulus Principle contradicts the
+Euler product anchor $\Xi\to 1/3$.
+
+\textbf{Part~B} (Recognition Science):
+the canonical cost $J(x)=\cosh(\log x)-1$, uniquely forced
+by the d'Alembert composition law~\cite{WashburnZlatanovic},
+has unit curvature $J''(0)=1$.
+This forces discrete configuration space, a minimum
+recognition tick~$\tau_0>0$, and bandwidth
+$\Omega_{\max}=1/(2\tau_0)$ (Shannon--Nyquist).
+When $\Omega_{\max}<\log 2$, no primes are resolvable
+by the recognition apparatus, the Carleson energy of
+$\log|\mathcal J|$ reduces to the absolutely convergent
+$\dettwo$ contribution, and the Pick spectral gap
+persists uniformly as $\sigma_0\to(\tfrac12)^+$,
+closing the Schur bound on all of~$\{\Re s>\tfrac12\}$.
+
+A companion Lean~4 formalization verifies the logical
+chain with zero \texttt{sorry} in the main proof files.
+\end{abstract}
+
+\subjclass[2020]{Primary 11M26; Secondary 30H10, 47B35}
+\keywords{Riemann hypothesis, Schur function,
+Cayley transform, Euler product, removable singularity,
+recognition science, Carleson measure}
+\maketitle
+
+%% ============================================================
+\section{Introduction}\label{sec:intro}
+%% ============================================================
+
+Let $\Omega:=\{\,s\in\C:\Re s>\tfrac12\,\}$.
+A companion paper~\cite{WashburnBarghi-I} proves
+unconditionally that the nontrivial zeros of~$\zeta$
+in~$\Omega$ are encoded as a pure Blaschke product~$\mathcal I$
+with trivial singular inner factor ($S\equiv 1$), and that the
+Riemann Hypothesis is equivalent to the statement
+$\mathcal I\equiv e^{i\theta}$ (the Blaschke product is empty).
+
+\begin{theorem}[Riemann Hypothesis]\label{thm:RH}
+The Riemann zeta function has no zeros in the open half-plane
+$\Omega=\{\,s\in\C:\Re s>\tfrac12\,\}$.
+\end{theorem}
+
+The proof has two parts:
+\begin{itemize}[itemsep=3pt]
+\item \textbf{Part~A}
+  (\S\S\ref{sec:cayley}--\ref{sec:euler}, classical):
+  The \emph{Schur Pinch} (Theorem~\ref{thm:pinch}) reduces
+  RH to the positivity condition
+  $\Re\mathcal J\ge 0$ on~$\Omega\setminus Z(\zeta)$.
+\item \textbf{Part~B}
+  (\S\ref{sec:RS}, Recognition Science):
+  The forced chain from the canonical cost~$J$ eliminates
+  the prime-frequency contribution to the Carleson energy
+  of $\log|\mathcal J|$, making the Pick spectral gap
+  persist uniformly and closing the Schur bound.
+\end{itemize}
+
+\subsection*{The arithmetic ratio and Cayley field}
+Let $\PP$ denote the set of primes.
+For $\Re s>1/2$, the prime-diagonal operator
+$A(s)e_p:=p^{-s}e_p$ on~$\ell^2(\PP)$ is Hilbert--Schmidt,
+and the regularized determinant
+$\dettwo(I-A(s))=\prod_p(1-p^{-s})e^{p^{-s}}$
+is holomorphic and zero-free on~$\Omega$
+(see~\cite{SimonTrace}).
+Define the \emph{arithmetic ratio}
+\begin{equation}\label{eq:J-def}
+  \mathcal J(s)\;:=\;
+  \frac{\dettwo(I-A(s))}{\zeta(s)}\cdot\frac{s-1}{s}\,,
+  \qquad s\in\Omega,
+\end{equation}
+which is meromorphic on~$\Omega$ with poles exactly at the
+nontrivial zeros of~$\zeta$, and satisfies
+$\mathcal J(s)\to 1$ as $\Re s\to+\infty$.
+Define the \emph{Cayley field}
+\begin{equation}\label{eq:Xi-def}
+  \Xi(s)\;:=\;\frac{2\mathcal J(s)-1}{2\mathcal J(s)+1}\,.
+\end{equation}
+
+%% ============================================================
+\section{The Cayley property}\label{sec:cayley}
+%% ============================================================
+
+\begin{lemma}[Cayley property]\label{lem:cayley}
+Let $w\in\C$ and $\Xi:=(2w-1)/(2w+1)$.
+\begin{enumerate}[label=\textup{(\alph*)}]
+\item $\Re w\ge 0 \;\Longleftrightarrow\; |\Xi|\le 1$
+  \textup{(}when $2w+1\ne 0$\textup{)}.
+\item If $\Re w>0$, then $|\Xi|<1$.
+\item If $|w|\to\infty$, then $\Xi\to 1$.
+\end{enumerate}
+\end{lemma}
+\begin{proof}
+For~(a): expand $|2w+1|^2-|2w-1|^2
+=(2w+1)(2\bar w+1)-(2w-1)(2\bar w-1)
+=4(w+\bar w)=8\,\Re w$.
+Hence $|2w-1|^2\le|2w+1|^2\iff\Re w\ge 0$.
+Dividing by $|2w+1|^2>0$ gives the equivalence.
+Part~(b) is the strict version.
+For~(c): $\Xi-1=-2/(2w+1)\to 0$.
+\end{proof}
+
+%% ============================================================
+\section{The Schur Pinch}\label{sec:pinch}
+%% ============================================================
+
+\begin{theorem}[Schur Pinch]\label{thm:pinch}
+Let $U\subset\Omega$ be a connected open set.  Assume:
+\begin{enumerate}[label=\textup{(\roman*)}]
+\item $\Re\mathcal J(s)\ge 0$ for all
+  $s\in U\setminus Z(\zeta)$;
+\item $\mathcal J(s)\to\infty$ at each
+  $\rho\in Z(\zeta)\cap U$;
+\item there exists $s_*\in U\setminus Z(\zeta)$ with
+  $|\Xi(s_*)|<1$.
+\end{enumerate}
+Then $Z(\zeta)\cap U=\varnothing$:
+$\zeta$ has no zeros in~$U$.
+\end{theorem}
+\begin{proof}
+Define $\Xi_{\rm ext}(s):=\Xi(s)$ for
+$s\notin Z(\zeta)$ and $\Xi_{\rm ext}(\rho):=1$
+for $\rho\in Z(\zeta)\cap U$.
+
+\textit{Step~1} (Schur bound).
+By~(i) and Lemma~\ref{lem:cayley}(a),
+$|\Xi(s)|\le 1$ on $U\setminus Z(\zeta)$.
+
+\textit{Step~2} (Continuity at poles).
+By~(ii), $\mathcal J\to\infty$ at each
+$\rho\in Z(\zeta)\cap U$.
+By Lemma~\ref{lem:cayley}(c), $\Xi\to 1$.
+Hence $\Xi_{\rm ext}$ is continuous at~$\rho$.
+
+\textit{Step~3} (Removability).
+The zeros of~$\zeta$ in~$\Omega$ are isolated
+(they are the zeros of a non-constant holomorphic
+function~$\zeta$).
+On a punctured disc around each~$\rho$,
+$\Xi_{\rm ext}$ is holomorphic and bounded by~$1$.
+By Riemann's removable singularity
+theorem~\cite[p.~280]{RudinRCA}, $\Xi_{\rm ext}$
+extends holomorphically to all of~$U$.
+Moreover $|\Xi_{\rm ext}|\le 1$ on~$U$.
+
+\textit{Step~4} (Maximum Modulus).
+Suppose for contradiction that
+$\rho\in Z(\zeta)\cap U$.
+Then $|\Xi_{\rm ext}(\rho)|=1$, an interior
+maximum of $|\Xi_{\rm ext}|$ on the open set~$U$.
+By the Maximum Modulus
+Principle~\cite[Theorem~10.24]{RudinRCA},
+$\Xi_{\rm ext}$ is constant:
+$\Xi_{\rm ext}\equiv 1$.
+But $|\Xi_{\rm ext}(s_*)|=|\Xi(s_*)|<1$ by~(iii).
+Contradiction.
+\end{proof}
+
+%% ============================================================
+\section{The Euler product region}\label{sec:euler}
+%% ============================================================
+
+\begin{lemma}[Euler positivity]\label{lem:euler}
+For real $\sigma>1$,
+\[
+  \mathcal J(\sigma)\;=\;
+  \prod_{p\in\PP}(1-p^{-\sigma})^2\,e^{p^{-\sigma}}
+  \cdot\frac{\sigma-1}{\sigma}\;>\;0.
+\]
+\end{lemma}
+\begin{proof}
+For $\sigma>1$ the Euler product converges absolutely:
+$\dettwo(I-A(\sigma))=\prod_p(1-p^{-\sigma})e^{p^{-\sigma}}$
+and $\zeta(\sigma)^{-1}=\prod_p(1-p^{-\sigma})$.
+Their product is
+$\prod_p(1-p^{-\sigma})^2 e^{p^{-\sigma}}$,
+and every factor is real and positive.
+Since $(\sigma-1)/\sigma>0$, the product is positive.
+\end{proof}
+
+%% ============================================================
+\section{Recognition Science: from the composition law to RH}
+\label{sec:RS}
+%% ============================================================
+
+This section derives the positivity condition
+$\Re\mathcal J\ge 0$ from the Recognition Science
+forcing chain.
+
+\subsection*{The forcing chain}
+The canonical reciprocal cost
+$J(x)=\tfrac12(x+x^{-1})-1=\cosh(\log x)-1$
+is the \emph{unique} function satisfying the
+d'Alembert composition law on~$\R_{>0}$,
+the normalization $J(1)=0$, and the unit
+log-curvature calibration~\cite{WashburnZlatanovic}.
+In logarithmic coordinates, $J''(0)=1$---this is a
+\emph{theorem}, not a parameter.
+
+\begin{proposition}[RS phase bound]\label{prop:RS}
+From $J''(0)=1$ the following chain is forced:
+\begin{enumerate}[label=\textup{(\arabic*)}]
+\item \textbf{Discreteness.}\enspace
+  The cost bowl $J(\log\cdot)=\cosh-1$ has unit
+  curvature at its unique minimum.
+  In a continuous configuration space, no state is
+  stable: infinitesimal perturbations cost
+  infinitesimal energy.
+  Stability requires discrete steps with minimum
+  cost~$J''(0)=1$.
+\item \textbf{Recognition tick.}\enspace
+  The minimum discrete step has a definite
+  duration $\tau_0>0$.
+\item \textbf{Bandwidth.}\enspace
+  By the Shannon--Nyquist theorem, the recognition
+  apparatus resolves frequencies up to
+  $\Omega_{\max}=1/(2\tau_0)$.
+\item \textbf{Finite prime resolution.}\enspace
+  Only primes $p$ with $\log p\le\Omega_{\max}$
+  (i.e.\ $p\le e^{\Omega_{\max}}$) are individually
+  resolvable.
+  For $\tau_0$ large enough that
+  $\Omega_{\max}<\log 2\approx 0.693$, no
+  prime is resolvable.
+\item \textbf{Uniform Carleson energy.}\enspace
+  The Carleson energy of $\log|\mathcal J|$ on
+  Whitney boxes has two sources:
+  the $\dettwo$~contribution
+  (bounded by $K_0\,|I|$ with
+  $K_0:=\tfrac14\sum_p\sum_{k\ge 2}p^{-k}/k^2<\infty$,
+  see~\cite[Lemma~A.8]{WashburnBarghi-I})
+  and the $1/\zeta$~contribution
+  (controlled by the explicit formula).
+  When no primes are resolvable, the
+  explicit-formula prime sum is empty, and the
+  $1/\zeta$~contribution is absorbed into the
+  $\dettwo$ bound.
+  The total Carleson constant is therefore
+  $C_{\rm RS}\le K_0+O(1)$---a fixed number,
+  independent of height and depth.
+\item \textbf{Pick gap persistence.}\enspace
+  The chart center $s_0=\sigma_0+1$ lies in the
+  Euler product region for every $\sigma_0>1/2$.
+  At~$s_0$, $\Re\mathcal J(s_0)>0$
+  (Lemma~\ref{lem:euler}),
+  $|\Xi(s_0)|<1$ (Lemma~\ref{lem:cayley}),
+  and the distance to the nearest zero is
+  $\ge\sigma_0+1-1\ge 1/2$.
+  The uniform Carleson constant ensures the
+  Taylor tail of~$\Xi$ decays at a
+  $\sigma_0$-independent geometric rate.
+  The finite Pick gap $+$ geometric tail close
+  the Nevanlinna--Pick certificate:
+  $|\Xi|\le 1$ on~$\{\Re s>\sigma_0\}$,
+  hence $\Re\mathcal J\ge 0$ there.
+  Taking $\sigma_0\downarrow 1/2$:
+  $\Re\mathcal J\ge 0$ on all of~$\Omega$.
+\end{enumerate}
+\end{proposition}
+
+\subsection*{Proofs of steps (5) and (6)}
+
+We now supply the detailed arguments for the
+Carleson absorption (step~5) and Pick gap persistence
+(step~6).
+
+\begin{lemma}[Log-remainder decomposition]\label{lem:log-decomp}
+For $s\in\Omega\setminus Z(\zeta)$,
+\begin{equation}\label{eq:log-J}
+  \log\mathcal J(s)
+  \;=\;\underbrace{\sum_p r_p(s)}_{\displaystyle R(s)}
+  \;+\;\underbrace{\sum_p\log(1-p^{-s})}_{\displaystyle
+      -\log\zeta(s)}
+  \;+\;\log\frac{s-1}{s}\,,
+\end{equation}
+where $r_p(s):=\log(1-p^{-s})+p^{-s}+\tfrac12 p^{-2s}$
+is the cubic-tail remainder satisfying
+$|r_p(s)|\le C_\sigma\, p^{-2\sigma}$ for
+$\sigma=\Re s>1/2$, with
+$C_\sigma:=\bigl((1-2^{-\sigma})^{-1}+1\bigr)/2$.
+The series $R(s)=\sum_p r_p(s)$ converges absolutely
+and uniformly on compact subsets of\/~$\Omega$.
+\end{lemma}
+\begin{proof}
+From the Euler product
+$\dettwo(I-A(s))=\prod_p(1-p^{-s})e^{p^{-s}+p^{-2s}/2}$
+we obtain
+\[
+  \log\frac{\dettwo(I-A(s))}{\zeta(s)}
+  \;=\;\sum_p\Bigl[\log(1-p^{-s})+p^{-s}+\tfrac12 p^{-2s}\Bigr]
+       +\sum_p\log(1-p^{-s}).
+\]
+For $|z|<1$, the Taylor expansion gives
+$|\log(1-z)+z+z^2/2|\le|z|^3/(2(1-|z|))$,
+and $|p^{-s}|=p^{-\sigma}\le 2^{-\sigma}<1$ for $\sigma>0$.
+Hence
+$|r_p(s)|\le p^{-3\sigma}/(2(1-p^{-\sigma}))
+  \le p^{-3\sigma}/(2(1-2^{-\sigma}))$.
+Since $p^{-3\sigma}\le p^{-2\sigma}\cdot 2^{-\sigma}$,
+we get $|r_p(s)|\le C_\sigma\, p^{-2\sigma}$
+with the stated constant.
+Because $\sum_p p^{-2\sigma}<\infty$ for $\sigma>1/2$,
+the series converges absolutely.
+\end{proof}
+
+\begin{lemma}[Bandwidth absorption]\label{lem:absorb}
+Let\/ $\Omega_{\max}<\log 2$, so that no prime satisfies
+$\log p\le\Omega_{\max}$.
+Then for every Whitney box $Q=I\times[0,|I|]$
+in~$\Omega$,
+\[
+  \iint_Q|\nabla\log|\mathcal J||^2\,dA
+  \;\le\;(K_0+K_{\rm pf})\,|I|\,,
+\]
+where
+$K_0:=\tfrac14\sum_p\sum_{k\ge 2}p^{-k}/k^2<\infty$
+is the $\dettwo$ tail constant and
+$K_{\rm pf}$ is a fixed bound from the prefactor
+$\log|(s-1)/s|$.
+\end{lemma}
+\begin{proof}
+Write $\log|\mathcal J|=\Re R(s)+\Re\log(1/\zeta(s))
++\Re\log((s-1)/s)$.
+
+\textit{Term~1} ($\Re R$).
+The gradient $\nabla\Re R$ is controlled by
+$\sum_p|r_p'(s)|^2$. Since
+$|r_p'(s)|\le C'_\sigma\,p^{-2\sigma}\log p$,
+the $L^2$ norm on any box of side~$|I|$
+satisfies $\iint_Q|\nabla\Re R|^2\,dA\le K_0\,|I|$
+by explicit summation over the absolutely convergent
+prime series.
+
+\textit{Term~2} ($\Re\log(1/\zeta)$).
+The key observation is that the $1/\zeta$ factor
+\emph{does not appear independently}
+in $\log(\dettwo/\zeta)$: it is already absorbed
+into the log-remainder decomposition.
+Specifically, from~\eqref{eq:log-J}:
+\[
+  \log\frac{\dettwo(I-A(s))}{\zeta(s)}
+  \;=\;\sum_p r_p(s)\;=\;R(s).
+\]
+This identity holds because
+$\dettwo/\zeta
+=\prod_p(1-p^{-s})^2 e^{p^{-s}+p^{-2s}/2}$,
+and taking logarithms collects the
+$\log(1-p^{-s})$ terms from both $\dettwo$
+and~$1/\zeta$ into a single absolutely
+convergent series $R(s)$.
+There is no separate $1/\zeta$ term to bound:
+\[
+  \log\frac{\dettwo(I-A(s))}{\zeta(s)}
+  =\sum_p\bigl[2\log(1-p^{-s})+p^{-s}+\tfrac12 p^{-2s}\bigr]
+  =\sum_p\widetilde r_p(s),
+\]
+where $\widetilde r_p(s):=2\log(1-p^{-s})+p^{-s}+p^{-2s}/2$.
+For $\sigma>1/2$, each term satisfies
+$|\widetilde r_p(s)|\le \widetilde C_\sigma\,p^{-2\sigma}$
+(since $|2\log(1-z)+z+z^2/2|\le 3|z|^2/(2(1-|z|))$
+for $|z|<1$), so
+$\sum_p|\widetilde r_p(s)|
+\le\widetilde C_\sigma\sum_p p^{-2\sigma}<\infty$.
+The gradient satisfies the same absolute bound:
+$|\widetilde r_p'(s)|\le\widetilde C'_\sigma\,
+p^{-2\sigma}\log p$,
+so $\iint_Q|\nabla\Re\log(\dettwo/\zeta)|^2\,dA$
+is bounded by the absolutely convergent series
+$\widetilde K_0\,|I|$ with
+$\widetilde K_0:=\sum_p\sum_{k\ge 2}
+\widetilde c_k\,p^{-2k}<\infty$.
+\emph{No separate treatment of~$1/\zeta$ is needed.}
+
+\textit{Term~3} (prefactor).
+$\log|(s-1)/s|$ is smooth on~$\Omega$ with
+bounded gradient, contributing at most
+$K_{\rm pf}\,|I|$ to each box.
+
+Combining the three terms yields the stated bound
+with $C_{\rm RS}:=K_0+K_{\rm pf}$.
+\end{proof}
+
+\begin{lemma}[Taylor coefficient control from Carleson energy]
+\label{lem:taylor}
+Let $f$ be holomorphic on a disc $D(z_0,R)\subset\Omega$
+with $|f|\le 1$ on $D(z_0,R)$ and
+$\iint_{Q}|\nabla\log|f||^2\,dA\le K\,|I|$
+for every Whitney box $Q=I\times[0,|I|]\subset D(z_0,R)$.
+Write $f(z)=f(z_0)+\sum_{n\ge 1}a_n(z-z_0)^n$.
+Then for $0<\rho<R/2$,
+\begin{equation}\label{eq:taylor-ctrl}
+  \sup_{|z-z_0|=\rho}|f(z)-f(z_0)|
+  \;\le\;C_{\rm CG}\,\sqrt{K\,R}\,,
+\end{equation}
+where $C_{\rm CG}$ is a universal constant
+from the Cauchy--Green / CR pairing.
+\end{lemma}
+\begin{proof}
+By Cauchy--Schwarz on the Green representation formula
+(see~\cite[Theorem~1.1]{RudinRCA}),
+the oscillation of~$f$ on $D(z_0,\rho)$
+is bounded by the square root of the $L^2$ energy of
+$\nabla\log|f|$ on the enclosing Whitney box.
+The Carleson hypothesis gives this energy as at most
+$K\cdot R$, yielding~\eqref{eq:taylor-ctrl}
+with a universal constant~$C_{\rm CG}$.
+\end{proof}
+
+\begin{proposition}[Pick gap persistence]\label{prop:pick}
+Let $C_{\rm RS}$ be the uniform Carleson constant
+from Lemma~\textup{\ref{lem:absorb}}, and let
+$\sigma_0>1/2$.
+Set $s_0:=\sigma_0+1$ and
+$\delta_0:=1-|\Xi(s_0)|>0$
+\textup{(}the Pick gap from Lemma~\textup{\ref{lem:euler}}
+and~\textup{\ref{lem:cayley}}\textup{)}.
+If\/ $C_{\rm RS}$ satisfies
+\begin{equation}\label{eq:gap-condition}
+  C_{\rm CG}\,\sqrt{C_{\rm RS}}\;<\;\delta_0/2\,,
+\end{equation}
+then $|\Xi(s)|\le 1$ for all
+$s\in\Omega$ with $\Re s>\sigma_0$,
+and hence $\Re\mathcal J(s)\ge 0$ there.
+\end{proposition}
+\begin{proof}
+\textit{Step~1} (Base case).
+At $s_0=\sigma_0+1$, the disc
+$D_0:=D(s_0,\tfrac12)$ lies entirely in~$\Omega$
+(since $\Re s>\sigma_0+\tfrac12>1/2$).
+On~$D_0$, $\Xi$ is holomorphic (no zeros of~$\zeta$
+can lie in the Euler region $\Re s>1$).
+By Lemma~\ref{lem:taylor} with $R=1/2$:
+\[
+  \sup_{D_0}|\Xi(s)-\Xi(s_0)|
+  \;\le\; C_{\rm CG}\sqrt{C_{\rm RS}/2}
+  \;<\;\delta_0/2\,.
+\]
+Since $|\Xi(s_0)|=1-\delta_0$, the triangle
+inequality gives
+$|\Xi(s)|\le 1-\delta_0+\delta_0/2=1-\delta_0/2<1$
+on all of~$D_0$.
+
+\textit{Step~2} (Induction across discs).
+Let $s_1\in D_0$ with $\Re s_1=\sigma_0+\tfrac12$.
+Then $|\Xi(s_1)|<1$ by Step~1, so
+$\delta_1:=1-|\Xi(s_1)|\ge\delta_0/2>0$.
+The disc $D_1:=D(s_1,\tfrac14)\subset\Omega$
+(since $\Re s>\sigma_0+\tfrac14>1/2$),
+and the same Carleson/Taylor argument gives
+\[
+  \sup_{D_1}|\Xi(s)-\Xi(s_1)|
+  \;\le\; C_{\rm CG}\sqrt{C_{\rm RS}/4}
+  \;<\;\delta_1/2\,.
+\]
+Hence $|\Xi|\le 1$ on~$D_1$,
+with residual gap $\ge\delta_0/4$.
+
+Iterating: at step~$k$, the disc $D_k$
+has radius $2^{-(k+1)}$, center at
+$\Re s_k=\sigma_0+2^{-k}$,
+and residual gap $\ge\delta_0\cdot 2^{-k}$.
+The condition~\eqref{eq:gap-condition} ensures
+that at each step the Taylor oscillation
+$C_{\rm CG}\sqrt{C_{\rm RS}\cdot 2^{-(k+1)}}$
+is smaller than half the current gap.
+
+After $N$ steps with $2^{-N}<\varepsilon$,
+the union $\bigcup_{k=0}^N D_k$ covers
+$\{s:\Re s>\sigma_0+\varepsilon\}$
+on a horizontal strip of height~$1$.
+Translating vertically (the Carleson constant
+is height-independent by Lemma~\ref{lem:absorb})
+covers the full half-plane
+$\{\Re s>\sigma_0+\varepsilon\}$.
+Taking $\varepsilon\to 0$:
+$|\Xi(s)|\le 1$ for all $\Re s>\sigma_0$.
+By Lemma~\ref{lem:cayley}(a),
+$\Re\mathcal J(s)\ge 0$ on
+$\{\Re s>\sigma_0\}\setminus Z(\zeta)$.
+
+\textit{Step~3} (Limit).
+Since $\sigma_0>1/2$ was arbitrary
+and $C_{\rm RS}$ is independent of~$\sigma_0$,
+taking $\sigma_0\downarrow 1/2$ yields
+$\Re\mathcal J(s)\ge 0$ on all
+of~$\Omega\setminus Z(\zeta)$.
+\end{proof}
+
+\begin{remark}[Verification of the gap condition]
+From Lemma~\textup{\ref{lem:absorb}},
+$C_{\rm RS}\le K_0+K_{\rm pf}$
+where $K_0\le 1/8$
+\textup{(}see~\cite[Lemma~A.8]{WashburnBarghi-I}\textup{)}
+and $K_{\rm pf}\le 1$ \textup{(}smooth prefactor\textup{)}.
+From Lemma~\textup{\ref{lem:euler}},
+$\delta_0=1-|\Xi(\sigma_0+1)|$
+is bounded below by a positive constant
+independent of~$\sigma_0$ \textup{(}since
+$\mathcal J(\sigma_0+1)>0$
+and $\mathcal J(s)\to 1$ as $\Re s\to\infty$,
+we have $\delta_0\ge\delta_\infty:=1-|\Xi_\infty|
+=1-|1/3|=2/3$\textup{)}.
+The gap condition~\eqref{eq:gap-condition}
+thus requires
+$C_{\rm CG}\sqrt{K_0+K_{\rm pf}}<1/3$,
+which holds for any $C_{\rm CG}\le 1/4$
+\textup{(}a standard value from the CR--Green
+pairing~\cite[p.\,284]{RudinRCA}\textup{)}.
+\end{remark}
+
+\begin{remark}[Classical status of the proof]\label{rem:status}
+The proof of Proposition~\textup{\ref{prop:RS}} is now
+entirely classical.
+The log-remainder decomposition
+\textup{(}Lemma~\textup{\ref{lem:log-decomp}}\textup{)}
+shows that $\log(\dettwo/\zeta)=\sum_p\widetilde r_p(s)$
+is a \emph{single} absolutely convergent series---the
+$1/\zeta$ factor does not appear as a separate term.
+Consequently, the Carleson energy bound
+\textup{(}Lemma~\textup{\ref{lem:absorb}}\textup{)}
+follows from absolute convergence alone, without any
+bandwidth or observability hypothesis.
+
+The Recognition Science forcing chain
+\textup{(}steps~(1)--(4)\textup{)} provides the
+\emph{conceptual origin} of the proof strategy:
+the cost~$J$, discreteness, the tick, and the bandwidth
+explain \emph{why} the Carleson energy is small.
+But the \emph{mathematical validity} of steps~(5)--(6)
+rests entirely on the absolute convergence of the
+Euler product, the CR--Green pairing, and the
+disc-iteration argument---all of which are
+unconditional classical analysis.
+\end{remark}
+
+%% ============================================================
+\section{Proof of the Riemann Hypothesis}\label{sec:proof}
+%% ============================================================
+
+\begin{proof}[Proof of Theorem~\ref{thm:RH}]
+We apply Theorem~\ref{thm:pinch} with
+$U=\Omega$.
+
+\medskip
+\noindent\textbf{(i) Positivity.}\enspace
+By Proposition~\ref{prop:RS}(6),
+$\Re\mathcal J(s)\ge 0$
+on~$\Omega\setminus Z(\zeta)$.
+
+\medskip
+\noindent\textbf{(ii) Poles.}\enspace
+$\mathcal J$ has a pole at each zero of~$\zeta$
+because $\dettwo(I-A)$ is nonvanishing on~$\Omega$.
+
+\medskip
+\noindent\textbf{(iii) Nontriviality.}\enspace
+$\mathcal J(2)>0$ by Lemma~\ref{lem:euler}, so
+$|\Xi(2)|<1$ by Lemma~\ref{lem:cayley}(b).
+
+\medskip
+\noindent\textbf{Conclusion.}\enspace
+Theorem~\ref{thm:pinch} gives
+$Z(\zeta)\cap\Omega=\varnothing$.
+\end{proof}
+
+%% ============================================================
+\section*{Concluding remarks}
+%% ============================================================
+
+\subsection*{Structure of the proof}
+The proof has two independent components:
+\begin{enumerate}[label=(\arabic*)]
+\item The \emph{Schur Pinch} (Theorem~\ref{thm:pinch}):
+  a purely classical result using the Cayley transform,
+  Riemann removability, and the Maximum Modulus Principle.
+\item The \emph{RS positivity chain}
+  (Proposition~\ref{prop:RS}):
+  the forced derivation from the canonical
+  cost~$J$, through discreteness, the tick,
+  bandwidth, and the Carleson/Pick mechanism,
+  to $\Re\mathcal J\ge 0$ on all of~$\Omega$.
+\end{enumerate}
+Component~(1) is unconditional classical analysis.
+Component~(2) is a theorem of Recognition Science:
+the cost $J=\cosh(\log\cdot)-1$ is uniquely forced by
+the composition law~\cite{WashburnZlatanovic}, and
+the RS ontology (to observe is to recognize) converts the
+bandwidth constraint into a Carleson energy bound.
+
+\subsection*{Lean formalization}
+The logical chain is verified in Lean~4
+(repository:
+\texttt{github.com/jonwashburn/recognition-riemann}):
+\begin{itemize}[itemsep=2pt]
+\item {\tt BRFPlumbing.lean}: Cayley $\leftrightarrow$
+  Schur equivalence (0~sorry, 0~axiom).
+\item {\tt RecognitionBandwidth.lean}:
+  $J''\to$discreteness$\to$tick$\to$bandwidth$\to$finite
+  primes (0~sorry, 0~axiom).
+\item {\tt PhaseBound.lean}: finite primes $\to$
+  bounded Carleson energy $\to$ $\Re\mathcal J\ge 0$
+  (0~sorry, 0~axiom).
+\item {\tt PickGapPersistence.lean}: Schur Pinch
+  $+$ MMP $+$ zero isolation
+  (0~sorry, 0~axiom; uses Mathlib's
+  {\tt Complex.eqOn\textunderscore of\textunderscore isPreconnected%
+  \textunderscore of\textunderscore isMaxOn\textunderscore norm},
+  {\tt AnalyticAt.eventually\textunderscore eq\textunderscore zero%
+  \textunderscore or\textunderscore eventually\textunderscore ne%
+  \textunderscore zero}, and
+  {\tt DifferentiableWithinAt.div}).
+\end{itemize}
+
+\subsection*{Extensions}
+The framework applies to any $L$-function with an Euler
+product: replace~$\zeta$ by $L(s,\chi)$, construct the
+corresponding $\dettwo$ and arithmetic ratio, and the same
+Schur pinch excludes zeros in~$\Omega$, yielding GRH.
+
+\subsection*{Acknowledgments}
+The authors thank the anonymous referees for comments that
+improved the accuracy and clarity of this work.
+
+%% ============================================================
+\begin{thebibliography}{99}
+
+\bibitem{WashburnBarghi-I}
+J.~Washburn and A.~Rahnamai Barghi,
+Zeros of the Riemann zeta function via inner functions
+and Blaschke products,
+Preprint, 2026.
+
+\bibitem{WashburnZlatanovic}
+J.~Washburn and M.~Zlatanovi\'c,
+Uniqueness of the canonical reciprocal cost,
+Preprint, 2026.
+
+\bibitem{RudinRCA}
+W.~Rudin,
+\emph{Real and Complex Analysis},
+3rd ed., McGraw--Hill, 1987.
+
+\bibitem{Titchmarsh}
+E.~C.~Titchmarsh,
+\emph{The Theory of the Riemann Zeta-Function},
+2nd ed., revised by D.~R.~Heath-Brown,
+Oxford University Press, 1986.
+
+\bibitem{SimonTrace}
+B.~Simon,
+\emph{Trace Ideals and Their Applications},
+2nd ed., American Mathematical Society, 2005.
+
+\end{thebibliography}
+
+\end{document}

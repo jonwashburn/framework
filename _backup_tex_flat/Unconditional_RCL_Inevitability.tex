@@ -1,0 +1,172 @@
+\documentclass[12pt,a4paper]{article}
+
+% Minimal package set (portable TeX Live)
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{geometry}
+\usepackage{hyperref}
+\geometry{margin=1in}
+
+\hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Rp}{\mathbb{R}_{>0}}
+
+\title{\textbf{The Inevitability of the Recognition Composition Law}\\[0.5em]
+\large Unconditional forcing of the combiner from the canonical cost}
+\author{Jonathan Washburn\\[0.25em]
+Recognition Science Research Institute\\[0.5em]
+\small Proof artifacts in Lean 4 (\texttt{IndisputableMonolith})}
+\date{January 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We isolate and formalize a precise ``unconditional'' statement about the Recognition Composition Law (RCL).
+Let
+\[
+J(x)\;:=\;\frac{1}{2}\!\left(x+\frac{1}{x}\right)-1,\qquad x>0,
+\]
+and suppose there exists \emph{any} function $P:\R\times\R\to\R$ such that
+\[
+J(xy)+J(x/y)=P(J(x),J(y))\qquad\forall x,y>0.
+\]
+Then $P$ is uniquely forced on the whole first quadrant:
+\[
+P(u,v)=2uv+2u+2v\qquad\forall u,v\ge 0.
+\]
+No regularity, algebraic form, continuity, or measurability of $P$ is assumed; only existence.
+This ``computed-combiner'' theorem is machine-verified in Lean 4
+(\texttt{IndisputableMonolith/Foundation/DAlembert/Unconditional.lean}, theorem \texttt{rcl\_unconditional}).
+We also explain what this result does \emph{not} claim (it does not by itself force an arbitrary cost $F$ to equal $J$).
+\end{abstract}
+
+\tableofcontents
+
+\section{Statement}
+
+\begin{definition}[Canonical reciprocal cost]
+Define the canonical cost $J:\Rp\to\R$ by
+\[
+J(x)=\frac{1}{2}\!\left(x+\frac{1}{x}\right)-1.
+\]
+\end{definition}
+
+\begin{definition}[Cost-combiner consistency]\label{def:combiner}
+Let $F:\Rp\to\R$ be a cost function. A \emph{combiner} for $F$ is any function $P:\R\times\R\to\R$ such that
+\[
+F(xy)+F(x/y)=P(F(x),F(y))\qquad\forall x,y>0.
+\]
+\end{definition}
+
+\begin{definition}[RCL polynomial]
+Define $P_{\mathrm{RCL}}:\R\times\R\to\R$ by
+\[
+P_{\mathrm{RCL}}(u,v)=2uv+2u+2v.
+\]
+\end{definition}
+
+\begin{theorem}[Unconditional forcing of the combiner]\label{thm:unconditional}
+Let $P:\R\times\R\to\R$ satisfy the combiner consistency equation for the canonical cost $J$, i.e.
+\[
+J(xy)+J(x/y)=P(J(x),J(y))\qquad\forall x,y>0.
+\]
+Then for all $u,v\ge 0$,
+\[
+P(u,v)=P_{\mathrm{RCL}}(u,v)=2uv+2u+2v.
+\]
+\end{theorem}
+
+\begin{remark}[What ``unconditional'' means here]
+The theorem is unconditional with respect to the \emph{form} of $P$:
+we assume nothing about $P$ except that it exists and satisfies the functional equation with $J$.
+In particular, $P$ need not be polynomial, continuous, or even measurable.
+\end{remark}
+
+\section{Lean formalization}
+
+\subsection{Key file}
+
+All statements in Theorem~\ref{thm:unconditional} are verified in Lean 4 in:
+\begin{itemize}
+  \item \texttt{IndisputableMonolith/Foundation/DAlembert/Unconditional.lean}
+\end{itemize}
+
+\subsection{Key theorems (Lean names)}
+
+The proof chain is implemented via the following theorems (names as in Lean):
+\begin{itemize}
+  \item \texttt{J\_computes\_P}: the d'Alembert/RCL identity holds for \texttt{Cost.Jcost}.
+  \item \texttt{J\_surjective\_nonneg}: $J$ is surjective onto $[0,\infty)$.
+  \item \texttt{P\_determined\_nonneg}: any combiner agreeing with $J$ is determined on $[0,\infty)^2$.
+  \item \texttt{rcl\_unconditional}: the final statement (Theorem~\ref{thm:unconditional}).
+\end{itemize}
+
+\section{Proof sketch (mathematics)}
+
+The Lean proof follows a clean three-step strategy.
+
+\subsection{Step 1: $J$ satisfies the RCL identity}
+
+\begin{lemma}[RCL identity for $J$]\label{lem:rclJ}
+For all $x,y>0$,
+\[
+J(xy)+J(x/y)=2J(x)J(y)+2J(x)+2J(y).
+\]
+\end{lemma}
+
+This is a direct algebraic identity (proved in Lean as \texttt{J\_computes\_P} by converting to log-coordinates and using a verified cosh-add identity).
+
+\subsection{Step 2: $J$ hits every value in $[0,\infty)$}
+
+\begin{lemma}[Surjectivity]\label{lem:surj}
+For every $u\ge 0$ there exists $x>0$ such that $J(x)=u$.
+\end{lemma}
+
+One explicit solution is $x=u+1+\sqrt{u^2+2u}$; Lean proves this as \texttt{J\_surjective\_nonneg}.
+
+\subsection{Step 3: compute $P$ on the whole first quadrant}
+
+Assume $P$ satisfies the combiner consistency equation with $J$.
+Given any $u,v\ge 0$, choose $x,y>0$ with $J(x)=u$ and $J(y)=v$ (Lemma~\ref{lem:surj}).
+Then
+\[
+P(u,v)=P(J(x),J(y))=J(xy)+J(x/y)=2uv+2u+2v,
+\]
+using the defining equation for $P$ and Lemma~\ref{lem:rclJ}.
+This is exactly \texttt{P\_determined\_nonneg} in Lean, and yields Theorem~\ref{thm:unconditional}.
+
+\section{Scope and peer-review notes}
+
+\begin{remark}[What this theorem does \emph{not} prove]
+Theorem~\ref{thm:unconditional} does \emph{not} by itself show that an arbitrary cost function $F$
+must equal $J$.
+It establishes a different rigidity fact: \emph{once the canonical $J$ is fixed}, the combiner $P$
+compatible with \eqref{def:combiner} is forced and unique on $[0,\infty)^2$.
+\end{remark}
+
+\begin{remark}[How this connects to broader ``inevitability'' claims]
+To promote ``the combiner for $J$ is forced'' to ``the RCL is forced for all admissible costs,''
+one needs (in addition) a separate theorem identifying $J$ as the unique admissible cost.
+The Lean repository contains a fully formal cost-uniqueness development (T5) with explicit hypotheses
+in \texttt{IndisputableMonolith/CostUniqueness.lean}.
+\end{remark}
+
+\section{Conclusion}
+
+The unconditional Lean theorem \texttt{rcl\_unconditional} proves a strong and audit-friendly statement:
+\emph{if any function $P$ composes $J$-costs via the product/quotient identity, then $P$ must equal the RCL polynomial on the entire first quadrant}.
+Thus, the RCL combiner is not a modeling choice once $J$ is fixed; it is mathematically forced.
+
+\end{document}
+
+

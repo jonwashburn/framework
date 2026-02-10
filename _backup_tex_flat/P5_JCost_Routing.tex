@@ -1,0 +1,91 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+
+\geometry{margin=1in}
+
+\title{\textbf{PATENT APPLICATION}}
+\author{}
+\date{}
+
+\begin{document}
+
+\begin{center}
+    \Large\textbf{J-COST OPTIMIZED ROUTING IN OPTICAL NETWORKS}
+\end{center}
+
+\vspace{1cm}
+
+\section*{FIELD OF THE INVENTION}
+The present invention relates to optical network management and control planes, and specifically to routing and wavelength assignment (RWA) algorithms that optimize network capacity and stability by minimizing a physics-derived cost functional.
+
+\section*{BACKGROUND OF THE INVENTION}
+Optical networks are traditionally managed using algorithms that minimize metrics such as hop count, physical distance, or Optical Signal-to-Noise Ratio (OSNR). While effective for static demands, these metrics often lead to suboptimal resource allocation in dynamic, elastic optical networks.
+
+Specifically, standard "Shortest Path First" (SPF) algorithms tend to congest central links, leading to nonlinear crosstalk and blocking. Load balancing algorithms attempt to spread traffic but often lack a rigorous physical basis for the "cost" of a link state.
+
+There is a need for a routing metric that unifies the disparate physical constraints of an optical network (power, noise, nonlinearity, and spectral fragmentation) into a single, convex objective function that guarantees global stability and maximizes entropy.
+
+\section*{SUMMARY OF THE INVENTION}
+The present invention provides a method for "J-Cost Optimized Routing." The core innovation is the use of a specific cost functional $J(x) = \frac{1}{2}(x + 1/x) - 1$ to evaluate the "strain" or "defect" of a network link, where $x$ represents a normalized load or congestion factor.
+
+Unlike linear cost functions ($Cost \propto Load$) or exponential barriers, the J-cost function is derived from the principle of "Recognition Composition," ensuring that the cost of a composite path is minimized when resources are distributed according to a geometric progression (specifically, the Golden Ratio $\phi$).
+
+By routing traffic to minimize the aggregate $\sum J(x_i)$ across the network, the control plane naturally avoids both under-utilization ($x \ll 1$) and saturation ($x \gg 1$), driving the network towards a state of maximum entropy and thermodynamic stability.
+
+\section*{DETAILED DESCRIPTION}
+
+\subsection*{The J-Cost Functional}
+The cost of a link $i$ with utilization $u_i$ and capacity $C_i$ is defined as:
+\begin{equation}
+    J_i = \frac{1}{2} \left( \frac{u_i}{C_{opt}} + \frac{C_{opt}}{u_i} \right) - 1
+\end{equation}
+where $C_{opt}$ is the optimal operating point (typically defined by the nonlinear threshold of the fiber).
+
+This function has a unique minimum at $u_i = C_{opt}$ (where $J=0$). It penalizes both "noise-limited" weak signals ($u_i < C_{opt}$) and "nonlinearity-limited" strong signals ($u_i > C_{opt}$) symmetrically in log-space.
+
+\subsection*{Routing Algorithm}
+The control plane executes the following steps for each connection request:
+\begin{enumerate}
+    \item \textbf{State Discovery:} Collect real-time telemetry (power, OSNR) from all links.
+    \item \textbf{Cost Calculation:} Compute the incremental $\Delta J$ for adding the new connection to every candidate path.
+    \item \textbf{Path Selection:} Select the path $P$ that minimizes $\sum_{l \in P} \Delta J_l$.
+\end{enumerate}
+Because $J$ is strictly convex, this optimization problem has a unique global minimum, preventing routing oscillations (flapping).
+
+\subsection*{Network Entropy Maximization}
+It is a theorem of the invention that minimizing the aggregate J-cost is mathematically equivalent to maximizing the thermodynamic entropy of the network's power distribution, subject to the constraints of the fiber physics. This leads to a "self-organizing" network state that is robust to traffic bursts and component failures.
+
+\section*{CLAIMS}
+
+What is claimed is:
+
+\begin{enumerate}
+    \item A method for routing optical connections in a network, comprising:
+    \begin{enumerate}
+        \item determining a normalized load metric $x$ for each link in the network;
+        \item calculating a cost value $J(x)$ for each link using a convex function of the form $f(x) + f(1/x)$; and
+        \item selecting a path for a new connection that minimizes the sum of said cost values along the path.
+    \end{enumerate}
+
+    \item The method of claim 1, wherein said cost value is calculated as $J(x) = \frac{1}{2}(x + 1/x) - 1$.
+
+    \item The method of claim 1, wherein said normalized load metric $x$ is the ratio of total channel power to the optimal nonlinear threshold power of the fiber link.
+
+    \item A software-defined networking (SDN) controller comprising:
+    \begin{enumerate}
+        \item a telemetry interface for receiving link state data;
+        \item a path computation element (PCE) configured to execute the method of claim 1; and
+        \item a southbound interface for provisioning optical cross-connects (OXCs) according to the selected path.
+    \end{enumerate}
+
+    \item The SDN controller of claim 4, wherein the PCE is further configured to re-optimize existing connections to maintain the network in a state of minimum aggregate J-cost.
+\end{enumerate}
+
+\end{document}

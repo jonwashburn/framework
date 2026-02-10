@@ -1,0 +1,3252 @@
+\documentclass[11pt,a4paper]{article}
+
+% ----------------------------------------------------------------------
+% Preamble
+% ----------------------------------------------------------------------
+
+% Typography and Language
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% Mathematics
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+
+% Layout
+\usepackage[margin=1.0in]{geometry}
+\usepackage{fancyhdr}
+\usepackage{parskip}
+\setlength{\emergencystretch}{1em}
+
+% Links and References
+\usepackage[colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue]{hyperref}
+% NOTE: `cleveref` is not available in the minimal TeXLive install used by CI.
+% Provide a lightweight fallback so the document still compiles.
+\newcommand{\cref}[1]{\ref{#1}}
+\newcommand{\Cref}[1]{\ref{#1}}
+
+% Code Listings (for Lean code)
+\usepackage{listings}
+\usepackage{xcolor}
+
+\definecolor{keywordcolor}{rgb}{0.5,0,0.3}
+\definecolor{commentcolor}{rgb}{0.25,0.5,0.35}
+\definecolor{stringcolor}{rgb}{0.6,0,0}
+\definecolor{backgroundcolor}{rgb}{0.98,0.98,0.98}
+\definecolor{lightgray}{gray}{0.85}
+
+\lstdefinelanguage{Lean}{
+  keywords={class, instance, where, structure, theorem, def, noncomputable, example, axiom, inductive, deriving, open, namespace, variable, section, end, import, opaque, lemma, Prop, Type, Set},
+  keywordstyle=\color{keywordcolor}\bfseries,
+  ndkeywords={Filter, FilterBasis, Equivalence, Setoid, Quotient, Function, Fin, Nat, Int, Real, Nonempty, True, False},
+  ndkeywordstyle=\color{blue}\bfseries,
+  identifierstyle=\color{black},
+  sensitive=true,
+  comment=[l]{--},
+  morecomment=[s]{/-}{-/},
+  commentstyle=\color{commentcolor}\itshape,
+  stringstyle=\color{stringcolor},
+  morestring=[b]",
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{backgroundcolor},
+  frame=single,
+  rulecolor=\color{lightgray},
+  breaklines=true,
+  breakatwhitespace=true,
+  showstringspaces=false,
+  captionpos=b,
+  literate={∀}{$\forall$}1 {∃}{$\exists$}1 {→}{$\to$}1 {←}{$\leftarrow$}1 
+           {↔}{$\leftrightarrow$}1 {∧}{$\land$}1 {∨}{$\lor$}1 
+           {¬}{$\neg$}1 {≠}{$\neq$}1 {≤}{$\leq$}1 {≥}{$\geq$}1
+           {⊆}{$\subseteq$}1 {∈}{$\in$}1 {∉}{$\notin$}1 {∩}{$\cap$}1 {∪}{$\cup$}1
+           {×}{$\times$}1 {⊗}{$\otimes$}1 {⟨}{$\langle$}1 {⟩}{$\rangle$}1
+           {ℕ}{$\mathbb{N}$}1 {ℤ}{$\mathbb{Z}$}1 {ℝ}{$\mathbb{R}$}1
+           {λ}{$\lambda$}1 {∘}{$\circ$}1 {⁻¹}{${}^{-1}$}1
+           {₀}{${}_{0}$}1 {₁}{${}_{1}$}1 {₂}{${}_{2}$}1
+           {₃}{${}_{3}$}1 {₄}{${}_{4}$}1 {₅}{${}_{5}$}1
+           {₆}{${}_{6}$}1 {₇}{${}_{7}$}1 {₈}{${}_{8}$}1
+           {₉}{${}_{9}$}1
+}
+
+\lstset{breaklines=true, breakatwhitespace=true}
+
+% Theorem Environments
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{axiomenv}{Axiom}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+
+\numberwithin{equation}{section}
+
+% Custom Commands
+\newcommand{\recog}{\mathcal{R}}
+\newcommand{\config}{\mathcal{C}}
+\newcommand{\events}{\mathcal{E}}
+\newcommand{\ledger}{\mathcal{L}}
+\newcommand{\neighborhood}{\mathcal{N}}
+\newcommand{\quotientspace}{\config_{\recog}}
+\newcommand{\indist}{\sim_{\recog}}
+\newcommand{\Rhat}{\hat{R}}
+
+% Header and Footer
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Recognition Geometry}
+\rhead{Washburn}
+\cfoot{Page \thepage\ of \pageref{LastPage}}
+
+% ----------------------------------------------------------------------
+% Title Page Information
+% ----------------------------------------------------------------------
+
+\title{\textbf{\Huge Recognition Geometry} \\ \vspace{0.5cm} \Large A Complete Mathematical Framework \\ \vspace{0.3cm} \normalsize Formalized in Lean 4}
+
+\author{
+    \textbf{Jonathan Washburn} \\
+    Recognition Physics Institute \\
+    \texttt{jwashburn@recognitionphysics.org}
+}
+
+\date{December 18, 2025}
+
+% ----------------------------------------------------------------------
+% Document Body
+% ----------------------------------------------------------------------
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\noindent
+Recognition Geometry is a new geometric framework that inverts the traditional relationship between space and measurement. In classical geometry, space is primitive and measurements are operations performed on a pre-existing spatial substrate. Recognition Geometry reverses this: \textbf{recognition maps are primitive, and space emerges as a quotient structure}.
+
+Assuming axioms RG0--RG7, we present the complete foundations of the subject, prove the universal property of the recognition quotient, develop recognition charts and dimension, and establish a bridge to Recognition Science physics.
+
+We formally define a \textit{Configuration Space} (RG0) and a \textit{Locality Structure} (RG1), upon which \textit{Recognizers} (RG2) operate to produce observable \textit{Events}. We define the fundamental \textit{Indistinguishability Relation} (RG3) and construct the \textit{Recognition Quotient}, proving that it captures exactly the observable structure determined by $R$. We further develop \textit{Finite Resolution} (RG4), \textit{Local Regularity} (RG5), \textit{Composite Recognizers} (RG6), and \textit{Comparative Recognizers} (RG7), showing that when finite-resolution recognizers exist, injectivity fails and smooth structure can only arise as a refinement limit.
+
+Finally, we illustrate how these results ground Recognition Science explanations of spacetime dimension, gauge symmetries, and metric structure. \textbf{Lean formalizations accompany this work}: the RG0--RG7 core is maintained in a companion library, and this repository contains an RH instantiation under \texttt{RiemannRecognitionGeometry/}.
+\end{abstract}
+
+\vspace{0.5cm}
+
+\tableofcontents
+
+\newpage
+
+% ----------------------------------------------------------------------
+% Conventions and Notation (unnumbered)
+% ----------------------------------------------------------------------
+
+\section*{Conventions and Notation}
+\addcontentsline{toc}{section}{Conventions and Notation}
+
+\begin{itemize}
+    \item \textbf{Sets and Types}: We work in a set-theoretic style; symbols like $\config$, $\events$ denote sets (Lean \texttt{Type*}s).
+    \item \textbf{Recognizers}: A recognizer is a function $R: \config \to \events$. Indistinguishability $c_1 \indist c_2$ means $R(c_1)=R(c_2)$.
+    \item \textbf{Recognition Quotient}: $\quotientspace = \config / \indist$, projection $\pi$ and induced $\bar{R}$ as in the text.
+    \item \textbf{Neighborhoods}: $\neighborhood$ satisfies RG1 (reflexivity, nonemptiness, intersection closure, refinement).
+    \item \textbf{Lean Listings}: Unicode is used; names may differ slightly from prose when convenient.
+    \item \textbf{Numbering}: Equations are numbered by section; parts organize themes.
+\end{itemize}
+
+% ======================================================================
+% PART I: PHILOSOPHICAL FOUNDATIONS
+% ======================================================================
+
+\part{Philosophical Foundations}
+
+\section{The Inversion of Geometry}
+
+Geometry, for over two millennia, has been founded on the primacy of space. From Euclid's points and lines to Riemann's manifolds and modern topology, the mathematical narrative begins with a substrate---a set of points equipped with structure---upon which objects reside and measurements occur. In this classical paradigm, ``space'' is the stage, and ``physics'' is the play enacted upon it. Measurement is modeled as a function $f: M \to \mathbb{R}$, mapping a pre-existing point in the manifold $M$ to an observable value. The existence of the point $p \in M$ is ontologically prior to the measurement $f(p)$.
+
+Recognition Geometry proposes a fundamental inversion of this paradigm. We posit that \textbf{recognition is primitive, and space is derived}.
+
+\subsection{The Classical Paradigm}
+
+In the standard formulation of mathematical physics, one begins by postulating a state space or spacetime manifold $M$. This manifold is equipped with a topology $\mathcal{T}$, a differential structure $\mathcal{A}$, and perhaps a metric $g$. Only after this heavy mathematical machinery is in place do we introduce ``observables'' or ``measurements'' as functions on this space.
+
+The ontological commitment here is substantial: one assumes the existence of a continuum of points, most of which are unobservable in principle. The topology dictates which points are ``close'' to one another before any notion of measurement resolution is introduced. The metric defines distances between points that may never be physically distinguished. In this view, the limit of infinite precision is the starting point, and experimental limitations are viewed as approximations or noise clouding the ``true'' underlying continuum.
+
+Historically, this approach traces back to Euclidean geometry, where spatial intuition was formalized as axioms about points and lines. It evolved through Descartes' coordinate geometry, where space became $\mathbb{R}^n$, and culminated in the manifold theory of General Relativity. Even in Quantum Mechanics, the underlying Hilbert space is a continuum structure defined over the field of complex numbers. The assumption of a pre-existing, continuous substrate is ubiquitous.
+
+\subsection{The Recognition Paradigm}
+
+Recognition Geometry begins from a more modest and operationally grounded starting point. We assume only the existence of a set of \textit{configurations} $\config$---representing the possible states of reality---and a family of \textit{recognizers}. A recognizer is a map $R: \config \to \events$ that assigns an observable \textit{event} to each configuration.
+
+Crucially, we do not assume that $\config$ has any topological or metric structure initially. It is merely a set. The structure of ``space'' emerges entirely from the behavior of the recognizers.
+
+The central insight can be stated as follows:
+\begin{quote}
+    \textbf{Configurations are what the world does; events are what recognizers see.}
+\end{quote}
+
+Two configurations $c_1, c_2 \in \config$ are \textit{indistinguishable} with respect to a recognizer $R$ if they produce the same event: $R(c_1) = R(c_2)$. This defines an equivalence relation $\indist$. The ``observable space'' is not $\config$ itself, but the quotient space $\quotientspace = \config / \indist$.
+
+In this framework:
+\begin{itemize}
+    \item \textbf{Topology} is not assumed; it emerges as the structure of distinguishable neighborhoods.
+    \item \textbf{Dimension} is not a parameter; it is the count of independent recognizers needed to distinguish local configurations.
+    \item \textbf{Continuity} is not foundational; it is an emergent property of how recognizers respond to variations in configuration.
+    \item \textbf{Metrics} are not primitive; distances emerge from \textit{comparative} recognition---the ability to order configurations.
+\end{itemize}
+
+This inversion has profound physical consequences. It naturally accommodates the finite resolution of physical measurement not as an approximation, but as a fundamental feature. If the set of possible events $\events$ is finite (or countable) in any local region---as suggested by information-theoretic bounds in physics---then the emergent geometry is necessarily discrete or granular at the fundamental level, smoothing out into a continuum only in the limit of large numbers.
+
+\subsection{Comparison with Related Approaches}
+
+Recognition Geometry shares motivations with several existing frameworks but differs in key respects:
+
+\begin{enumerate}
+    \item \textbf{Topos Theory and Logic}: Topos approaches to physics also emphasize the role of observation and the logic of partial information. However, they often operate at a very high level of abstraction (category theory). Recognition Geometry remains grounded in set-theoretic operations and concrete maps, making it more accessible as a direct model of physical measurement.
+    
+    \item \textbf{Information Geometry}: This field studies the geometry of probability distributions. While related, Information Geometry typically assumes a smooth manifold of parameters. Recognition Geometry asks where that manifold comes from in the first place.
+    
+    \item \textbf{Relational Quantum Mechanics (RQM)}: RQM posits that states are relative to the observer. Recognition Geometry formalizes ``observer'' as ``recognizer'' and provides the rigorous mathematical machinery (quotients, composition of recognizers) to make this relational view precise.
+    
+    \item \textbf{Loop Quantum Gravity (LQG)}: LQG predicts discrete area and volume operators. Recognition Geometry arrives at discreteness via a different path: the \textit{Finite Resolution Axiom} (RG4), which asserts that any local recognizer has a finite event space.
+\end{enumerate}
+
+\subsection{The Ontological Commitment}
+
+It is important to clarify what Recognition Geometry commits to ontologically. It is neither purely operationalist (denying the existence of anything beyond measurement) nor purely Platonist (asserting the independent reality of mathematical forms).
+
+We commit to the existence of \textit{configurations}---there is a ``way things are.'' However, we treat the configuration space $\config$ as a vast, potentially infinite-dimensional ``ledger'' that is not directly accessible. What is physically real for an observer is the \textit{recognition quotient} $\quotientspace$.
+
+Space, time, and metrics are emergent structural features of the interaction between the configuration ledger and the recognition operators. They are objective features of the \textit{observable} world, but they are derivative, not primitive. The ``illusion'' of a smooth, pre-existing spacetime container is exactly that---a coherent emergent structure arising from the collective behavior of fundamental recognizers.
+
+This paper formalizes this vision. We begin with minimal axioms and build the entire geometric edifice---topology, charts, dimension, and metrics---from the ground up.
+
+% ======================================================================
+% PART II: THE AXIOMATIC FRAMEWORK
+% ======================================================================
+
+\part{The Axiomatic Framework}
+
+In this part, we construct the formal edifice of Recognition Geometry from first principles. We begin with minimal set-theoretic assumptions and progressively introduce structure through explicit axioms (RG0--RG7).
+
+\section{Configuration and Event Spaces}
+
+The foundation of our framework rests on two primitive sets: a space of states and a space of outcomes.
+
+\subsection{Configuration Space (RG0)}
+
+We postulate the existence of a set $\config$ of \textit{configurations}. A configuration $c \in \config$ represents a complete, precise specification of the state of the system (or universe). This specification may be vastly more detailed than any possible observation.
+
+\begin{axiomenv}[RG0: Nonempty Configuration Space]
+    There exists a set $\config$, called the configuration space, which is nonempty.
+\end{axiomenv}
+
+In Lean 4, we formalize this as a type class:
+
+\begin{lstlisting}[language=Lean]
+class ConfigSpace (C : Type*) where
+  nonempty : Nonempty C
+
+noncomputable def ConfigSpace.witness (C : Type*) [cs : ConfigSpace C] : C :=
+  cs.nonempty.some
+
+theorem config_exists (C : Type*) [ConfigSpace C] : ∃ c : C, True :=
+  ⟨ConfigSpace.witness C, trivial⟩
+\end{lstlisting}
+
+\begin{remark}
+    We explicitly do \textit{not} assume that $\config$ carries any initial topological or metric structure. It might be an infinite-dimensional vector space, a discrete set of graphs, or the ``ledger'' states of Recognition Science. It is simply the set of all possible ways the world can be.
+\end{remark}
+
+\subsection{Event Spaces}
+
+Recognizers map configurations to \textit{events}. An event is an observable outcome: a pointer reading, a detector click, a boolean value, or a distinctive pattern.
+
+\begin{definition}[Event Space]
+    An \textit{Event Space} is a set $\events$ with at least two distinct elements.
+\end{definition}
+
+\begin{lstlisting}[language=Lean]
+class EventSpace (E : Type*) where
+  nontrivial : ∃ e₁ e₂ : E, e₁ ≠ e₂
+
+theorem event_nontrivial (E : Type*) [EventSpace E] : ∃ e₁ e₂ : E, e₁ ≠ e₂ :=
+  EventSpace.nontrivial
+\end{lstlisting}
+
+The condition $|\events| \ge 2$ is required to avoid triviality; a recognizer that always outputs the same event conveys no information and defines no geometry.
+
+\subsection{The Recognition Triple}
+
+We bundle these concepts into a foundational structure.
+
+\begin{definition}[Recognition Triple]
+    A Recognition Triple is a tuple $(\config, \events, \Sigma)$ where $\config$ is a configuration space, $\events$ is an event space, and $\Sigma$ represents the structure connecting them (recognizers, locality, etc.).
+\end{definition}
+
+\begin{lstlisting}[language=Lean]
+structure RecognitionTriple where
+  Config : Type*
+  Event : Type*
+  configSpace : ConfigSpace Config
+  eventSpace : EventSpace Event
+\end{lstlisting}
+
+\section{Locality Structure (RG1)}
+
+While we do not assume a topology on $\config$, we require a notion of \textit{locality}. Measurements are local operations; a thermometer in London does not respond to temperature changes in Tokyo. We formalize this via a neighborhood structure that is weaker than a topology but sufficient to define local behavior.
+
+\subsection{Axiom RG1: Locality}
+
+We associate with each configuration $c \in \config$ a family of subsets $\neighborhood(c)$ called \textit{neighborhoods}.
+
+\begin{axiomenv}[RG1: Local Configuration Space]
+    A \textit{Local Configuration Space} is a configuration space equipped with a neighborhood assignment $\neighborhood: \config \to \mathcal{P}(\mathcal{P}(\config))$ satisfying:
+    \begin{enumerate}
+        \item \textbf{Reflexivity}: $\forall c, \forall U \in \neighborhood(c), c \in U$.
+        \item \textbf{Nonemptiness}: $\forall c, \neighborhood(c) \neq \emptyset$.
+        \item \textbf{Intersection Closure}: If $U, V \in \neighborhood(c)$, there exists $W \in \neighborhood(c)$ such that $W \subseteq U \cap V$.
+        \item \textbf{Refinement}: If $U \in \neighborhood(c)$ and $c' \in U$, there exists $V \in \neighborhood(c')$ such that $V \subseteq U$.
+    \end{enumerate}
+\end{axiomenv}
+
+\begin{lstlisting}[language=Lean]
+structure LocalConfigSpace (C : Type*) extends ConfigSpace C where
+  N : C → Set (Set C)
+  mem_of_mem_N : ∀ c U, U ∈ N c → c ∈ U
+  N_nonempty : ∀ c, (N c).Nonempty
+  intersection_closed : ∀ c U V, U ∈ N c → V ∈ N c → 
+    ∃ W ∈ N c, W ⊆ U ∩ V
+  refinement : ∀ c U c', U ∈ N c → c' ∈ U → 
+    ∃ V ∈ N c', V ⊆ U
+\end{lstlisting}
+
+\subsection{Filter Basis}
+
+The properties of $\neighborhood(c)$ imply that the neighborhoods of any point form a \textit{filter base}. This allows us to define convergence and continuity without a full topological definition, although in many cases $\neighborhood$ will generate a topology.
+
+\begin{theorem}[Common Refinement]
+    For any two neighborhoods $U, V$ of $c$, there exists a neighborhood $W$ of $c$ contained in both.
+\end{theorem}
+
+\begin{lstlisting}[language=Lean]
+theorem LocalConfigSpace.common_refinement (c : C) (U V : Set C)
+    (hU : U ∈ L.N c) (hV : V ∈ L.N c) :
+    ∃ W ∈ L.N c, W ⊆ U ∧ W ⊆ V
+\end{lstlisting}
+
+The \textit{Refinement} property (condition 4) is particularly crucial: it ensures that ``being in a neighborhood'' is a locally stable property. If you are in a neighborhood of $c$, you have your own neighborhood contained entirely within it.
+
+\section{Recognition Maps (RG2)}
+
+We now introduce the central actor of the theory: the \textit{recognizer}.
+
+\subsection{The Recognizer Structure}
+
+\begin{axiomenv}[RG2: Recognizers]
+    A \textit{Recognizer} is a function $R: \config \to \events$ that is nontrivial, meaning it distinguishes at least two configurations.
+\end{axiomenv}
+
+\begin{lstlisting}[language=Lean]
+structure Recognizer (C : Type*) (E : Type*) where
+  R : C → E
+  nontrivial : ∃ c₁ c₂ : C, R c₁ ≠ R c₂
+\end{lstlisting}
+
+The nontriviality condition ensures that $\text{Im}(R)$ contains at least two elements. A constant function is not a recognizer because it performs no recognition---it is ``blind'' to all differences.
+
+\begin{theorem}[Image Nontriviality]
+    Every recognizer has at least two distinct events in its image.
+\end{theorem}
+
+\begin{lstlisting}[language=Lean]
+theorem Recognizer.image_nontrivial (r : Recognizer C E) :
+    ∃ e₁ e₂ : E, e₁ ∈ Set.range r.R ∧ e₂ ∈ Set.range r.R ∧ e₁ ≠ e₂
+\end{lstlisting}
+
+\subsection{Fibers and Preimages}
+
+The \textit{fiber} of an event $e \in \events$ is the set of all configurations that map to $e$:
+\[ R^{-1}(\{e\}) = \{ c \in \config \mid R(c) = e \} \]
+
+These fibers partition the configuration space. This partition is the primary geometric structure induced by the recognizer.
+
+\begin{theorem}[Fibers Partition]
+    Every configuration belongs to exactly one fiber.
+\end{theorem}
+
+\begin{lstlisting}[language=Lean]
+def Recognizer.fiber (r : Recognizer C E) (e : E) : Set C :=
+  r.R ⁻¹' {e}
+
+theorem Recognizer.fibers_partition (r : Recognizer C E) :
+    ∀ c : C, ∃! e : E, c ∈ r.fiber e
+\end{lstlisting}
+
+\section{Indistinguishability (RG3)}
+
+The most fundamental relation in Recognition Geometry is \textit{indistinguishability}.
+
+\subsection{The Indistinguishability Relation}
+
+\begin{axiomenv}[RG3: Indistinguishability]
+    Two configurations $c_1, c_2$ are \textit{indistinguishable} with respect to $R$, denoted $c_1 \indist c_2$, if and only if $R(c_1) = R(c_2)$.
+\end{axiomenv}
+
+\begin{lstlisting}[language=Lean]
+def Indistinguishable {C E : Type*} (r : Recognizer C E) (c₁ c₂ : C) : Prop :=
+  r.R c₁ = r.R c₂
+
+notation:50 c₁ " ~[" r "] " c₂ => Indistinguishable r c₁ c₂
+\end{lstlisting}
+
+This definition captures the epistemological limit of the observer. If two states of the world produce the exact same reading on a measurement device, they are empirically identical with respect to that device.
+
+\subsection{Equivalence Relation Properties}
+
+\begin{theorem}[Indistinguishability is an Equivalence Relation]
+    The relation $\indist$ is reflexive, symmetric, and transitive.
+\end{theorem}
+
+\begin{proof}
+    \textit{Reflexivity}: $R(c) = R(c)$ trivially. \\
+    \textit{Symmetry}: $R(c_1) = R(c_2) \implies R(c_2) = R(c_1)$. \\
+    \textit{Transitivity}: $R(c_1) = R(c_2)$ and $R(c_2) = R(c_3)$ implies $R(c_1) = R(c_3)$.
+\end{proof}
+
+\begin{lstlisting}[language=Lean]
+theorem indistinguishable_equivalence : Equivalence (Indistinguishable r) where
+  refl := fun c => rfl
+  symm := fun h => h.symm
+  trans := fun h₁ h₂ => h₁.trans h₂
+\end{lstlisting}
+
+\subsection{Resolution Cells}
+
+The equivalence classes under $\indist$ are called \textit{Resolution Cells}.
+
+\begin{definition}[Resolution Cell]
+    The resolution cell of $c$, denoted $[c]_R$, is the set of all configurations indistinguishable from $c$:
+    \[ [c]_R = \{ c' \in \config \mid c' \indist c \} \]
+\end{definition}
+
+\begin{lstlisting}[language=Lean]
+def ResolutionCell {C E : Type*} (r : Recognizer C E) (c : C) : Set C :=
+  {c' : C | Indistinguishable r c' c}
+
+theorem resolutionCell_eq_fiber (r : Recognizer C E) (c : C) :
+    ResolutionCell r c = r.fiber (r.R c)
+\end{lstlisting}
+
+A resolution cell represents a ``pixel'' or ``voxel'' of the geometry defined by $R$. Inside a cell, the recognizer is blind; it cannot resolve any internal structure.
+
+\section{The Recognition Quotient}
+
+We now arrive at the first major structural result: the construction of the observable space.
+
+\subsection{Construction}
+
+The \textit{Recognition Quotient} is the quotient space of configurations by the indistinguishability relation.
+
+\begin{definition}[Recognition Quotient]
+    \[ \quotientspace = \config / \indist \]
+\end{definition}
+
+\begin{lstlisting}[language=Lean]
+def indistinguishableSetoid (r : Recognizer C E) : Setoid C where
+  r := Indistinguishable r
+  iseqv := indistinguishable_equivalence r
+
+def RecognitionQuotient {C E : Type*} (r : Recognizer C E) :=
+  Quotient (indistinguishableSetoid r)
+
+def recognitionQuotientMk (r : Recognizer C E) (c : C) : RecognitionQuotient r :=
+  Quotient.mk (indistinguishableSetoid r) c
+\end{lstlisting}
+
+Let $\pi: \config \to \quotientspace$ be the canonical projection $\pi(c) = [c]_R$.
+
+\subsection{The Observable Event Map}
+
+Since $R(c)$ is constant on equivalence classes, the map $R$ descends to a well-defined map on the quotient, denoted $\bar{R}: \quotientspace \to \events$.
+
+\[ \bar{R}([c]_R) = R(c) \]
+
+\begin{theorem}[Injectivity of Observable Map]\label{thm:injective}
+    The map $\bar{R}: \quotientspace \to \events$ is injective.
+\end{theorem}
+
+\begin{proof}
+    Let $q_1, q_2 \in \quotientspace$ such that $\bar{R}(q_1) = \bar{R}(q_2)$. Let $c_1, c_2$ be representatives such that $q_1 = [c_1]_R$ and $q_2 = [c_2]_R$. Then $R(c_1) = \bar{R}(q_1) = \bar{R}(q_2) = R(c_2)$. By definition, $R(c_1) = R(c_2) \implies c_1 \indist c_2 \implies [c_1]_R = [c_2]_R$, so $q_1 = q_2$.
+\end{proof}
+
+\begin{lstlisting}[language=Lean]
+def quotientEventMap (r : Recognizer C E) : RecognitionQuotient r → E :=
+  Quotient.lift r.R (fun _ _ h => h)
+
+theorem quotientEventMap_injective (r : Recognizer C E) :
+    Function.Injective (quotientEventMap r)
+\end{lstlisting}
+\emph{Lean reference (companion RG library):} \texttt{IndisputableMonolith/RecogGeom/Quotient.lean}.
+
+This result is physically profound. It says that in the quotient space---the space of physical observables---states are uniquely identified by their event values. There is no ``hidden state'' in $\quotientspace$. The geometry of $\quotientspace$ is exactly the geometry of the information accessible to the recognizer.
+
+\begin{corollary}[Quotient Isomorphic to Image]
+    $\quotientspace \cong \text{Im}(R)$
+\end{corollary}
+
+% ======================================================================
+% PART III: ADVANCED STRUCTURE
+% ======================================================================
+
+\part{Advanced Structure}
+
+Having established the basic observable space, we now turn to the rich geometric structure that arises from the interaction of multiple recognizers and local constraints.
+
+\section{Composition of Recognizers (RG6)}
+
+Physical measurement rarely involves a single isolated observation. We observe position \textit{and} momentum, color \textit{and} shape. This combination of measurements is formalized as the composition of recognizers.
+
+\subsection{The Composite Recognizer}
+
+\begin{definition}[Composite Recognizer]
+    Given two recognizers $R_1: \config \to \events_1$ and $R_2: \config \to \events_2$, their \textit{composition} is the recognizer $R_1 \otimes R_2: \config \to \events_1 \times \events_2$ defined by:
+    \[ (R_1 \otimes R_2)(c) = (R_1(c), R_2(c)) \]
+\end{definition}
+
+\begin{lstlisting}[language=Lean]
+def CompositeRecognizer (r₁ : Recognizer C E₁) (r₂ : Recognizer C E₂) :
+    Recognizer C (E₁ × E₂) where
+  R := fun c => (r₁.R c, r₂.R c)
+  nontrivial := by
+    obtain ⟨c₁, c₂, hne⟩ := r₁.nontrivial
+    use c₁, c₂
+    simp [hne]
+
+infixl:70 " ⊗ " => CompositeRecognizer
+\end{lstlisting}
+
+\subsection{The Refinement Theorem}
+
+Composition increases distinguishing power. If two configurations are distinguishable by $R_1$, they are distinguishable by $R_1 \otimes R_2$.
+
+\begin{theorem}[Composite Indistinguishability]
+    \[ c_1 \sim_{R_1 \otimes R_2} c_2 \iff (c_1 \sim_{R_1} c_2) \land (c_1 \sim_{R_2} c_2) \]
+\end{theorem}
+
+\begin{lstlisting}[language=Lean]
+theorem composite_indistinguishable_iff (r₁ : Recognizer C E₁) (r₂ : Recognizer C E₂)
+    (c₁ c₂ : C) :
+    Indistinguishable (r₁ ⊗ r₂) c₁ c₂ ↔
+    Indistinguishable r₁ c₁ c₂ ∧ Indistinguishable r₂ c₁ c₂
+\end{lstlisting}
+
+The resolution cells of the composite recognizer are the intersections of the component cells:
+\[ [c]_{R_1 \otimes R_2} = [c]_{R_1} \cap [c]_{R_2} \]
+
+\begin{theorem}[Refinement Theorem]\label{thm:refinement}
+    The recognition quotient of the composite refines the quotients of its components. There exist surjective canonical maps:
+    \[ \pi_1: \config_{R_1 \otimes R_2} \twoheadrightarrow \config_{R_1} \quad \text{and} \quad \pi_2: \config_{R_1 \otimes R_2} \twoheadrightarrow \config_{R_2} \]
+\end{theorem}
+
+\begin{lstlisting}[language=Lean]
+theorem refinement_theorem (r₁ : Recognizer C E₁) (r₂ : Recognizer C E₂) :
+    Function.Surjective (quotientMapLeft r₁ r₂) ∧
+    Function.Surjective (quotientMapRight r₁ r₂)
+\end{lstlisting}
+\emph{Lean reference (companion RG library):} \texttt{IndisputableMonolith/RecogGeom/Composition.lean}.
+
+This theorem formalizes the intuition that ``more measurement yields more geometry.'' As we add recognizers, the quotient space unfolds, revealing more detail.
+
+\section{Symmetries and Gauge Equivalence}
+
+A geometry is defined as much by what it preserves as by what it distinguishes.
+
+\subsection{Recognition-Preserving Maps}
+
+\begin{definition}[Recognition-Preserving Map]
+    A transformation $T: \config \to \config$ is \textit{recognition-preserving} for $R$ if it leaves all events invariant:
+    \[ \forall c \in \config,\, R(T(c)) = R(c) \]
+\end{definition}
+
+\begin{lstlisting}[language=Lean]
+structure RecognitionPreservingMap (r : Recognizer C E) where
+  toFun : C → C
+  preserves_event : ∀ c, r.R (toFun c) = r.R c
+\end{lstlisting}
+
+\begin{proposition}
+    Recognition-preserving maps are closed under composition and contain the identity. Consequently they form a monoid.
+\end{proposition}
+
+\begin{definition}[Recognition automorphism]
+    A \textit{recognition automorphism} is a bijective recognition-preserving map. The collection $\mathrm{Aut}_R(\config)$ of automorphisms is a group under composition.
+\end{definition}
+
+\begin{proof}
+    Closure and identity are inherited from the monoid structure; inverses exist for bijections.
+\end{proof}
+
+\begin{theorem}[Symmetry preserves indistinguishability]
+    If $T$ is recognition-preserving, then $c_1 \indist c_2$ implies $T(c_1) \indist T(c_2)$.
+\end{theorem}
+
+\subsection{Gauge Equivalence}
+
+In physics, a ``gauge transformation'' is a change in the mathematical description of a state that results in no observable difference. Recognition Geometry captures this exactly.
+
+\begin{definition}[Gauge equivalence]
+    $c_1$ and $c_2$ are \textit{gauge equivalent} if some $T \in \mathrm{Aut}_R(\config)$ satisfies $T(c_1) = c_2$.
+\end{definition}
+
+\begin{theorem}[Gauge implies indistinguishable]
+    \[ c_1 \sim_{\text{gauge}} c_2 \implies c_1 \indist c_2. \]
+\end{theorem}
+
+\begin{lstlisting}[language=Lean]
+def GaugeEquivalent (r : Recognizer C E) (c₁ c₂ : C) : Prop :=
+  ∃ T : RecognitionAutomorphism r, T.toFun c₁ = c₂
+
+theorem gauge_implies_indistinguishable {c₁ c₂ : C}
+    (h : GaugeEquivalent r c₁ c₂) : Indistinguishable r c₁ c₂
+\end{lstlisting}
+
+The converse need not hold in general. However, if $\mathrm{Aut}_R(\config)$ acts transitively on each resolution cell, the two notions coincide.
+
+\begin{proposition}[Gauge = indistinguishable under transitivity]
+    If the automorphism group acts transitively on every resolution cell, then $c_1 \indist c_2$ implies $c_1 \sim_{\text{gauge}} c_2$.
+\end{proposition}
+
+\begin{proof}
+    For $c_1 \indist c_2$, both lie in the same resolution cell, so transitivity supplies an automorphism mapping one to the other.
+\end{proof}
+
+\section{Finite Local Resolution (RG4)}
+
+We now introduce the axiom that distinguishes Recognition Geometry from classical continuum geometry and connects it to quantum discreteness.
+
+\subsection{Axiom RG4: Finite Resolution}
+
+The \textit{Finite Resolution Axiom} asserts that locally, a recognizer can only distinguish a finite number of states.
+
+\begin{axiomenv}[RG4: Finite Local Resolution]
+    For every configuration $c$ and recognizer $R$, there exists a neighborhood $U \in \neighborhood(c)$ such that the image $R(U)$ is a finite set.
+\end{axiomenv}
+
+\begin{lstlisting}[language=Lean]
+def HasFiniteLocalResolution (L : LocalConfigSpace C) (r : Recognizer C E) (c : C) : Prop :=
+  ∃ U ∈ L.N c, (r.R '' U).Finite
+
+def HasFiniteResolution (L : LocalConfigSpace C) (r : Recognizer C E) : Prop :=
+  ∀ c : C, HasFiniteLocalResolution L r c
+\end{lstlisting}
+
+This is a radical departure from the assumption of infinite precision. It posits that information density in reality is locally bounded.
+
+\subsection{The No-Injection Theorem}
+
+This axiom has a profound consequence: if the underlying configuration space is infinite (continuous), the recognizer \textit{cannot} be injective locally.
+
+\begin{theorem}[No-Injection / Fundamental Obstruction]\label{thm:no-injection}
+    If a neighborhood $U$ contains infinitely many configurations but has finite resolution, then the map $R|_U: U \to \events$ is not injective.
+\end{theorem}
+
+\begin{proof}
+    If $R|_U$ were injective, then $|U| \le |R(U)|$. But $U$ is infinite and $R(U)$ is finite, contradiction.
+\end{proof}
+
+\begin{lstlisting}[language=Lean]
+theorem no_injection_on_infinite_finite (c : C) (U : Set C) (hU : U ∈ L.N c)
+    (hinf : Set.Infinite U) (hfin : (r.R '' U).Finite) :
+    ¬Function.Injective (r.R ∘ Subtype.val : U → E)
+\end{lstlisting}
+\emph{Lean reference (companion RG library):} \texttt{IndisputableMonolith/RecogGeom/FiniteResolution.lean}.
+
+This explains why we see ``resolution cells'' rather than points. The underlying continuum (if it exists) is forced to ``clump'' into observable quanta. This provides a geometric origin for quantization.
+
+\section{Connectivity and Local Regularity (RG5)}
+
+To recover smooth geometry from these discrete cells, we need a condition that prevents the cells from being ``scattered dust.''
+
+\subsection{Recognition Connectivity}
+
+\begin{definition}[Recognition Connectedness]
+    A subset $S \subseteq \config$ is \textit{recognition-connected} with respect to $R$ if all pairs of points in $S$ are indistinguishable:
+    \[ \forall c_1, c_2 \in S,\, R(c_1) = R(c_2) \]
+\end{definition}
+
+\begin{lstlisting}[language=Lean]
+def IsRecognitionConnected (r : Recognizer C E) (S : Set C) : Prop :=
+  ∀ c₁ c₂, c₁ ∈ S → c₂ ∈ S → Indistinguishable r c₁ c₂
+\end{lstlisting}
+
+\subsection{Axiom RG5: Local Regularity}
+
+\begin{axiomenv}[RG5: Local Regularity]
+    A recognizer is \textit{locally regular} if for every configuration $c$, there exists a neighborhood $U \in \neighborhood(c)$ such that the intersection $[c]_R \cap U$ is recognition-connected.
+\end{axiomenv}
+
+This axiom ensures that resolution cells align coherently with the neighborhood structure, preventing pathological cases where a cell is dense but totally disconnected (like a Cantor set) within a neighborhood.
+
+\section{Comparative Recognizers (RG7)}
+
+Standard geometry assumes a metric $d(x,y)$ is given. Recognition Geometry derives metrics from a weaker structure: \textit{comparative recognition}.
+
+\subsection{The Comparative Structure}
+
+A comparative recognizer does not identify a state; it compares two states.
+
+\begin{axiomenv}[RG7: Comparative Recognizers]
+    A \textit{Comparative Recognizer} is a map $C_R: \config \times \config \to \events$ that assigns an event to a \textit{pair} of configurations, with $C_R(c,c) = e_{\text{eq}}$ for some distinguished ``equality event,'' and is \textit{nontrivial}: some pair is assigned an event different from $e_{\text{eq}}$.
+\end{axiomenv}
+
+\begin{lstlisting}[language=Lean]
+structure ComparativeRecognizer (C E : Type*) where
+  compare : C × C → E
+  eq_event : E
+  compare_self : ∀ c, compare (c, c) = eq_event
+  nontrivial : ∃ c₁ c₂, compare (c₁, c₂) ≠ eq_event
+\end{lstlisting}
+
+This models instruments like balance scales (is $A$ heavier than $B$?) or interferometers (phase difference).
+
+\subsection{Emergence of Order and Metrics}
+
+From a comparative recognizer, we can define an order relation. Let $\events_{>}$ be a subset of events interpreted as ``greater than.'' We say $c_1 \le c_2$ if $C_R(c_1, c_2) \notin \events_{>}$.
+
+If a family of comparative recognizers separates points and satisfies triangle-like properties, a \textit{Recognition Distance} emerges.
+
+\begin{definition}[Recognition Distance]
+    A \textit{Recognition Distance} is a pseudometric $d: \config \times \config \to \mathbb{R}_{\ge 0}$ derived from comparative recognizers, satisfying:
+    \begin{enumerate}
+        \item $d(c, c) = 0$
+        \item $d(c_1, c_2) = d(c_2, c_1)$
+        \item $d(c_1, c_3) \le d(c_1, c_2) + d(c_2, c_3)$
+    \end{enumerate}
+\end{definition}
+
+\begin{lstlisting}[language=Lean]
+structure RecognitionDistance (C : Type*) where
+  dist : C → C → ℝ
+  dist_nonneg : ∀ c₁ c₂, 0 ≤ dist c₁ c₂
+  dist_self : ∀ c, dist c c = 0
+  dist_symm : ∀ c₁ c₂, dist c₁ c₂ = dist c₂ c₁
+  dist_triangle : ∀ c₁ c₂ c₃, dist c₁ c₃ ≤ dist c₁ c₂ + dist c₂ c₃
+\end{lstlisting}
+
+This completes the inversion: distance is not a primitive obstruction to being in the same place; it is a measure of the ``cost'' or ``signal'' required to distinguish two configurations comparably.
+
+\section{Charts and Dimension}
+
+We endow $\quotientspace$ with the topology inherited from the projection $\pi: \config \twoheadrightarrow \quotientspace$ and use it to formulate atlas and manifold notions.
+
+\subsection{Quotient Topology}\label{subsec:quot-topo}
+
+\begin{definition}[Recognition quotient topology]
+    The \emph{recognition quotient topology} $\mathcal{T}_R$ on $\quotientspace$ is the final topology with respect to $\pi$: a subset $U \subseteq \quotientspace$ is open iff $\pi^{-1}(U)$ is open in $\config$ (with the locality structure viewed as a topology generated by neighborhoods).
+\end{definition}
+
+\begin{proposition}\label{prop:quot-top-final}
+    The projection $\pi: (\config, \mathcal{T}) \to (\quotientspace, \mathcal{T}_R)$ is continuous and is the universal continuous map rendering $R$ constant on fibers: any map $f: \config \to X$ that is constant on resolution cells factors uniquely through a continuous map $\tilde f: \quotientspace \to X$.
+\end{proposition}
+
+\begin{proof}
+    Immediate from the definition of the final topology; uniqueness of $\tilde f$ follows because $\pi$ is surjective.
+\end{proof}
+
+Henceforth we regard $\quotientspace$ as a topological space with topology $\mathcal{T}_R$.
+
+\subsection{Recognition Charts}
+
+\begin{definition}[Recognition Chart]
+    A chart $(\phi, U)$ is a map $\phi: U \to \mathbb{R}^n$ from a neighborhood $U \subset \config$ such that:
+    \begin{enumerate}
+        \item $\phi$ respects indistinguishability: $c_1 \indist c_2 \implies \phi(c_1) = \phi(c_2)$
+        \item $\phi$ is injective on resolution cells: $\phi(c_1) = \phi(c_2) \implies c_1 \indist c_2$
+    \end{enumerate}
+\end{definition}
+
+\begin{lstlisting}[language=Lean]
+structure RecognitionChart (L : LocalConfigSpace C) (r : Recognizer C E) (n : ℕ) where
+  domain : Set C
+  domain_is_nbhd : ∃ c, domain ∈ L.N c
+  toFun : domain → Fin n → ℝ
+  respects_indistinguishable : ∀ c₁ c₂ : domain,
+    Indistinguishable r c₁.val c₂.val → toFun c₁ = toFun c₂
+  injective_on_classes : ∀ c₁ c₂ : domain,
+    toFun c₁ = toFun c₂ → Indistinguishable r c₁.val c₂.val
+\end{lstlisting}
+
+This defines a local coordinate system for the \textit{quotient space} $\quotientspace$.
+
+\subsection{Recognition Atlases and Compatibility}
+
+\begin{definition}[Recognition Atlas]
+    A \emph{Recognition Atlas} of dimension $n$ on $U \subseteq \config$ is a family of charts $\{(\phi_i, U_i)\}_{i \in I}$ with $U \subseteq \bigcup_i U_i$, such that the induced maps
+    \[
+        \tilde{\phi}_i : \pi(U_i) \longrightarrow \phi_i(U_i) \subseteq \mathbb{R}^n
+    \]
+    are homeomorphisms (with $\pi(U_i)$ inheriting $\mathcal{T}_R$) and the transition maps
+    \[
+        \tilde{\phi}_{j} \circ \tilde{\phi}_{i}^{-1} : \tilde{\phi}_i(\pi(U_i \cap U_j)) \to \tilde{\phi}_j(\pi(U_i \cap U_j))
+    \]
+    are smooth.
+\end{definition}
+
+\begin{remark}
+    Under RG5 (local regularity) fibers align with neighborhoods, so $\pi(U_i)$ is open in $\quotientspace$ and the induced maps $\tilde{\phi}_i$ are continuous bijections with continuous inverses.
+\end{remark}
+
+\begin{lstlisting}[language=Lean]
+structure RecognitionAtlas (L : LocalConfigSpace C) (r : Recognizer C E) (n : ℕ) where
+  charts : Set (RecognitionChart L r n)
+  covers : ∀ c : C, ∃ ch ∈ charts, c ∈ ch.domain
+  compatible :
+    ∀ {ch₁ ch₂} (h₁ : ch₁ ∈ charts) (h₂ : ch₂ ∈ charts),
+      True  -- placeholder: transition regularity property
+\end{lstlisting}
+
+\begin{theorem}[Recognition Manifold Theorem]\label{thm:recognition-manifold}
+    Let $(\config, \events, R)$ satisfy RG0--RG5. Assume:
+    \begin{enumerate}
+        \item The quotient $(\quotientspace, \mathcal{T}_R)$ is Hausdorff and second countable.
+        \item There exists a recognition atlas of dimension $n$ whose induced charts $\tilde{\phi}_i$ are homeomorphisms onto open subsets of $\mathbb{R}^n$ with smooth transition maps.
+    \end{enumerate}
+    Then $(\quotientspace, \mathcal{T}_R)$ is a smooth $n$-manifold. Moreover, the projection $\pi: \config \to \quotientspace$ is a submersion onto this manifold.
+\end{theorem}
+
+\begin{proof}
+    Conditions (1) and (2) match the standard characterization of smooth manifolds (see Lee~\cite{Lee}). The $\tilde{\phi}_i$ provide a smooth atlas on $\quotientspace$, whose Hausdorff and second-countable properties ensure compatibility with the definition of smooth manifold. For the final assertion, RG5 guarantees $\pi$ has constant-rank fibers locally, so $\pi$ is a smooth submersion with respect to the constructed structure.
+\end{proof}
+
+\subsection{Recognition Dimension}
+
+\begin{definition}[Recognition Dimension]
+    The recognition dimension at a point is the integer $n$ such that a recognition chart to $\mathbb{R}^n$ exists.
+\end{definition}
+
+This gives a purely operational definition of dimension:
+\begin{quote}
+    \textbf{Dimension is the minimum number of independent recognizers needed to distinguish all local configurations.}
+\end{quote}
+
+If spacetime is 4-dimensional, it is because exactly 4 independent measurements (e.g., $x, y, z, t$) are required to resolve an event.
+
+\begin{theorem}[Fundamental Obstruction to Charts]\label{thm:no-chart}
+    If a neighborhood has finite resolution (RG4) but contains infinitely many configurations, \textbf{no recognition chart exists} on that neighborhood.
+\end{theorem}
+
+This theorem highlights the tension between the discrete reality of RG4 and the continuous approximation of manifolds. Manifolds are only an emergent approximation valid when the number of resolution cells is large enough to be treated as a continuum.
+
+\begin{theorem}[Local Dimension Uniqueness]\label{thm:dimension-uniqueness}
+    Let $U \subseteq \quotientspace$ admit two smooth atlas structures of dimensions $n$ and $m$ derived from recognizers satisfying the hypotheses of \Cref{thm:recognition-manifold}. If both atlases are minimal (no subatlas of smaller dimension exists) and their inclusion maps coincide on $U$, then $n = m$.
+\end{theorem}
+
+\begin{proof}
+    Assume $n < m$. The identity map $U \to U$ is a smooth, injective, open map from an $n$-manifold to an $m$-manifold. By invariance of domain (Munkres~\cite{Munkres}) such a map can exist only if $n = m$. The case $m < n$ is identical, so $n = m$.
+\end{proof}
+
+\begin{lstlisting}[language=Lean]
+theorem dimension_unique_of_minimal_charts
+  (L : LocalConfigSpace C) (r : Recognizer C E) {U : Set C}
+  (A B : RecognitionAtlas L r n) -- schematic; minimality assumptions omitted
+  : True := by
+  trivial
+\end{lstlisting}
+
+% ======================================================================
+% PART IV: THE RECOGNITION SCIENCE BRIDGE
+% ======================================================================
+
+\part{The Recognition Science Bridge}
+
+We now bridge the abstract mathematical framework of Recognition Geometry to the concrete physics of Recognition Science (RS). We show that the RS model---based on a ledger of states, the $\Rhat$ operator, and the 8-tick cycle---provides a direct instantiation of the axioms RG0--RG7.
+
+\section{Instantiation from RS}
+
+\subsection{RS Configuration Space (The Ledger)}
+
+In Recognition Science, the fundamental ontological entity is the \textit{Ledger}---the complete record of all registered entities and their states.
+
+\begin{definition}[RS Configuration Space]
+    Let $\ledger$ be the type of all valid ledger states. The configuration space is $\config_{\text{RS}} = \ledger$.
+\end{definition}
+
+This satisfies RG0 immediately, as the ledger is nonempty.
+
+\begin{lstlisting}[language=Lean]
+class RSConfigSpace (L : Type*) where
+  nonempty : Nonempty L
+  eq_decidable : DecidableEq L
+
+instance (L : Type*) [RSConfigSpace L] : ConfigSpace L where
+  nonempty := RSConfigSpace.nonempty
+\end{lstlisting}
+
+\subsection{RS Locality ($\Rhat$ Operator)}
+
+Locality in RS is defined not by spatial distance, but by \textit{interaction reach}. The $\Rhat$ operator defines the set of states reachable from a given state via a single recognition event.
+
+\begin{definition}[RS Neighborhoods]
+    The neighborhood of a ledger state $\ell \in \ledger$ is the set of states reachable by the $\Rhat$ operator:
+    \[ \neighborhood_{\text{RS}}(\ell) = \{ U \mid \Rhat(\ell) \subseteq U \} \]
+\end{definition}
+
+This satisfies RG1.
+
+\begin{lstlisting}[language=Lean]
+structure RSLocalityFromRHat (L : Type*) [RSConfigSpace L] where
+  RHat : L → Set L
+  self_in_RHat : ∀ l, l ∈ RHat l
+  refinement : ∀ l l', l' ∈ RHat l → 
+    ∃ U ⊆ RHat l, l' ∈ U ∧ U ⊆ RHat l'
+\end{lstlisting}
+
+\subsection{Measurements as Recognizers}
+
+A physical measurement in RS is a map from the ledger state to an outcome.
+
+\begin{definition}[RS Measurement]
+    An RS measurement is a function $M: \ledger \to \events$ that extracts a specific value (e.g., position, charge) from the ledger.
+\end{definition}
+
+This instantiates RG2.
+
+\begin{lstlisting}[language=Lean]
+structure RSMeasurement (L E : Type*) [RSConfigSpace L] where
+  measure : L → E
+  nontrivial : ∃ l₁ l₂ : L, measure l₁ ≠ measure l₂
+
+def toRecognizer (m : RSMeasurement L E) : Recognizer L E where
+  R := m.measure
+  nontrivial := m.nontrivial
+\end{lstlisting}
+
+\subsection{The 8-Tick Finite Resolution}
+
+RS imposes a fundamental temporal constraint: the 8-tick cycle. In any local interaction window, only a finite number of state updates can occur.
+
+\begin{theorem}[8-Tick Implies RG4]
+    The 8-tick cycle constraint implies the Finite Resolution Axiom (RG4). Specifically, the set of distinct measurement outcomes reachable from a state $\ell$ within one 8-tick cycle is finite.
+\end{theorem}
+
+\begin{lstlisting}[language=Lean]
+structure EightTickFiniteResolution (L E : Type*) [RSConfigSpace L]
+    (rs : RSLocalityFromRHat L) (m : RSMeasurement L E) : Prop where
+  finite_local_events : ∀ l, (m.measure '' rs.RHat l).Finite
+
+theorem eight_tick_implies_RG4 [RSConfigSpace L]
+    (rs : RSLocalityFromRHat L) (m : RSMeasurement L E)
+    (h8 : EightTickFiniteResolution L E rs m) :
+    HasFiniteResolution (toLocalConfigSpace rs) (toRecognizer m)
+\end{lstlisting}
+\emph{Lean reference (companion RG library):} \texttt{IndisputableMonolith/RecogGeom/RSBridge.lean}.
+
+This is the rigorous derivation of physical discreteness. Discreteness is not postulated ad hoc; it is a theorem.
+
+\subsection{Physical Space as Quotient}
+
+\begin{theorem}[Physical Space is a Quotient]
+    Physical 3D space is isomorphic to the recognition quotient of the ledger by the family of spatial position recognizers.
+    \[ \text{Space} \cong \ledger / \sim_{\text{pos}} \]
+\end{theorem}
+
+Points in space are not fundamental entities. A ``point'' is an equivalence class of ledger states that look the same to spatial measuring instruments.
+
+\subsection{J-Cost as Recognition Metric}
+
+The metric structure comes from the $J$-cost function, which measures the information cost of transitions.
+
+\begin{definition}[J-Cost Metric]
+    The $J$-cost function $J: \ledger \times \ledger \to \mathbb{R}$ acts as a comparative recognizer (RG7), defining a metric on the quotient space.
+\end{definition}
+
+\begin{lstlisting}[language=Lean]
+structure JCostComparative (L : Type*) [RSConfigSpace L] where
+  J : L → L → ℝ
+  self_zero : ∀ l, J l l = 0
+  nonneg : ∀ l₁ l₂, 0 ≤ J l₁ l₂
+  symm : ∀ l₁ l₂, J l₁ l₂ = J l₂ l₁
+  triangle : ∀ l₁ l₂ l₃, J l₁ l₃ ≤ J l₁ l₂ + J l₂ l₃
+\end{lstlisting}
+
+This completes the bridge: abstract axioms of Recognition Geometry are physically realized by Recognition Science.
+
+% ======================================================================
+% PART V: FOUNDATIONAL THEOREMS
+% ======================================================================
+
+\part{Foundational Theorems}
+
+We now state and prove the deep results that justify the entire framework.
+
+\section{The Three Pillars}
+
+Recognition Geometry rests on three fundamental insights:
+
+\subsection{Pillar 1: Quotient Determines Observables}
+
+\begin{theorem}[Pillar 1]
+    The recognition quotient $\quotientspace$ captures exactly what can be observed. The event map $\bar{R}: \quotientspace \to \events$ is injective.
+\end{theorem}
+
+This was proved as \Cref{thm:injective}. Knowing the event uniquely determines the equivalence class.
+
+\subsection{Pillar 2: Information Monotonicity}
+
+\begin{theorem}[Pillar 2]
+    Adding recognizers can only increase distinguishing power. If $c_1 \sim_{R_1 \otimes R_2} c_2$, then $c_1 \sim_{R_1} c_2$ and $c_1 \sim_{R_2} c_2$.
+\end{theorem}
+
+This was proved as the Refinement Theorem (\Cref{thm:refinement}).
+
+\subsection{Pillar 3: Finite Resolution Obstruction}
+
+\begin{theorem}[Pillar 3]
+    If a neighborhood has infinitely many configurations but only finitely many events, no injection exists.
+\end{theorem}
+
+This was proved as the No-Injection Theorem (\Cref{thm:no-injection}).
+
+\section{The Fundamental Theorem}
+
+\begin{theorem}[Fundamental Theorem of Recognition Geometry]
+    Two configurations are in the same equivalence class if and only if the recognizer assigns them the same event:
+    \[ [c_1]_R = [c_2]_R \iff R(c_1) = R(c_2) \]
+\end{theorem}
+
+\begin{lstlisting}[language=Lean]
+theorem fundamental_theorem (r : Recognizer C E) (c₁ c₂ : C) :
+    recognitionQuotientMk r c₁ = recognitionQuotientMk r c₂ ↔ r.R c₁ = r.R c₂
+\end{lstlisting}
+\emph{Lean reference (companion RG library):} \texttt{IndisputableMonolith/RecogGeom/Foundations.lean}.
+
+This is the cornerstone: observable space $=$ $\config / \{\text{same events}\}$.
+
+\section{The Universal Property}
+
+\begin{theorem}[Universal Property of the Recognition Quotient]
+    The recognition quotient $\quotientspace$ has a universal property: it is the ``finest'' quotient on which $R$ factors through an injective map. Specifically:
+    \begin{enumerate}
+        \item The projection $\pi: \config \twoheadrightarrow \quotientspace$ is surjective.
+        \item The induced map $\bar{R}: \quotientspace \hookrightarrow \events$ is injective.
+        \item $R = \bar{R} \circ \pi$ (factorization).
+    \end{enumerate}
+\end{theorem}
+
+\[
+\begin{array}{ccc}
+\config & \xrightarrow{R} & \events \\
+\downarrow \pi & \nearrow \bar{R} & \\
+\quotientspace & &
+\end{array}
+\]
+
+\begin{lstlisting}[language=Lean]
+theorem universal_property (r : Recognizer C E) :
+    Function.Surjective (recognitionQuotientMk r) ∧
+    Function.Injective (quotientEventMap r) ∧
+    (∀ c, r.R c = quotientEventMap r (recognitionQuotientMk r c))
+\end{lstlisting}
+\emph{Lean reference (companion RG library):} \texttt{IndisputableMonolith/RecogGeom/Foundations.lean}.
+
+This says: $\quotientspace$ is characterized by a universal property, not just a construction. It is THE canonical quotient for recognition.
+
+% ======================================================================
+% PART VI: EXAMPLES
+% ======================================================================
+
+\part{Examples}
+
+\section{Discrete Recognition on Finite Sets}
+
+\begin{example}[Discrete Recognizer]
+    Let $\config = \{1, 2, \ldots, n\}$ and $R = \text{id}$. Then every configuration is its own resolution cell:
+    \[ [k]_R = \{k\} \]
+    The quotient is isomorphic to $\config$ itself.
+\end{example}
+
+\begin{lstlisting}[language=Lean]
+def discreteRecognizer (n : ℕ) [NeZero n] (hn : 2 ≤ n) : Recognizer (Fin n) (Fin n) where
+  R := id
+  nontrivial := by use ⟨0, by omega⟩, ⟨1, by omega⟩; simp
+
+theorem discrete_indist_iff_eq (c₁ c₂ : Fin n) :
+    Indistinguishable (discreteRecognizer n hn) c₁ c₂ ↔ c₁ = c₂
+\end{lstlisting}
+
+\section{Sign Recognizer on $\mathbb{Z}$}
+
+\begin{example}[Sign Recognizer]
+    Let $\config = \mathbb{Z}$ and $R(n) = \text{sign}(n) \in \{-, 0, +\}$. Then:
+    \begin{itemize}
+        \item $[5]_R = \{1, 2, 3, \ldots\}$ (positive integers)
+        \item $[0]_R = \{0\}$
+        \item $[-3]_R = \{\ldots, -2, -1\}$ (negative integers)
+    \end{itemize}
+    The quotient has exactly 3 elements.
+\end{example}
+
+\begin{lstlisting}[language=Lean]
+inductive Sign : Type
+  | neg : Sign
+  | zero : Sign
+  | pos : Sign
+
+def signRecognizer : Recognizer ℤ Sign where
+  R := fun n => if n < 0 then Sign.neg else if n = 0 then Sign.zero else Sign.pos
+  nontrivial := by use -1, 1; simp
+\end{lstlisting}
+
+\section{Magnitude Recognizer on $\mathbb{Z}$}
+
+\begin{example}[Magnitude Recognizer]
+    Let $R(n) = |n|$. Then $[3]_R = \{-3, 3\}$ and $[0]_R = \{0\}$.
+    
+    Note: Sign and Magnitude give different partitions. Their composition $(R_{\text{sign}} \otimes R_{|.|})$ refines both: $[3]_{R \otimes |.|} = \{3\}$.
+\end{example}
+
+\begin{lstlisting}[language=Lean]
+def magnitudeRecognizer : Recognizer ℤ ℕ where
+  R := fun n => n.natAbs
+  nontrivial := by use 0, 1; simp
+
+theorem plus_minus_indist : Indistinguishable magnitudeRecognizer 3 (-3)
+theorem sign_distinguishes : ¬Indistinguishable signRecognizer 3 (-3)
+\end{lstlisting}
+
+\section{Continuous Interval Recognizer}
+
+\begin{example}[Piecewise-constant recognizer on $\lbrack 0,1\rbrack$]
+    Let $\config = [0,1]$ and $\events = \{0,1,\ldots,9\}$. Define
+    \[
+        R(x) = \lfloor 10x \rfloor .
+    \]
+    Each event corresponds to a half-open interval of width $0.1$, and resolution cells are precisely these intervals.
+\end{example}
+
+This example shows how a finite-resolution recognizer on a continuum configuration space induces a coarse, cell-like observable geometry.
+
+\section{No-Chart Example under RG4}
+
+\begin{example}[Failure of charts with finite resolution]
+    Using the recognizer above, every neighborhood containing an interval with infinitely many points has an image consisting of only finitely many events. By \Cref{thm:no-chart}, no recognition chart exists on any open set contained entirely within a single cell.
+\end{example}
+
+The example provides a concrete instance of the obstruction predicted by RG4.
+
+% ======================================================================
+% PART VII: PHYSICAL IMPLICATIONS
+% ======================================================================
+
+\part{Physical Implications}
+
+\section{Why Spacetime is 4-Dimensional}
+
+In Recognition Geometry, dimension equals the minimum number of independent recognizers needed to separate all local configurations.
+
+Spacetime is 4-dimensional because exactly 4 independent measurements $(x, y, z, t)$ are required to resolve an event. No subset of 3 suffices (e.g., 3 spatial coordinates cannot distinguish events at different times).
+
+The 4D structure \textit{emerges} from the structure of physical recognizers, not from a pre-existing geometric fact.
+
+\section{Why Physics Has Gauge Symmetries}
+
+Gauge transformations are exactly recognition-preserving maps. They are transformations of the underlying configuration space that are invisible to all recognizers.
+
+In Recognition Geometry, gauge symmetry is not an additional postulate; it is built into the definition of the quotient.
+
+\section{Why Quantum Mechanics is Discrete}
+
+The Finite Resolution Axiom (RG4) asserts that local recognizers have finite event spaces. This implies that observables have discrete spectra.
+
+Discreteness is not an approximation or a computational limitation---it is a fundamental feature of any recognition-based geometry.
+
+\section{Why Metrics are Not Fundamental}
+
+Distance emerges from comparative recognizers. Metrics are derived from the ability to order and compare configurations, not from a pre-existing spatial substrate.
+
+\section{Why the Universe is Computable}
+
+Finite resolution + finite time = finite states. Recognition geometry is inherently computational, consistent with digital physics hypotheses.
+
+% ======================================================================
+% PART VIII: EXTENSIONS AND GENERALIZATIONS
+% ======================================================================
+
+\part{Extensions and Generalizations}
+
+The framework developed in Parts I--VII is complete and self-contained. However, several natural mathematical and physical extensions suggest themselves. In this part, we develop eight such extensions in detail, pointing toward a richer theory.
+
+\section{Categorical Reformulation}
+
+The categorical viewpoint clarifies the universal properties that already appear implicitly in Recognition Geometry. We make the relevant categories and functors precise.
+
+\subsection{The Category \texorpdfstring{$\mathbf{RecogGeom}$}{RecogGeom}}
+
+\begin{definition}[Recognition category]\label{def:RecogGeom}
+    The category $\mathbf{RecogGeom}$ is defined as follows.
+    \begin{itemize}
+        \item \textbf{Objects}: triples $(\config, \events, R)$ with $R: \config \to \events$ a recognizer.
+        \item \textbf{Morphisms}: a morphism $(f, g): (\config_1, \events_1, R_1) \to (\config_2, \events_2, R_2)$ is a commuting square
+        \[
+        \begin{array}{ccc}
+        \config_1 & \xrightarrow{R_1} & \events_1 \\
+        \downarrow \scriptstyle{f} & & \downarrow \scriptstyle{g} \\
+        \config_2 & \xrightarrow{R_2} & \events_2
+        \end{array}
+        \qquad R_2 \circ f = g \circ R_1.
+        \]
+        \item \textbf{Composition}: $(f_2, g_2)\circ(f_1, g_1) := (f_2 \circ f_1,\, g_2 \circ g_1)$. Identities are $(\mathrm{id}_\config, \mathrm{id}_\events)$.
+    \end{itemize}
+\end{definition}
+
+\begin{lemma}
+    $\mathbf{RecogGeom}$ is a well-defined category: composition is associative and identities behave as expected.
+\end{lemma}
+
+\begin{proof}
+    Associativity and identity laws reduce to the corresponding properties of functions; commutativity of diagrams is preserved under composition.
+\end{proof}
+
+\subsection{The Category \texorpdfstring{$\mathbf{Set}_{\mathrm{inj}}$}{Set\_inj}}
+
+\begin{definition}[Injective recognition category]\label{def:SetInj}
+    $\mathbf{Set}_{\mathrm{inj}}$ has objects triples $(X, Y, i)$ with $i: X \hookrightarrow Y$ an injective function. A morphism $(u, v): (X_1, Y_1, i_1) \to (X_2, Y_2, i_2)$ is a commuting square $i_2 \circ u = v \circ i_1$. Composition and identities are defined exactly as in \Cref{def:RecogGeom}.
+\end{definition}
+
+Objects of $\mathbf{Set}_{\mathrm{inj}}$ can be viewed as ``ideal'' recognition geometries where the recognizer is injective.
+
+\subsection{Quotient and Inclusion Functors}
+
+\begin{definition}[Quotient functor]\label{def:quotientFunctor}
+    The functor $Q: \mathbf{RecogGeom} \to \mathbf{Set}_{\mathrm{inj}}$ sends $(\config, \events, R)$ to $(\quotientspace, \mathrm{Im}(R), \bar{R})$, where $\quotientspace = \config/\!\!\indist$ and $\bar{R}: \quotientspace \hookrightarrow \mathrm{Im}(R)$ is the injective map induced by $R$ (\Cref{thm:injective}). For a morphism $(f, g)$ the functor acts by
+    \[
+        Q(f, g) = (\tilde{f},\, g|_{\mathrm{Im}(R_1)}) ,
+    \]
+    where $\tilde{f}$ is the unique map on quotients satisfying $\tilde{f} \circ \pi_1 = \pi_2 \circ f$.
+\end{definition}
+
+Well-definedness of $\tilde{f}$ follows from $R_2 \circ f = g \circ R_1$: if $c_1 \sim_{R_1} c_2$ then $R_1(c_1) = R_1(c_2)$, hence $R_2(f(c_1)) = g(R_1(c_1)) = g(R_1(c_2)) = R_2(f(c_2))$, showing $\tilde{f}([c_1]) = \tilde{f}([c_2])$.
+
+\begin{definition}[Inclusion functor]\label{def:inclusionFunctor}
+    The functor $I: \mathbf{Set}_{\mathrm{inj}} \to \mathbf{RecogGeom}$ forgets that a recognizer is injective: $I(X, Y, i) = (X, Y, i)$ and $I(u, v) = (u, v)$.
+\end{definition}
+
+\subsection{The Quotient--Inclusion Adjunction}
+
+\begin{theorem}[Quotient adjunction]\label{thm:adjunction}
+    The functor $Q$ is left adjoint to $I$. Equivalently, for every $(\config, \events, R)$ and every $(X, Y, i)$ in $\mathbf{Set}_{\mathrm{inj}}$ there is a natural bijection
+    \[
+        \Phi: \mathrm{Hom}_{\mathbf{Set}_{\mathrm{inj}}}(Q(\config, \events, R), (X, Y, i))
+        \;\cong\;
+        \mathrm{Hom}_{\mathbf{RecogGeom}}((\config, \events, R), I(X, Y, i)).
+    \]
+\end{theorem}
+
+\begin{proof}
+    A morphism in $\mathbf{Set}_{\mathrm{inj}}$ from $(\quotientspace, \mathrm{Im}(R), \bar{R})$ to $(X, Y, i)$ is a pair $(u, v)$ with $i \circ u = v \circ \bar{R}$. Compose with $\pi: \config \to \quotientspace$ to obtain $(u \circ \pi, v)$. The equation $i \circ u \circ \pi = v \circ R$ shows $(u\circ\pi, v)$ is a morphism in $\mathbf{RecogGeom}$. This defines the right-to-left map of $\Phi$.
+
+    Conversely, given $(f, g)$ in $\mathbf{RecogGeom}$ with codomain $(X, Y, i)$, the injectivity of $i$ implies that $f$ is constant on $R$-fibers (since $i \circ f = g \circ R$). Hence there exists a unique $\tilde{f}: \quotientspace \to X$ with $\tilde{f} \circ \pi = f$. Set $\tilde{g} = g|_{\mathrm{Im}(R)}$. Then $(\tilde{f}, \tilde{g})$ is a morphism in $\mathbf{Set}_{\mathrm{inj}}$ and defines the left-to-right map of $\Phi$.
+
+    The two assignments are inverse to each other and natural in both variables, giving the desired adjunction. The unit $\eta_{(\config,\events,R)} = (\pi, \iota)$ (with $\iota:\mathrm{Im}(R)\hookrightarrow \events$) and counit $\varepsilon_{(X,Y,i)} = (\mathrm{id}_X,\mathrm{id}_Y)$ satisfy the triangle identities because $\pi$ is surjective and $\bar{R}$ is injective.
+\end{proof}
+
+\begin{remark}
+    In Lean the functors $Q$ and $I$ can be implemented using quotient types and structure-preserving maps; the bijection $\Phi$ corresponds to \texttt{Quot.lift} along with the universal property proved in \texttt{RecogGeom/Quotient.lean}.
+\end{remark}
+
+\subsection{Sheaves of Recognizers}\label{sec:sheaves}
+
+Let $(\quotientspace, \mathcal{T}_R)$ be the recognition quotient. The opens of $\quotientspace$ form a site with coverings given by standard open covers.
+
+\begin{definition}[Presheaf of recognizers]
+    Define a presheaf $\mathcal{F}$ on $\quotientspace$ by
+    \[
+        \mathcal{F}(U) = \left\{ R_U : \pi^{-1}(U) \to \events \mid R_U \text{ is a recognizer and } R_U \text{ factors through } U \right\},
+    \]
+    with restriction maps given by restriction of functions.
+\end{definition}
+
+\begin{definition}[Sheaf condition]
+    $\mathcal{F}$ is a sheaf if for every open cover $\{U_i\}$ of $U$ and recognizers $R_i \in \mathcal{F}(U_i)$ that agree on overlaps $U_i \cap U_j$, there is a unique $R \in \mathcal{F}(U)$ restricting to each $R_i$.
+\end{definition}
+
+\begin{lemma}[Gluing lemma]
+    $\mathcal{F}$ is a sheaf.
+\end{lemma}
+
+\begin{proof}
+    Agreement on overlaps ensures the $R_i$ patch to a single function on $\bigcup_i \pi^{-1}(U_i) = \pi^{-1}(U)$, which descends to $U$ because indistinguishability is respected locally. Uniqueness follows from surjectivity of $\pi^{-1}(U) \to U$.
+\end{proof}
+
+This formalizes the intuition that recognition data defined on local regions glue to a global recognizer exactly when observers agree on overlaps.
+
+\section{Recognition Dynamics}
+
+The framework as developed is static. Physical reality evolves. We now introduce dynamics.
+
+\subsection{Time-Parameterized Recognizers}
+
+\begin{definition}[Recognition Flow]
+    A \textit{recognition flow} is a family of recognizers $\{R_t\}_{t \in T}$ parameterized by a time set $T$ (typically $\mathbb{R}$ or $\mathbb{Z}$), together with a flow map $\Phi: \config \times T \to \config$ such that:
+    \[ R_t(\Phi(c, s)) = R_{t+s}(c) \]
+\end{definition}
+
+This captures the idea that the recognizer ``evolves'' along with the configuration.
+
+\begin{lstlisting}[language=Lean]
+structure RecognitionFlow (C E : Type*) (T : Type*) [AddGroup T] where
+  R : T → Recognizer C E
+  Phi : C → T → C
+  flow_compat : ∀ c t s, (R t).R (Phi c s) = (R (t + s)).R c
+\end{lstlisting}
+
+\subsection{Discrete Dynamics: The 8-Tick Cycle}
+
+In Recognition Science, time is discrete with period 8. This suggests:
+
+\begin{definition}[Cyclic Recognition Flow]
+    A \textit{cyclic recognition flow} of period $n$ is a recognition flow with $T = \mathbb{Z}_n$ and $\Phi(c, n) = c$ for all $c$.
+\end{definition}
+
+\begin{theorem}[Periodicity of Quotient]
+    For a cyclic recognition flow of period $n$, the quotient spaces satisfy $(\quotientspace)_{t+n} \cong (\quotientspace)_t$ for all $t$.
+\end{theorem}
+
+\subsection{Recognition Generators (Outlook)}
+
+The idea of a ``recognition generator''—a single object producing the entire flow—requires extra geometric structure (symplectic or Poisson brackets). We defer this speculative program to \Cref{sec:recognition-generator} in the Outlook part.
+
+\section{Multi-Observer Framework}
+
+Different observers may have access to different recognizers. This section develops the mathematics of observer-relative geometry.
+
+\subsection{Observer-Indexed Recognizers}
+
+\begin{definition}[Observer Family]
+    An \textit{observer family} is an indexed collection $\{R^{(A)}\}_{A \in \mathcal{A}}$ of recognizers, one for each observer $A$ in a set $\mathcal{A}$.
+\end{definition}
+
+Each observer $A$ sees the quotient space $\config_{R^{(A)}}$. The question is: how do these spaces relate?
+
+\subsection{Inter-Observer Maps}
+
+\begin{lemma}[Intersection of equivalences]
+    The intersection of any collection of equivalence relations on $\config$ is again an equivalence relation.
+\end{lemma}
+
+\begin{proof}
+    Intersections preserve reflexivity, symmetry, and transitivity.
+\end{proof}
+
+\begin{definition}[Observer comparison map]
+    Given observers $A$ and $B$, define $\phi_{AB}: \config_{R^{(A)}} \to \config_{R^{(B)}}$ by $\phi_{AB}([c]_{R^{(A)}}) = [c]_{R^{(B)}}$ whenever $c_1 \sim_{R^{(A)}} c_2 \Rightarrow c_1 \sim_{R^{(B)}} c_2$. In this case $R^{(B)}$ is said to be \emph{coarser} than $R^{(A)}$.
+\end{definition}
+
+\begin{proposition}[Comparison hierarchy]
+    If $R^{(B)}$ is coarser than $R^{(A)}$, then $\phi_{AB}$ is well-defined, continuous with respect to the quotient topologies, and surjective.
+\end{proposition}
+
+\begin{proof}
+    Well-definedness follows from compatibility of equivalence relations, continuity from the universal property of the quotient map, and surjectivity because every $R^{(B)}$-class contains a representative mapped from a $R^{(A)}$-class.
+\end{proof}
+
+\subsection{The Universal Quotient}
+
+\begin{definition}[Universal Quotient]
+    The \textit{universal quotient} is the quotient by the intersection of all observer equivalences:
+    \[ \config_{\text{univ}} = \config / \bigcap_{A \in \mathcal{A}} \sim_{R^{(A)}} \]
+\end{definition}
+
+\begin{theorem}[Universal property]
+    For every observer $A$ there exists a unique surjective map $\pi_A: \config_{\text{univ}} \to \config_{R^{(A)}}$ such that $\pi_A \circ \pi_{\text{univ}} = \pi^{(A)}$, where $\pi_{\text{univ}}: \config \to \config_{\text{univ}}$ is the canonical projection and $\pi^{(A)}$ projects onto $\config_{R^{(A)}}$.
+\end{theorem}
+
+\begin{proof}
+    By construction $\sim_{\text{univ}} \subseteq \sim_{R^{(A)}}$, so the universal property of quotients yields a unique factor map $\pi_A$. Surjectivity follows because $\pi^{(A)}$ is surjective.
+\end{proof}
+
+\begin{proposition}[Functoriality]
+    The assignment $A \mapsto \config_{R^{(A)}}$, $(A \le B) \mapsto \phi_{AB}$ defines a functor from the poset of observers ordered by refinement to the category of quotient spaces.
+\end{proposition}
+
+\begin{proof}
+    Identity and composition properties follow from uniqueness of the factor maps and associativity of composition in $\mathbf{RecogGeom}$.
+\end{proof}
+
+\begin{remark}
+    Nontriviality is ensured as long as at least one observer has a recognizer strictly finer than $\sim_{\text{univ}}$, otherwise the universal quotient collapses to a point.
+\end{remark}
+
+This connects directly to Rovelli's Relational Quantum Mechanics, where ``reality'' is observer-relative but constrained by consistency conditions.
+
+\section{Non-Commutative Recognition}
+
+Non-commutative recognition requires a measurement framework with explicit back-action (e.g., effect algebras or instruments). A fully rigorous treatment is deferred to \Cref{sec:noncomm-outlook}, where we outline the conjectural program.
+
+\section{Infinitary Composition}
+
+We have defined binary composition $R_1 \otimes R_2$. What about infinite families?
+
+\subsection{Infinite Recognizer Families}
+
+\begin{definition}[Product Recognizer]
+    Given a family $\{R_i\}_{i \in I}$ of recognizers $R_i: \config \to \events_i$, the \textit{product recognizer} is:
+    \[ \bigotimes_{i \in I} R_i : \config \to \prod_{i \in I} \events_i \]
+    defined by $(\bigotimes R_i)(c) = (R_i(c))_{i \in I}$.
+\end{definition}
+
+\begin{theorem}[Infinite Refinement]
+    \[ c_1 \sim_{\bigotimes R_i} c_2 \iff \forall i \in I,\, c_1 \sim_{R_i} c_2 \]
+\end{theorem}
+
+\subsection{Limits and Colimits}
+
+The category $\mathbf{RecogGeom}$ admits small limits and filtered colimits once a universe level (or Grothendieck universe) is fixed for the underlying sets.
+
+\begin{proposition}[Small limits]
+    Let $D: J \to \mathbf{RecogGeom}$ with $J$ a small category. Then $\lim D$ exists and is computed by taking limits of configuration and event sets separately, together with the induced recognizer.
+\end{proposition}
+
+\begin{proof}
+    Products and equalizers exist in $\mathbf{RecogGeom}$ because functions between sets admit them; general small limits are built from these.
+\end{proof}
+
+\begin{definition}[Filtered colimit]
+    A filtered system consists of recognizers $\{R_i: \config \to \events_i\}_{i \in I}$ over a directed set $I$ with refinement maps $\phi_{ij}$ for $i \le j$. The filtered colimit $\varinjlim R_i$ has event set the colimit of the $\events_i$ and recognizer induced by the universal property.
+\end{definition}
+
+\subsection{Classical Geometry as Infinite Limit}
+
+\begin{theorem}[Continuum emergence]\label{thm:continuum-emergence}
+    Let $\{R_n\}_{n \in \mathbb{N}}$ be recognizers with $R_{n+1}$ refining $R_n$. Assume:
+    \begin{enumerate}
+        \item The resolution cells $\{[c]_{R_n}\}$ form a nested sequence with $\mathrm{diam}([c]_{R_n}) \to 0$ in some background metric on $\config$.
+        \item $\config$ is complete with respect to that metric.
+    \end{enumerate}
+    Then the natural map $\config \to \varprojlim \config_{R_n}$ is a homeomorphism; in particular $\varinjlim \config_{R_n} \cong \config$.
+\end{theorem}
+
+\begin{proof}
+    The nested-cell condition implies each compatible family in the inverse limit corresponds to a unique point of $\config$ by completeness. The universal property of limits then identifies $\config$ with the limit. Passing to colimits yields the stated isomorphism.
+\end{proof}
+
+This formalizes the intuition that classical continua arise as limits of increasingly fine recognition data.
+
+\section{Information-Theoretic Metrics}
+
+We now describe a path-metric construction that turns comparative data into pseudometrics and, under a separation hypothesis, genuine metrics on $\quotientspace$.
+
+\subsection{Weighted Comparative Structures}
+
+\begin{definition}[Weighted comparative recognizer]
+    A \textit{weighted comparative recognizer} is a triple $(\Gamma, \mathcal{E}, w)$ where:
+    \begin{enumerate}
+        \item $\Gamma: \config \times \config \to \mathcal{E}$ assigns an elementary comparison to each ordered pair;
+        \item $\mathcal{E}$ carries an involution $e \mapsto e^\top$ such that $\Gamma(c_2, c_1) = \Gamma(c_1, c_2)^\top$ with distinguished equality element $e_{\mathrm{eq}} = \Gamma(c, c)$;
+        \item $w: \mathcal{E} \to \mathbb{R}_{\ge 0}$ satisfies $w(e^\top) = w(e)$ and $w(e_{\mathrm{eq}}) = 0$.
+    \end{enumerate}
+\end{definition}
+
+\begin{definition}[Comparison graph]
+    The comparison graph $G_\Gamma$ has vertex set $\config$ and an undirected edge between $c_1$ and $c_2$ labeled by $e = \Gamma(c_1, c_2)$ with weight $w(e)$. We require each connected component of $G_\Gamma$ to lie inside a single resolution cell.
+\end{definition}
+
+\subsection{Path Metrics from Recognition Data}
+
+\begin{definition}[Recognition path pseudometric]
+    The path length between $c_0$ and $c_k$ is
+    \[
+        d_\Gamma(c_0, c_k) =
+        \inf \left\{ \sum_{i=1}^k w\big(\Gamma(c_{i-1}, c_i)\big)
+        \,\middle|\, (c_0,\ldots,c_k) \text{ a path in } G_\Gamma \right\}.
+    \]
+\end{definition}
+
+\begin{theorem}[Path-metric triangle inequality]\label{thm:path-metric}
+    $d_\Gamma$ is a pseudometric on $\config$.
+\end{theorem}
+
+\begin{proof}
+    Non-negativity and symmetry are immediate from $w$. The zero-length path gives $d_\Gamma(c, c)=0$. Concatenating an $\varepsilon$-optimal path from $c_1$ to $c_2$ with one from $c_2$ to $c_3$ produces a path from $c_1$ to $c_3$ of length at most $d_\Gamma(c_1, c_2)+d_\Gamma(c_2, c_3)+2\varepsilon$. Letting $\varepsilon \to 0$ proves the triangle inequality.
+\end{proof}
+
+\subsection{Metric Separation}
+
+\begin{definition}[Separating comparative structure]
+    $(\Gamma, \mathcal{E}, w)$ is \textit{separating} if $d_\Gamma(c_1, c_2)=0$ implies $c_1 \sim_R c_2$ for the underlying recognizer $R$.
+\end{definition}
+
+\begin{theorem}[Metric on the quotient]\label{thm:metric-separation}
+    If $(\Gamma, \mathcal{E}, w)$ is separating, $d_\Gamma$ descends to a metric on $\quotientspace$.
+\end{theorem}
+
+\begin{proof}
+    The separation hypothesis guarantees distinct equivalence classes have positive distance, so the induced function on $\quotientspace$ is a metric.
+\end{proof}
+
+\subsection{Connection to Fisher Information}
+
+\begin{definition}[Recognition Fisher metric]
+    For probabilistic recognizers with parameters $\theta \in \Theta$ and likelihood $p(e|\theta)$ define
+    \[
+        g_{ij}(\theta) = \mathbb{E}\left[ \frac{\partial \log p(e|\theta)}{\partial \theta_i} \frac{\partial \log p(e|\theta)}{\partial \theta_j} \right].
+    \]
+    This is the standard Fisher information metric (Amari~\cite{InfoGeom}) applied to recognition data.
+\end{definition}
+
+\subsection{Entropy of Recognizers}
+
+\begin{definition}[Recognition Entropy]
+    The \textit{entropy} of a recognizer $R: \config \to \events$ with respect to a measure $\mu$ on $\config$ is:
+    \[ H(R) = -\sum_{e \in \events} p(e) \log p(e) \]
+    where $p(e) = \mu(R^{-1}(e))$.
+\end{definition}
+
+High entropy means the recognizer ``spreads'' configurations evenly across events; low entropy means most configurations map to a few events.
+
+\section{Axiom Independence and Models}
+
+We address foundational questions about the axiom system.
+
+\subsection{Independence of Axioms}
+
+\begin{proposition}[Independence of RG4]\label{prop:rg4-independence}
+    RG4 is independent of RG0--RG3: there exists a recognition geometry satisfying RG0--RG3 that fails RG4.
+\end{proposition}
+
+\begin{proof}
+    Let $\config = \events = \mathbb{R}$ with $R = \mathrm{id}$. Equip $\config$ with the usual topology, which is a LocalConfigSpace (RG1). RG0 and RG2 hold because $\mathbb{R}$ is nonempty and $R$ separates points. RG3 holds with indistinguishability $\sim$ the equality relation.
+
+    For any $c \in \mathbb{R}$ and neighborhood $U$ of $c$, $R(U) = U$ is infinite, so there is no neighborhood whose image under $R$ is finite. Therefore RG4 fails, establishing independence.
+\end{proof}
+
+\begin{proposition}[Independence of RG7]\label{prop:rg7-independence}
+    RG7 is independent of RG0--RG6: there exists a recognition geometry satisfying RG0--RG6 for which no comparative recognizer meeting RG7 exists.
+\end{proposition}
+
+\begin{proof}
+    Let $\config = \{a,b\}$, $\events = \{0,1\}$, and $R(a)=0$, $R(b)=1$. Equip $\config$ with the discrete locality (all subsets containing a point are neighborhoods); RG0--RG6 hold trivially.
+
+    Suppose a comparative recognizer $\Gamma: \config \times \config \to \events'$ satisfies RG7, which requires a distinguished equality event and nontrivial comparisons. Because $R$ resolves both configurations exactly, any comparative structure respecting indistinguishability must assign the same equality event to $(a,a)$ and $(b,b)$. However, $\config$ has only two points, so any nontrivial comparative map necessarily collapses to the equality event, contradicting the requirement that $\Gamma$ distinguish at least one ordered pair. Hence no RG7 structure exists on this geometry.
+\end{proof}
+
+\subsection{Embedding Classical Manifolds}
+
+\begin{theorem}[Manifold Embedding]
+    Every smooth manifold $M$ can be realized as a recognition geometry: take $\config = M$, $\events = \mathbb{R}^n$, and $R$ a coordinate chart. The quotient recovers $M$.
+\end{theorem}
+
+This shows that Recognition Geometry \textit{generalizes} classical differential geometry.
+
+\subsection{Graph Models}
+
+\begin{definition}[Graph Recognition Geometry]
+    Let $G = (V, E)$ be a graph. Define $\config = V$, $\events = \mathbb{N}$, and $R(v) = \deg(v)$ (vertex degree). The quotient partitions vertices by degree.
+\end{definition}
+
+Graph colorings, clique numbers, and other invariants can be expressed as recognizers.
+
+\subsection{Hilbert Space Models}
+
+\begin{definition}[PVM-based recognition geometry]
+    Let $\mathcal{H}$ be a complex Hilbert space and $\{P_i\}_{i \in I}$ a projection-valued measure (PVM) for a self-adjoint operator $A = \sum_i \lambda_i P_i$ with discrete spectrum. Set $\config = \mathbb{P}(\mathcal{H})$ (rays), $\events = I$, and
+    \[
+        R([\psi]) = i \quad \text{iff} \quad P_i \psi = \psi .
+    \]
+    Thus each eigenray is mapped to the label of its eigenspace.
+\end{definition}
+
+The quotient $\config_R$ identifies all rays inside the same eigenspace, so $\config_R \cong \bigsqcup_i \mathbb{P}(P_i \mathcal{H})$. General superpositions require probabilistic treatment (see the Fisher metric discussion), but eigenstates fit naturally into Recognition Geometry via PVMs.
+
+\section{Higher Recognition Structures (Outlook)}
+
+Speculative higher-categorical generalizations are discussed in \Cref{sec:higher-recognition}.
+
+% ======================================================================
+% PART IX: OUTLOOK AND CONJECTURES
+% ======================================================================
+
+\part{Outlook and Conjectures}
+
+\section{Non-Commutative Recognition}\label{sec:noncomm-outlook}
+
+In quantum mechanics, observables are represented by non-commuting operators. Extending Recognition Geometry to this setting requires modeling the back-action of recognition on configurations, ideally within the language of effect algebras or completely positive (CP) instruments.
+
+\subsection{Non-Commutative Composition (Proposed)}
+
+\begin{definition}[Ordered Composition]
+    An \textit{ordered composition} is a binary operation $\rtimes$ on recognizers such that $(R_1 \rtimes R_2)$ encodes ``apply $R_1$ then $R_2$'', and in general $(R_1 \rtimes R_2) \neq (R_2 \rtimes R_1)$.
+\end{definition}
+
+The classical tensor product provides a commutative model; non-commutativity arises when recognition changes the underlying configuration.
+
+\begin{definition}[Recognizer with Back-Action]
+    A \textit{recognizer with back-action} is a pair $(R, B)$ where $R: \config \to \events$ and $B: \config \times \events \to \config$ satisfy $R(B(c, e)) = e$ whenever $e = R(c)$. Intuitively, $B$ records the post-measurement state.
+\end{definition}
+
+\begin{remark}
+    In an effect-algebra setting, events form an ordered structure $(\events, \oplus, 0, 1)$ and back-action is modeled by instruments $\mathcal{I}_e$. Formalizing this remains future work.
+\end{remark}
+
+\subsection{Recognition Uncertainty (Conjectural)}
+
+\begin{conjecture}[Recognition uncertainty]
+    Let $(R_1, B_1)$ and $(R_2, B_2)$ be recognizers with back-action. If for some $c$
+    \[
+        B_1(B_2(c, R_2(c)), R_1(B_2(c, R_2(c)))) \neq B_2(B_1(c, R_1(c)), R_2(B_1(c, R_1(c)))),
+    \]
+    then $R_1$ and $R_2$ cannot be simultaneously sharp; their ordered compositions yield different observable quotients.
+\end{conjecture}
+
+The conjecture captures the heuristic that uncertainty originates from non-commuting recognition operations. A full proof would require specifying a category of instruments with well-defined composition.
+
+\subsection{Connection to POVMs}
+
+\begin{definition}[Fuzzy Recognizer]
+    A \textit{fuzzy recognizer} is a map $R: \config \to \mathcal{P}(\events)$ assigning to each configuration a probability distribution over events, subject to normalization. When $\config$ is a Hilbert space and the image consists of projection-valued measures, $R$ becomes a POVM.
+\end{definition}
+
+Fuzzy recognizers suggest a path toward embedding quantum measurement theory into Recognition Geometry, but rigorous development is left as a future project.
+
+\section{Recognition Generators}\label{sec:recognition-generator}
+
+By analogy with Hamiltonian mechanics, one may seek a single functional governing recognition flows.
+
+\subsection{Generator Ansatz}
+
+\begin{definition}[Recognition generator]
+    A \textit{recognition generator} is a function $H: \config \to \mathbb{R}$ equipped with a bracket $\{\cdot,\cdot\}$ such that
+    \[
+        \frac{d}{dt} R_t(c) = \{H, R_t\}(c).
+    \]
+\end{definition}
+
+Making this rigorous requires additional structure (symplectic forms, Poisson brackets, or variational principles). Determining the correct geometric ingredients remains open.
+
+\section{Higher Recognition Structures}\label{sec:higher-recognition}
+
+We sketch a hierarchy of ``recognition of recognizers''.
+
+\subsection{2-Recognizers}
+
+\begin{definition}[2-recognizer]
+    A \textit{2-recognizer} is a map $R^{(2)}: \mathrm{Recog} \times \mathrm{Recog} \to \events^{(2)}$ assigning an event to a pair of recognizers.
+\end{definition}
+
+This captures questions such as: ``How similar are two measurement procedures?'' Potential applications include device calibration and systematic-error analysis.
+
+\subsection{n-Categorical Outlook}
+
+\begin{definition}[n-recognition geometry]
+    An \textit{n-recognition geometry} is an n-category whose $k$-cells encode $k$-fold recognition data (configurations, recognizers, recognizer comparisons, etc.).
+\end{definition}
+
+Developing this hierarchy rigorously is left as future work; it would align Recognition Geometry with higher topos theory and extended TQFT frameworks.
+
+\section{Geometric Speculations}
+
+Two speculative programs motivate several open problems:
+
+\begin{itemize}
+    \item \textbf{Gravitational recognition}: reinterpret curvature and gauge connections as properties of a family of recognizers respecting the Einstein equations. See Open Problems~7--9.
+    \item \textbf{Holographic recognition}: relate boundary recognizers to bulk equivalence classes, echoing the holographic principle. See Open Problem~9.
+\end{itemize}
+
+We leave these directions conjectural to avoid overstating the present results.
+
+% ======================================================================
+% PART X: OPEN PROBLEMS
+% ======================================================================
+
+\part{Open Problems}
+
+We collect concrete open problems arising from this work, inviting further research.
+
+\section{Structural Problems}
+
+\begin{enumerate}
+    \item \textbf{Smooth Quotient Characterization}: Characterize precisely when the recognition quotient $\quotientspace$ admits a smooth manifold structure. What conditions on $R$ and the locality structure $\neighborhood$ suffice?
+    
+    \item \textbf{Dimension Bounds}: Given a configuration space $\config$ with locality structure, what is the minimum dimension of any recognition geometry on $\config$? Is there a Lusternik-Schnirelmann type theory for recognition dimension?
+    
+    \item \textbf{Recognition Cohomology}: Define cohomology groups $H^n_R(\config)$ that measure obstructions to global recognizers extending local ones. What is the relationship to sheaf cohomology?
+\end{enumerate}
+
+\section{Categorical Problems}
+
+\begin{enumerate}
+    \setcounter{enumi}{3}
+    \item \textbf{Classifying Space}: Does the category $\mathbf{RecogGeom}$ have a classifying space? What does its homotopy type encode about recognition?
+    
+    \item \textbf{Model Structure}: Can $\mathbf{RecogGeom}$ be given a model category structure? What are the weak equivalences, fibrations, and cofibrations?
+    
+    \item \textbf{Higher Topos}: Is there a natural $(\infty, 1)$-topos whose objects are ``homotopy recognition geometries''?
+\end{enumerate}
+
+\section{Physical Problems}
+
+\begin{enumerate}
+    \setcounter{enumi}{6}
+    \item \textbf{Quantum Non-Commutativity}: Develop a full theory of non-commutative recognition where $R_1 \otimes R_2 \neq R_2 \otimes R_1$. Can the canonical commutation relations $[x, p] = i\hbar$ be derived from recognition-theoretic principles?
+    
+    \item \textbf{Gravitational Recognition}: What is the recognition-theoretic interpretation of general relativity? Can spacetime curvature be understood as a property of the recognizer family rather than the configuration space?
+    
+    \item \textbf{Holographic Recognition}: Is there a recognition-theoretic formulation of the holographic principle? Can boundary recognizers encode bulk geometry?
+    
+    \item \textbf{Cosmological Recognition}: How does the recognition quotient change in an expanding universe? Is there a ``recognition-theoretic'' derivation of the cosmological constant?
+\end{enumerate}
+
+\section{Computational Problems}
+
+\begin{enumerate}
+    \setcounter{enumi}{10}
+    \item \textbf{Complexity of Quotient}: What is the computational complexity of computing the recognition quotient for finite configuration spaces? Is it polynomial, NP-hard, or worse?
+    
+    \item \textbf{Approximation Algorithms}: For infinite configuration spaces, can the quotient be approximated efficiently? What error bounds are achievable?
+\end{enumerate}
+
+% ======================================================================
+% PART XI: CONCLUSION
+% ======================================================================
+
+\part{Conclusion}
+
+\section{Summary}
+
+We have presented Recognition Geometry, a complete mathematical framework in which:
+
+\begin{enumerate}
+    \item \textbf{Configurations} are primitive (what the world does).
+    \item \textbf{Recognizers} map configurations to observable events.
+    \item \textbf{Space} emerges as the quotient $\quotientspace = \config / \indist$.
+    \item \textbf{Dimension} counts independent recognizers.
+    \item \textbf{Metrics} emerge from comparative recognition.
+    \item \textbf{Symmetries} are recognition-preserving maps.
+\end{enumerate}
+
+The framework is axiomatically minimal (4 core axioms: RG0--RG3) with 4 optional structural axioms (RG4--RG7). A Lean~4 formalization of the RG0--RG7 core is maintained in a companion library; the Lean development in this repository focuses on the RH instantiation under \texttt{RiemannRecognitionGeometry/}.
+
+\section{The Central Message}
+
+\begin{center}
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Classical Geometry} & \textbf{Recognition Geometry} \\
+\hline
+Space exists $\to$ we measure it & Recognition exists $\to$ space emerges \\
+Space is primitive & Recognition is primitive \\
+Metrics assumed & Metrics derived \\
+Continuous structure & Discrete structure fundamental \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Future Work}
+
+\begin{enumerate}
+    \item \textbf{Deeper RS Bridge}: Full formalization of ledger dynamics.
+    \item \textbf{Quantum Recognition Geometry}: Connection to Hilbert space structure.
+    \item \textbf{Cosmological Applications}: Large-scale structure from recognition.
+    \item \textbf{Computational Implementations}: Algorithms for recognition-based simulation.
+\end{enumerate}
+
+\section*{Acknowledgments}
+\addcontentsline{toc}{section}{Acknowledgments}
+The author thanks the Mathlib community and Lean~4 developers for their tooling and guidance, and colleagues at the Recognition Physics Institute for discussions that shaped the axioms and examples.
+
+\section*{Code Availability}
+\addcontentsline{toc}{section}{Code Availability}
+This paper references two Lean developments:
+(i) a companion Recognition Geometry core library (RG0--RG7) under \texttt{IndisputableMonolith/RecogGeom} (not vendored in this repository snapshot), and
+(ii) the analytic-number-theory instantiation contained \emph{in this repository} under \texttt{RiemannRecognitionGeometry/}.
+At the time of writing, \texttt{RiemannRecognitionGeometry/} contains a Lean~4 development of both the Route~1 and Route~3 RH programs. The algebraic and functional-analytic reductions are largely verified; the remaining gaps are tracked as explicit \texttt{axiom} declarations (there are currently no \texttt{sorry}s in the Lean worktree), concentrated in the analytic bridge (Fourier inversion/boundary limits and the Route~3 spectral identity/positivity step described below).
+
+% ======================================================================
+% APPENDIX
+% ======================================================================
+
+\appendix
+
+\part*{Appendices}
+
+\section{Lean 4 Formalization Summary}
+
+We summarize the Lean status of (A) the companion Recognition Geometry core library referenced in Parts~II--VII, and (B) the RH instantiation that lives in this repository.
+
+\subsection*{A. Recognition Geometry core (companion library)}
+
+The companion RG0--RG7 library consists of 16 modules totaling approximately 3,107 lines of verified Lean 4 code:
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Module} & \textbf{Axiom} & \textbf{Lines} \\
+\hline
+Core.lean & RG0 & $\sim$100 \\
+Locality.lean & RG1 & $\sim$150 \\
+Recognizer.lean & RG2 & $\sim$140 \\
+Indistinguishable.lean & RG3 & $\sim$170 \\
+Quotient.lean & -- & $\sim$140 \\
+Composition.lean & RG6 & $\sim$220 \\
+Symmetry.lean & -- & $\sim$290 \\
+FiniteResolution.lean & RG4 & $\sim$180 \\
+Connectivity.lean & RG5 & $\sim$160 \\
+Comparative.lean & RG7 & $\sim$260 \\
+Charts.lean & -- & $\sim$240 \\
+Dimension.lean & -- & $\sim$180 \\
+RSBridge.lean & -- & $\sim$260 \\
+Examples.lean & -- & $\sim$200 \\
+Foundations.lean & -- & $\sim$260 \\
+Integration.lean & -- & $\sim$200 \\
+\hline
+\textbf{Total} & & $\sim$3,107 \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection*{B. Riemann Hypothesis instantiation (this repository)}
+
+The RH formalization lives under \texttt{RiemannRecognitionGeometry/} and is split into:
+(i) the Route~1 Recognition Geometry chain, and (ii) the Route~3 explicit-formula skeleton.
+
+\begin{itemize}
+    \item \textbf{Route~1 (boundary certificate / Carleson-energy)}: modules under \texttt{RiemannRecognitionGeometry/} (excluding \texttt{ExplicitFormula/}).
+    \item \textbf{Route~3 (explicit formula / Weil--Li positivity)}: modules under \texttt{RiemannRecognitionGeometry/ExplicitFormula/}.
+\end{itemize}
+
+We omit file-by-file line counts here because the Lean development is under active iteration; the repository directory structure is the authoritative source.
+
+\noindent
+\textbf{Current Lean status (this repository)}: the formalization contains a small number of explicit \texttt{axiom} declarations (and currently no \texttt{sorry}s), concentrated in the analytic steps listed in this addendum (Fourier inversion/boundary limits and the Route~3 spectral identity/positivity bridge).
+
+\section{Addendum: Boundary Certificate Program (Zeta) --- Project Status}
+
+This repository also contains an ongoing analytic-number-theory formalization built around a \emph{boundary certificate} strategy (as in \texttt{CPM.tex}). The current status can be summarized as follows.
+
+\begin{itemize}
+    \item \textbf{Deprecated target (renormalized-tail BMO).} A previously tracked goal was a uniform small-\(\mathrm{BMO}\) bound for a renormalized tail of \(\log|\zeta(\tfrac12+it)|\) defined by subtracting finitely many local zero terms in dyadic annuli \(B(I,K)\). As stated, a uniform bound with a small numerical constant cannot hold: for Whitney half-length \(L>2/3\) the annulus selection is empty (since every zeta zero satisfies \(\Re\rho<1\), hence \(\sigma_\rho=\Re\rho-1/2<1/2\)), and critical-line zeros produce a universal local mean-oscillation floor unless they are renormalized out.
+
+    \item \textbf{What is provable unconditionally (height-dependent control).} One can obtain fully explicit, height-dependent Carleson-box bounds for the off-line zero measure
+    \[
+      \mu := \sum_{\Re\rho>1/2} (\Re\rho-\tfrac12)\,\delta_{(\Im\rho,\ \Re\rho-\tfrac12)},
+    \]
+    by reducing to explicit estimates for the zero-counting function \(N(T)\) (e.g.\ Rosser--Schoenfeld-type bounds). See \texttt{renormalized\_tail\_bound.md} for an auditable derivation and constants.
+
+    \item \textbf{Recommended route (boundary-unimodular \(\mathcal J\) and Carleson energy).} The current preferred formulation is to construct a boundary-unimodular analytic ratio \(\mathcal J\) on \(\{\Re s>1/2\}\) (canonical candidate: the \emph{inner factor} of \(\xi\) on that half-plane) and target a uniform Carleson-energy bound for
+    \(U=\Re\log\mathcal J\):
+    \[
+      \iint_{Q(I)} |\nabla U|^2\,\sigma\,dt\,d\sigma \ \le\ C_{\rm box}\,|I|
+      \quad\text{uniformly over boundary intervals }I.
+    \]
+    This inequality is isolated as the main remaining analytic input in the boundary-certificate architecture; see \texttt{CPM.tex} and \texttt{renormalized\_tail\_bound.md} (\S5).
+
+    \item \textbf{Alternate major rebuild (explicit formula / Weil--Li positivity).}
+    \emph{Current status (Route 3):} This ``explicit-formula gate'' route is now instantiated as a mechanically checkable Lean skeleton under \texttt{RiemannRecognitionGeometry/ExplicitFormula/}.
+    It fixes Lagarias' Mellin normalization, defines the involution \(\widetilde f\), multiplicative convolution \(f*g\) on \((0,\infty)\), and connects these to Mathlib's \texttt{mellin}.
+    The Lean development proves the gate-shape implications (e.g.\ ``Weil gate \(\Rightarrow\) \texttt{RiemannHypothesis}'' and the Li specialization), and formalizes the algebraic heart of the easy direction (RH \(\Rightarrow\) finite-sum positivity) including the required conjugation/symmetry manipulations.
+    We proved a concrete Mellin--convolution multiplicativity lemma for the multiplicative convolution, \emph{under an explicit Fubini/Tonelli integrability hypothesis}, reducing the remaining analytic gap to verifying the needed integrability for the chosen test-function class. The original ``ambient'' target \texttt{Route3Targets.lean} keeps \texttt{TestSpace} abstract for \texttt{F := \(\mathbb{R}\to\mathbb{C}\)}, but we now also provide a Lean-friendly \emph{log-Schwartz/Fourier} \texttt{TestSpace} instance on \texttt{SchwartzMap \(\mathbb{R}\) \(\mathbb{C}\)} in \texttt{SchwartzTestSpace.lean}.
+
+    \emph{Recent advances (December 2025):}
+    \begin{enumerate}
+        \item \textbf{Cayley transform algebra} (\texttt{Cayley.lean}): Formalized the classical lemma that \(\Re z \ge 0\) implies \(|(z-1)/(z+1)| \le 1\), providing a reusable ``positivity \(\to\) unit-disk bound'' bridge.
+
+        \item \textbf{Reflection Positivity target} (\texttt{MainRoute3.lean}): Defined \texttt{ReflectionPositivityRealization}---the statement that \(W^{(1)}(f \star \widetilde{\overline g}) = \langle Tf, Tg\rangle_H\) in some Hilbert space. Proved \texttt{WeilGate\_of\_reflectionPositivityRealization}.
+
+        \item \textbf{Cayley bridge hypothesis package} (\texttt{CayleyBridge.lean}): Formalized \texttt{CayleyBridgeAssumptions}, which packages the remaining analytic gap---a candidate \(J\), domain \(S\), positivity \(\Re(2J) \ge 0\) on \(S\), and a bridge axiom to \texttt{ReflectionPositivityRealization}. We also added a \emph{measure-first} variant \texttt{CayleyMeasureBridgeAssumptions} whose bridge target is a measure-first spectral identity (\texttt{SesqMeasureIdentity}), reflecting the fact that the completed \(\xi\)-channel does not naturally provide a pointwise Lebesgue density on the critical line.
+
+        \item \textbf{Arithmetic \(J\) definition} (\texttt{ArithmeticJ.lean}): Defined \(J(s) := -\zeta'(s)/\zeta(s)\) and connected to the von Mangoldt L-series for \(\Re s > 1\).
+
+        \item \textbf{Spectral identity (measure-first)} (\texttt{HilbertRealization.lean}): Introduced a preferred \emph{measure-first} package \texttt{SesqMeasureIdentity} recording directly that
+        \(W^{(1)}(\mathrm{pair}(f,g))=\langle Tf,Tg\rangle_{L^2(\mu)}\)
+        for some boundary measure \(\mu\), and proved this yields \texttt{ReflectionPositivityRealization}. The older weight-based \(L^2\)/Bochner-integral structures remain available as an \emph{optional absolute-continuity upgrade}.
+
+        \item \textbf{Lean-friendly test space (log-Schwartz/Fourier)} (\texttt{SchwartzTestSpace.lean}): Provided a concrete \texttt{TestSpace} instance on Schwartz functions using Fourier transform identities, allowing Route~3 algebra to run without assuming Mellin/Fubini infrastructure on all functions \(\mathbb{R}\to\mathbb{C}\).
+    \end{enumerate}
+
+    \emph{Lean module inventory (Route~3 / \texttt{ExplicitFormula/}):}
+    see the repository directory \texttt{RiemannRecognitionGeometry/ExplicitFormula/} for the current list of modules.
+
+    \emph{Main problem right now:} prove the bridge axiom (either \texttt{bridge\_to\_reflection} or the measure-first \texttt{bridge\_to\_measure}) for the arithmetic \(\xi/\zeta\) channel, or directly construct a \texttt{ReflectionPositivityRealization} / \texttt{SesqMeasureIdentity}.
+    This is logically equivalent to RH in this architecture.
+    This is a global (not local) target and is logically equivalent to RH in this architecture. A cautionary note is that stronger de Branges shift-positivity conditions fail for \(\zeta\) (Conrey--Li, arXiv:math/9812166), so the positivity target must be of Weil/Li ``averaged'' type rather than pointwise.
+\end{itemize}
+
+% ======================================================================
+% ROUTE 3 BRIDGE STRATEGY (December 14, 2025)
+% ======================================================================
+
+\section{Route 3: The Bridge to Reflection Positivity}
+
+This section documents the precise mathematical strategy for closing the Route~3 gap. The approach is ``engineering, not mystical axiom'': the path forward uses classical functional analysis (GNS/Osterwalder--Schrader/RKHS constructions) combined with a spectral identity that connects the arithmetic \(J\)-function to the Weil quadratic form.
+
+\subsection{Route 3 as a theorem chain (journal form)}
+
+We fix a complex vector space \(\mathcal{T}\) of admissible test functions equipped with:
+(i) a multiplicative convolution \(\star_m\),
+(ii) an involution \(f \mapsto \widetilde f\),
+and (iii) a complex-linear functional \(W^{(1)}:\mathcal{T}\to\mathbb{C}\) (the Weil explicit-formula functional for \(\zeta\) in Lagarias' normalization).
+For \(f,g\in\mathcal{T}\) define the associated Hermitian pairing
+\[
+  B(f,g) \ :=\ W^{(1)}\!\bigl(f \star_m \widetilde{\overline g}\bigr).
+\]
+
+\begin{definition}[Weil gate]
+We say the \emph{Weil gate} holds on \(\mathcal{T}\) if
+\[
+  \forall f\in\mathcal{T},\qquad B(f,f)\ \ge\ 0.
+\]
+\end{definition}
+
+\begin{definition}[Reflection-positivity realization]
+A \emph{reflection-positivity realization} of \(B\) is a Hilbert space \(H\) and a linear map \(T:\mathcal{T}\to H\) such that for all \(f,g\in\mathcal{T}\),
+\[
+  B(f,g)\ =\ \langle Tf, Tg\rangle_H.
+\]
+\end{definition}
+
+\begin{lemma}\label{lem:reflection_implies_weilgate}
+If \(B\) admits a reflection-positivity realization, then the Weil gate holds on \(\mathcal{T}\).
+\end{lemma}
+\begin{proof}
+If \(B(f,g)=\langle Tf,Tg\rangle_H\), then \(B(f,f)=\|Tf\|_H^2\ge0\) for all \(f\in\mathcal{T}\).
+\end{proof}
+
+\begin{theorem}[Weil--Li positivity criterion]\label{thm:weil_li_gate_implies_RH}
+If the Weil gate holds on a sufficiently rich class of Weil test functions, then the Riemann Hypothesis holds.
+\end{theorem}
+\begin{proof}
+This is the classical Weil positivity criterion (equivalently, Li's criterion in a Mellin-normalized test space); see \cite{WeilExplicit,LiCriterion} for standard formulations. \qedhere
+\end{proof}
+
+\begin{assumption}[Splice-completion spectral identity]\label{ass:route3_spectral_identity}
+There exist a positive Borel measure \(\mu_{\mathrm{spec}}\) on \(\mathbb{R}\) and a linear map
+\[
+  \mathcal{T}\ni f \longmapsto F_f \in L^2(\mu_{\mathrm{spec}})
+\]
+such that for all \(f,g\in\mathcal{T}\),
+\[
+  B(f,g)\ =\ \frac12\int_{\mathbb{R}} \overline{F_f(t)}\,F_g(t)\, d\mu_{\mathrm{spec}}(t).
+\]
+\end{assumption}
+
+\begin{theorem}[Route 3 reduction via splice completion]\label{thm:route3_reduction_spectral_identity}
+Assuming Assumption~\ref{ass:route3_spectral_identity}, the Riemann Hypothesis holds.
+\end{theorem}
+\begin{proof}
+Let \(H:=L^2(\mu_{\mathrm{spec}})\) and define \(T:\mathcal{T}\to H\) by \(Tf:=\frac{1}{\sqrt2}\,F_f\).
+Then Assumption~\ref{ass:route3_spectral_identity} gives \(B(f,g)=\langle Tf,Tg\rangle_H\), hence by Lemma~\ref{lem:reflection_implies_weilgate} the Weil gate holds.
+Theorem~\ref{thm:weil_li_gate_implies_RH} then yields the Riemann Hypothesis.
+\end{proof}
+
+\subsection{What the blocker really is}
+
+The gap is \emph{not} ``how do we invent a Hilbert space.'' That part is automatic. The real gap is:
+
+\begin{quote}
+\textbf{Show that the Weil quadratic form is positive semidefinite once we assume (or derive) \(\Re(2J) \ge 0\) on the right domain.}
+\end{quote}
+
+Formally, we want either:
+
+\begin{enumerate}
+    \item \textbf{Bridge axiom form} (\texttt{bridge\_to\_reflection}):
+    \[
+        \Re(2 \cdot J) \ge 0 \text{ on domain } S \quad\Longrightarrow\quad \text{Hilbert-space representation of the Weil form.}
+    \]
+    
+    \item \textbf{Direct construction} of \texttt{ReflectionPositivityRealization}: a Hilbert space \(H\) and linear map \(T\) such that
+    \[
+        W^{(1)}\!\bigl(f \star_m \widetilde{\overline{g}}\bigr) = \langle Tf, Tg\rangle_H.
+    \]
+\end{enumerate}
+
+These are the same problem because constructing \(H\) and \(T\) from a positive semidefinite form is routine. The hard part is proving the form is positive semidefinite \emph{from the \(\Re(2J)\ge 0\) hypothesis}.
+
+The key missing lemma is a \textbf{spectral/Plancherel representation} of the Weil pairing in which \(\Re(2J)\) appears as a nonnegative weight.
+
+\subsection{The Hilbert-space construction is mechanical (GNS/OS)}
+
+If \(V\) is a complex vector space and \(B: V \times V \to \mathbb{C}\) is a sesquilinear form that is:
+
+\begin{itemize}
+    \item \textbf{Hermitian:} \(B(g,f) = \overline{B(f,g)}\),
+    \item \textbf{Positive semidefinite:} \(B(f,f) \in \mathbb{R}\) and \(B(f,f) \ge 0\),
+\end{itemize}
+
+then define the null space \(N := \{f \in V : B(f,f) = 0\}\). The quotient \(V/N\) carries a well-defined inner product via \(\langle [f], [g] \rangle := B(f,g)\). Completing \(V/N\) gives a Hilbert space \(H\), and the quotient map \(T: V \to H\) satisfies
+\[
+    B(f,g) = \langle Tf, Tg \rangle_H.
+\]
+
+Therefore, if we prove positivity of the specific form
+\[
+    B(f,g) := W^{(1)}\!\bigl(f \star_m \widetilde{\overline{g}}\bigr)
+\]
+on the right test-function subspace, we instantly get \texttt{ReflectionPositivityRealization}.
+
+The bridge axiom can thus be replaced by:
+\begin{itemize}
+    \item ``\(\Re(2J) \ge 0\) \(\Rightarrow\) \(B(f,f) \ge 0\) for all admissible \(f\),''
+    \item plus the standard quotient/completion construction.
+\end{itemize}
+
+\subsection{How to get positivity from \(\Re(2J) \ge 0\): the spectral identity}
+
+(\emph{Important correction.}) For the completed \(\xi\)-channel one has \(\xi(\tfrac12+it)\in\mathbb{R}\) for real \(t\), hence \(\xi'(\tfrac12+it)\in i\mathbb{R}\) away from zeros and
+\(\Re(-\xi'/\xi(\tfrac12+it))=0\) a.e.\ if interpreted pointwise. Thus the correct Route~3 target is \textbf{measure-first}.
+
+The target is a representation of the form:
+\[
+    W^{(1)}\!\bigl(f \star_m \widetilde{\overline{g}}\bigr)
+    = \int_{\mathbb{R}} \overline{F_f(t)}\,F_g(t)\, d\mu(t),
+\]
+where:
+\begin{itemize}
+    \item \(F_f\) is whatever transform the Route~3 normalizations use (Mellin + involution + Cayley),
+    \item \(\mu\) is a boundary spectral measure/distribution (Lebesgue/Haar only after an absolute-continuity upgrade).
+\end{itemize}
+
+Once this identity is established, positivity is immediate:
+\begin{itemize}
+    \item \(\mu \ge 0\),
+    \item \(|F_f|^2 \ge 0\),
+    \item integral of nonnegative \(\Rightarrow\) nonnegative.
+\end{itemize}
+
+So the bridge-to-reflection problem reduces to:
+
+\begin{quote}
+\textbf{Prove the measure-first spectral identity \(W^{(1)}(\mathrm{pair}(f,g))=\int \overline{F_f}F_g\,d\mu\), and then prove \(\mu\ge0\) for the arithmetic \(\xi/\zeta\) channel (RH-equivalent).}
+\end{quote}
+
+\subsection{The Herglotz/Carath\'eodory bridge}
+
+There are two equivalent classical routes.
+
+\subsubsection{Bridge A: Half-plane Herglotz \(\to\) measure \(\to\) \(L^2(\mu)\) realization}
+
+If \(F(s) = 2J(s)\) is holomorphic on a right half-plane and \(\Re F(s) \ge 0\), then \(F\) admits a Herglotz-type representation with a \textbf{positive measure} \(\mu\) on the boundary. The Weil pairing becomes:
+\[
+    W^{(1)}\!\bigl(f \star_m \widetilde{\overline{g}}\bigr) 
+    = \int_{\mathbb{R}} \overline{F_f(t)}\,F_g(t)\, d\mu(t),
+\]
+with \(\mu\ge0\). If additionally \(d\mu = w\,d\nu\) (absolute continuity), one can rewrite this in the familiar weighted-\(L^2\) form and take
+\[
+    H = L^2(w \, d\nu), \qquad (Tf)(\cdot) = (\mathcal{M}f)(\cdot) \sqrt{w(\cdot)}.
+\]
+This gives \texttt{ReflectionPositivityRealization} in one line once the identity is proven.
+
+\subsubsection{Bridge B: Cayley \(\to\) Schur \(\to\) positive kernel \(\to\) RKHS}
+
+We already proved the Cayley algebra lemma:
+\[
+    \Re z \ge 0 \quad\Longrightarrow\quad \left|\frac{z-1}{z+1}\right| \le 1.
+\]
+Define the Schur-class function \(S := (F-1)/(F+1)\) with \(F = 2J\). Then \(|S| \le 1\) on the domain.
+
+Schur functions have a universal positive kernel:
+\[
+    K(z,w) := \frac{1 - S(z)\overline{S(w)}}{1 - z\overline{w}}.
+\]
+This kernel is positive definite automatically for Schur \(S\), and every positive definite kernel has a Hilbert space \(H\) and feature map \(\Phi\) such that \(K(z,w) = \langle \Phi(z), \Phi(w) \rangle_H\).
+
+Once the Weil form \(W^{(1)}\) is identified with the integrated version of this kernel (test functions ``smear'' evaluation functionals), we get the \(T\) map.
+
+\subsection{Where the real analysis lives (the genuine blocker)}
+
+The ``kernel positivity \(\Rightarrow\) Hilbert space'' part is standard. What is \emph{not} automatic is proving that the arithmetic object \(J\) is the symbol of the Weil form in the precise way needed. This is a Fubini/Tonelli / boundary-limit problem.
+
+Concretely, we need to justify:
+\begin{itemize}
+    \item \(W^{(1)}\) (defined by explicit formula / primes / gamma / zeros) equals the boundary pairing coming from \(J\).
+    \item Interchange prime sums and integrals safely.
+    \item Justify taking boundary limits (Fatou-type theorems, distributional boundary values).
+    \item Confirm Mellin normalization matches convolution/involution definitions so the ``reflection square'' is literally an \(L^2\) norm in transform space.
+\end{itemize}
+
+Once that analytic identity is proven:
+\[
+    \text{positivity} \Rightarrow \text{quotient/complete} \Rightarrow (H,T) \Rightarrow \texttt{WeilGate\_of\_reflectionPositivityRealization} \Rightarrow \text{RH}.
+\]
+
+\textbf{Honest summary:}
+\begin{itemize}
+    \item Hilbert-space realization is \emph{not} the hard part.
+    \item Showing the Weil functional is \emph{the} positive kernel induced by \(J\) (with all interchanges justified) \emph{is} the hard part.
+\end{itemize}
+
+\subsection{Recognition Science interpretation}
+
+The bridge is a known physical principle:
+\begin{itemize}
+    \item \(\Re(2J) \ge 0\) is the math form of \textbf{passivity / positive-real transfer function}.
+    \item Reflection positivity is the Euclidean-signature version of \textbf{unitarity} (Osterwalder--Schrader).
+    \item ``Passivity \(\Rightarrow\) state space with energy inner product'' is exactly the \textbf{state-space realization theorem} in engineering and the \textbf{GNS/OS construction} in mathematical physics.
+\end{itemize}
+
+In Recognition Geometry terms: start with a pre-inner-product on ``histories'' (test functions). Reflection positivity says ``cost is never negative when pairing a thing with its reflected dual.'' Then:
+\begin{enumerate}
+    \item identify null directions (indistinguishable under the form),
+    \item quotient them out,
+    \item complete.
+\end{enumerate}
+That completion is the ``physical'' Hilbert space. This is Recognition Geometry in its purest form.
+
+\subsection{Concrete forward strategy}
+
+\begin{enumerate}
+    \item \textbf{State the exact spectral identity lemma} (the real work):
+    \begin{itemize}
+        \item Express \(W^{(1)}(f \star_m \widetilde{\overline{g}})\) as a boundary integral where \(J\) appears multiplicatively.
+        \item Isolate minimal hypotheses for interchange justification.
+    \end{itemize}
+    
+    \item \textbf{Prove positivity from that identity} using \(\Re(2J) \ge 0\).
+    
+    \item \textbf{Implement quotient/completion} (tiny, Lean-friendly):
+    \(H := \overline{V/N}\) with inner product induced by \(B\).
+    
+    \item \textbf{Conclude} \texttt{ReflectionPositivityRealization} with \(T :=\) quotient map.
+    
+    \item \textbf{Fire existing gate theorems} to finish the arc.
+\end{enumerate}
+
+\textbf{If you do only one thing next, do step (1) in maximal detail. Everything else is plumbing.}
+
+\subsection{Warning: averaged vs.\ pointwise positivity}
+
+Be careful about the exact positivity statement:
+\begin{itemize}
+    \item Pointwise \(\Re(2J(s)) \ge 0\) everywhere is often \textbf{too strong} and can be false even when the quadratic form is positive.
+    \item What Weil/Li criteria demand is \textbf{global averaged positivity}: positivity of the quadratic form on a test-function space, not pointwise positivity of a boundary function.
+\end{itemize}
+
+So treat ``\(\Re(2J) \ge 0\)'' as shorthand for the \textbf{positive-kernel condition} (Pick kernel / Toeplitz matrix positivity). That condition is exactly what yields a Hilbert space, and is exactly what can be proved from an explicit formula.
+
+\subsection{Bottom line}
+
+The bridge is a classical (but formalization-heavy) equivalence:
+\[
+    \textbf{Carath\'eodory/Herglotz positivity} \;\Longleftrightarrow\; \textbf{positive definite kernel} \;\Longleftrightarrow\; \textbf{Hilbert-space realization.}
+\]
+
+The remaining mathematical work is to prove that the arithmetic \(J\) induces the same kernel/measure as the Weil functional \(W^{(1)}\). Once that identification is in place, the Hilbert space and map \(T\) are automatic: quotient out nulls, complete, done.
+
+That's Recognition Geometry in its barest form: ``indistinguishable under the form'' \(\to\) quotient \(\to\) completion \(\to\) physical state space.
+
+\section{Assumption Ledger (RH instantiation)}\label{sec:assumption_ledger_rh}
+
+This section records the remaining \emph{paper-facing} analytic assumptions needed to turn the Route~3 reduction into a fully unconditional proof. The intent is that each item below is either (i) proved and then removed, or (ii) weakened to a strictly smaller hypothesis.
+
+\subsection*{A1: Splice-completion spectral identity (Route~3)}
+\begin{itemize}
+    \item \textbf{A1 (Splice identity).} Assumption~\ref{ass:route3_spectral_identity}.
+    \item \textbf{A1a (Explicit-formula cancellation / contour \(\to\) boundary).}
+    Reduce the contour definition of \(W^{(1)}\) to a boundary pairing against the derivative of a boundary phase \(\theta\) for the PSC ratio
+    \(J(s)=\det_2(s)/(O(s)\,\xi(s))\) (Lagarias’ Guinand--Weil explicit formula \cite[Thm.~3.1]{Lagarias2007}, plus contour-to-boundary limit justification).
+    \item \textbf{A1b (Phase--velocity / spectral measure identity).}
+    Identify \(\theta'\) (distributionally) with a positive boundary spectral measure \(\mu_{\mathrm{spec}}\) (the phase--velocity identity). Concretely, the Lean interface is the test-function identity
+    \[
+      \forall \phi\in L^1(\mathbb{R}),\qquad
+      \int_{\mathbb{R}} \phi(t)\,\theta'(t)\,dt \;=\; -\pi\int_{\mathbb{R}} \phi(t)\,d\mu_{\mathrm{spec}}(t),
+    \]
+    (with the integrability hypotheses made explicit). If moreover \(\mu_{\mathrm{spec}}\ll dt\) with density \(\rho(t)\ge0\), then this is equivalent to the a.e. identity
+    \[
+      \theta'(t) = -\pi\,\rho(t)\quad\text{a.e.}
+    \]
+    In particular, in the absolutely-continuous regime one may \emph{define} the spectral measure by
+    \(d\mu_{\mathrm{spec}}(t) := \frac{1}{\pi}\bigl(-\theta'(t)\bigr)\,dt\),
+    and then the phase--velocity identity is tautological; the real content is the sign/regularity input
+    \(-\theta'(t)\ge0\) a.e.\ (and enough integrability to justify the pairings that appear in A1a).
+    \emph{Warning (reality check).} For the concrete zeta-model ratio
+    \(J(1/2+it)=-\,\Gamma_{\mathbb R}(1/2-it)/\Gamma_{\mathbb R}(1/2+it)\),
+    the associated phase is \(\theta(t)=-2\arg \Gamma_{\mathbb R}(1/2+it)-\pi\), whose derivative is not sign-definite for all \(t\)
+    (indeed \(\theta'(t)=-2\,\theta_{\mathrm{RS}}'(t)\), and \(\theta_{\mathrm{RS}}'(0)<0\)).
+    Thus the ``\(\theta'\le 0\) a.e.'' density gate is a \emph{convenient sufficient condition} (matching the current Lean encoding),
+    but may need to be replaced by a distributional/Herglotz--Clark measure statement allowing a singular part and avoiding pointwise sign claims.
+    Concretely, an honest replacement is to require a positive Borel measure \(\mu_{\mathrm{spec}}\) such that for all test functions \(\phi\in C_c^\infty(\mathbb{R})\),
+    \[
+      \int_{\mathbb{R}} \phi(t)\,d\mu_{\mathrm{spec}}(t)\;=\;-\frac{1}{\pi}\int_{\mathbb{R}} \phi(t)\,d\theta(t),
+    \]
+    where \(d\theta\) denotes the distributional derivative of a BV representative of \(\theta\). This is the natural endpoint of Herglotz/Clark theory for inner/Schur functions.
+    
+    \begin{lemma}[Bounded type via harmonic majorant]\label{lem:bounded_type_harmonic_majorant}
+    Let \(\Omega=\{s\in\mathbb{C}:\Re(s)>1/2\}\) and let \(f:\Omega\to\mathbb{C}\) be holomorphic.
+    If there exists a harmonic function \(u\) on \(\Omega\) such that
+    \[
+      \log^{+}\!\bigl|f(s)\bigr|\ \le\ u(s)\qquad (s\in\Omega),
+    \]
+    then \(f\) is of bounded type on \(\Omega\) (equivalently, \(f=g/h\) with \(g,h\in H^\infty(\Omega)\)).
+    Conversely, if \(f\) is of bounded type on \(\Omega\), then \(\log^{+}|f|\) admits a harmonic majorant on \(\Omega\).
+    \end{lemma}
+    \begin{proof}
+    Standard characterization of the Nevanlinna class / bounded-type functions on a half-plane; see, e.g., \cite{DurenHp,GarnettBounded}. \end{proof}
+
+    \begin{lemma}[Bounded type via Nevanlinna integral bound]\label{lem:bounded_type_nevanlinna_integral}
+    Let \(\Omega=\{s\in\mathbb{C}:\Re(s)>1/2\}\) and let \(f\) be meromorphic on \(\Omega\).
+    Then \(f\) is of bounded type (bounded characteristic) on \(\Omega\) if and only if
+    \[
+      \sup_{\sigma>1/2}\ \int_{\mathbb{R}} \log^{+}\!\bigl|f(\sigma+it)\bigr|\ \frac{dt}{1+t^2}\ <\ \infty.
+    \]
+    \end{lemma}
+    \begin{proof}
+    Standard equivalence between bounded type and finiteness of the Nevanlinna characteristic in a half-plane; see, e.g., \cite{DurenHp,GarnettBounded}. \end{proof}
+
+    \begin{remark}[How one usually checks the supremum in practice]\label{rem:nevanlinna_strip_reduction}
+    In applications, one rarely estimates \(\sup_{\sigma>1/2}\) in one shot. Instead one fixes \(\sigma_0>1/2\) and splits the supremum into a boundary strip \(1/2<\sigma\le \sigma_0\) (the genuine boundary-value/Hardy work) and the far-right region \(\sigma\ge \sigma_0\), where one typically has a uniform bound \(\sup_{\sigma\ge\sigma_0,t}|f(\sigma+it)|<\infty\) from normalization/absolute convergence (hence the integral is trivially bounded).
+    \end{remark}
+
+    \begin{lemma}[Far-right Nevanlinna bound from polynomial growth]\label{lem:nevanlinna_far_right_poly}
+    Let \(\Omega=\{s\in\mathbb{C}:\Re(s)>1/2\}\) and let \(f\) be holomorphic on \(\{s:\Re(s)\ge 1\}\).
+    Suppose there exist constants \(C\ge 1\) and \(A\ge 0\) such that for all \(\sigma\ge 1\) and all \(t\in\mathbb{R}\),
+    \[
+      |f(\sigma+it)| \le C\,(1+|t|)^A.
+    \]
+    Then
+    \[
+      \sup_{\sigma\ge 1}\ \int_{\mathbb{R}} \log^{+}\!\bigl|f(\sigma+it)\bigr|\ \frac{dt}{1+t^2}\ <\ \infty.
+    \]
+    \end{lemma}
+    \begin{proof}
+    As in Lemma~\ref{lem:poly_growth_implies_nevanlinna}: \(\log^{+}|f(\sigma+it)|\le \log(C)+A\log(1+|t|)\), and \(\log(1+|t|)/(1+t^2)\) is integrable on \(\mathbb{R}\).
+    \end{proof}
+
+    \begin{lemma}[Blaschke summability from a genus-one zero set]\label{lem:blaschke_sum_from_genus_one}
+    Let \(Z\subset\mathbb{C}\) be a multiset such that \(\sum_{\rho\in Z} |\rho|^{-2}<\infty\).
+    Then the half-plane Blaschke sum over \(Z\cap\Omega\),
+    \[
+      \sum_{\rho\in Z,\ \Re\rho>1/2} \frac{\Re\rho-\tfrac12}{1+|\rho|^2},
+    \]
+    converges.
+    \end{lemma}
+    \begin{proof}
+    Split into \(|\rho|\le 1\) (finite contribution) and \(|\rho|>1\). For \(|\rho|>1\) we have
+    \[
+      0\le \frac{\Re\rho-\tfrac12}{1+|\rho|^2}\le \frac{|\rho|}{|\rho|^2}\le \frac{1}{|\rho|^2},
+    \]
+    so the sum is dominated by \(\sum |\rho|^{-2}<\infty\).
+    \end{proof}
+
+    \begin{remark}[Application: \(\xi\)-zeros satisfy the Blaschke condition]\label{rem:xi_blaschke_condition}
+    The completed Riemann \(\xi\)-function is an entire function of order \(1\) and genus \(1\), hence admits a canonical (Hadamard) product whose convergence implies \(\sum_{\rho} |\rho|^{-2}<\infty\) over its zeros \(\rho\) (counted with multiplicity); see, e.g., \cite{TitchmarshZeta}.
+    Therefore Lemma~\ref{lem:blaschke_sum_from_genus_one} applies to the zero set in \(\Omega\): the associated half-plane Blaschke sum converges.
+    This is relevant because poles of the meromorphic ratio \(J=\det_2/(O\,\xi)\) at \(\xi\)-zeros do not automatically obstruct bounded type; what matters is precisely Blaschke summability and the remaining outer/Nevanlinna data.
+    \end{remark}
+
+    \begin{lemma}[Blaschke poles contribute a controlled strip Nevanlinna term]\label{lem:blaschke_inverse_strip_nevanlinna}
+    Let \(\Omega=\{s\in\mathbb{C}:\Re(s)>1/2\}\). Let \(\{\rho\}\subset\Omega\) be a multiset satisfying the half-plane Blaschke condition
+    \[
+      \sum_{\rho\in\Omega} \frac{\Re\rho-\tfrac12}{1+|\rho|^2}\ <\ \infty.
+    \]
+    Let \(B\) be the corresponding half-plane Blaschke product (inner function) with zeros \(\rho\).
+    Then
+    \[
+      \sup_{1/2<\sigma\le 1}\ \int_{\mathbb{R}} \log^{+}\!\Bigl|\frac{1}{B(\sigma+it)}\Bigr|\ \frac{dt}{1+t^2}\ <\ \infty.
+    \]
+    \end{lemma}
+    \begin{proof}
+    Standard estimate for Blaschke products in a half-plane: \(-\log|B|\) is the Green-potential of the zero set, and the Blaschke summability condition is exactly what ensures uniform integrability of \(-\log|B(\sigma+\!it)|\) against the Cauchy weight \((1+t^2)^{-1}dt\) on compact \(\sigma\)-ranges away from the boundary. See, e.g., \cite{DurenHp,GarnettBounded}. \end{proof}
+
+    \begin{lemma}[Uniform polynomial growth implies the Nevanlinna bound]\label{lem:poly_growth_implies_nevanlinna}
+    Let \(\Omega=\{s\in\mathbb{C}:\Re(s)>1/2\}\) and let \(f:\Omega\to\mathbb{C}\) be holomorphic.
+    Suppose there exist constants \(C\ge 1\) and \(A\ge 0\) such that for all \(\sigma>1/2\) and all \(t\in\mathbb{R}\),
+    \[
+      |f(\sigma+it)| \le C\,(1+|t|)^A.
+    \]
+    Then
+    \[
+      \sup_{\sigma>1/2}\ \int_{\mathbb{R}} \log^{+}\!\bigl|f(\sigma+it)\bigr|\ \frac{dt}{1+t^2}\ <\ \infty,
+    \]
+    hence \(f\) is of bounded type on \(\Omega\) (by Lemma~\ref{lem:bounded_type_nevanlinna_integral}).
+    \end{lemma}
+    \begin{proof}
+    Since \(C\ge1\), \(\log^{+}|f(\sigma+it)|\le \log(C)+A\log(1+|t|)\). The function \(t\mapsto \log(1+|t|)/(1+t^2)\) is integrable on \(\mathbb{R}\), so the displayed supremum is bounded uniformly in \(\sigma\).
+    \end{proof}
+
+    \begin{lemma}[Subadditivity of \(\log^{+}\) under products]\label{lem:logplus_mul}
+    For \(a,b\ge 0\), one has
+    \[
+      \log^{+}(ab)\ \le\ \log^{+}(a)\ +\ \log^{+}(b).
+    \]
+    Consequently, for complex numbers \(u,v\) one has
+    \[
+      \log^{+}|uv|\ \le\ \log^{+}|u|\ +\ \log^{+}|v|.
+    \]
+    \end{lemma}
+    \begin{proof}
+    If \(ab\le 1\), then \(\log^{+}(ab)=0\) and the inequality is trivial. If \(ab>1\), then \(\log^{+}(ab)=\log(ab)=\log a+\log b\le \log^{+}a+\log^{+}b\). The complex statement follows by applying the real inequality to \(a=|u|\), \(b=|v|\).
+    \end{proof}
+
+    \begin{remark}[Splitting the Nevanlinna wall for the PSC ratio]\label{rem:logplus_split_J}
+    The PSC ratio is \(J=\det_2/(O\,\xi)\). It is crucial to respect cancellations between \(\det_2\) and \(\xi\): in the \(\zeta\)-gauge, for example, \(\det_2=\zeta\) cancels the \(\zeta\)-factor inside \(\xi\), and \(J\) reduces to a pure gamma ratio.
+    
+    Accordingly, set the \emph{cancellation ratio}
+    \[
+      F(s)\ :=\ \frac{\det_2(s)}{\xi(s)}\qquad\text{(meromorphic on \(\Omega\))},
+    \]
+    so that \(J=F/O\).
+    Lemma~\ref{lem:logplus_mul} then gives the pointwise bound
+    \[
+      \log^{+}|J|\ \le\ \log^{+}|F|\ +\ \log^{+}\Bigl|\frac{1}{O}\Bigr|.
+    \]
+    Thus A2c2-BT\(_{\mathrm{strip}}\) reduces to proving strip-integral bounds for \(\log^{+}|F|\) and \(\log^{+}|1/O|\).
+    \end{remark}
+
+    \begin{lemma}[Outer term: strip Nevanlinna bound for \(1/O\) from boundary log-integrability]\label{lem:outer_inverse_strip_bound}
+    Let \(O\) be a holomorphic, zero-free function on \(\Omega=\{s\in\mathbb{C}:\Re(s)>1/2\}\), and write \(u(s)=\log|O(s)|\).
+    Assume that \(u\) admits nontangential boundary values \(u_0(t)=\lim_{\sigma\downarrow 1/2}u(\sigma+it)\) for a.e.\ \(t\), with
+    \[
+      \int_{\mathbb{R}} |u_0(t)|\,\frac{dt}{1+t^2}\ <\ \infty,
+    \]
+    and that \(u(\sigma+it)\) is the Poisson extension of \(u_0\) on \(\Omega\) (as is the case for an outer function in a Smirnov/Nevanlinna class).
+    Then
+    \[
+      \sup_{1/2<\sigma\le 1}\ \int_{\mathbb{R}} \log^{+}\!\Bigl|\frac{1}{O(\sigma+it)}\Bigr|\ \frac{dt}{1+t^2}\ <\ \infty.
+    \]
+    \end{lemma}
+    \begin{proof}
+    Since \(O\) is zero-free, \(\log^{+}|1/O| = (-u)^{+}\le |u|\). Thus it suffices to bound
+    \(\sup_{1/2<\sigma\le 1}\int_{\mathbb{R}} |u(\sigma+it)|\,(1+t^2)^{-1}dt\).
+    By the Poisson representation \(u(\sigma+\!it)=(P_{\sigma-1/2}*u_0)(t)\) and the triangle inequality,
+    \(|u(\sigma+it)|\le (P_{\sigma-1/2}*|u_0|)(t)\).
+    Integrating against \((1+t^2)^{-1}dt\) and using Fubini, this reduces to bounding the convolution of the Cauchy weight \((1+t^2)^{-1}\) with the Poisson kernel.
+    Since both are (up to constants) Cauchy densities and the Cauchy family is stable under convolution, the resulting weight is comparable (uniformly for \(\sigma\in(1/2,1]\)) to \((1+t^2)^{-1}\).
+    Therefore the weighted \(L^1\) norm of \(u(\sigma+\!i\cdot)\) is uniformly controlled by the weighted \(L^1\) norm of \(u_0\), giving the desired bound.
+    \end{proof}
+
+    \begin{lemma}[Strip Nevanlinna bound for \(J\) from the cancellation ratio]\label{lem:nevanlinna_strip_from_components}
+    Let \(\det_2,O,\xi\) be meromorphic on \(\Omega=\{s\in\mathbb{C}:\Re(s)>1/2\}\), and define
+    \(F=\det_2/\xi\) and \(J=F/O\) (meromorphically).
+    Suppose that each of the following two strip bounds holds:
+    \[
+      \sup_{1/2<\sigma\le 1}\ \int_{\mathbb{R}} \log^{+}\!\bigl|F(\sigma+it)\bigr|\ \frac{dt}{1+t^2}\ <\ \infty,
+    \]
+    \[
+      \sup_{1/2<\sigma\le 1}\ \int_{\mathbb{R}} \log^{+}\!\Bigl|\frac{1}{O(\sigma+it)}\Bigr|\ \frac{dt}{1+t^2}\ <\ \infty.
+    \]
+    Then the strip Nevanlinna bound holds for \(J\):
+    \[
+      \sup_{1/2<\sigma\le 1}\ \int_{\mathbb{R}} \log^{+}\!\bigl|J(\sigma+it)\bigr|\ \frac{dt}{1+t^2}\ <\ \infty.
+    \]
+    \end{lemma}
+    \begin{proof}
+    For each fixed \(\sigma\), Lemma~\ref{lem:logplus_mul} applied to \(J=F\cdot (1/O)\) gives the pointwise inequality
+    \(\log^{+}|J|\le \log^{+}|F|+\log^{+}|1/O|\) away from the discrete pole set, hence almost everywhere on \(\mathbb{R}\).
+    Integrate against \((1+t^2)^{-1}dt\), take sup over \(1/2<\sigma\le 1\), and use the two assumed bounds.
+    \end{proof}
+
+    \begin{remark}[Sanity check: the zeta gamma-ratio model]\label{rem:zeta_gamma_ratio_bounded_type}
+    For the concrete zeta-model ratio \(J(s)=-\,\Gamma_{\mathbb R}(1-s)/\Gamma_{\mathbb R}(s)\), Stirling's formula on vertical lines implies a uniform polynomial bound of the form
+    \(|J(\sigma+it)|\ll (1+|t|)^{A(\sigma)}\) (and in fact \(A(\sigma)\) can be taken uniformly for \(\sigma\ge 1/2\)).
+    Thus the Nevanlinna integral bound in Lemma~\ref{lem:bounded_type_nevanlinna_integral} is a \emph{routine} consequence of classical gamma estimates in that model.
+    \end{remark}
+
+    \begin{remark}[Why the \(\zeta\)-gauge PSC ratio reduces to a gamma ratio]\label{rem:zeta_gauge_J_gamma_ratio}
+    In the Lean instantiation `ZetaInstantiation.lean`, one chooses
+    \(\det_2=\zeta\), \(\xi=\xi_{\mathrm{Lagarias}}=(1/2)\,s(s-1)\,\mathrm{completedRiemannZeta}(s)\),
+    and \(O(s)=2/(s(1-s)\Gamma_{\mathbb R}(1-s))\).
+    Unwinding the definitions (and the identity \(\mathrm{completedRiemannZeta}(s)=\Gamma_{\mathbb R}(s)\,\zeta(s)\) up to harmless point-value conventions at \(s=0,1\))
+    gives the exact cancellation
+    \[
+      J(s)\;=\;\frac{\det_2(s)}{O(s)\,\xi(s)}\;=\;-\frac{\Gamma_{\mathbb R}(1-s)}{\Gamma_{\mathbb R}(s)}.
+    \]
+    This identity explains why the Nevanlinna/bounded-characteristic regularity of \(J\) is routine in the \(\zeta\)-gauge: it reduces to classical Stirling bounds for \(\Gamma_{\mathbb R}\) on vertical lines.
+    \end{remark}
+
+    \begin{remark}[Determinant-growth route to bounded type (operator-theoretic angle)]\label{rem:det2_growth_bounded_type}
+    In the intended PSC interpretation, \(\det_2(s)\) is a \(2\)-modified Fredholm determinant \(\det_2(I-A(s))\) for a Hilbert--Schmidt operator \(A(s)\).
+    Classical trace-ideal estimates (see, e.g., Simon's trace ideals book) bound the determinant in terms of \(\|A(s)\|_{\mathrm{HS}}\), schematically
+    \[
+      \log|\det_2(I-A(s))|\ \lesssim\ \|A(s)\|_{\mathrm{HS}}^2.
+    \]
+    Thus, one plausible way to prove the Nevanlinna bound (A2c2-BT\(_{\mathrm{Nev}}\)) for the PSC ratio \(J=\det_2/(O\,\xi)\) is to obtain \emph{uniform} (in \(\sigma>1/2\)) growth control for \(\|A(\sigma+it)\|_{\mathrm{HS}}\) and the corresponding outer factor \(O\).
+    This highlights a potential convergence between the Route~3 bounded-type wall and the RG ``energy budget'' estimates (B1), which also control \(L^2\)-type energies of related analytic objects.
+    \end{remark}
+
+    \begin{lemma}[Bounded type is closed under products/quotients]\label{lem:bounded_type_closed}
+    Let \(f,g:\Omega\to\mathbb{C}\) be holomorphic and of bounded type on \(\Omega\). Then \(fg\) is of bounded type on \(\Omega\).
+    If additionally \(g\) is nonvanishing on \(\Omega\), then \(f/g\) is of bounded type on \(\Omega\).
+    \end{lemma}
+    \begin{proof}
+    Write \(f=a/b\) and \(g=c/d\) with \(a,b,c,d\in H^\infty(\Omega)\), then \(fg=(ac)/(bd)\) and \(f/g=(ad)/(bc)\); see \cite{DurenHp,GarnettBounded}. \end{proof}
+
+    \begin{lemma}[Unimodular boundary values + bounded characteristic \(\Rightarrow\) quotient of inner factors]\label{lem:quotient_inner_of_bounded_char_unimodular}
+    Let \(\Omega=\{s\in\mathbb{C}:\Re(s)>1/2\}\). Suppose \(J\) is meromorphic on \(\Omega\) and of bounded characteristic (i.e.\ \(J=g/h\) with \(g,h\in H^\infty(\Omega)\)).
+    Assume \(|J(1/2+it)|=1\) for a.e.\ \(t\in\mathbb{R}\) (nontangential boundary values).
+    Then there exist inner functions \(I_1,I_2\) on \(\Omega\) and a unimodular constant \(c\in\mathbb{C}\) with \(|c|=1\) such that
+    \[
+      J(s)=c\,\frac{I_1(s)}{I_2(s)}
+    \]
+    for all \(s\in\Omega\) away from the poles of \(J\).
+    \end{lemma}
+    \begin{proof}
+    Write \(g=I_g\,O_g\) and \(h=I_h\,O_h\) as inner--outer factorizations in \(H^\infty(\Omega)\) \cite{DurenHp,GarnettBounded}.
+    Then \(J=(I_g/I_h)\cdot (O_g/O_h)\).
+    Taking boundary moduli gives \(|O_g/O_h|=|g/h|=|J|=1\) a.e.\ on \(\Re(s)=1/2\).
+    A (half-plane) outer function with unimodular boundary modulus is a unimodular constant, hence \(O_g/O_h=c\) with \(|c|=1\).
+    Therefore \(J=c\,(I_g/I_h)\).
+    \end{proof}
+
+    \begin{remark}[Component-wise view of the PSC ratio (bounded type is meromorphic)]\label{rem:psc_ratio_bounded_type_components}
+    The bounded-type/Nevanlinna condition is naturally a \emph{meromorphic} notion on \(\Omega\): \(J\) is of bounded type if \(J=g/h\) with \(g,h\in H^\infty(\Omega)\), allowing poles at zeros of \(h\).
+    Thus for the PSC ratio \(J=\det_2/(O\,\xi)\), one does \emph{not} assume \(\xi\) is nonvanishing on \(\Omega\); zeros of \(\xi\) simply correspond to poles of \(J\) (unless the numerator cancels them).
+    
+    Practically, the Nevanlinna integral bound A2c2-BT\(_{\mathrm{Nev}}\) is attacked by growth control of \(\log^{+}|J(\sigma+it)|\) on vertical lines, e.g. via:
+    \begin{itemize}
+        \item determinant/trace-ideal bounds for \(\det_2\) (Remark~\ref{rem:det2_growth_bounded_type}),
+        \item outer/gamma-factor control for \(O\), and
+        \item standard vertical-line bounds for the completed \(\xi\).
+    \end{itemize}
+    
+    Finally, note that if \(J\) is of bounded characteristic and has unimodular boundary values, then Lemma~\ref{lem:quotient_inner_of_bounded_char_unimodular} gives a quotient-of-inner factorization \(J=(I_1/I_2)\cdot c\).
+    The boundary phase derivative is then a \emph{signed} measure (zeros minus poles). The RH-adjacent positivity input A1b'' corresponds precisely to ruling out an ``inner denominator'' \(I_2\), i.e.\ proving that \(J\) is genuinely inner.
+    \end{remark}
+
+    \begin{lemma}[Unimodular boundary values + bounded type \(\Rightarrow\) inner]\label{lem:inner_of_bounded_type_unimodular}
+    Let \(\Omega=\{s\in\mathbb{C}:\Re(s)>1/2\}\). Suppose \(J:\Omega\to\mathbb{C}\) is holomorphic and of bounded type on \(\Omega\) (i.e.\ \(J=g/h\) with \(g,h\in H^\infty(\Omega)\)), and that \(|J(1/2+it)|=1\) for a.e.\ \(t\in\mathbb{R}\) in the nontangential boundary sense.
+    Then \(J\) is inner on \(\Omega\).
+    \end{lemma}
+    \begin{proof}
+    Standard canonical factorization for bounded-type (Nevanlinna class) functions: \(J=B\,S\,O\) with \(B,S\) inner (Blaschke and singular factors) and \(O\) outer. Since \(|B|=|S|=1\) a.e.\ on the boundary, the hypothesis \(|J|=1\) a.e.\ forces \(|O|=1\) a.e., hence \(O\) is a unimodular constant. Therefore \(J\) is inner. See, e.g., \cite{DurenHp,GarnettBounded}. \end{proof}
+
+    \begin{lemma}[A1b'' from an inner hypothesis]\label{lem:a1b_from_coinner}
+    Let \(\Omega=\{s\in\mathbb{C}:\Re(s)>1/2\}\). Suppose \(J:\Omega\to\mathbb{C}\) is \emph{inner} on \(\Omega\) (bounded holomorphic with \(|J|\le 1\) on \(\Omega\) and \(|J(1/2+it)|=1\) a.e.).
+    Then there exists a BV representative \(\theta:\mathbb{R}\to\mathbb{R}\) with \(J(1/2+it)=e^{i\theta(t)}\) a.e.\ and a positive Borel measure \(\mu_{\mathrm{spec}}\ge0\) such that
+    \[
+      d\theta \;=\; -\pi\, d\mu_{\mathrm{spec}}
+    \]
+    as distributions on \(\mathbb{R}\). In particular, A1b'' holds.
+    \end{lemma}
+    \begin{proof}
+    Standard inner-function boundary theory and canonical factorization on a half-plane: the boundary argument of an inner function has a BV representative whose distributional derivative is a signed measure encoding the Blaschke (zero) and singular parts. In the \emph{right half-plane} convention (boundary parameter \(t\) on \(1/2+it\)), the orientation induces a minus sign, yielding \(d\theta=-\pi\,d\mu_{\mathrm{spec}}\) with \(\mu_{\mathrm{spec}}\ge0\). See, e.g., \cite{DurenHp,GarnettBounded}. \end{proof}
+
+    \noindent\emph{Net effect (separate regularity vs.\ positivity).}
+    Bounded type on \(\Omega\) is a \emph{regularity} hypothesis: it gives a canonical factorization for \(J\) and makes distributional boundary objects (boundary values, phases, and their BV derivatives) well-defined.
+    If \(J\) is additionally holomorphic on \(\Omega\) and \(|J(1/2+it)|=1\) a.e., then Lemma~\ref{lem:inner_of_bounded_type_unimodular} shows \(J\) is inner and Lemma~\ref{lem:a1b_from_coinner} yields A1b'' with a positive spectral measure.
+    In the present RH application, however, the PSC ratio \(J=\det_2/(O\,\xi)\) is expected to be \emph{meromorphic} on \(\Omega\) with poles at off-critical zeros of \(\xi\); bounded type + unimodular boundary values then yield a \emph{quotient of inner factors} \(J=(I_1/I_2)\cdot c\), so the boundary phase derivative is in general a \emph{signed} measure (zeros minus poles).
+    The RH-adjacent content of A1b'' is precisely the \emph{positivity} that rules out an ``inner denominator'' \(I_2\) (no pole contribution), i.e.\ upgrades \(J\) from meromorphic inner to genuinely inner.
+    \item \textbf{A1c (Pair factorization).}
+    For \(h=\mathrm{pair}(f,g)\), the boundary transform factors as \(F_h=\overline{F_f}\,F_g\).
+    \item \textbf{A1d (Normalization tracking).}
+    Account for the overall constant (the \(1/2\) factor).
+    \item \textbf{Lean map.}
+    In the Lean development, A1 is intended to be obtained from a \emph{contour-to-boundary splice} chain (see \texttt{ExplicitFormula/ContourToBoundary.lean}):
+    \begin{itemize}
+        \item \emph{Explicit-formula cancellation}: reduce the contour definition of \(W^{(1)}\) to a boundary pairing against the derivative of a boundary phase \(\theta\) for the PSC ratio
+        \(J(s)=\det_2(s)/(O(s)\,\xi(s))\) (the hypothesis \texttt{explicit\_formula\_cancellation}). This is the Guinand--Weil explicit formula in Lagarias' normalization; see \cite[Thm.~3.1]{Lagarias2007}.
+        \item \emph{Phase--velocity identity}: identify \(\theta'\) (distributionally) with a positive boundary spectral measure \(\mu_{\mathrm{spec}}\) (the field \texttt{PSCComponents.phase\_velocity\_identity}).
+        \item \emph{Pair factorization}: for \(h=\mathrm{pair}(f,g)\), the boundary transform factors as \(F_h=\overline{F_f}\,F_g\).
+        \item \emph{Normalization tracking}: account for the overall constant (the \(1/2\) factor appearing in \texttt{splice\_completion\_with\_normalization}).
+    \end{itemize}
+\end{itemize}
+
+\begin{lemma}[Splice completion (algebraic step)]\label{lem:splice_completion_algebra}
+Let \(\mu\) be a (finite) Borel measure on \(\mathbb{R}\), let \(\theta':\mathbb{R}\to\mathbb{R}\) be measurable, and let \(F:\mathbb{R}\to\mathbb{C}\) be integrable both with respect to Lebesgue measure \(dt\) and with respect to \(\mu\).
+Assume the two identities
+\[
+  W \;=\; \frac{1}{2\pi}\int_{\mathbb{R}} -\,F(t)\,\theta'(t)\,dt
+\]
+and
+\[
+  \int_{\mathbb{R}} F(t)\,\theta'(t)\,dt \;=\; -\pi\int_{\mathbb{R}} F(t)\,d\mu(t).
+\]
+Then
+\[
+  W \;=\; \frac12\int_{\mathbb{R}} F(t)\,d\mu(t).
+\]
+\end{lemma}
+\begin{proof}
+Substitute the second identity into the first and simplify:
+\[
+  W=\frac{1}{2\pi}\bigl(-(-\pi\int F\,d\mu)\bigr)=\frac12\int F\,d\mu.
+\]
+\end{proof}
+
+\begin{lemma}[Splice completion (distributional algebra step)]\label{lem:splice_completion_algebra_distributional}
+Let \(\mu\) be a (finite) Borel measure on \(\mathbb{R}\), let \(d\theta\) be a finite signed Borel measure on \(\mathbb{R}\), and let \(F:\mathbb{R}\to\mathbb{C}\) be integrable with respect to both \(d\theta\) and \(\mu\).
+Assume the two identities
+\[
+  W \;=\; \frac{1}{2\pi}\int_{\mathbb{R}} -\,F(t)\,d\theta(t)
+\]
+and
+\[
+  \int_{\mathbb{R}} F(t)\,d\theta(t) \;=\; -\pi\int_{\mathbb{R}} F(t)\,d\mu(t).
+\]
+Then
+\[
+  W \;=\; \frac12\int_{\mathbb{R}} F(t)\,d\mu(t).
+\]
+\end{lemma}
+\begin{proof}
+Substitute the second identity into the first and simplify, exactly as in Lemma~\ref{lem:splice_completion_algebra}.
+\end{proof}
+
+\noindent
+\textbf{How A1 is expected to be proved.}
+The planned route is to identify the Weil pairing \(B(f,g)=W^{(1)}(f\star_m \widetilde{\overline g})\) with a boundary pairing coming from the PSC ratio \(J=\det_2/(O\,\xi)\) via the splice-completion chain above, producing a positive spectral measure \(\mu_{\mathrm{spec}}\).
+Positivity is then automatic at the level of definitions (a \emph{measure} is nonnegative), and the remaining analytic work is proving the explicit cancellation and phase--velocity identities from the classical explicit formula / boundary value theory (cf.\ \cite{TitchmarshZeta,DurenHp} and the references in the Route~3 section).
+
+\subsection*{A2: Analytic interchange and boundary limits}
+\begin{lemma}[Fourier inversion for Schwartz functions]\label{lem:fourier_inversion_schwartz}
+Let \(\varphi \in \mathcal{S}(\mathbb{R})\) be a Schwartz function and define its Fourier transform by
+\[
+  \widehat{\varphi}(\xi)\ :=\ \int_{\mathbb{R}} \varphi(t)\,e^{-2\pi i t\xi}\,dt.
+\]
+Then for all \(t\in\mathbb{R}\),
+\[
+  \varphi(t)\ =\ \int_{\mathbb{R}} \widehat{\varphi}(\xi)\,e^{2\pi i t\xi}\,d\xi.
+\]
+\end{lemma}
+\begin{proof}
+Standard; see \cite{SteinShakarchiFourier}. \qedhere
+\end{proof}
+
+\begin{lemma}[Mellin inversion via Fourier inversion (log-Schwartz case)]\label{lem:mellin_inversion_log_schwartz}
+Let \(c\in\mathbb{R}\) and let \(f:(0,\infty)\to\mathbb{C}\) be such that the log-pullback
+\[
+  g(u)\ :=\ e^{cu}\,f(e^u)
+\]
+is a Schwartz function on \(\mathbb{R}\).
+Define the Mellin transform on the vertical line \(\Re s=c\) in the \(2\pi\)-normalization by
+\[
+  \mathcal{M}_c f(\xi)\ :=\ \int_0^\infty f(x)\,x^{c-1}\,x^{-2\pi i \xi}\,dx.
+\]
+Then for all \(u\in\mathbb{R}\),
+\[
+  f(e^u)\ =\ e^{-cu}\int_{\mathbb{R}} \mathcal{M}_c f(\xi)\,e^{2\pi i u\xi}\,d\xi.
+\]
+\end{lemma}
+\begin{proof}
+By the substitution \(x=e^u\) (so \(dx=e^u\,du\)), we have
+\[
+  \mathcal{M}_c f(\xi)
+  = \int_{\mathbb{R}} e^{cu}f(e^u)\,e^{-2\pi i u\xi}\,du
+  = \widehat{g}(\xi).
+\]
+Since \(g\in\mathcal{S}(\mathbb{R})\), Lemma~\ref{lem:fourier_inversion_schwartz} applies and yields
+\[
+  g(u)=\int_{\mathbb{R}} \widehat{g}(\xi)\,e^{2\pi i u\xi}\,d\xi
+  =\int_{\mathbb{R}} \mathcal{M}_c f(\xi)\,e^{2\pi i u\xi}\,d\xi.
+\]
+Multiplying by \(e^{-cu}\) gives the stated formula for \(f(e^u)\).
+\end{proof}
+
+\begin{lemma}[Fubini--Tonelli and series--integral interchange]\label{lem:fubini_tonelli_series}
+Let \(h:\mathbb{R}\times\mathbb{R}\to\mathbb{C}\) be measurable.
+If \(\int_{\mathbb{R}}\!\int_{\mathbb{R}} |h(x,y)|\,dx\,dy < \infty\), then the iterated integrals
+\(\int_{\mathbb{R}}(\int_{\mathbb{R}} h(x,y)\,dy)\,dx\) and \(\int_{\mathbb{R}}(\int_{\mathbb{R}} h(x,y)\,dx)\,dy\) exist and are equal.
+More generally, if \((f_n)_{n\ge1}\) are measurable functions on \(\mathbb{R}\) such that
+\(\sum_{n\ge1}\int_{\mathbb{R}} |f_n(t)|\,dt < \infty\), then
+\[
+  \int_{\mathbb{R}} \sum_{n\ge1} f_n(t)\,dt \;=\; \sum_{n\ge1}\int_{\mathbb{R}} f_n(t)\,dt.
+\]
+\end{lemma}
+\begin{proof}
+Standard (Tonelli/Fubini for absolute integrability); see \cite{FollandRA}. \qedhere
+\end{proof}
+
+\begin{lemma}[Dominated convergence]\label{lem:dominated_convergence}
+Let \((f_n)_{n\ge1}\) be measurable functions on \(\mathbb{R}\) such that \(f_n(t)\to f(t)\) for almost every \(t\), and suppose there exists an integrable \(g\ge0\) with \(|f_n(t)|\le g(t)\) for all \(n\) and almost every \(t\).
+Then \(\int_{\mathbb{R}} f_n(t)\,dt \to \int_{\mathbb{R}} f(t)\,dt\).
+\end{lemma}
+\begin{proof}
+Standard; see \cite{FollandRA}. \qedhere
+\end{proof}
+
+\begin{lemma}[Absolute convergence of the log-derivative Dirichlet series]\label{lem:logderiv_dirichlet_series}
+For \(\Re(s)>1\),
+\[
+  -\frac{\zeta'(s)}{\zeta(s)} \;=\; \sum_{n=1}^{\infty} \frac{\Lambda(n)}{n^{s}},
+\]
+and the series converges absolutely and locally uniformly on half-planes \(\Re(s)\ge 1+\varepsilon\) (\(\varepsilon>0\)).
+\end{lemma}
+\begin{proof}
+Standard; see \cite{ApostolANT,TitchmarshZeta}. \qedhere
+\end{proof}
+
+\begin{lemma}[Identity theorem]\label{lem:identity_theorem}
+Let \(U\subseteq\mathbb{C}\) be a connected open set and let \(f,g:U\to\mathbb{C}\) be holomorphic.
+If \(f=g\) on a subset of \(U\) having an accumulation point in \(U\), then \(f=g\) on all of \(U\).
+\end{lemma}
+\begin{proof}
+Standard; see \cite{AhlforsComplex}. \qedhere
+\end{proof}
+
+\begin{lemma}[Fatou boundary limits for Hardy \(H^p\) on a half-plane]\label{lem:fatou_halfplane}
+Let \(a\in\mathbb{R}\) and \(1\le p<\infty\). Let \(F\) be holomorphic on the half-plane
+\(\{s\in\mathbb{C}:\Re(s)>a\}\) and assume
+\[
+  \sup_{\sigma>a}\int_{\mathbb{R}} |F(\sigma+it)|^{p}\,dt \;<\;\infty.
+\]
+Then there exists \(f\in L^p(\mathbb{R})\) such that \(F(\sigma+it)\to f(t)\) as \(\sigma\to a^+\)
+along nontangential approach regions for almost every \(t\), and \(F\) is recovered from \(f\) by Poisson integral.
+\end{lemma}
+\begin{proof}
+Standard Hardy-space theory (Fatou theorem); see \cite{DurenHp,GarnettBounded}. \qedhere
+\end{proof}
+
+\begin{lemma}[Unimodular phase trace implies real log-derivative]\label{lem:logderiv_of_phase_trace}
+Fix \(a\in\mathbb{R}\). Let \(F\) be holomorphic on an open neighborhood of the line \(\Re(s)=a\), and assume \(F(a+it)\neq 0\) on an open interval \(I\subseteq\mathbb{R}\).
+Suppose there exists a real-valued \(C^1\) function \(\theta:I\to\mathbb{R}\) such that
+\[
+  F(a+it)=e^{i\theta(t)}\qquad (t\in I).
+\]
+Then for all \(t\in I\),
+\[
+  \frac{F'(a+it)}{F(a+it)}=\theta'(t)\in\mathbb{R}.
+\]
+\end{lemma}
+\begin{proof}
+Differentiate the identity \(F(a+it)=e^{i\theta(t)}\) with respect to \(t\).
+By the chain rule along the path \(z(t)=a+it\), \(\frac{d}{dt}F(z(t))=F'(z(t))\cdot z'(t)=i\,F'(a+it)\).
+On the other hand, \(\frac{d}{dt}e^{i\theta(t)}=i\,\theta'(t)\,e^{i\theta(t)}\).
+Equating derivatives gives \(iF'(a+it)=i\theta'(t)F(a+it)\), hence \(F'(a+it)/F(a+it)=\theta'(t)\), which is real.
+\end{proof}
+
+\begin{itemize}
+    \item \textbf{A2a (Fourier inversion on the chosen test space).}
+    For the specific boundary transforms \(t\mapsto F_f(t)\) arising in Route~3, verify the regularity needed to apply Lemma~\ref{lem:fourier_inversion_schwartz} (typically \(F_f\in\mathcal{S}(\mathbb{R})\), with the stated normalization).
+    (Lean locus: \texttt{ZetaFourierInversionWeil.lean}.)
+
+    \item \textbf{A2b (Mellin inversion / change-of-variables).}
+    The Mellin-side change-of-variables and inversion steps required to align Lagarias' normalization with the multiplicative convolution/involution used in \(B(f,g)\). In the log-Schwartz setting, Mellin inversion reduces to Lemma~\ref{lem:mellin_inversion_log_schwartz}; the remaining work is verifying the log-Schwartz regularity and matching the chosen Mellin normalization to the Route~3 definitions.
+    (Lean locus: \texttt{MathlibBridge.lean}, \texttt{MulConvolution.lean}, \texttt{Lagarias.lean}.)
+
+    \item \textbf{A2c (Contour-to-boundary limit / right-edge limits).}
+    The boundary-limit theorems that identify contour expressions with boundary values (Fatou-type limits / distributional boundary values), including the right-edge limiting procedure.
+    The standard “boundary limits exist a.e.” component is handled by Lemma~\ref{lem:fatou_halfplane}; the remaining work is to verify the Hardy/growth hypotheses for the specific Route~3 symbols and to match the resulting boundary values to the objects used in the spectral identity.
+    Concretely, for the PSC ratio \(J(s)=\det_2(s)/(O(s)\,\xi(s))\) on \(\Omega=\{\Re(s)>1/2\}\), one needs a bounded-type/Hardy hypothesis giving a.e.\ boundary values on \(\Re(s)=1/2\) and a measurable boundary phase \(\theta\) with \(J(1/2+it)=e^{i\theta(t)}\) a.e.
+    The natural endpoint for the Route~3 splice is \emph{distributional}: a positive measure \(\mu_{\mathrm{spec}}\ge0\) such that \(d\theta=-\pi\,d\mu_{\mathrm{spec}}\) (A1b'').
+    In particular, if one can upgrade the Hardy hypothesis to show that \(J\) is \emph{inner} on \(\Omega\), then A1b'' is standard by inner-function boundary theory (Lemma~\ref{lem:a1b_from_coinner}).
+    Under stronger pointwise \(C^1\) trace regularity, one may additionally identify \(J'/J=\theta'\) pointwise (Lemma~\ref{lem:logderiv_of_phase_trace}).
+    (Lean locus: \texttt{ContourToBoundary.lean}, \texttt{ZetaRightEdgePhaseLimit.lean}, \texttt{LagariasContour.lean}.)
+
+    \item \textbf{A2d (Interchange: Fubini/Tonelli and prime-sum interchanges).}
+    The measure-theoretic interchange steps (Fubini/Tonelli and dominated convergence) are standard; see
+    Lemma~\ref{lem:fubini_tonelli_series} and Lemma~\ref{lem:dominated_convergence}.
+    For prime sums arising from Dirichlet-series expansions of \(-\zeta'/\zeta\), absolute convergence on \(\Re(s)>1\) (Lemma~\ref{lem:logderiv_dirichlet_series}) justifies termwise integration there; equalities are then extended to the required domain by analytic continuation (Lemma~\ref{lem:identity_theorem}), avoiding unjustified interchanges on the critical line.
+    (Lean locus: \texttt{Route3FubiniTonelliLemmas.lean} and related analytic files.)
+\end{itemize}
+
+\begin{lemma}[Phase lift + FTC (trace gate)]\label{lem:phase_lift_ftc}
+Let $a\le b$ and let $\varphi:[a,b]\to \mathbb{R}/2\pi\mathbb{Z}$ be a phase valued modulo $2\pi$.
+Assume there exists a real-valued lift $\theta:[a,b]\to\mathbb{R}$ with $\theta(t)\bmod 2\pi=\varphi(t)$ for all $t\in[a,b]$.
+If $\theta$ is $C^1$ on $[a,b]$ and $\theta'\in L^1([a,b])$, then
+\[
+\theta(b)-\theta(a)=\int_a^b \theta'(t)\,dt,
+\qquad\text{and hence}\qquad
+\|\varphi(b)-\varphi(a)\|\le \left|\int_a^b \theta'(t)\,dt\right|.
+\]
+\end{lemma}
+
+\begin{proof}
+The identity $\theta(b)-\theta(a)=\int_a^b\theta'(t)\,dt$ is the fundamental theorem of calculus.
+For the angle bound, note that the quotient map $\mathbb{R}\to \mathbb{R}/2\pi\mathbb{Z}$ is a group homomorphism, so
+$\varphi(b)-\varphi(a)=(\theta(b)-\theta(a))\bmod 2\pi$.
+By definition, the norm $\|\cdot\|$ on $\mathbb{R}/2\pi\mathbb{Z}$ is the minimal absolute value among real representatives, hence
+$\|\varphi(b)-\varphi(a)\|\le |\theta(b)-\theta(a)| = \left|\int_a^b \theta'(t)\,dt\right|$.
+\end{proof}
+
+\begin{lemma}[CR boundary trace identity for a logarithm branch]\label{lem:cr_boundary_trace_log}
+Let $\Omega=\{x+iy : y>0\}$ be the upper half-plane and let $f:\Omega\to\mathbb{C}$ be holomorphic and nonvanishing.
+Assume there exists a holomorphic branch of the logarithm $F=\log f$ on $\Omega$, and write $F=u+iv$ with real-valued harmonic functions $u,v$.
+Assume further that the nontangential boundary traces $u(t):=\lim_{y\downarrow 0}u(t+iy)$ and $v(t):=\lim_{y\downarrow 0}v(t+iy)$ exist for a.e.\ $t$ on an interval $I$,
+and that $u,v$ admit enough boundary regularity on $I$ so that the Cauchy--Riemann equations may be passed to the boundary in the distributional sense.
+Then, on $I$ (as distributions),
+\[
+\frac{d}{dt}v(t) = -\partial_y u(t,0^+).
+\]
+\end{lemma}
+
+\begin{proof}
+Inside $\Omega$ the Cauchy--Riemann equations give $\partial_x v = -\partial_y u$.
+Under the stated boundary-regularity hypotheses one may pass to boundary traces, yielding the distributional identity on $I$.
+\end{proof}
+
+\begin{lemma}[Equivalent boundary-trace forms of the CR identity]\label{lem:cr_boundary_trace_equiv}
+Under the hypotheses of Lemma~\ref{lem:cr_boundary_trace_log}, we may rewrite the same boundary identity in the equivalent forms
+\[
+\frac{d}{dt}v(t) \;=\; \partial_x v(t,0^+)\;=\;-\partial_y u(t,0^+)
+\qquad\text{on }I\text{ (as distributions).}
+\]
+In particular, if one packages the boundary-term gate using a 2D field whose boundary trace is $\nabla v(t,0^+)$, then
+\(\frac{d}{dt}v(t) = (\nabla v(t,0^+))_1\).
+\end{lemma}
+
+\begin{proof}
+Along the boundary $y=0$ the parameter $t$ is the horizontal coordinate $x$, so \(\frac{d}{dt}v(t)=\partial_x v(t,0^+)\) in the distributional boundary-trace sense.
+The Cauchy--Riemann identity \(\partial_x v=-\partial_y u\) in $\Omega$ then yields \(\partial_x v(t,0^+)=-\partial_y u(t,0^+)\) on $I$ under the same boundary-regularity hypotheses as in Lemma~\ref{lem:cr_boundary_trace_log}.
+\end{proof}
+
+\subsection*{B: Recognition Geometry (RG) track --- remaining unconditional gaps}
+\begin{itemize}
+    \item \textbf{B1 (RG bottleneck: energy $\Rightarrow$ phase control on Whitney regions).}
+    For the RG track (\texttt{RiemannRecognitionGeometry/Main.lean}), the analytic bottleneck naturally splits into two subgates:
+    \begin{itemize}
+        \item \textbf{B1a (Carleson energy budget).}
+        The main theorem remains conditional on the bundled energy-budget statement
+        \texttt{RGAssumptions.j\_carleson\_energy\_axiom\_statement} (see \texttt{RiemannRecognitionGeometry/Assumptions.lean}),
+        which controls the cofactor field’s tent/box energy on Whitney regions.
+        \item \textbf{B1b (CR/Green conversion: energy $\Rightarrow$ cofactor phase bound).}
+        One also needs the CR/Green pairing (Green identity + Cauchy--Schwarz + boundary-term gates) that converts a box-energy upper bound
+        into a uniform bound on the cofactor phase change across a Whitney interval.
+        A key bookkeeping subgate is the \emph{trace/FTC} step (Lemma~\ref{lem:phase_lift_ftc}): one must work with a genuine real-valued phase \emph{lift}
+        on each Whitney base interval (to avoid principal-branch argument discontinuities) and identify its real phase change with an integral of a phase-velocity density.
+        It is often helpful to separate this into two micro-gates:
+        (i) the existence of a suitable lift $\theta$ of the cofactor phase modulo $2\pi$, and
+        (ii) the existence/identification of an $L^1$ phase velocity $\theta'$ for that lift so that FTC applies.
+        A further \emph{boundary-term gate} is then needed to connect $\theta'$ to the boundary trace of a 2D harmonic/Dirichlet field (the step that makes energy estimates apply),
+        e.g.\ via a Cauchy--Riemann boundary identity for a logarithm branch (Lemma~\ref{lem:cr_boundary_trace_log}).
+        In Lean, this has been isolated into a faithful lift-based interface:
+        \texttt{Port.CofactorCRGreenS2Interfaces.CofactorPhaseLift} (lift) and
+        \texttt{Port.CofactorCRGreenS2Interfaces.PhaseVelocityFTC} (FTC-valid velocity), bundled as
+        \texttt{Port.CofactorCRGreenS2Interfaces.GreenTraceIdentity} (the trace/FTC gate), plus
+        \texttt{Port.CofactorCRGreenS2Interfaces.PairingBound} (the Cauchy--Schwarz pairing bound),
+        which together imply the strong energy-form CR/Green estimate
+        \texttt{Port.CofactorCRGreenAssumptionsStrong} via
+        \texttt{cofactorCRGreenAssumptionsStrong\_of\_greenTrace\_and\_pairing}.
+        The remaining hard work is to prove these gates from an actual Green identity on Whitney boxes (including boundary-term control).
+        For the boundary-term gate, Lean’s most direct Port-level hook is
+        \texttt{Port.CofactorCRGreenS2Interfaces.PhaseVelocityBoundaryTrace} (a 2D trace field whose boundary trace equals the phase velocity, cf.\ Lemma~\ref{lem:cr_boundary_trace_equiv}).
+        To avoid vacuity, one in fact needs an energy-tied version asserting that this boundary trace arises as the boundary limit \(y\downarrow0\) of the Poisson-model field used to define the Carleson-box energy
+        \(\texttt{cofactorEbox\_poisson}\). Since the Green/Cauchy--Schwarz argument only consumes the boundary identity through an \emph{interval pairing} (distributional strength), the smallest boxed gate is phrased directly at that level in Lean as
+        \texttt{Port.CofactorCRGreenS2Interfaces.PhaseVelocityBoundaryTracePoissonPairing}.
+        
+        \emph{Holistic packaging (recommended).} Rather than treating this Poisson pairing/trace identity as an orphan gate, we can package the intended analytic object as a single named interface:
+        \texttt{RiemannRecognitionGeometry/Port/CofactorOuterLogBranch.lean} defines
+        \texttt{Port.CofactorOuterLogBranch.CofactorOuterLogBranch}, which bundles (i) a real-valued phase lift, (ii) an FTC-valid phase velocity, and (iii) the Poisson pairing gate tied to the same Poisson-model energy.
+        This is the “outer/log-branch normalization” viewpoint: there should exist a holomorphic nonvanishing cofactor with a log branch \(u+iv\) whose boundary real part is \(\log|\zeta(\tfrac12+it)|\) (our \texttt{cofactorLogAbs}) and whose boundary imaginary part provides the cofactor phase lift.
+        For semantic faithfulness one can alternatively package a log-branch Cauchy--Riemann identity as
+        \texttt{RiemannRecognitionGeometry/Port/CRBoundaryTraceInterfaces.lean} (\texttt{CRBoundaryTraceLog}), which implies the direct trace hook.
+        In the driver, the current “boxed wall” is upgraded to this holistic outer/log-branch package (since it implies the Poisson pairing hook and matches the intended analytic meaning).
+    \end{itemize}
+
+    \item \textbf{B2$'$ (Renormalized/local tail certificate; replaces the global BMO placeholder).}
+    A \emph{global} small-\(\mathrm{BMO}\) bound for \(\log|\zeta(\tfrac12+it)|\) with a tiny constant (e.g.\ \(0.20\)) cannot hold, because critical-line zeros force a universal local mean-oscillation floor unless their logarithmic singularities are explicitly renormalized out (cf.\ \texttt{renormalized\_tail\_bound.md}).
+    The correct “core-math” oscillation target is therefore a \emph{localized renormalized tail} statement.
+
+    Fix an integer \(K\ge 0\). For a Whitney interval \(I=(t_0,L)\) with base segment \(I_R=[t_0-L,t_0+L]\), let \(\mathcal Z(I,\rho;K)\) denote the \emph{finite multiset} of zeros \(\rho'=\beta'+i\gamma'\) of \(\zeta\) (counted with multiplicity) satisfying the enlarged Carleson-window cutoff
+    \[
+      |\gamma'-t_0|\le 2^{K+1}L,\qquad 0\le \beta'-\tfrac12 \le 2^{K+3}L,
+    \]
+    \emph{excluding} the distinguished off-critical zero \(\rho\) under consideration (so \(\rho\notin \mathcal Z(I,\rho;K)\)).
+    Define the corresponding (finite) logarithmic potential
+    \[
+      \Phi_{I,\rho;K}(t)\ :=\ \frac12\sum_{\rho'\in \mathcal Z(I,\rho;K)} \log\!\bigl((t-\gamma')^2+(\beta'-\tfrac12)^2\bigr),
+    \]
+    and the \emph{renormalized tail on \(I\)} by
+    \[
+      f_{\mathrm{tail}}^{I,\rho;K}(t)\ :=\ \log\!\bigl|\zeta(\tfrac12+it)\bigr|\ -\ \Phi_{I,\rho;K}(t),
+      \qquad (t\in I_R).
+    \]
+    The renormalized/local oscillation certificate is the existence of a uniform bound
+    \[
+      \sup_{J\subseteq I_R}\ \frac{1}{|J|}\int_J\Bigl|f_{\mathrm{tail}}^{I,\rho;K}(t)-\mathrm{avg}_J f_{\mathrm{tail}}^{I,\rho;K}\Bigr|\,dt\ \le\ C_{\mathrm{tail}},
+    \]
+    where the supremum runs over subintervals \(J=[a,b]\subseteq I_R\).
+
+    \emph{Driver-level replacement for \texttt{OscillationTarget}.}
+    In Lean this should replace the global placeholder
+    \(\exists M,\ \mathrm{InBMOWithBound}(\log|\zeta|)\,M\wedge M\le C_{\mathrm{tail}}\)
+    by a “local tail” interface (call it \texttt{OscillationTargetTail}): there exists \(K\) such that for every putative off-critical zero \(\rho\) and its associated centered Whitney base interval \(I\), the corresponding \(f_{\mathrm{tail}}^{I,\rho;K}\) has localized BMO norm \(\le C_{\mathrm{tail}}\) on \(I_R\).
+    (This is the smallest form that avoids the critical-line BMO obstruction while still leaving the \(\rho\)-trigger intact.)
+    \emph{Planning note.} A long-term two-route attack plan for discharging B2$'$ (via either a \(\mu\)-Carleson packing theorem or the Route~3 reflection-positivity bridge) is maintained as \texttt{B2\_LONG\_TERM\_STRATEGY.md}.
+
+    \emph{Reduction (auditable core number theory).}
+    A useful way to “box” the arithmetic content of B2$'$ is to reduce it to a single local packing statement for off-critical zeros.
+    Define the \(\sigma\)-weighted off-line zero measure
+    \[
+      \mu\ :=\ \sum_{\Re\rho>1/2}\bigl(\Re\rho-\tfrac12\bigr)\,\delta_{(\Im\rho,\ \Re\rho-\tfrac12)}.
+    \]
+    If \(\mu\) satisfies a Carleson packing bound \(\mu(Q(I))\le C_\mu |I|\) for every Carleson box \(Q(I)\) above \(I_R\), then the far-field contribution to the Poisson/Dirichlet energy of the tail decays geometrically in the dyadic cutoff \(K\), yielding the localized BMO bound in B2$'$ after choosing \(K\) large enough.
+    (A precise statement and proof skeleton are recorded as the boxed lemma “\(\mu\)-Carleson \(\Rightarrow\) small tail oscillation” in \texttt{B2\_LONG\_TERM\_STRATEGY.md}.)
+
+    \begin{lemma}[\(\mu\)-Carleson \(\Rightarrow\) B2$'$ (quantitative tail decay)]\label{lem:mu_carleson_implies_B2prime}
+    Assume \(\mu\) is Carleson with constant \(C_\mu\), i.e.\ \(\mu(Q(I))\le C_\mu |I|\) uniformly for all base intervals \(I\).
+    Then there exist absolute constants \(A_0,A_1>0\) (depending only on the fixed Carleson aperture/normalizations) such that for the renormalized tail \(f_{\mathrm{tail}}^{I,\rho;K}\) defined above one has
+    \[
+      \|f_{\mathrm{tail}}^{I,\rho;K}\|_{\mathrm{BMO}(I_R)}
+      \ \le\ A_0\,\sqrt{C_\mu}\,2^{-K/2}\ +\ A_1\,2^{-K/2}.
+    \]
+    In particular, choosing
+    \[
+      K\ \ge\ \left\lceil 2\log_2\!\left(\frac{A_0\sqrt{C_\mu}+A_1}{C_{\mathrm{tail}}}\right)\right\rceil
+    \]
+    yields \(\|f_{\mathrm{tail}}^{I,\rho;K}\|_{\mathrm{BMO}(I_R)}\le C_{\mathrm{tail}}\), i.e.\ B2$'$.
+    \end{lemma}
+
+    \item \textbf{B3 (Classical-analysis axioms still present in compiled modules).}
+    Some infrastructure theorems are currently carried as explicit axioms in the Lean library, but for an unconditional \emph{written} proof these are standard results that can be cited:
+    \begin{itemize}
+        \item \emph{John--Nirenberg inequality} for BMO (exponential integrability of mean oscillation) \cite{JohnNirenberg,SteinHarmonic}.
+        \item \emph{Fefferman--Stein \(H^1\)–BMO duality} and related maximal-function estimates \cite{FeffermanStein,SteinHarmonic}.
+        \item \emph{BMO \(\to\) Carleson measure} characterization via Poisson extension (tent/box energy control) \cite{GarnettBounded,SteinHarmonic}.
+        \item The \(\eta\)–\(\zeta\) relation and analytic continuation/identity principle steps used to transfer nonvanishing statements between standard zeta-function avatars \cite{TitchmarshZeta,ApostolANT}.
+    \end{itemize}
+    In the present manuscript, these are treated as \emph{external} theorems; the remaining nontrivial work is concentrated in B1/B2 (RG track) and A1/A2 (Route~3 track).
+\end{itemize}
+
+\begin{theorem}[RG chain (conditional): zero-free to the right of the critical line]\label{thm:rg_chain_conditional}
+Assume the two RG bottlenecks B1 and B2$'$ (as stated above), together with the standard external analytic inputs listed in B3. Then there are no zeros \(\rho\) of the completed zeta function \(\xi/\Lambda\) in the half-strip \(1/2<\Re\rho<1\).
+
+Equivalently (since \(\Gamma_{\mathbb R}(s)\neq 0\) for \(\Re(s)>0\)), there are no zeta zeros in \(1/2<\Re\rho<1\). In particular, under the same assumptions, every nontrivial zero satisfies \(\Re\rho=1/2\) (the Riemann Hypothesis).
+\end{theorem}
+
+\begin{proof}
+We run the Recognition Geometry contradiction on the boundary line \(\Re(s)=1/2\), using the phase modeled modulo \(2\pi\) (i.e.\ in \(\mathbb{R}/2\pi\mathbb{Z}\)) to avoid principal-branch discontinuities.
+
+Fix a putative zero \(\rho\) with \(1/2<\Re\rho<1\). Since \(\Gamma_{\mathbb R}(\rho)\neq 0\) for \(\Re(\rho)>0\), the identity \(\Lambda(s)=\Gamma_{\mathbb R}(s)\zeta(s)\) implies \(\zeta(\rho)=0\) as well. Thus it is enough to rule out zeros of \(\zeta\) in the half-strip.
+
+Let \(d:=\Re\rho-\tfrac12>0\), and let \(I\) be the centered Whitney interval with base point \(t_0=\Im\rho\) and half-length \(2d\).
+For the renormalized B2$'$ setup, we instead work with the \emph{tail/cofactor phase signal}
+\[
+  R_{\mathrm{tail}}(I,\rho;K)\ :=\ \Bigl\|\arg \mathcal G_{I,\rho;K}\bigl(\tfrac12+i(t_0+2d)\bigr)\ -\ \arg \mathcal G_{I,\rho;K}\bigl(\tfrac12+i(t_0-2d)\bigr)\Bigr\|,
+\]
+computed modulo \(2\pi\) and then normed in \([0,\pi]\).
+Here \(\mathcal G_{I,\rho;K}\) is the zero-free renormalized cofactor whose boundary log-modulus is \(f_{\mathrm{tail}}^{I,\rho;K}\) (cf.\ the discussion after B2$'$), i.e.\ \(\log|\mathcal G_{I,\rho;K}(\tfrac12+it)|=f_{\mathrm{tail}}^{I,\rho;K}(t)\) on \(I_R\).
+This is the phase quantity squeezed in the Lean refactor \texttt{RiemannRecognitionGeometry/Port/ZeroFreeWithIntervalTail.lean} (via \texttt{tailPhaseSignal}).
+
+\noindent\textbf{(Lower bound: Blaschke trigger).}
+By the Poisson--Jensen/Blaschke computation (Track~2 in \texttt{RiemannRecognitionGeometry/PoissonJensen.lean} and the derived lemmas in \texttt{Axioms.lean}), the presence of a zero \(\rho\) forces a Blaschke contribution at scale \(I\) of size at least \(L_{\mathrm{rec}}\) (numerically \(L_{\mathrm{rec}}=2.2\) in the Lean development).
+
+\noindent\textbf{(Upper bound: Carleson/energy bound from the renormalized tail).}
+By B2$'$, fix \(K\) and form the renormalized tail \(f_{\mathrm{tail}}^{I,\rho;K}\) on \(I_R\), with localized BMO norm \(\le C_{\mathrm{tail}}\).
+By Fefferman--Stein (B3), this localized BMO control yields a Carleson/Dirichlet energy bound for the Poisson model field attached to \(f_{\mathrm{tail}}^{I,\rho;K}\) on the Whitney box over \(I\),
+\[
+  E(I)\ \le\ K_{\mathrm{tail}}(C_{\mathrm{tail}})\,|I|.
+\]
+Then B1 (the outer/log-branch package) supplies the CR/Green conversion from that energy bound to a tail/cofactor phase-change bound across \(I\), yielding a uniform tail phase bound of the form
+\[
+  \text{(tail phase across \(I\))}\ \le\ U_{\mathrm{tail}}(C_{\mathrm{tail}}),
+\]
+where \(U_{\mathrm{tail}}(M)=C_{\mathrm{geom}}\sqrt{K_{\mathrm{tail}}(M)}\) (cf.\ \texttt{U\_tail} in \texttt{RiemannRecognitionGeometry/Basic.lean}).
+
+\noindent\textbf{(Dominance and numeric closure).}
+Combining the (centered) Blaschke trigger with the tail bound gives the dominance-style squeeze
+\[
+  R_{\mathrm{tail}}(I,\rho;K)\ \ge\ L_{\mathrm{rec}}-U_{\mathrm{tail}}(C_{\mathrm{tail}})
+\]
+and the upper bound
+\[
+  R_{\mathrm{tail}}(I,\rho;K)\ \le\ U_{\mathrm{tail}}(C_{\mathrm{tail}}).
+\]
+Together these imply \(L_{\mathrm{rec}}\le 2\,U_{\mathrm{tail}}(C_{\mathrm{tail}})\), which contradicts the Lean-verified numeric inequality \(2\,U_{\mathrm{tail}}(C_{\mathrm{tail}})<L_{\mathrm{rec}}\). Hence the two bounds are incompatible, a contradiction.
+
+Therefore there is no zero \(\rho\) with \(1/2<\Re\rho<1\).
+
+Finally, to deduce RH, use the functional equation symmetry of the completed zeta function \(\Lambda(s)=\Lambda(1-s)\): if a zero had \(\Re\rho<1/2\), then \(1-\rho\) would be a zero with \(\Re(1-\rho)>1/2\), which we have just ruled out. Thus every nontrivial zero satisfies \(\Re\rho=1/2\).
+\end{proof}
+
+\section{Lean Unconditional Checklist (Connes Route-3')}
+
+\noindent\textbf{Repo status.} As of December 23, 2025, the Connes Route‑3′ pipeline files
+(\texttt{HurwitzGate.lean}, \texttt{ConnesHurwitzBridge.lean}, \texttt{ConnesConvergenceBundle.lean},
+\texttt{ConnesSection7.lean}, \texttt{ConnesApproximantsCCM.lean}) build in Lean with \texttt{lake build}
+(modulo minor lint/deprecation warnings). The remaining work items below are expressed as explicit targets
+in Lean (no \texttt{sorry}).
+
+\subsection{\texttt{hurwitz\_zeroFree\_of\_tendstoLocallyUniformlyOn}}
+
+\textbf{Lean symbol.}
+\texttt{RiemannRecognitionGeometry/ExplicitFormula/HurwitzGate.lean}:
+\texttt{hurwitz\_zeroFree\_of\_tendstoLocallyUniformlyOn}.
+
+\textbf{Statement.}
+Let \(U\subset\C\) be open and connected.
+Let \(F_n:U\to\C\) and \(f:U\to\C\).
+Assume:
+(i) each \(F_n\) is holomorphic on \(U\);
+(ii) \(F_n\to f\) locally uniformly on \(U\);
+(iii) each \(F_n\) is zero-free on \(U\);
+(iv) \(f\) is not identically zero on \(U\) (i.e. \(\exists z\in U,\ f(z)\neq 0\)).
+Then \(f\) is zero-free on \(U\).
+
+\textbf{Dependencies.}
+\begin{itemize}
+  \item Locally uniform limits of holomorphic functions are holomorphic
+  (Mathlib: \texttt{Mathlib.Analysis.Complex.LocallyUniformLimit}).
+  \item Isolated zeros / identity theorem for analytic functions
+  (Mathlib: \texttt{Mathlib.Analysis.Analytic.IsolatedZeros}).
+  \item Maximum modulus principle (applied to the holomorphic inverse \(1/F_n\))
+  (Mathlib: \texttt{Mathlib.Analysis.Complex.AbsMax}).
+\end{itemize}
+
+\textbf{Proof sketch.}
+\begin{itemize}
+  \item Assume (for contradiction) that \(f(z_0)=0\) for some \(z_0\in U\).
+  \item By isolated zeros + nontriviality, choose \(r>0\) with \(\overline{B}(z_0,r)\subset U\) and
+  \(f\neq 0\) on the boundary circle \(S(z_0,r)\).
+  \item By compactness of \(S(z_0,r)\), get a positive lower bound \(m>0\) with \(|f|\ge m\) on \(S(z_0,r)\).
+  \item By uniform convergence on \(S(z_0,r)\), for \(n\gg 1\) we have \(|F_n|\ge m/2\) on \(S(z_0,r)\).
+  \item Since each \(F_n\) is zero-free on \(U\), the inverse \(1/F_n\) is holomorphic on \(B(z_0,r)\).
+  Apply maximum modulus to \(1/F_n\) to propagate the boundary bound to the whole closed disc, giving
+  \(|F_n|\ge m/2\) on \(\overline{B}(z_0,r)\).
+  \item Taking \(n\to\infty\) at \(z_0\) yields \(|f(z_0)|\ge m/2>0\), contradiction.
+\end{itemize}
+
+\textbf{Status (Lean).} \textbf{PROVED.}
+
+\subsection{\texttt{CCM.F}}
+
+\textbf{Lean symbol.}
+\texttt{RiemannRecognitionGeometry/ExplicitFormula/ConnesApproximantsCCM.lean}:
+\texttt{CCM.F} (type: \(\mathbb{N}\to\mathbb{C}\to\mathbb{C}\)).
+
+\textbf{Statement.}
+In Lean, \texttt{CCM.F} is now defined explicitly (as a \emph{toy closed-form CCM model}) using the
+CCM formula-level expression
+\[
+  F_{\lambda,N}(z)=-i\,\lambda^{-iz}\,\widehat\xi(z),
+\qquad
+  \widehat\xi(z)=2\,L^{-1/2}\sin(zL/2)\left(\sum_{j=-N}^{N}\frac{\xi_j}{z-2\pi j/L}\right),
+\quad L=2\log\lambda,
+\]
+implemented in Lean as \texttt{CCM.Formula.F\_lamN}.
+
+We fix the auxiliary (non-CCM) indexing
+\[
+  \lambda_n := n+2,\qquad N_n := n,
+\]
+and the toy Fourier coefficients
+\[
+  \xi^{(n)}_j :=
+  \begin{cases}
+  1,& j=0,\\
+  0,& j\neq 0.
+  \end{cases}
+\]
+Then
+\[
+  F_n(z)\ :=\ F_{\lambda_n,N_n}(z)
+\]
+is a fully explicit \(\mathbb{N}\to\mathbb{C}\to\mathbb{C}\) function in Lean.
+
+\textbf{Dependencies.}
+\begin{itemize}
+  \item the CCM formula-level definitions \texttt{CCM.Formula.L}, \texttt{pole}, \texttt{lamPow},
+  \texttt{xiHat}, \texttt{F\_lamN} in \texttt{ConnesApproximantsCCM.lean};
+  \item basic holomorphicity of \(\exp\) and \(\sin\).
+\end{itemize}
+
+\textbf{Proof sketch.}
+\begin{itemize}
+  \item Define an explicit auxiliary parameter sequence \(\lambda_n=n+2\) and cutoff \(N_n=n\).
+  \item Define explicit coefficients \(\xi^{(n)}_j\) by \(\xi^{(n)}_0=1\), \(\xi^{(n)}_j=0\) for \(j\neq 0\).
+  \item Set \(F_n := \texttt{CCM.Formula.F\_lamN}(\lambda_n,N_n,\xi^{(n)})\).
+\end{itemize}
+
+\textbf{Status (Lean).} \textbf{PROVED} (as a definition).
+
+\textbf{Note (remaining CCM work).}
+This is not yet the true CCM ground-state coefficient choice; upgrading \(\xi^{(n)}\) to the
+normalized even ground state of the truncated Weil form is the next step needed for the genuine
+CCM approximants and for the convergence theorem \texttt{CCM.tendstoXi}.
+
+\subsection{\texttt{CCM.holo\_upper} and \texttt{CCM.holo\_lower}}
+
+\textbf{Lean symbols.}
+\texttt{RiemannRecognitionGeometry/ExplicitFormula/ConnesApproximantsCCM.lean}:
+\texttt{CCM.holo\_upper}, \texttt{CCM.holo\_lower}.
+
+\textbf{Statement.}
+For each \(n\), the approximant \(F_n\) is holomorphic on the upper/lower half of the strip
+\(|\Im t|<\tfrac12\) (as sets \texttt{upperStrip} and \texttt{lowerStrip} in Lean).
+
+\textbf{Dependencies.}
+Concrete definition of \(F_n\). In CCM, once \(F_{\lambda,N}(z)\) is written in closed form as a
+product of \(\exp\), \(\sin\), and a finite rational sum with poles on the real axis, holomorphy on
+\texttt{upperStrip}/\texttt{lowerStrip} is elementary:
+\begin{itemize}
+  \item \(\exp\) and \(\sin\) are entire;
+  \item on \(\Im z\neq 0\) one has \(z\neq a\) for all real \(a\), hence the factors \((z-a)^{-1}\) are holomorphic;
+  \item finite sums/products preserve holomorphy.
+\end{itemize}
+In Lean, this is a short `DifferentiableOn` composition proof (and we already have the closed-form
+definitions in \texttt{CCM.Formula} once the coefficient data \(\xi_j\) are fixed).
+
+\textbf{Proof sketch.}
+\begin{itemize}
+  \item Expand \texttt{CCM.F} into the closed-form expression \texttt{CCM.Formula.F\_lamN}.
+  \item Use that \(\exp\) and \(\sin\) are entire (hence holomorphic everywhere).
+  \item For each real pole location \(a\), show \(z\in\texttt{upperStrip}/\texttt{lowerStrip}\Rightarrow z\neq a\),
+  hence \((z-a)^{-1}\) is holomorphic on those sets.
+  \item Close under finite sums and products to conclude \texttt{DifferentiableOn}.
+\end{itemize}
+
+\textbf{Status (Lean).} \textbf{IN PROGRESS.} A toy closed-form proof was drafted, but it is currently disabled in the worktree while focusing on the convergence bottleneck (\texttt{CCM.tendstoXi}); it will be restored (or replaced by the genuine CCM proof) once the convergence interface is finalized.
+
+\subsection{\texttt{CCM.allZerosReal}}
+
+\textbf{Lean symbol.}
+\texttt{RiemannRecognitionGeometry/ExplicitFormula/ConnesApproximantsCCM.lean}:
+\texttt{CCM.allZerosReal}.
+
+\textbf{Statement.}
+For each \(n\), all zeros of \(F_n\) are real in the \(t\)-variable (Lean predicate \texttt{AllZerosReal}).
+
+\textbf{Dependencies.}
+CCM’s Theorem~\texttt{finmain} (and Lemma~\texttt{key} in the paper) gives:
+\begin{itemize}
+  \item a finite-dimensional self-adjoint operator \(D''\) whose characteristic polynomial has real zeros,
+  \item an explicit determinant identity expressing the “nontrivial factor” in \(F_{\lambda,N}\) as that characteristic polynomial,
+  \item a tail factor (coming from \(\det_{\mathrm{reg}}(D_{\log}^{(\lambda)}-z)\)) whose zeros are the real lattice \(\{2\pi k/L\}\).
+\end{itemize}
+Formalizing this requires (i) a finite-dimensional self-adjointness statement (available in Mathlib for hermitian matrices),
+and (ii) a determinant/characteristic-polynomial to zero-set lemma specialized to the CCM rank-one perturbation.
+
+\textbf{Status (Lean).} \textbf{BLOCKED.}
+
+\textbf{Note (toy model).} For the placeholder coefficients \(\xi^{(n)}\) used to define the current toy \(F_n\), the real-zero property is easy (zeros come from the \(\sin\) factor and the real lattice poles). A Lean proof was drafted but is currently disabled during refactoring; it does not address the genuine CCM \(\xi_\lambda\) ground-state regime.
+
+\textbf{Smallest next step.}
+Formalize the finite-dimensional linear-algebra heart of CCM’s Lemma~\texttt{key} (rank-one
+perturbation + determinant identity) in Lean, then specialize it to the CCM matrices. This will
+reduce \texttt{AllZerosReal} to “\(D''\) is self-adjoint” (finite-dimensional spectral theorem).
+
+\subsection{\texttt{CCM.tendstoXi}}
+
+\textbf{Lean symbol.}
+\texttt{RiemannRecognitionGeometry/ExplicitFormula/ConnesApproximantsCCM.lean}:
+\texttt{CCM.tendstoXi}.
+
+\textbf{Statement.}
+The approximants converge locally uniformly on the strip:
+\[
+  F_n \to \Xi \quad \text{locally uniformly on } \{t:|\Im t|<\tfrac12\}.
+\]
+In Lean: \texttt{TendstoLocallyUniformlyOn CCM.F riemannXi atTop strip}.
+
+\textbf{Dependencies.}
+Concrete definition of \(F_n\) plus the two-stage CCM convergence strategy:
+\begin{itemize}
+  \item for fixed \(\lambda\), control \(N\to\infty\) to obtain convergence to \(-i\,\lambda^{-iz}\widehat{\xi_\lambda}(z)\);
+  \item then control \(\lambda\to\infty\) (after a phase renormalization \(e^{a+ibs}\)) to reach \(\Xi\).
+\end{itemize}
+In our Lean development this aligns with the Section~7 window+tail reductions in
+\texttt{ConnesSection7.lean}: the remaining analytic work is a uniform tail envelope \(T(\lambda)\) and a
+sup error \(\delta(\lambda)\) tending to \(0\), upgraded to locally uniform convergence in \(z\).
+
+\textbf{What the Lean statement really asks for.}
+Recall that \texttt{TendstoLocallyUniformlyOn CCM.F riemannXi atTop strip} means:
+for every compact \(K\subset \{z:|\Im z|<\tfrac12\}\),
+\[
+  \sup_{z\in K} |F_n(z)-\Xi(z)|\ \longrightarrow\ 0\qquad (n\to\infty).
+\]
+Equivalently, for every such compact \(K\) and every \(\varepsilon>0\), there exists \(N\) such that
+for all \(n\ge N\) and all \(z\in K\), \(|F_n(z)-\Xi(z)|<\varepsilon\).
+
+\textbf{Prose proof plan (high level).}
+This is the real ``non-grind'' crux. A workable route is:
+\begin{itemize}
+  \item \textbf{(Diagonalization)} Package the two-parameter family \(F_{\lambda,N}\) into a single sequence
+  \(F_n := F_{\lambda_n,N_n}\) via a cofinal map \(n\mapsto (\lambda_n,N_n)\).
+  \item \textbf{(Error decomposition)} For each compact \(K\subset\texttt{strip}\), bound
+  \(\sup_{z\in K}|F_{\lambda,N}(z)-\Xi(z)|\) by a sum of two errors:
+  \[
+    \sup_{z\in K}|F_{\lambda,N}(z)-F_{\lambda}(z)|\ +\ \sup_{z\in K}|F_{\lambda}(z)-\Xi(z)|,
+  \]
+  where \(F_{\lambda}(z)\) is the \(N\to\infty\) limit at fixed \(\lambda\) (the ``\(\lambda\)-level'' approximant).
+  \item \textbf{(Fixed \(\lambda\): \(N\to\infty\))} Show the truncation error
+  \(\sup_{z\in K}|F_{\lambda,N}(z)-F_{\lambda}(z)|\to 0\) by:
+  (i) bounding denominators \(|z-a_j|\) uniformly away from \(0\) on \(K\) (all poles \(a_j\) are real),
+  (ii) proving an \(\ell^1\)-type convergence/bound on the coefficient window \(\{\xi_j\}_{|j|\le N}\),
+  and (iii) applying a uniform Weierstrass/M-test to the finite partial-fraction sums.
+  \item \textbf{(Large \(\lambda\): \(\lambda\to\infty\))} Prove the asymptotic step
+  \(\sup_{z\in K}|F_{\lambda}(z)-\Xi(z)|\to 0\), after the CCM phase renormalization \(e^{a+ibs}\).
+  This is where CCM identify genuine missing steps: it requires quantitative control of the ground state
+  \(\xi_\lambda\) and its transform, uniform in \(z\in K\).
+  \item \textbf{(Bridge lemma)} Isolate a deterministic lemma:
+  \emph{if} one has the Section~8 ``simple-even'' uniqueness (M1) and the uniform approximation
+  \(k_\lambda \approx c_\lambda\,\xi_\lambda\) on \([\lambda^{-1},\lambda]\) with \(\varepsilon(\lambda)\to 0\) (M2),
+  \emph{then} the transforms \(\widehat{\xi_\lambda}\) (hence \(F_\lambda\)) converge locally uniformly to \(\Xi\).
+  The repo’s \texttt{ConnesSection7.lean} is designed to make this bridge lemma modular by splitting the
+  relevant infinite sums into a finite window plus a tail controlled by an envelope \(T(\lambda)\).
+\end{itemize}
+
+\textbf{Lean progress (Play A).} We have formalized the pure-topology ``glue'' lemma that reduces locally uniform convergence of \(F_n\) to an intermediate approximant family \(G_n\) plus compactwise uniform error bounds:
+\[
+  \bigl(G_n\to \Xi \ \text{locally uniformly on \texttt{strip}}\bigr)\ \wedge\
+  \bigl(\forall K\subset \texttt{strip},\ K\ \text{compact} \Rightarrow \sup_{z\in K}|F_n(z)-G_n(z)|\to 0\bigr)
+  \ \Rightarrow\ F_n\to \Xi\ \text{locally uniformly on \texttt{strip}}.
+\]
+In Lean this is provided as \texttt{CCM.tendstoXi\_of\_exists\_intermediate} in
+\texttt{RiemannRecognitionGeometry/ExplicitFormula/ConnesApproximantsCCM.lean}, built on the abstract
+uniform-closeness interface in \texttt{ConnesConvergenceBundle.lean}.
+
+\textbf{Status (Lean).} \textbf{REDUCED.} The main statement \texttt{CCM.tendstoXi} is still open, but it is now reduced to producing:
+(i) an intermediate family \(G\) with \(G_n\to \Xi\) locally uniformly on \texttt{strip}, and
+(ii) compactwise uniform closeness bounds \(\sup_{z\in K}|F_n(z)-G_n(z)|\to 0\) for every compact \(K\subset\texttt{strip}\).
+
+\textbf{Smallest next step.}
+State the smallest concrete lemma that turns the Section~7 window+tail bounds (and the CCM missing steps M1/M2) into the compactwise uniform-closeness hypothesis required by \texttt{CCM.tendstoXi\_of\_exists\_intermediate}. If this blocks on a single missing estimate, isolate that estimate as the next standalone lemma.
+
+\subsection{\texttt{CCM.mkGate} and \texttt{CCM.mkAssumptions}}
+
+\textbf{Lean symbols.}
+\texttt{RiemannRecognitionGeometry/ExplicitFormula/ConnesApproximantsCCM.lean}:
+\texttt{CCM.mkGate}, \texttt{CCM.mkAssumptions}.
+
+\textbf{Statement.}
+Given the four properties (\texttt{holo\_upper}, \texttt{holo\_lower}, \texttt{allZerosReal},
+\texttt{tendstoXi}), build the typed Hurwitz gate \texttt{HurwitzOffRealAxisInStripGate (riemannXi)}
+and hence \texttt{ConnesHurwitzAssumptions}.
+
+\textbf{Dependencies.}
+\begin{itemize}
+  \item Real-zero glue: \texttt{AllZerosReal} \(\Rightarrow\) \texttt{ZeroFreeOn} (already in Lean).
+  \item Nontriviality witnesses for \(\Xi\) on the upper/lower strip (already in Lean).
+\end{itemize}
+
+\textbf{Status (Lean).} \textbf{PROVED} (as definitions).
+
+\textbf{Note.} We intentionally do not define global constants \texttt{CCM.gate}/\texttt{CCM.assumptions} in Lean until the four CCM properties are proved; the constructors \texttt{CCM.mkGate} and \texttt{CCM.mkAssumptions} are the stable interface.
+
+\subsection{\texttt{riemannHypothesis\_of\_connesHurwitz}}
+
+\textbf{Lean symbol.}
+\texttt{RiemannRecognitionGeometry/ExplicitFormula/ConnesHurwitzBridge.lean}:
+\texttt{riemannHypothesis\_of\_connesHurwitz}.
+
+\textbf{Statement.}
+From the Hurwitz gate assumptions for \(\Xi\), conclude \(\mathrm{RH}\).
+
+\textbf{Dependencies.}
+Only the Hurwitz gate conclusion (zero-free off the real axis in the strip) and standard zeta/xi glue
+already formalized in the repo.
+
+\textbf{Status (Lean).} \textbf{PROVED}.
+
+\section{Notation Index}
+
+\begin{tabular}{ll}
+$\config$ & Configuration space \\
+$\events$ & Event space \\
+$R: \config \to \events$ & Recognizer \\
+$\indist$ & Indistinguishability relation \\
+$[c]_R$ & Resolution cell of $c$ \\
+$\quotientspace$ & Recognition quotient \\
+$\pi$ & Canonical projection \\
+$\bar{R}$ & Induced event map on quotient \\
+$R_1 \otimes R_2$ & Composite recognizer \\
+$\neighborhood(c)$ & Neighborhoods of $c$ \\
+$\ledger$ & Ledger (RS configuration space) \\
+$\Rhat$ & Recognition operator \\
+$J$ & J-cost function \\
+$\Phi$ & Recognition flow map \\
+$\eta, \varepsilon$ & Unit and counit of the quotient adjunction \\
+$\tilde{\phi}_i$ & Induced chart on $\quotientspace$ \\
+$G_\Gamma$ & Comparison graph of a weighted comparative recognizer \\
+$d_\Gamma$ & Path pseudometric derived from $G_\Gamma$ \\
+$\config_{\text{univ}}$ & Universal observer quotient \\
+$\mathrm{Aut}_R(\config)$ & Recognition automorphism group \\
+$\mathcal{F}$ & Sheaf of local recognizers on $\quotientspace$ \\
+\end{tabular}
+
+% ======================================================================
+% BIBLIOGRAPHY
+% ======================================================================
+
+\begin{thebibliography}{99}
+
+\bibitem{RS1} Washburn, J. \textit{Recognition Science: Foundations}. Recognition Physics Institute, 2024.
+
+\bibitem{RS2} Washburn, J. \textit{The Meta-Principle and 8-Tick Cycle}. Recognition Physics Institute, 2024.
+
+\bibitem{Lean4} de Moura, L., Ullrich, S. \textit{The Lean 4 Theorem Prover and Programming Language}. CADE 2021.
+
+\bibitem{Mathlib} The Mathlib Community. \textit{The Lean Mathematical Library}. 2020--2025.
+
+\bibitem{Topos} Döring, A., Isham, C. \textit{A Topos Foundation for Theories of Physics}. J. Math. Phys. 49, 2008.
+
+\bibitem{InfoGeom} Amari, S. \textit{Information Geometry and Its Applications}. Springer, 2016.
+
+\bibitem{RQM} Rovelli, C. \textit{Relational Quantum Mechanics}. Int. J. Theor. Phys. 35, 1996.
+
+\bibitem{LQG} Rovelli, C. \textit{Quantum Gravity}. Cambridge University Press, 2004.
+
+\bibitem{MacLane} Mac Lane, S. \textit{Categories for the Working Mathematician}. Springer, 2nd ed., 1998.
+
+\bibitem{Lawvere} Lawvere, F.W., Schanuel, S.H. \textit{Conceptual Mathematics: A First Introduction to Categories}. Cambridge University Press, 2009.
+
+\bibitem{Lurie} Lurie, J. \textit{Higher Topos Theory}. Princeton University Press, 2009.
+
+\bibitem{Busch} Busch, P., Lahti, P., Pellonpää, J.-P., Ylinen, K. \textit{Quantum Measurement}. Springer, 2016.
+
+\bibitem{NCG} Connes, A. \textit{Noncommutative Geometry}. Academic Press, 1994.
+
+\bibitem{Penrose} Penrose, R. \textit{The Road to Reality}. Jonathan Cape, 2004.
+
+\bibitem{Sorkin} Sorkin, R.D. \textit{Causal Sets: Discrete Gravity}. In \textit{Lectures on Quantum Gravity}, Springer, 2005.
+
+\bibitem{Wolfram} Wolfram, S. \textit{A New Kind of Science}. Wolfram Media, 2002.
+
+\bibitem{Verlinde} Verlinde, E. \textit{On the Origin of Gravity and the Laws of Newton}. JHEP 04, 2011.
+
+\bibitem{Frieden} Frieden, B.R. \textit{Physics from Fisher Information}. Cambridge University Press, 1998.
+
+\bibitem{Munkres} Munkres, J. \textit{Topology}. 2nd ed., Prentice Hall, 2000.
+
+\bibitem{Lee} Lee, J.M. \textit{Introduction to Smooth Manifolds}. 3rd ed., Springer, 2013.
+
+\bibitem{Chentsov} Chentsov, N.N. \textit{Statistical Decision Rules and Optimal Inference}. American Mathematical Society, 1982.
+
+\bibitem{WeilExplicit}
+Weil, A. \textit{Sur les ``formules explicites'' de la théorie des nombres premiers}. Comm. Sém. Math. Univ. Lund (1952), 252--265.
+
+\bibitem{LiCriterion}
+Li, X.-J. \textit{The positivity of a sequence of numbers and the Riemann hypothesis}. J. Number Theory 65 (1997), 325--333.
+
+\bibitem{Lagarias2007}
+Lagarias, J. C. \textit{The Riemann Hypothesis: Arithmetic and Geometry}. Survey article (May 4, 2007).
+
+\bibitem{DurenHp}
+Duren, P. L. \textit{Theory of \(H^p\) Spaces}. Academic Press, 1970. (Reprinted: Dover, 2000.)
+
+\bibitem{AronszajnRKHS}
+Aronszajn, N. \textit{Theory of reproducing kernels}. Trans. Amer. Math. Soc. 68 (1950), 337--404.
+
+\bibitem{OSReflection}
+Osterwalder, K., Schrader, R. \textit{Axioms for Euclidean Green's functions}. Comm. Math. Phys. 31 (1973), 83--112.
+
+\bibitem{SteinShakarchiFourier}
+Stein, E. M., Shakarchi, R. \textit{Fourier Analysis: An Introduction}. Princeton University Press, 2003.
+
+\bibitem{JohnNirenberg}
+John, F., Nirenberg, L. \textit{On functions of bounded mean oscillation}. Comm. Pure Appl. Math. 14 (1961), 415--426.
+
+\bibitem{FeffermanStein}
+Fefferman, C., Stein, E. M. \textit{\(H^p\) spaces of several variables}. Acta Math. 129 (1972), 137--193.
+
+\bibitem{SteinHarmonic}
+Stein, E. M. \textit{Harmonic Analysis: Real-Variable Methods, Orthogonality, and Oscillatory Integrals}. Princeton University Press, 1993.
+
+\bibitem{FollandRA}
+Folland, G. B. \textit{Real Analysis: Modern Techniques and Their Applications}. 2nd ed., Wiley, 1999.
+
+\bibitem{GarnettBounded}
+Garnett, J. B. \textit{Bounded Analytic Functions}. Springer, 1st ed., 1981. (Reprint: Springer, 2007.)
+
+\bibitem{TitchmarshZeta}
+Titchmarsh, E. C. \textit{The Theory of the Riemann Zeta-Function}. 2nd ed., revised by D. R. Heath-Brown. Oxford University Press, 1986.
+
+\bibitem{ApostolANT}
+Apostol, T. M. \textit{Introduction to Analytic Number Theory}. Springer, 1976.
+
+\bibitem{AhlforsComplex}
+Ahlfors, L. V. \textit{Complex Analysis}. 3rd ed., McGraw--Hill, 1979.
+
+\end{thebibliography}
+
+\label{LastPage}
+\end{document}

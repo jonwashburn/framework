@@ -1,0 +1,259 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{xcolor}
+
+\geometry{margin=1in}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+
+\title{\textbf{Unconditional Determination of the RCL Combiner}\\[0.5em]
+\large No Regularity Assumptions on $P$ (Lean-Verified)}
+
+\author{Recognition Science Technical Analysis}
+
+\date{January 3, 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We prove an \emph{unconditional} uniqueness theorem for the Recognition Composition Law (RCL) \emph{combiner}. Let
+\[
+J(x)\;:=\;\frac{x+x^{-1}}{2}-1,\qquad x>0,
+\]
+the canonical Recognition Science cost on multiplicative ratios. Suppose there exists a function $P:\mathbb{R}\times\mathbb{R}\to\mathbb{R}$ such that for all $x,y>0$,
+\[
+J(xy)+J(x/y)=P(J(x),J(y)).
+\]
+Then necessarily
+\[
+P(u,v)=2uv+2u+2v\qquad\text{for all }u,v\ge 0.
+\]
+No assumption is made on $P$ beyond being a total function (no polynomiality, analyticity, continuity, or measurability). The proof is fully formalized and verified in Lean~4 with zero unproved assertions in \texttt{IndisputableMonolith/Foundation/DAlembert/Unconditional.lean}.
+
+\medskip
+\noindent\textbf{Scope note.} This paper is about the \emph{combiner} $P$ once the cost is fixed to $J$. Separately, the RS codebase contains a cost-uniqueness theorem (\texttt{CostUniqueness.lean}) under a stronger hypothesis bundle. We do not re-prove cost uniqueness here.
+\end{abstract}
+
+\tableofcontents
+
+\newpage
+
+%==============================================================================
+\section{Introduction and Motivation}
+%==============================================================================
+
+Recognition Science (RS) models the ``cost'' of comparing multiplicative ratios. A central object is a cost function on positive reals, interpreted as the cost of deviating from unity.
+
+\medskip
+\noindent A recurring technical critique of earlier inevitability arguments was the dependence on a restrictive class of combiners (e.g.\ polynomial $P$). A mathematician reviewer summarized it as:
+\begin{quote}
+\emph{``The proof is valid only within the class of polynomial functions. Without this restriction, irregular solutions may exist.''}
+\end{quote}
+
+This paper addresses exactly that point: we prove that once the canonical cost $J$ is fixed, the \emph{combiner} $P$ is forced with \textbf{no} regularity assumptions (no polynomiality, analyticity, continuity, or measurability).
+
+\medskip
+\noindent In other words, the new result is not a new derivation of $J$; it is a \emph{closure theorem}:
+\begin{quote}
+If cost values compose via some function of the cost values alone, then that function is uniquely the RCL combiner on the full cost-domain $[0,\infty)^2$.
+\end{quote}
+
+%==============================================================================
+\section{Statement and Scope}
+%==============================================================================
+
+\subsection{The canonical cost}
+
+\begin{definition}[Canonical cost $J$]
+For $x>0$, define
+\[
+J(x)\;:=\;\frac{x+x^{-1}}{2}-1.
+\]
+\end{definition}
+
+\begin{remark}[Range]
+By AM--GM, $x+x^{-1}\ge 2$ for all $x>0$, hence $J(x)\ge 0$. Thus the natural codomain of $J$ is $[0,\infty)$.
+\end{remark}
+
+\subsection{Closure under multiplication}
+
+\begin{definition}[Combiner closure]
+Let $P:\mathbb{R}\times\mathbb{R}\to\mathbb{R}$. We say $P$ \emph{closes} $J$ under multiplication if for all $x,y>0$,
+\[
+J(xy)+J(x/y)=P(J(x),J(y)).
+\]
+\label{def:closure}
+\end{definition}
+
+\begin{remark}[What is (and is not) assumed about $P$]
+We assume only that $P$ is a total function of two real variables. We do \emph{not} assume it is polynomial, analytic, continuous, measurable, or defined by any explicit formula.
+\end{remark}
+
+\subsection{Main theorem}
+
+\begin{theorem}[Unconditional determination of the RCL combiner]
+\label{thm:main}
+Let $P:\mathbb{R}\times\mathbb{R}\to\mathbb{R}$ satisfy, for all $x,y>0$,
+\[
+J(xy)+J(x/y)=P(J(x),J(y)).
+\]
+Then for all $u,v\ge 0$,
+\[
+P(u,v)=2uv+2u+2v.
+\]
+\end{theorem}
+
+\begin{remark}[Interpretation]
+Since $J$ takes values in $[0,\infty)$, Theorem~\ref{thm:main} pins down $P$ on the entire physically relevant domain for costs.
+\end{remark}
+
+%==============================================================================
+\section{Proof of the Main Theorem}
+%==============================================================================
+
+\subsection{A closed form identity for $J$}
+
+\begin{lemma}[d'Alembert identity for $J$]
+\label{lem:J_dalembert}
+For all $x,y>0$,
+\[
+J(xy)+J(x/y)=2J(x)J(y)+2J(x)+2J(y).
+\]
+\end{lemma}
+
+\begin{proof}
+Let $t=\ln x$ and $u=\ln y$. Using $\cosh(\ln x)=\tfrac{x+x^{-1}}{2}$, we have $J(x)=\cosh(t)-1$ and similarly $J(y)=\cosh(u)-1$.
+Then
+\begin{align*}
+J(xy)+J(x/y)
+&=[\cosh(t+u)-1]+[\cosh(t-u)-1]\\
+&=\cosh(t+u)+\cosh(t-u)-2\\
+&=2\cosh(t)\cosh(u)-2\\
+&=2(\cosh(t)-1)(\cosh(u)-1)+2(\cosh(t)-1)+2(\cosh(u)-1)\\
+&=2J(x)J(y)+2J(x)+2J(y).
+\end{align*}
+\end{proof}
+
+\subsection{Surjectivity of $J$ onto $[0,\infty)$}
+
+\begin{lemma}[Surjectivity]
+\label{lem:J_surj}
+For any $v\ge 0$ there exists $x>0$ such that $J(x)=v$.
+\end{lemma}
+
+\begin{proof}
+If $v=0$, take $x=1$.
+If $v>0$, solve $J(x)=v$:
+\[
+\frac{x+x^{-1}}{2}-1=v\quad\Longleftrightarrow\quad x+x^{-1}=2v+2.
+\]
+Multiplying by $x$ gives the quadratic $x^2-(2v+2)x+1=0$, whose positive root is
+\[
+x=v+1+\sqrt{v^2+2v}>0.
+\]
+Substituting back verifies $J(x)=v$.
+\end{proof}
+
+\subsection{Conclusion}
+
+\begin{proof}[Proof of Theorem~\ref{thm:main}]
+Fix $u,v\ge 0$. By Lemma~\ref{lem:J_surj}, choose $x,y>0$ with $J(x)=u$ and $J(y)=v$.
+Then by the defining closure hypothesis on $P$ and Lemma~\ref{lem:J_dalembert},
+\[
+P(u,v)=P(J(x),J(y))=J(xy)+J(x/y)=2J(x)J(y)+2J(x)+2J(y)=2uv+2u+2v.
+\]
+\end{proof}
+
+%==============================================================================
+\section{Machine Verification}
+%==============================================================================
+
+The entire proof is formalized in Lean 4, a proof assistant that mechanically verifies every logical step.
+
+\subsection{Key Theorems}
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Lean theorem} & \textbf{Meaning in this paper} & \textbf{Status} \\
+\hline
+\texttt{J\_computes\_P} & Lemma~\ref{lem:J_dalembert} (identity for $J$) & Proved \\
+\texttt{J\_surjective\_nonneg} & Lemma~\ref{lem:J_surj} (surjectivity onto $[0,\infty)$) & Proved \\
+\texttt{P\_determined\_nonneg} & $P$ fixed on $[0,\infty)^2$ under closure hypothesis & Proved \\
+\texttt{rcl\_unconditional} & Theorem~\ref{thm:main} & Proved \\
+\texttt{P\_uniqueness} & Any two compatible combiners agree on $[0,\infty)^2$ & Proved \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Verification}
+
+\begin{verbatim}
+$ lake build IndisputableMonolith.Foundation.DAlembert.Unconditional
+Build completed successfully.
+No warnings. No sorries.
+\end{verbatim}
+
+The phrase ``no sorries'' means no unproved assertions. Every step is verified.
+
+%==============================================================================
+\section{Interpretation for Recognition Science}
+%==============================================================================
+
+\subsection{What is new here}
+
+Earlier inevitability arguments constrained $P$ (e.g.\ by assuming polynomial/analytic form) in order to rule out pathological solutions.
+Theorem~\ref{thm:main} removes that entire axis of criticism:
+\begin{quote}
+\emph{No matter how wild $P$ is allowed to be, if it closes $J$ under multiplication in the sense of Definition~\ref{def:closure}, then $P$ is forced to equal $2uv+2u+2v$ on $[0,\infty)^2$.}
+\end{quote}
+
+\subsection{What the theorem does (and does not) claim}
+
+\begin{itemize}
+  \item \textbf{It does claim:} once the RS cost is fixed to $J$, the induced two-argument composition law is uniquely the RCL combiner on the full cost-domain.
+  \item \textbf{It does not claim:} that $J$ itself is forced from ``comparison'' alone with no further hypotheses. (The RS codebase contains a cost-uniqueness theorem under a stronger hypothesis bundle; see \texttt{IndisputableMonolith/CostUniqueness.lean}.)
+  \item \textbf{It does not claim:} uniqueness of $P$ outside the quadrant $[0,\infty)^2$; the theorem is intentionally stated on the natural range of $J$.
+\end{itemize}
+
+\subsection{Why this answers the polynomial critique}
+
+The reviewer concern was: ``if $P$ is not restricted, irregular solutions may exist.'' Theorem~\ref{thm:main} shows that, \emph{for the canonical cost $J$}, no such freedom exists: the closure condition pins down $P$ uniquely on the entire range of cost values. In particular, polynomiality is not needed to exclude irregular solutions for the combiner.
+
+%==============================================================================
+\section{Conclusion}
+%==============================================================================
+
+We proved an unconditional uniqueness theorem for the RCL \emph{combiner}: if a two-argument function $P$ closes the canonical RS cost $J$ under multiplicative composition, then $P$ is forced to equal $2uv+2u+2v$ on the full cost-domain $[0,\infty)^2$. No regularity assumptions on $P$ are required. The entire argument is machine-verified in Lean~4.
+
+\bigskip
+
+\begin{center}
+\rule{0.5\textwidth}{0.4pt}
+\end{center}
+
+\section*{Acknowledgments}
+
+We thank the mathematician whose critique of polynomial assumptions motivated this stronger result.
+
+\begin{thebibliography}{9}
+
+\bibitem{lean4}
+L. de Moura et al., ``The Lean 4 Theorem Prover and Programming Language,'' \emph{Proceedings of CADE-28}, 2021.
+
+\bibitem{mathlib4}
+The Mathlib Community, \emph{Mathlib4: The Mathematics Library for Lean 4}, 2024. Available at \url{https://github.com/leanprover-community/mathlib4}
+
+\end{thebibliography}
+
+\end{document}

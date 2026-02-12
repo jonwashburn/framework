@@ -1,0 +1,7 @@
+import Hodge.FormalConjecture.Basic
+import Hodge.FormalConjecture.Subobject
+import Hodge.FormalConjecture.Opposed
+import Hodge.FormalConjecture.InducedOnGr
+import Hodge.FormalConjecture.PR3b_IteratedGr_v2
+import Hodge.FormalConjecture.PR3e_Intersections_v2
+import Hodge.FormalConjecture.PR3f_DualDeligne

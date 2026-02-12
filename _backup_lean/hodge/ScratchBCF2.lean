@@ -1,0 +1,13 @@
+import Mathlib.Analysis.Distribution.TestFunction
+
+open scoped BoundedContinuousFunction
+
+namespace ScratchBCF2
+
+#check BoundedContinuousFunction
+#check BoundedContinuousFunction.comp
+#check BoundedContinuousFunction.compContinuousLinearMap
+#check BoundedContinuousFunction.postcomp
+#check BoundedContinuousFunction.postcompContinuousLinearMap
+
+end ScratchBCF2

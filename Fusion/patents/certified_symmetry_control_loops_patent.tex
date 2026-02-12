@@ -1,0 +1,583 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{array}
+
+% Simple page style
+\pagestyle{plain}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\begin{document}
+
+\begin{center}
+\textbf{\LARGE PATENT APPLICATION}\\[0.5cm]
+\textbf{\Large Method and System for Certified Symmetry Control\\in Inertial Confinement Fusion Reactors\\Using Mathematically Verified Descent Guarantees}\\[1cm]
+
+\begin{tabular}{rl}
+\textbf{Application Type:} & Utility Patent \\
+\textbf{Filing Date:} & January 18, 2026 \\
+\textbf{Inventor:} & Jonathan Washburn \\
+\textbf{Technology Field:} & Fusion Energy / Control Systems / Formal Verification \\
+\textbf{International Class:} & G21B 1/00; G05B 13/00; G06F 17/11 \\
+\end{tabular}
+\end{center}
+
+\vspace{1cm}
+\hrule
+\vspace{0.5cm}
+
+\section*{ABSTRACT}
+
+A method and system for controlling implosion symmetry in inertial confinement fusion (ICF) reactors using a seam-first, auditable control loop with machine-checked mathematical components. The invention introduces a Symmetry Ledger based on a nonnegative J-cost functional applied to positive ratio variables, together with formally verified inequalities (e.g., in Lean 4) that bound transport-surrogate deviation and connect PASS/FAIL certificates to a measurable asymmetry proxy under an explicit calibration-envelope hypothesis. The runtime system proposes control adjustments using a facility-supplied sensitivity/Jacobian model (an explicit seam), predicts a post-adjustment state, and applies the adjustment only if a certified ledger-descent check passes and stated envelope conditions hold. The system emits reproducible audit artifacts (e.g., cryptographic input digests, computed ledger values, pass/fail status, and theorem references) so that a regulator or third party can replay the computation and verify the certified guarantees \emph{under the declared seams}, without claiming facility-independent physical ignition or symmetry laws.
+
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+
+\section{BACKGROUND OF THE INVENTION}
+
+\subsection{Technical Field}
+
+This invention relates generally to control systems for nuclear fusion reactors, and more particularly to methods for ensuring implosion symmetry in inertial confinement fusion (ICF) systems with mathematically certified performance guarantees.
+
+\subsection{Description of Related Art}
+
+\subsubsection{The Symmetry Challenge in ICF}
+
+Inertial confinement fusion achieves fusion conditions by compressing a fuel pellet to extreme densities using intense laser or particle beam irradiation. Successful ignition requires highly symmetric implosion:
+
+\begin{itemize}
+    \item \textbf{Spherical convergence:} The fuel must compress uniformly from all directions
+    \item \textbf{Rayleigh-Taylor stability:} Asymmetries grow exponentially during compression
+    \item \textbf{Hotspot formation:} The central ignition region must be spherical
+    \item \textbf{Burn propagation:} Alpha particle heating requires symmetric initial conditions
+\end{itemize}
+
+At the National Ignition Facility (NIF), symmetry requirements are stringent: deviations of even 1\% in drive uniformity can reduce yield by factors of 10 or more.
+
+\subsubsection{Current Control Approaches}
+
+Existing approaches to symmetry control include:
+
+\begin{enumerate}
+    \item \textbf{Beam balancing:} Adjusting individual laser beam powers to achieve uniform irradiation. This is done empirically through iterative shot campaigns.
+    
+    \item \textbf{Pulse shaping:} Designing temporal pulse profiles to minimize instability growth. These profiles are developed through simulation and experiment.
+    
+    \item \textbf{Hohlraum tuning:} For indirect-drive ICF, adjusting the geometry and materials of the radiation enclosure. This requires extensive modeling.
+    
+    \item \textbf{Diagnostic feedback:} Using X-ray imaging and other diagnostics to measure symmetry and adjust subsequent shots. This is slow and expensive.
+\end{enumerate}
+
+\subsubsection{Limitations of Prior Art}
+
+All prior approaches suffer from fundamental limitations:
+
+\begin{enumerate}
+    \item \textbf{No performance guarantee:} There is no mathematical proof that a given control adjustment will improve symmetry. Improvements are hoped for, not guaranteed.
+    
+    \item \textbf{Empirical iteration:} Each facility must conduct extensive shot campaigns to tune control parameters. This costs millions of dollars and years of time.
+    
+    \item \textbf{Operating envelope uncertainty:} Control strategies validated at one operating point may fail at another. There is no certificate of correctness across the operating envelope.
+    
+    \item \textbf{Regulatory barriers:} Without mathematical guarantees, regulatory approval for commercial fusion plants requires extensive empirical safety demonstrations.
+    
+    \item \textbf{Liability exposure:} Operators cannot prove their control systems are safe, exposing them to legal liability.
+\end{enumerate}
+
+\subsection{Objects of the Invention}
+
+It is therefore an object of this invention to provide a control system that enforces descent-gated symmetry improvements \emph{under explicit, seam-labeled envelope conditions}.
+
+It is a further object to enable formal verification of control loop correctness.
+
+It is a further object to reduce commissioning time and cost for fusion facilities.
+
+It is a further object to provide a certification pathway for regulatory approval.
+
+It is a further object to reduce liability exposure by producing machine-checkable proof artifacts and auditable runtime checks for the portions of the control logic that are certified.
+
+\section{SUMMARY OF THE INVENTION}
+
+The present invention provides a certified control loop for ICF symmetry based on a mathematically verified transport-surrogate bound and a seam-declared traceability hypothesis linking the certified ledger to measurable asymmetry observables.
+
+\subsection{The Symmetry Ledger}
+
+\begin{definition}[Symmetry Ledger]
+The Symmetry Ledger is a cost functional $J: (0,\infty)^n \to \mathbb{R}_{\geq 0}$ that measures deviation from ideal symmetry using a symmetric J-cost:
+\begin{equation}
+    J(r) = \sum_{i=1}^{n} w_i \, J_{\text{cost}}(r_i)
+\end{equation}
+where:
+\begin{itemize}
+    \item $r = (r_1, \ldots, r_n)$ are positive, normalized ratios at $n$ measurement points (ideal symmetry corresponds to $r_i=1$)
+    \item $J_{\text{cost}}(x) = \frac{x + x^{-1}}{2} - 1$ for $x>0$ (symmetric, nonnegative, and zero at $x=1$)
+    \item $w_i \ge 0$ are predetermined weights (typically positive) derived from mode sensitivity / coupling analysis
+\end{itemize}
+\end{definition}
+
+The Symmetry Ledger has the following properties:
+\begin{itemize}
+    \item $J(r) \geq 0$ for all configurations
+    \item $J(r) = 0$ when $r_i = 1$ for all $i$ (perfect symmetry)
+    \item In some embodiments, $J_{\text{cost}}$ is used in log-coordinates $r_i = \exp(u_i)$ where $J_{\text{cost}}(\exp(u_i)) = \cosh(u_i)-1$; near $u_i=0$, $J_{\text{cost}}(\exp(u_i)) \approx \tfrac12 u_i^2$
+\end{itemize}
+
+\subsection{The Transport Surrogate}
+
+\begin{definition}[Transport Surrogate]
+A Transport Surrogate is a function $\Phi: \mathbb{R}^n \to \mathbb{R}$ that approximates the physical transport of energy to the fuel pellet:
+\begin{equation}
+    \Phi(r) = \Phi_{\text{one}} + \sum_{i=1}^{n} s_i (r_i - 1) + O(\|r - \mathbf{1}\|_2^3)
+\end{equation}
+where:
+\begin{itemize}
+    \item $\Phi_{\text{one}}$ is the transport at uniform intensity ($r = \mathbf{1}$)
+    \item $s_i$ are sensitivity coefficients
+    \item The remainder is bounded within a declared trust region (calibration envelope)
+\end{itemize}
+\end{definition}
+
+\subsection{The Local Descent Link Theorem}
+
+The central result of this invention is:
+
+\begin{theorem}[Local Descent / Traceability Link (Certified Core + Seam)]
+Let $\Phi$ be a Transport Surrogate satisfying a certified Taylor remainder bound within a declared trust region, and let $r \in (0,\infty)^n$ satisfy envelope conditions (e.g., $|r_i-1|\le \rho/2$ and $r_i\le 2$ for all $i$). Then the certified core bound holds:
+\begin{equation}
+    \Phi(r) - \Phi_{\text{one}} \leq \|s\|_2 \cdot \|r - \mathbf{1}\|_2 + \|r - \mathbf{1}\|_2^3.
+\end{equation}
+Furthermore, under an explicit facility-supplied \emph{Traceability Hypothesis} (a seam) that bounds a measurable asymmetry proxy $O$ by the certified ledger,
+\begin{equation}
+    O \le \frac{J(r)}{\underline{c}} + \beta \quad (\underline{c}>0,\ \beta\ge 0),
+\end{equation}
+any verified reduction in the ledger (e.g., $J(r') \le J(r)$) yields a non-increasing bound on $O$ within the stated envelope:
+\begin{equation}
+    O' \le \frac{J(r')}{\underline{c}} + \beta \le \frac{J(r)}{\underline{c}} + \beta.
+\end{equation}
+\end{theorem}
+
+\textbf{Interpretation:} The certified core provides a quantitative bound for a transport surrogate within an explicit trust region, and the traceability seam connects the certified ledger to an experimentally meaningful asymmetry proxy. The runtime controller therefore enforces \emph{ledger descent under stated seams and envelope checks}, rather than asserting a facility-independent physical law.
+
+\subsection{Certified Control Loop}
+
+The invention provides a control loop architecture:
+
+\begin{enumerate}
+    \item \textbf{Measure:} Obtain intensity ratios $r$ from diagnostics
+    \item \textbf{Compute:} Calculate Symmetry Ledger $J(r)$
+    \item \textbf{Propose:} Generate candidate control adjustment $\Delta u$
+    \item \textbf{Predict:} Compute predicted new ratios $r'$ under adjustment
+    \item \textbf{Verify:} Check that $J(r') < J(r)$ (descent condition)
+    \item \textbf{Apply:} If verified, apply adjustment; otherwise, reject
+\end{enumerate}
+
+The key innovation is step 5: the control system only applies adjustments that are \emph{certified} to improve symmetry.
+
+\section{DETAILED DESCRIPTION OF THE INVENTION}
+
+\subsection{Mathematical Foundation}
+
+\subsubsection{Vector Space of Configurations}
+
+We work in the configuration space $(0,\infty)^n$ where $n$ is the number of control channels (e.g., laser beamlines). Each configuration $r \in (0,\infty)^n$ represents normalized intensity ratios:
+\begin{equation}
+    r_i = \frac{I_i}{I_{\text{target}}}
+\end{equation}
+where $I_i$ is the measured intensity at channel $i$ and $I_{\text{target}}$ is the target uniform intensity.
+
+The ideal configuration is $\mathbf{1} = (1, 1, \ldots, 1)$.
+
+\subsubsection{Symmetry Ledger Definition}
+
+The Symmetry Ledger is defined as:
+\begin{equation}
+    J(r) = \sum_{i=1}^{n} w_i\,J_{\text{cost}}(r_i)
+\end{equation}
+
+The weights $w_i$ are chosen based on the sensitivity of implosion symmetry to each channel:
+\begin{itemize}
+    \item Higher weights for channels affecting low-order spherical harmonics ($\ell = 2, 4$)
+    \item Lower weights for high-order modes that are less damaging
+    \item Weights may be derived from linearized hydrodynamic simulations
+\end{itemize}
+
+\subsubsection{Transport Surrogate Structure}
+
+The Transport Surrogate satisfies a Taylor expansion about the ideal point:
+\begin{equation}
+    \Phi(r) = \Phi_{\text{one}} + \nabla\Phi|_{\mathbf{1}} \cdot (r - \mathbf{1}) + \frac{1}{2}(r - \mathbf{1})^T H (r - \mathbf{1}) + O(|r-\mathbf{1}|^3)
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $\nabla\Phi|_{\mathbf{1}}$ is the gradient (sensitivity vector $s$)
+    \item $H$ is the Hessian matrix
+\end{itemize}
+
+For the Local Descent Link to hold, we require:
+\begin{enumerate}
+    \item The sensitivity vector $s$ is aligned with the weight vector $w$
+    \item The configuration $r$ is within a ``trust region'' around $\mathbf{1}$
+    \item The Hessian is bounded
+\end{enumerate}
+
+\subsubsection{Proof of Local Descent / Traceability Link (Sketch)}
+
+\begin{proof}[Proof Sketch]
+Let $\delta = r - \mathbf{1}$ be the deviation vector. The transport proxy is:
+\begin{equation}
+    \Phi(r) - \Phi_{\text{one}} = s \cdot \delta + O(\|\delta\|_2^3)
+\end{equation}
+
+By Cauchy-Schwarz:
+\begin{equation}
+    |s \cdot \delta| \leq \|s\|_2 \cdot \|\delta\|_2
+\end{equation}
+
+The certified ledger is:
+\begin{equation}
+    J(r) = \sum_i w_i\, J_{\text{cost}}(r_i),
+\end{equation}
+and within a trust region around $r_i=1$, $J_{\text{cost}}(r_i)$ is lower-bounded by a constant multiple of $(r_i-1)^2$, so $J(r)$ controls $\|\delta\|_2^2$ up to constants determined by weights and envelope bounds.
+
+Thus:
+\begin{equation}
+    |\Phi(r) - \Phi_{\text{one}}| \leq \|s\|_2 \cdot \|\delta\|_2 + O(\|\delta\|_2^3),
+\end{equation}
+
+and the traceability seam provides the additional link from the certified ledger to a measurable proxy $O$.
+\end{proof}
+
+\subsection{Control System Architecture}
+
+\subsubsection{Hardware Components}
+
+The certified control system comprises:
+
+\begin{enumerate}
+    \item \textbf{Diagnostic Array:} Sensors measuring intensity ratios at $n$ locations
+    \begin{itemize}
+        \item X-ray pinhole cameras for indirect-drive
+        \item Laser power monitors for direct-drive
+        \item Temporal resolution matching pulse dynamics
+    \end{itemize}
+    
+    \item \textbf{Computation Unit:} Real-time processor computing:
+    \begin{itemize}
+        \item Symmetry Ledger $J(r)$ from measurements
+        \item Predicted ledger $J(r')$ under proposed adjustments
+        \item Verification of descent condition
+    \end{itemize}
+    
+    \item \textbf{Control Actuators:} Devices adjusting beam parameters
+    \begin{itemize}
+        \item Pockels cells for power adjustment
+        \item Deformable mirrors for wavefront control
+        \item Timing systems for pulse shaping
+    \end{itemize}
+    
+    \item \textbf{Verification Module:} Hardware or software implementing the descent check
+    \begin{itemize}
+        \item Computes $J(r')$ for proposed control action
+        \item Compares to current $J(r)$
+        \item Generates certificate if $J(r') < J(r)$
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{Software Components}
+
+The control software includes:
+
+\begin{enumerate}
+    \item \textbf{Ledger Calculator:} Computes $J(r)$ from sensor data
+    \begin{itemize}
+        \item Input: Intensity measurements $\{I_1, \ldots, I_n\}$
+        \item Output: Ledger value $J$ and gradient $\nabla J$
+    \end{itemize}
+    
+    \item \textbf{Control Proposer:} Generates candidate adjustments
+    \begin{itemize}
+        \item Gradient descent: $\Delta u = -\alpha \nabla J$
+        \item Newton-Raphson: $\Delta u = -H^{-1} \nabla J$
+        \item Model predictive control variants
+    \end{itemize}
+    
+    \item \textbf{Prediction Engine:} Simulates effect of proposed adjustment
+    \begin{itemize}
+        \item Uses calibrated system model
+        \item Outputs predicted ratios $r'$
+    \end{itemize}
+    
+    \item \textbf{Verifier:} Checks descent condition
+    \begin{itemize}
+        \item Computes $J(r')$ from predictions
+        \item Returns PASS if $J(r') < J(r)$
+        \item Returns FAIL with certificate otherwise
+    \end{itemize}
+    
+    \item \textbf{Proof Checker:} Validates mathematical guarantees
+    \begin{itemize}
+        \item Checks that operating conditions satisfy theorem premises
+        \item Verifies trust region membership
+        \item Logs certificates for regulatory audit
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{Control Loop Timing}
+
+For shot-to-shot feedback:
+\begin{itemize}
+    \item Measurement acquisition: 1-10 ms post-shot
+    \item Ledger computation: $<$ 1 ms
+    \item Control proposal: $<$ 10 ms
+    \item Verification: $<$ 1 ms
+    \item Total loop time: $<$ 100 ms (compatible with Hz-rate facilities)
+\end{itemize}
+
+For intra-pulse control (future systems):
+\begin{itemize}
+    \item Real-time feedback at nanosecond timescales
+    \item FPGA-based ledger computation
+    \item Pre-certified adjustment lookup tables
+\end{itemize}
+
+\subsection{Formal Verification}
+
+\subsubsection{Lean 4 Proof Artifacts}
+
+The mathematical claims are formally verified in the Lean 4 theorem prover:
+
+\begin{enumerate}
+    \item \texttt{IndisputableMonolith/Fusion/LocalDescent.lean}:
+    \texttt{local\_descent\_link}, \texttt{taylor\_remainder\_bound}, \texttt{cauchy\_schwarz\_sq}
+    \begin{itemize}
+        \item Premises: Transport surrogate structure, weight alignment, trust region
+        \item Conclusion: Certified bound on transport surrogate deviation within the trust region
+    \end{itemize}
+
+    \item \texttt{IndisputableMonolith/Fusion/SymmetryLedger.lean}: certified ledger definition and nonnegativity
+
+    \item \texttt{IndisputableMonolith/Fusion/DiagnosticsBridge.lean}: \texttt{TraceabilityHypothesis}, \texttt{traceability}, and \texttt{pass\_implies\_observable\_bound} (conditional on declared calibration envelope)
+\end{enumerate}
+
+\subsection{Seams / Assumptions / Calibration Envelope}
+
+The following items are explicitly treated as seams unless separately certified for a facility:
+\begin{itemize}
+    \item \textbf{Facility sensitivity/Jacobian model:} the mapping from control trims $u$ to diagnostic changes (e.g., $m_{\text{next}}\approx m + J u$) is facility-supplied and versioned.
+    \item \textbf{Diagnostic-to-ratio calibration:} the mapping from raw diagnostic values (e.g., signed mode amplitudes) to positive ratios $r_i>0$ (e.g., $r_i=1+g_i \cdot \text{raw}_i$) is a facility calibration with uncertainty bounds.
+    \item \textbf{Traceability Hypothesis:} the bound relating a measured asymmetry proxy $O$ to the certified ledger $J(r)$, including scale/offset parameters $(\underline{c},\beta)$.
+    \item \textbf{Trust region / envelope:} bounds under which the Taylor remainder guarantee is asserted (e.g., $|r_i-1|\le \rho/2$ and $r_i \le 2$).
+    \item \textbf{Mode extraction and preprocessing:} image processing, axis choice, and spherical-harmonic extraction steps that produce raw diagnostic values.
+\end{itemize}
+
+\subsubsection{Verification Workflow}
+
+To deploy the certified control system:
+
+\begin{enumerate}
+    \item \textbf{Model Calibration:} Measure system response to determine $s_i$ and trust region $\rho$
+    
+    \item \textbf{Theorem Instantiation:} Verify that calibrated parameters satisfy theorem premises
+    
+    \item \textbf{Certificate Generation:} Produce machine-checkable proof that the specific system satisfies the Local Descent Link
+    
+    \item \textbf{Runtime Verification:} At each control step, check operating conditions remain within certified envelope
+\end{enumerate}
+
+\subsubsection{Regulatory Pathway}
+
+The formal verification enables a novel regulatory approach:
+
+\begin{enumerate}
+    \item \textbf{Submit proof artifacts} to regulatory body (e.g., NRC, DOE)
+    \item \textbf{Regulator verifies} proofs using independent proof checker
+    \item \textbf{Operating envelope} defined by theorem premises
+    \item \textbf{Continuous monitoring} ensures operation within certified envelope
+    \item \textbf{Automatic shutdown} if envelope is violated
+\end{enumerate}
+
+This approach can reduce the reliance on purely empirical safety demonstrations by providing machine-checkable proof artifacts and audited runtime checks \emph{within a declared envelope and seams}.
+
+\subsection{Performance Guarantees (Certified vs Non-Certified)}
+
+\subsubsection{Certified Core}
+
+The certified core guarantee is the \emph{runtime gate}: the system applies a control adjustment only if the predicted post-adjustment state satisfies the envelope checks and the computed ledger value decreases (descent), with audit artifacts linking the computation to theorem references.
+
+\subsubsection{Optional (Non-Certified) Convergence Analysis}
+
+In some embodiments, a facility may additionally apply standard convex-optimization analysis (e.g., step-size conditions for gradient methods on a chosen objective) to estimate expected tuning time. Such convergence-rate statements depend on facility-specific modeling assumptions (e.g., Lipschitz/strong-convexity constants and model fidelity) and are not part of the Lean-certified core unless separately instantiated and proved for a given facility model.
+
+In some embodiments (non-certified), a facility may use such analysis to estimate the number of iterations/shots required to reach a target ledger threshold. The specific number depends on facility configuration, operating point, and model fidelity, and is therefore treated as an engineering estimate rather than a certified bound.
+
+\subsubsection{Robustness}
+
+The certified control is robust to:
+\begin{itemize}
+    \item \textbf{Measurement noise:} Verification rejects adjustments that would increase $J$ due to noise
+    \item \textbf{Model uncertainty:} Trust region ensures bounds hold despite model error
+    \item \textbf{Component failure:} Degraded operation remains certified within reduced envelope
+\end{itemize}
+
+\subsection{Implementation Examples}
+
+\subsubsection{Example 1: NIF-Scale Facility}
+
+For a 192-beam laser facility:
+\begin{itemize}
+    \item Configuration space: $\mathbb{R}^{192}$
+    \item Symmetry Ledger: Weighted sum over 192 beam ratios
+    \item Weights: Derived from spherical harmonic coupling coefficients
+    \item Trust region: $|r_i - 1| \leq 0.1$ (10\% power variation)
+    \item Certified operating envelope: 80-120\% of nominal power
+\end{itemize}
+
+\subsubsection{Example 2: Compact Fusion Reactor}
+
+For a future commercial reactor with 48 beams:
+\begin{itemize}
+    \item Configuration space: $\mathbb{R}^{48}$
+    \item Real-time control at 10 Hz shot rate
+    \item FPGA-based verification module
+    \item Autonomous operation within certified envelope
+    \item Human override required only for envelope violations
+\end{itemize}
+
+\section{CLAIMS}
+
+\begin{enumerate}[label=\textbf{\arabic*.}]
+    \item A method for controlling implosion symmetry in an inertial confinement fusion system, comprising:
+    \begin{enumerate}[label=(\alph*)]
+        \item measuring intensity ratios $r = (r_1, \ldots, r_n)$ at $n$ control channels;
+        \item computing a Symmetry Ledger value $J(r) = \sum_{i=1}^{n} w_i\,J_{\text{cost}}(r_i)$ where $w_i$ are predetermined weights and $J_{\text{cost}}(x) = \frac{x + x^{-1}}{2} - 1$ for $x>0$;
+        \item proposing a control adjustment that would change the ratios to $r'$;
+        \item computing a predicted Symmetry Ledger value $J(r')$;
+        \item verifying that $J(r') < J(r)$ (descent condition);
+        \item applying the control adjustment only if the descent condition is satisfied.
+    \end{enumerate}
+    
+    \item The method of claim 1, wherein the weights $w_i$ are selected based on sensitivity coefficients $s_i$ of a Transport Surrogate function, including an alignment condition of the form $w_i \ge c_0 |s_i|$ for a positive constant $c_0$ within a declared envelope.
+    
+    \item The method of claim 1, further comprising:
+    \begin{enumerate}[label=(\alph*)]
+        \item verifying that the current configuration $r$ is within a predetermined trust region $|r_i - 1| \leq \rho$;
+        \item applying a mathematically verified bound and a declared traceability hypothesis to conclude that satisfying the descent condition implies a non-increasing bound on a measured asymmetry proxy within the declared envelope.
+    \end{enumerate}
+    
+    \item The method of claim 3, wherein the Local Descent Link theorem is formally verified using a proof assistant.
+    
+    \item The method of claim 4, wherein the proof assistant is Lean 4 with the Mathlib library.
+    
+    \item The method of claim 1, wherein proposing a control adjustment comprises computing a gradient descent step $\Delta u = -\alpha \nabla J(r)$ where $\alpha$ is a step size.
+    
+    \item The method of claim 1, wherein the control adjustment affects laser beam powers in a multi-beam laser system.
+    
+    \item The method of claim 1, wherein the control adjustment affects pulse timing in a pulsed laser system.
+    
+    \item A control system for inertial confinement fusion, comprising:
+    \begin{enumerate}[label=(\alph*)]
+        \item a diagnostic array configured to measure intensity ratios at multiple control channels;
+        \item a computation unit configured to compute a Symmetry Ledger value from the measured ratios;
+        \item a control proposer configured to generate candidate control adjustments;
+        \item a verification module configured to check that proposed adjustments satisfy a descent condition $J(r') < J(r)$;
+        \item control actuators configured to apply verified adjustments.
+    \end{enumerate}
+    
+    \item The system of claim 9, wherein the verification module is implemented on a field-programmable gate array (FPGA) for real-time operation.
+    
+    \item The system of claim 9, further comprising a proof checker module configured to verify that operating conditions satisfy premises of a Local Descent Link theorem.
+    
+    \item The system of claim 9, wherein the system is configured to log verification certificates for regulatory audit.
+    
+    \item A computer-readable medium containing instructions that, when executed by a processor, cause the processor to:
+    \begin{enumerate}[label=(\alph*)]
+        \item receive intensity ratio measurements from a fusion diagnostic system;
+        \item compute a Symmetry Ledger cost functional;
+        \item generate a candidate control adjustment;
+        \item verify that the adjustment satisfies a certified descent condition;
+        \item output the adjustment for application only if verification passes.
+    \end{enumerate}
+    
+    \item The medium of claim 13, further containing machine-checkable proof artifacts verifying the mathematical correctness of the descent guarantee.
+    
+    \item A method for certifying a fusion reactor control system, comprising:
+    \begin{enumerate}[label=(\alph*)]
+        \item calibrating system response to determine sensitivity coefficients;
+        \item instantiating a Local Descent Link theorem with calibrated parameters;
+        \item generating a machine-checkable proof that the theorem premises are satisfied;
+        \item submitting the proof to a regulatory body;
+        \item operating the reactor within the certified envelope defined by theorem premises.
+    \end{enumerate}
+    
+    \item The method of claim 15, wherein the regulatory body verifies the proof using an independent proof checker.
+    
+    \item The method of claim 15, further comprising automatic shutdown if operating conditions exit the certified envelope.
+    
+    \item A Symmetry Ledger cost functional for fusion control, defined as:
+    \begin{equation*}
+        J(r) = \sum_{i=1}^{n} w_i\,J_{\text{cost}}(r_i)
+    \end{equation*}
+    where $r_i$ are positive normalized ratios, $w_i$ are weights derived from sensitivity analysis, and $J_{\text{cost}}(x) = \frac{x + x^{-1}}{2} - 1$ for $x>0$.
+    
+    \item A Transport Surrogate model for fusion systems, comprising:
+    \begin{enumerate}[label=(\alph*)]
+        \item a baseline transport value $\Phi_{\text{one}}$ at uniform intensity;
+        \item sensitivity coefficients $s_i$ representing first-order response;
+        \item a trust region parameter $\rho$ bounding the validity of linear approximation;
+        \item a remainder bound ensuring higher-order terms are controlled.
+    \end{enumerate}
+    
+    \item A method for reducing commissioning time of a fusion facility, comprising:
+    \begin{enumerate}[label=(\alph*)]
+        \item implementing the certified control loop of claim 1;
+        \item performing shot-to-shot tuning using descent-gated iterations within a declared envelope and explicit seams;
+        \item optionally estimating expected tuning time using facility-specific convergence analysis, without asserting facility-independent bounds.
+    \end{enumerate}
+\end{enumerate}
+
+\section*{APPENDIX: Implementation Evidence}
+
+The core logic of this invention is implemented in accompanying software artifacts:
+\begin{itemize}
+    \item \textbf{Trim recommendation (Jacobian seam):} \texttt{fusion/simulator/control/symmetry\_controller.py} (\texttt{recommend\_trim})
+    \item \textbf{Descent-gated control + certificate bundle:} \texttt{fusion/simulator/control/certified\_symmetry\_control.py} (\texttt{certified\_recommend\_trim})
+    \item \textbf{Affine diagnostic-to-ratio calibration:} \texttt{fusion/simulator/coherence/ledger\_sync.py} (\texttt{apply\_affine\_calibration})
+    \item \textbf{J-cost ledger computation:} \texttt{fusion/simulator/foundations/jcost.py} (\texttt{compute\_ledger})
+    \item \textbf{Certificate bundle format / input hashing:} \texttt{fusion/simulator/fusion/certificate.py} (\texttt{CertificateBundle}, \texttt{compute\_input\_hash})
+\end{itemize}
+
+Certified proof artifacts (Lean 4, read-only evidence):
+\begin{itemize}
+    \item \texttt{IndisputableMonolith/Fusion/SymmetryLedger.lean}
+    \item \texttt{IndisputableMonolith/Fusion/LocalDescent.lean}
+    \item \texttt{IndisputableMonolith/Fusion/DiagnosticsBridge.lean}
+\end{itemize}
+
+\section{ABSTRACT OF THE DISCLOSURE}
+
+A method and system for controlling implosion symmetry in inertial confinement fusion reactors using an auditable control loop with a machine-checked mathematical kernel and explicit seams. The invention computes a nonnegative Symmetry Ledger using a symmetric J-cost over positive ratio variables, predicts the effect of candidate adjustments using a facility-supplied sensitivity model, and applies an adjustment only when a ledger-descent check and envelope conditions pass. The system emits reproducible audit artifacts (e.g., input digests, ledger values, pass/fail status, and theorem references), enabling independent replay and verification of the certified guarantees under declared calibration and modeling assumptions.
+
+\vspace{1cm}
+\hrule
+\vspace{0.5cm}
+
+\begin{center}
+\textbf{INVENTOR'S DECLARATION}
+\end{center}
+
+I, Jonathan Washburn, declare that I am the original inventor of the subject matter disclosed herein, that the disclosure is accurate to the best of my knowledge, and that I have not omitted any material information that would affect patentability.
+
+\vspace{1cm}
+\noindent\textbf{Signature:} \underline{\hspace{6cm}} \\[0.3cm]
+\noindent\textbf{Date:} January 18, 2026 \\[0.3cm]
+\noindent\textbf{Inventor:} Jonathan Washburn
+
+\end{document}

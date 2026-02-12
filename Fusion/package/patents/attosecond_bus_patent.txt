@@ -1,0 +1,152 @@
+\documentclass[12pt]{article}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+\geometry{letterpaper, margin=1in}
+\pagestyle{fancy}
+\fancyhead[L]{Patent Draft: Attosecond Bus (Active Fiber Stabilization)}
+\fancyhead[R]{Confidential}
+\fancyfoot[C]{\thepage}
+\setlength{\headheight}{14.5pt}
+
+\title{\textbf{SYSTEM AND METHOD FOR ATTOSECOND-PRECISION OPTICAL CLOCK DISTRIBUTION IN SCALABLE FUSION REACTOR ARRAYS}}
+\author{Inventor: Jonathan Washburn}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A scalable optical timing distribution system ("Attosecond Bus") capable of delivering a master clock signal to a plurality of distributed endpoints (e.g., fusion reactor blades) with sub-femtosecond jitter preservation in an electrically noisy, mechanically vibrating, thermally drifting environment such as a rack-mounted power system. The invention mitigates timing errors introduced by thermal expansion, mechanical vibration, connector insertion loss, and fiber bending by employing a multi-channel architecture with active round-trip phase stabilization on each link. A central Master Clock Unit (MCU) transmits a reference signal (e.g., from an optical frequency comb or stabilized oscillator) to multiple endpoints. A portion of the signal is reflected and/or retransmitted back from each endpoint to the MCU, where a phase detector (e.g., interferometric or heterodyne) measures round-trip delay variation. A servo loop drives one or more path-length actuators (e.g., piezo-electric fiber stretcher for fast correction and thermal spool for slow drift) to compensate for path length changes in real-time, thereby stabilizing one-way arrival time at each endpoint. In some embodiments, the same physical fiber also carries a digital overlay (e.g., via wavelength-division multiplexing) conveying pulse identifiers and scheduling data to permit both absolute time alignment and sub-cycle phase coherence across a modular fusion reactor array.
+\end{abstract}
+
+\section{Technical Field}
+The present disclosure relates to precision optical timing distribution, specifically to fiber-optic synchronization networks for modular nuclear fusion systems, particle accelerators, and distributed phased arrays requiring attosecond-level coherence.
+
+\section{Background}
+Coherence-controlled fusion architectures, such as the RS Fusion Rack, require multiple independent reactor units ("blades") to operate with phase-locked precision relative to a global timing standard. While optical frequency combs can generate stable clock signals, distributing these signals over meters or tens of meters of optical fiber introduces significant jitter due to environmental factors.
+
+A 1-degree Celsius temperature change in a 1-meter fiber causes a timing drift of approximately 100 femtoseconds. Mechanical vibrations and acoustic noise introduce further jitter. For fusion regimes requiring $< 0.1$ fs (100 attosecond) stability, standard passive fiber distribution is insufficient. Existing solutions for accelerator facilities (e.g., synchrotrons) are often custom, large-scale installations not suitable for compact, rack-mountable commercial power systems.
+
+\section{Summary}
+The invention provides a "Plug-and-Play Attosecond Bus" that actively cancels path length fluctuations.
+
+\subsection*{Core Concept}
+The system treats the optical fiber link not as a passive pipe but as an active interferometer. The MCU sends the clock signal downstream. A Faraday rotator mirror at the blade reflects the signal back orthogonal to the input polarization. The MCU compares the returning phase to the source phase. Any deviation represents path length change. A PID controller drives a piezo-electric cylinder (around which the fiber is wound) to stretch or compress the fiber, maintaining a constant optical path length to within a fraction of a wavelength.
+
+\subsection*{Key Advantages}
+\begin{itemize}[leftmargin=1.2em]
+    \item \textbf{Scalability}: A single MCU can stabilize 40+ channels independently.
+    \item \textbf{Precision}: Residual jitter $< 100$ attoseconds (optionally $< 10$ attoseconds in short links).
+    \item \textbf{Robustness}: Compensates for rack vibration, thermal gradients, and cable bending.
+    \item \textbf{Modularity}: Blades can be hot-swapped; the bus auto-calibrates the new link.
+\end{itemize}
+
+\section{Detailed Description}
+
+\subsection{System Architecture}
+The Attosecond Bus comprises:
+\begin{enumerate}
+    \item \textbf{Master Clock Unit (MCU)}:
+    \begin{itemize}
+        \item \textbf{Source}: Optical Frequency Comb (e.g., 1550 nm).
+        \item \textbf{Distribution}: 1xN Splitter (e.g., N=40).
+        \item \textbf{Stabilization Bank}: N independent phase detectors and servo controllers.
+    \end{itemize}
+    \item \textbf{Transmission Link}: Polarization-Maintaining (PM) single-mode fiber connecting MCU to each Blade.
+    \item \textbf{Endpoint Module (Blade)}:
+    \begin{itemize}
+        \item \textbf{Coupler}: Extracts the clock signal for the local laser.
+        \item \textbf{Reflector}: A partial reflector (e.g., Faraday Rotator Mirror) returns the stabilization signal.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Stabilization Loop}
+For each channel $i$:
+\begin{enumerate}
+    \item Light travels MCU $\to$ Blade $\to$ MCU (Round trip $2L_i$).
+    \item Phase detector measures $\Delta \phi_i = \phi_{return} - \phi_{source}$.
+    \item Error signal $\epsilon_i$ drives a Piezo Fiber Stretcher (PZT) in the MCU.
+    \item PZT adjusts length $L_i$ to keep $\Delta \phi_i$ constant (locked).
+    \item Result: The one-way arrival time at the Blade is fixed relative to the Master Clock.
+\end{enumerate}
+
+\subsection{Heterodyne Round-Trip Phase Measurement (Non-Limiting)}
+In one embodiment, each channel includes a frequency shifter (e.g., an acousto-optic modulator) so that the returned signal is offset in frequency from the outbound signal, enabling heterodyne detection with improved signal-to-noise ratio and reduced sensitivity to intensity fluctuations. The MCU may compute phase error from the heterodyne beat and drive the actuator with a controller (e.g., PID with feed-forward terms).
+
+\subsection{Coarse/Fine Delay and Hot-Swap Auto-Calibration}
+In some embodiments, each link includes both (i) a fast, small-range actuator (e.g., piezo fiber stretcher) and (ii) a slow, large-range actuator (e.g., thermally controlled fiber spool) to maintain lock across large temperature excursions without saturating the fast actuator. When a blade is inserted or replaced, the MCU may execute an auto-calibration procedure that measures an initial round-trip delay and sets a coarse delay (e.g., selecting a fiber spool tap, setting a thermal spool setpoint, or configuring a variable optical delay line) before engaging fine phase lock.
+
+\subsection{One-Way Delay Calibration and Asymmetry Compensation (Non-Limiting)}
+Round-trip phase stabilization may be used to stabilize one-way arrival time at an endpoint; however, practical implementations may exhibit asymmetry between outbound and return propagation due to component delays, wavelength-dependent dispersion, and non-reciprocal effects. In some embodiments, the system performs a calibration procedure to determine a one-way delay offset for each link (e.g., via two-way time transfer, known timing markers, or comparison against a local reference at the endpoint). The MCU may store and apply the offset so that multiple endpoints share a common absolute time reference in addition to sub-cycle phase coherence.
+
+\subsection{Digital Overlay}
+In addition to the analog timing carrier, the bus may carry a digital data stream (e.g., via a separate wavelength channel using WDM, via modulation sidebands, or via a parallel fiber) containing a "Global Schedule" (pulse ID, firing parameters, fault flags). This enables not just phase lock (sub-cycle) but also absolute timing (cycle count) and deterministic coordination of multiple endpoints.
+
+\section{Claims}
+
+\begin{enumerate}[leftmargin=1.6em]
+    \item An active optical timing distribution system for a modular fusion reactor array, comprising:
+    \begin{itemize}
+        \item A master clock source configured to generate a phase-coherent optical reference signal;
+        \item A plurality of optical links, each connecting the master clock source to a respective remote reactor module;
+        \item For each optical link, a return path configured to reflect a portion of the reference signal back to the master clock source;
+        \item A phase detection unit for each link, configured to measure a phase difference between the generated reference signal and the reflected signal; and
+        \item An active path length actuator for each link, controlled by a feedback loop based on the measured phase difference to maintain a constant optical path length.
+    \end{itemize}
+
+    \item The system of claim 1, wherein the active path length actuator comprises a piezo-electric fiber stretcher.
+
+    \item The system of claim 1, wherein the system maintains timing synchronization at the remote reactor modules with a jitter of less than 100 attoseconds.
+
+    \item The system of claim 1, wherein the optical links comprise polarization-maintaining optical fiber.
+
+    \item The system of claim 1, further comprising a digital control channel conveyed on the optical links to convey scheduling data.
+
+    \item The system of claim 1, wherein the return path comprises a Faraday rotator mirror configured to reduce polarization-induced phase errors.
+
+    \item The system of claim 1, wherein the phase detection unit comprises a heterodyne detector and the system further comprises a frequency shifter configured to offset a returned signal frequency from a transmitted signal frequency.
+
+    \item The system of claim 1, further comprising a slow path-length actuator configured to provide a larger delay range than the active path length actuator, and a controller configured to coordinate the slow path-length actuator with the active path length actuator.
+
+    \item The system of claim 1, further comprising an auto-calibration procedure configured to determine an initial delay of an optical link after a module hot-swap and to set a coarse delay prior to engaging phase lock.
+
+    \item The system of claim 5, wherein the digital control channel is conveyed via wavelength-division multiplexing on a same fiber as the optical reference signal.
+
+    \item A method for distributing attosecond-precision timing in a rack-mounted fusion system, comprising:
+    \begin{itemize}
+        \item Generating a master optical clock signal;
+        \item Splitting the signal into multiple channels;
+        \item Transmitting each channel to a fusion blade via an optical fiber;
+        \item Reflecting a portion of the signal from the blade back to the source;
+        \item Measuring the round-trip phase delay; and
+        \item Modulating the fiber length in real-time to cancel environmentally induced path length variations.
+    \end{itemize}
+
+    \item The method of claim 11, further comprising applying a coarse delay adjustment to the optical fiber link and applying a fine delay adjustment using a piezo-electric fiber stretcher.
+
+    \item The system of claim 1, wherein the system is configured to compensate for a non-reciprocal or asymmetric delay between an outbound path and a return path by calibrating a one-way delay offset for an optical link.
+
+    \item The system of claim 13, wherein calibrating the one-way delay offset comprises performing a two-way time transfer measurement using timing markers conveyed on the optical links.
+
+    \item The system of claim 1, wherein the reference signal is transmitted at a first wavelength and the return signal is transmitted at a second wavelength to enable separation of outbound and return signals.
+
+    \item The method of claim 11, further comprising calibrating an initial one-way delay for a link after a module hot-swap and applying a stored one-way delay offset to maintain absolute time alignment across multiple endpoints.
+
+    \item A timing distribution backplane for synchronizing a plurality of rack-mounted modules, comprising:
+    \begin{itemize}
+        \item an optical reference source configured to generate a phase-coherent optical timing signal;
+        \item a passive optical distribution network configured to distribute the optical timing signal to a plurality of output ports;
+        \item for each output port, an active stabilization circuit configured to measure a link delay variation using a returned optical signal and to drive a path-length actuator to reduce the link delay variation; and
+        \item a digital communication channel configured to convey scheduling information to the plurality of rack-mounted modules.
+    \end{itemize}
+
+    \item The backplane of claim 18, wherein the passive optical distribution network comprises a splitter tree.
+
+    \item The backplane of claim 18, further comprising a fault detection subsystem configured to detect at least one of: a loss-of-lock condition, a degraded return signal level, or an actuator saturation condition for a link, and to transmit a fault flag on the digital communication channel.
+\end{enumerate}
+
+\end{document}

@@ -1,0 +1,195 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{hyperref}
+
+% Simple page style
+\pagestyle{plain}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\begin{document}
+
+\begin{center}
+\textbf{\LARGE PATENT APPLICATION}\\[0.5cm]
+\textbf{\Large Method and System for Formal Verification Bridge\\in Nuclear Fusion Control Systems}\\[1cm]
+
+\begin{tabular}{rl}
+\textbf{Application Type:} & Utility Patent \\
+\textbf{Filing Date:} & January 25, 2026 \\
+\textbf{Inventor:} & Jonathan Washburn \\
+\textbf{Technology Field:} & Fusion Energy / Regulatory Compliance / Formal Verification \\
+\textbf{International Class:} & G21B 1/00; G06F 21/57; G05B 9/02 \\
+\end{tabular}
+\end{center}
+
+\vspace{1cm}
+\hrule
+\vspace{0.5cm}
+
+\section*{ABSTRACT}
+
+A method and system for bridging the gap between formal mathematical proofs and empirical physical measurements in safety-critical fusion control systems. The invention introduces a ``Formal Verification Bridge'' that explicitly isolates the empirical assumptions required to connect a certified control logic (e.g., a ledger-based controller) to physical reality (e.g., diagnostic sensors). The system defines a ``Traceability Hypothesis'' data structure that encapsulates a calibration envelope (scale, offset, and related validity conditions) as a formal hypothesis predicate. This hypothesis is used in a machine-checked proof (e.g., in Lean 4) that guarantees a stated bound on a physical observable \textit{conditional} on the hypothesis holding. At runtime, the system emits an auditable artifact that records the active hypothesis identifier (e.g., a Lean predicate name), relevant calibration metadata, and a cryptographic digest (e.g., SHA-256 over canonicalized inputs), enabling an auditor to determine which empirical envelope was assumed for each control action. Optional external signing may be applied as an integration step when non-repudiation is required.
+
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+
+\section{BACKGROUND OF THE INVENTION}
+
+\subsection{Technical Field}
+
+This invention relates generally to the verification of control systems for nuclear fusion reactors, and specifically to methods for integrating formal mathematical proofs with empirical sensor data in a regulatory compliance framework.
+
+\subsection{Description of Related Art}
+
+Safety-critical systems (avionics, nuclear power) increasingly use formal methods to prove that software behaves correctly. However, a fundamental gap exists: mathematical proofs operate on abstract symbols, while physical systems operate on noisy, analog signals.
+
+In fusion control, a theorem might prove that ``minimizing the Symmetry Ledger $L$ improves implosion symmetry.'' However, the controller cannot measure $L$ directly; it measures voltages from a camera. The translation from voltage to $L$ involves empirical calibration.
+
+Current approaches typically hard-code this translation, breaking the chain of formal verification. If the calibration is wrong, the proof is irrelevant. There is no standard mechanism to ``carry'' the empirical assumption into the proof environment so that the safety guarantee is explicitly conditional on the calibration validity.
+
+There is a need for a mechanism that bridges this gap, allowing formal proofs to reason about empirical uncertainty in a structured, auditable way.
+
+\section{SUMMARY OF THE INVENTION}
+
+The present invention provides a \textbf{Formal Verification Bridge} that connects empirical diagnostics to certified control logic.
+
+The core innovation is the \textbf{Traceability Hypothesis}, a formal structure that:
+\begin{enumerate}
+    \item \textbf{Encapsulates the Seam:} It defines the mathematical relationship between the physical observable (e.g., ``observable asymmetry'') and the formal state (e.g., ``certified ledger'').
+    \item \textbf{Quantifies the Envelope:} It includes parameters for scale, offset, and uncertainty bounds (e.g., ``observable $\le$ ledger / scale + offset'').
+    \item \textbf{Enables Conditional Proof:} It serves as a hypothesis in a formal theorem (e.g., ``Theorem: IF the Traceability Hypothesis holds, THEN the controller guarantees safety'').
+\end{enumerate}
+
+The system implements this bridge by:
+\begin{itemize}
+    \item Defining the hypothesis as a type in a theorem prover (e.g., Lean 4).
+    \item Requiring the facility operator to provide the envelope parameters (scale, offset) based on validation shots.
+    \item Recording, in the runtime audit artifact, an explicit reference to the hypothesis and the calibration envelope (and optionally the numeric parameters when provided).
+    \item Proving a ``Traceability Theorem'' that links the runtime certificate's PASS status to a physical bound on asymmetry.
+\end{itemize}
+
+This architecture ensures that the safety case is complete: the logic is proven, and the assumptions are logged and auditable.
+
+\section{BRIEF DESCRIPTION OF THE DRAWINGS}
+
+\begin{itemize}
+    \item \textbf{FIG. 1} illustrates the conceptual bridge between the Physical Domain and the Formal Domain.
+    \item \textbf{FIG. 2} shows the structure of the Traceability Hypothesis data object.
+    \item \textbf{FIG. 3} depicts the workflow for generating a certificate using the bridge.
+\end{itemize}
+
+\section{DETAILED DESCRIPTION OF EMBODIMENTS}
+
+\subsection{Definitions}
+
+\begin{itemize}
+    \item \textbf{Formal Domain:} The realm of mathematical logic and machine-checked proofs (e.g., Lean 4 code).
+    \item \textbf{Physical Domain:} The realm of sensors, actuators, and plasma physics.
+    \item \textbf{Traceability Hypothesis:} A formal definition of the relationship between a physical quantity and its formal representation, including error bounds.
+    \item \textbf{Calibration Envelope:} The set of parameters (scale, offset) that define the valid range of the Traceability Hypothesis.
+\end{itemize}
+
+\subsection{The Traceability Hypothesis Structure}
+
+In the preferred embodiment (Lean 4), the hypothesis is defined as:
+
+\begin{verbatim}
+structure TraceabilityHypothesis (cfg : BridgeConfig) where
+  lower_bound : Real
+  lower_bound_pos : 0 < lower_bound
+  offset : Real
+  offset_nonneg : 0 <= offset
+  observable_le : \forall meas,
+    observableAsymmetry meas cfg.modes <= diagnosticLedger cfg meas / lower_bound + offset
+\end{verbatim}
+
+This structure does three things:
+\begin{enumerate}
+    \item It declares the parameters \texttt{lower\_bound} and \texttt{offset}.
+    \item It defines the semantic meaning of these parameters via the predicate \texttt{observable\_le}.
+    \item It forces any proof using this hypothesis to explicitly handle the case where the physical measurement deviates from the ideal ledger by the specified amount.
+\end{enumerate}
+
+\subsection{The Traceability Theorem}
+
+The system includes a machine-checked proof of the following theorem:
+
+\textbf{Theorem (Pass Implies Observable Bound):}
+Given a configured Bridge and a valid Traceability Hypothesis, if a runtime certificate reports \texttt{passed = true} with a threshold $T$, then the physical observable asymmetry is strictly bounded by $T / \text{lower\_bound} + \text{offset}$.
+
+This theorem is the ``Bridge'': it translates a software boolean (\texttt{passed}) into a guarantee about the physical world, contingent only on the explicitly stated hypothesis.
+
+\subsection{Runtime Integration}
+
+When the fusion reactor operates:
+\begin{enumerate}
+    \item \textbf{Configuration:} The operator loads the active Calibration Envelope (e.g., ``Scale=1.0, Offset=0.05'').
+    \item \textbf{Execution:} The controller computes the Ledger value $L$ and checks $L \le T$.
+    \item \textbf{Certification:} The system generates a runtime artifact containing (at least) $L$, $T$, and a pass/fail flag, and records the active calibration/hypothesis identifier used for traceability. In Lean, a \texttt{DiagnosticCertificate} includes the threshold, pass flag, ledger and observable values, and calibration version; the envelope parameters are supplied as a separate hypothesis (\texttt{TraceabilityHypothesis}) used by the traceability theorem.
+    \item \textbf{Reference:} The runtime artifact includes a reference to the formal hypothesis predicate (e.g., \texttt{TraceabilityHypothesis.observable\_le}) so an auditor can locate the exact Lean statement whose satisfaction is assumed.
+\end{enumerate}
+
+\subsection{Audit and Compliance}
+
+Regulators audit the system by:
+\begin{enumerate}
+    \item \textbf{Verifying the Proof:} Checking the Lean code to ensure the Traceability Theorem is logically valid.
+    \item \textbf{Validating the Envelope:} Reviewing empirical data (calibration shots) to confirm that the parameters (Scale, Offset) logged in the certificates are consistent with reality.
+\end{enumerate}
+This separates the concern of ``logic correctness'' (math) from ``sensor accuracy'' (physics), simplifying the certification process.
+
+\section{CLAIMS}
+
+\begin{enumerate}
+    \item \textbf{A method for verifying safety properties in a physical control system, comprising:}
+    \begin{enumerate}
+        \item defining a formal data structure representing a hypothesis about the relationship between a physical measurement and a control variable;
+        \item populating said data structure with calibration parameters derived from empirical validation;
+        \item executing a machine-checked mathematical proof that guarantees a safety property of the system conditional on said hypothesis;
+        \item generating a runtime artifact for each control action that includes the calibration parameters and a reference to the machine-checked proof; and
+        \item controlling the physical system based on the verified safety property.
+    \end{enumerate}
+
+    \item The method of claim 1, wherein the hypothesis defines an inequality bounding the physical measurement by a function of the control variable and an uncertainty offset.
+
+    \item The method of claim 1, wherein the machine-checked proof is verified by an automated theorem prover.
+
+    \item The method of claim 1, wherein the runtime artifact includes a cryptographic digest (e.g., SHA-256) over a canonical representation of the inputs including calibration metadata, and wherein the artifact is optionally externally signed by a facility key.
+
+    \item \textbf{A system for bridging formal verification and empirical control, comprising:}
+    \begin{enumerate}
+        \item a hypothesis registry storing formal definitions of sensor error models;
+        \item a calibration store containing empirical parameters for said error models;
+        \item a proof engine configured to verify theorems dependent on said error models; and
+        \item a certificate generator configured to produce audit records linking runtime control decisions to the verified theorems and the stored calibration parameters.
+    \end{enumerate}
+
+    \item The system of claim 5, wherein the hypothesis registry includes a definition for a traceability hypothesis linking a symmetry ledger value to an observable asymmetry metric.
+
+    \item \textbf{A non-transitory computer-readable medium storing instructions that, when executed by a processor, cause a system to:}
+    \begin{enumerate}
+        \item load a formal specification of a diagnostic bridge;
+        \item instantiate the specification with facility-specific calibration values;
+        \item compute a safety certificate based on the instantiated specification; and
+        \item inhibit reactor operation if the safety certificate indicates a violation of the formal specification.
+    \end{enumerate}
+\end{enumerate}
+
+\section*{APPENDIX: Implementation Evidence}
+
+The core logic of this invention is implemented in the accompanying software artifacts:
+\begin{itemize}
+    \item \textbf{Formal Definition:} The \texttt{TraceabilityHypothesis} structure and the \texttt{pass\_implies\_observable\_bound} theorem are defined in Lean 4 in \texttt{IndisputableMonolith/Fusion/DiagnosticsBridge.lean}.
+    \item \textbf{Runtime Logging (seam-first):} The control demos emit a seam note that references the Lean predicate used for the calibration-envelope assumption (e.g., \texttt{TraceabilityHypothesis.observable\_le}), in:
+      \texttt{fusion/simulator/control/jag\_demo.py}, \texttt{paper\_modes\_demo.py}, and \texttt{image\_folder\_demo.py}.
+\end{itemize}
+
+\end{document}

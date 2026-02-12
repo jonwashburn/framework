@@ -1,0 +1,140 @@
+Based on my search of the mathlib4 codebase, here's the current status of GAGA-related formalizations:
+
+## What Has Been Done
+
+**Valuative Criteria**: The valuative criterion for proper morphisms is available as `AlgebraicGeometry.IsProper.eq_valuativeCriterion`. [1](#0-0) 
+
+**Projective Spectrum (Proj)**: There is a substantial formalization of `Proj` as a scheme, including the construction of Proj as a locally ringed space and proofs that it is a scheme. [2](#0-1) 
+
+**Analytic Functions**: There is a general theory of analytic functions (functions representable by convergent power series) with predicates like `AnalyticAt`, `AnalyticOn`, and `AnalyticOnNhd`, including complex-specific results.
+
+**Homological Algebra Infrastructure**: There is extensive infrastructure for homological algebra, including chain complexes, derived categories, and various cohomology theories, though not yet applied to sheaves on schemes.
+
+## What Is Missing
+
+**Chow's Lemma**: Not yet formalized. While "Chow's theorem" is tracked in the theorem database, it has no formalization yet. [3](#0-2) 
+
+**GAGA Theorem**: Not formalized.
+
+**Complex Analytic Spaces**: While analytic functions are defined, there is no formal definition of complex analytic spaces as geometric objects (in the sense of complex manifolds or analytic varieties).
+
+**Analytification Functor**: Not found in the codebase.
+
+**O(1) / Twisting Sheaf**: Despite having Proj, the twisting sheaf O(1) for projective spaces is not yet available.
+
+**Čech Cohomology for Schemes**: Only the Čech nerve construction exists [4](#0-3) , but there is no working theory of Čech cohomology on schemes.
+
+**Cartan's Theorems A and B**: Not formalized yet.
+
+**Sheaf Cohomology on Schemes**: While the infrastructure for sheaves on schemes exists (including Zariski and étale topologies), there is no explicit sheaf cohomology functor or derived functor theory for schemes yet.
+
+## Summary
+
+To work toward GAGA, the most urgent missing pieces are:
+1. Complex analytic spaces as geometric objects
+2. The analytification functor
+3. Čech cohomology (or another cohomology theory) for schemes
+4. O(1) and basic facts about projective spaces
+5. Coherent sheaf cohomology on projective varieties
+
+The valuative criterion being available is good news for foundational work on morphisms of schemes. The existing Proj construction provides a starting point for projective geometry, though much work remains on line bundles and sheaf operations on projective spaces.
+
+### Citations
+
+**File:** Mathlib/AlgebraicGeometry/ValuativeCriterion.lean (L24-26)
+```text
+- `AlgebraicGeometry.IsProper.eq_valuativeCriterion`:
+  A morphism is proper if and only if
+  it is qcqs and of finite type and satisfies the valuative criterion.
+```
+
+**File:** Mathlib/AlgebraicGeometry/ProjectiveSpectrum/Scheme.lean (L12-88)
+```text
+/-!
+# Proj as a scheme
+
+This file is to prove that `Proj` is a scheme.
+
+## Notation
+
+* `Proj`      : `Proj` as a locally ringed space
+* `Proj.T`    : the underlying topological space of `Proj`
+* `Proj| U`   : `Proj` restricted to some open set `U`
+* `Proj.T| U` : the underlying topological space of `Proj` restricted to open set `U`
+* `pbo f`     : basic open set at `f` in `Proj`
+* `Spec`      : `Spec` as a locally ringed space
+* `Spec.T`    : the underlying topological space of `Spec`
+* `sbo g`     : basic open set at `g` in `Spec`
+* `A⁰_x`      : the degree zero part of localized ring `Aₓ`
+
+## Implementation
+
+In `Mathlib/AlgebraicGeometry/ProjectiveSpectrum/StructureSheaf.lean`, we have given `Proj` a
+structure sheaf so that `Proj` is a locally ringed space. In this file we will prove that `Proj`
+equipped with this structure sheaf is a scheme. We achieve this by using an affine cover by basic
+open sets in `Proj`, more specifically:
+
+1. We prove that `Proj` can be covered by basic open sets at homogeneous elements of positive
+    degree.
+2. We prove that for any homogeneous element `f : A` of positive degree `m`, `Proj.T | (pbo f)` is
+    homeomorphic to `Spec.T A⁰_f`:
+  - forward direction `toSpec`:
+    for any `x : pbo f`, i.e. a relevant homogeneous prime ideal `x`, send it to
+    `A⁰_f ∩ span {g / 1 | g ∈ x}` (see `ProjIsoSpecTopComponent.ToSpec.carrier`). This ideal is
+    prime, the proof is in `ProjIsoSpecTopComponent.ToSpec.toFun`. The fact that this function
+    is continuous is found in `ProjIsoSpecTopComponent.toSpec`
+  - backward direction `fromSpec`:
+    for any `q : Spec A⁰_f`, we send it to `{a | ∀ i, aᵢᵐ/fⁱ ∈ q}`; we need this to be a
+    homogeneous prime ideal that is relevant.
+    * This is in fact an ideal, the proof can be found in
+      `ProjIsoSpecTopComponent.FromSpec.carrier.asIdeal`;
+    * This ideal is also homogeneous, the proof can be found in
+      `ProjIsoSpecTopComponent.FromSpec.carrier.asIdeal.homogeneous`;
+    * This ideal is relevant, the proof can be found in
+      `ProjIsoSpecTopComponent.FromSpec.carrier.relevant`;
+    * This ideal is prime, the proof can be found in
+      `ProjIsoSpecTopComponent.FromSpec.carrier.asIdeal.prime`.
+    Hence we have a well-defined function `Spec.T A⁰_f → Proj.T | (pbo f)`, this function is called
+    `ProjIsoSpecTopComponent.FromSpec.toFun`. But to prove the continuity of this function, we need
+    to prove `fromSpec ∘ toSpec` and `toSpec ∘ fromSpec` are both identities; these are achieved in
+    `ProjIsoSpecTopComponent.fromSpec_toSpec` and `ProjIsoSpecTopComponent.toSpec_fromSpec`.
+3. Then we construct a morphism of locally ringed spaces `α : Proj| (pbo f) ⟶ Spec.T A⁰_f` as the
+    following: by the Gamma-Spec adjunction, it is sufficient to construct a ring map
+    `A⁰_f → Γ(Proj, pbo f)` from the ring of homogeneous localization of `A` away from `f` to the
+    local sections of structure sheaf of projective spectrum on the basic open set around `f`.
+    The map `A⁰_f → Γ(Proj, pbo f)` is constructed in `awayToΓ` and is defined by sending
+    `s ∈ A⁰_f` to the section `x ↦ s` on `pbo f`.
+
+## Main Definitions and Statements
+
+For a homogeneous element `f` of degree `m`
+* `ProjIsoSpecTopComponent.toSpec`: the continuous map between `Proj.T| pbo f` and `Spec.T A⁰_f`
+  defined by sending `x : Proj| (pbo f)` to `A⁰_f ∩ span {g / 1 | g ∈ x}`. We also denote this map
+  as `ψ`.
+* `ProjIsoSpecTopComponent.ToSpec.preimage_eq`: for any `a: A`, if `a/f^m` has degree zero,
+  then the preimage of `sbo a/f^m` under `toSpec f` is `pbo f ∩ pbo a`.
+
+If we further assume `m` is positive
+* `ProjIsoSpecTopComponent.fromSpec`: the continuous map between `Spec.T A⁰_f` and `Proj.T| pbo f`
+  defined by sending `q` to `{a | aᵢᵐ/fⁱ ∈ q}` where `aᵢ` is the `i`-th coordinate of `a`.
+  We also denote this map as `φ`
+* `projIsoSpecTopComponent`: the homeomorphism `Proj.T| pbo f ≅ Spec.T A⁰_f` obtained by `φ` and
+  `ψ`.
+* `ProjectiveSpectrum.Proj.toSpec`: the morphism of locally ringed spaces between `Proj| pbo f`
+  and `Spec A⁰_f` corresponding to the ring map `A⁰_f → Γ(Proj, pbo f)` under the Gamma-Spec
+  adjunction defined by sending `s` to the section `x ↦ s` on `pbo f`.
+
+Finally,
+* `AlgebraicGeometry.Proj`: for any `ℕ`-graded ring `A`, `Proj A` is locally affine, hence is a
+  scheme.
+```
+
+**File:** docs/1000.yaml (L1-1)
+```yaml
+# This file tracks the formalisation status of theorems from the experimental
+```
+
+**File:** Mathlib/AlgebraicTopology/CechNerve.lean (L1-1)
+```text
+/-
+```

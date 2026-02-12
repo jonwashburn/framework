@@ -1,0 +1,25 @@
+import Lake
+open Lake DSL
+
+package «PrimeNumberTheoremAnd» where
+  -- Settings matching PNT+
+  leanOptions := #[
+    ⟨`pp.unicode.fun, true⟩,
+    ⟨`pp.proofs.withType, false⟩,
+    ⟨`autoImplicit, false⟩,
+    ⟨`relaxedAutoImplicit, false⟩
+  ]
+
+require mathlib from git
+  "https://github.com/leanprover-community/mathlib4.git" @ "v4.13.0"
+
+@[default_target]
+lean_lib «PrimeNumberTheoremAnd» where
+  -- The root of our contribution
+  roots := #[
+    `PrimeNumberTheoremAnd.Common,
+    `PrimeNumberTheoremAnd.WeierstrassProduct,
+    `PrimeNumberTheoremAnd.Determinant,
+    `PrimeNumberTheoremAnd.ProductLemmas,
+    `PrimeNumberTheoremAnd.GammaBounds
+  ]

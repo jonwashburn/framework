@@ -1,0 +1,9 @@
+import Mathlib
+
+#check intervalIntegral.integral_eq_sub_of_hasDerivAt
+#check intervalIntegral.integral_deriv_eq_sub
+#check intervalIntegral.integral_deriv_eq
+#check intervalIntegral.integral_eq_sub_of_hasDerivAt'
+#check intervalIntegral.integral_eq_sub_of_hasDerivAt
+#check intervalIntegral.integral_eq_sub_of_hasDerivAt_of_continuous
+

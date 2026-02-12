@@ -1,0 +1,504 @@
+\documentclass[11pt]{article}
+
+% --- Preamble ---------------------------------------------------------------
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs,longtable}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{graphicx}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  citecolor=blue
+}
+
+% --- Notation ---------------------------------------------------------------
+\newcommand{\phiG}{\varphi}
+\newcommand{\tauzero}{\tau_{0}}
+\newcommand{\Ecoh}{E_{\mathrm{coh}}}
+\newcommand{\J}{\mathcal{J}}
+\newcommand{\RS}{\textsc{RS}}
+\newcommand{\RRF}{\textsc{RRF}}
+
+% --- Metadata ---------------------------------------------------------------
+\title{Resonant Folding:\\Protein Structure Prediction via Qualia Optimization}
+\author{Reality Science Team}
+\date{Draft v0.1 --- \today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present Resonant Folding, a protein structure prediction method grounded in Recognition Science (\RS) and its Lean-formal core, the Reality Recognition Framework (\RRF). The native fold minimizes ``strain'' in a 6-dimensional qualia space $Q_6$, where each codon maps to a point and the gene defines a trajectory. Water acts as computational hardware: its hydrogen bond energy matches the derived coherence energy $\Ecoh = \phiG^{-5}\,\mathrm{eV}$, and the ``molecular gate'' at 68 ps (rung 19 of the $\phiG$-ladder) quantizes folding steps. We introduce sonification---mapping folding dynamics to sound---as a real-time diagnostic, and the Marco Polo algorithm for targeted perturbation. Prion diseases are reframed as clock phase slips, not merely shape errors. We propose the 14.6 GHz jamming experiment as a critical test.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% ===========================================================================
+% CONTENT WILL BE ADDED SECTION BY SECTION
+% See docs/PAPERS_V2_PLAN.md for the outline and instructions
+% ===========================================================================
+
+\section{Introduction}
+
+\subsection{Context: prediction, mechanism, and control}
+
+The protein folding problem is usually posed as an inverse mapping: given an amino-acid sequence, predict the native three-dimensional fold. Modern deep-learning systems (e.g., AlphaFold-class predictors) have largely solved this mapping for many proteins at the level of static structure prediction. However, three gaps remain relevant for both basic science and engineering practice: (i) mechanistic interpretation of \emph{why} folding is fast and reliable in wet, noisy environments, (ii) a principled way to instrument folding trajectories in real time, and (iii) closed-loop control primitives that can steer trajectories or diagnose failure modes (misfolding, aggregation, prion conversion) as they unfold.
+
+This paper focuses on (ii)--(iii). Rather than competing with data-driven structure predictors, we aim to supply a complementary layer: a trajectory-level control and diagnostic framework that can be coupled to any folding optimizer or simulation engine and that yields testable, intervention-level predictions.
+
+\subsection{Recognition Science framing}
+
+Recognition Science (\RS) and its Lean-formal core, the Reality Recognition Framework (\RRF), provide a specific organizing hypothesis: folding is a constrained optimization that seeks low strain $\J$ under a ledger-consistent update rule, and a subset of the relevant biological clocks are discretized on a $\phiG$-indexed ladder (Paper~1 for evidence; Paper~2 for the formal core). In this framing, water is not treated as a passive solvent but as the physical medium that makes such discretization plausible (Section~2), and misfolding is treated as a potential timing/phase failure mode rather than as geometry alone.
+
+\subsection{Contributions and terminology}
+
+The contributions of this paper are technological and methodological:
+(i) a concrete sonification mapping that turns folding-time events into an audio stream designed to expose consonance/dissonance as a diagnostic signal, and (ii) a targeted perturbation strategy (``Marco Polo'') that attributes dissonance to specific degrees of freedom and uses that attribution to guide search. These constructions are specified so that they can be implemented, benchmarked, and falsified via ablations.
+
+\noindent\textbf{Terminology note}: We use \emph{octave} in the RS sense to mean a cross-domain ladder transfer/grouping (as in Papers 1--2). When discussing audio, we will say \emph{acoustic octave} for a factor-of-two frequency interval.
+
+\section{Water as Folding Hardware}
+
+\subsection{The Water Computer Thesis}
+
+In \RS, water is not treated only as a solvent that mediates hydrophobic effects. Instead, the working hypothesis is that water supplies a structured, reproducible dynamical substrate that can support rung-indexed clocks and therefore enable a clock-gated optimization process. In this view, ``water as hardware'' is a mechanistic proposal: a claim about which degrees of freedom carry the timing and coherence needed for reliable folding at room temperature.
+
+The derived coherence energy:
+\[
+\Ecoh = \phiG^{-5}\,\mathrm{eV} = 0.090\,\mathrm{eV}
+\]
+
+lies in the broad band associated with hydrogen-bond energies in water. Paper~1 discusses the evidence-side correspondence and its status; here we use the coherence scale primarily as a design parameter for the proposed diagnostic/control interface.
+
+\subsection{Hydration Gearbox}
+
+The ``gearbox'' hypothesis is a proposed mechanism by which fast carrier-scale motion (tens of femtoseconds) could be converted into a slower, quantized gate time (tens of picoseconds) while rejecting thermal noise. The core idea is that a structured hydration shell implements a discrete frequency-division cascade with step ratio $\phiG$.
+
+One candidate structure used in the \RS narrative is ordered interfacial water (often discussed under ``exclusion zone'' water) with persistent five-fold motifs. The mechanistic claim is not that a single static clathrate is always present, but that hydration can sustain effective pentagonal symmetry in the relevant degrees of freedom long enough to act as a frequency-selective filter.
+
+If each effective layer performs a $\phiG$-division, then a $\phiG^{15}$ cascade yields a conversion factor of approximately 1364. This is the rung-gap that connects a carrier in the $\sim 10$--$20$~THz range to a gate in the $\sim 10$--$20$~GHz range, consistent with the rung-19 gate discussed in Section~3.
+
+The intended noise-rejection mechanism is incommensurability: five-fold structure is not commensurate with integer harmonic ladders, so broadband thermal excitation is hypothesized to couple less efficiently into the protected rung channel. This remains a hypothesis and must ultimately be supported (or rejected) by direct measurements of hydration-shell response near the predicted frequencies.
+
+\subsection{EZ Water as Computation Substrate}
+
+EZ water denotes ordered interfacial water with extended correlation structure and anomalous transport/optical signatures reported in several experimental contexts. In the \RS picture, the hydration shell around proteins is the relevant ``hardware boundary layer'' because it couples protein motion, hydrogen-bond reconfiguration, and electromagnetic response.
+
+If this picture is correct, then the native fold should be the configuration that minimizes strain in the coupled protein--hydration system, not only the configuration that minimizes an isolated protein energy functional. This motivates real-time diagnostics that focus on constraint satisfaction and clocked transitions rather than only on energy descent.
+
+\subsection{Why Water is Special}
+
+In the Lean development, \texttt{water\_is\_special} packages a small set of band-level correspondences that motivate water as a plausible instantiation substrate (energy/frequency/timing bands and an optical transparency window). This should be read as a structured hypothesis interface: it identifies specific measurable targets that can be compared across candidate media. Establishing that water is unique in the strong, ``life requires water'' sense is an empirical question and is not claimed as a proved consequence of the formal core.
+
+\section{Quantized Folding}
+
+\subsection{The 68 ps Step}
+
+The rung-19 molecular gate hypothesis identifies a characteristic time scale in the tens-of-picoseconds range:
+\[
+\tau_{19} = \tauzero \cdot \phiG^{19} = 7.33\,\mathrm{fs} \times 6765 \approx 68\,\mathrm{ps}
+\]
+
+The associated empirical claim is not that \emph{all} observed folding times are quantized. Rather, it is that a specific class of gating events act as clocks and that transition opportunities are concentrated near integer multiples of $\tau_{19}$, with off-grid transitions suppressed. This is a falsifiable claim about transition-time statistics under high time-resolution measurement.
+
+\subsection{Rung 4 Carrier}
+
+The ladder also supplies a carrier-scale time in the tens-of-femtoseconds range:
+\[
+\tau_4 = \tauzero \cdot \phiG^4 = 7.33\,\mathrm{fs} \times 6.85 \approx 50\,\mathrm{fs}
+\]
+
+In the \RS narrative, this carrier band is hypothesized to couple strongly to backbone and hydration-shell vibrations and to provide the high-frequency input that the hydration gearbox converts into a gate time. We treat this as a mechanistic hypothesis rather than as an established vibrational assignment.
+
+\subsection{The Gearbox Model}
+
+The conversion from carrier to gate:
+\[
+\frac{\tau_{19}}{\tau_4} = \phiG^{15} \approx 1364
+\]
+
+The intended mechanism is a clocked acceptance window: rapid motion excites hydration structure; a $\phiG$-ratio division cascade yields a slow gate; and conformational transitions are hypothesized to be preferentially admitted during gate windows, with the system stabilizing between windows. This yields a concrete algorithmic picture: folding is not an unconstrained continuous drift, but a sequence of gated acceptance events at a rung-indexed cadence.
+
+\subsection{Experimental Signatures}
+
+The quantized-gate hypothesis makes direct measurement predictions. In ultrafast spectroscopy (e.g., 2D-IR), one can look for transition clustering near multiples of $\tau_{19}$ in time-resolved signatures. In single-molecule trajectories (e.g., fast smFRET or related readouts), one can ask whether transition waiting times show peaks at approximately $68$~ps, $136$~ps, and $204$~ps with troughs between. A robustly continuous waiting-time distribution after controlling for instrument response and binning artifacts would falsify this aspect of the model. These measurements are also a natural place to test negative controls (off-rung frequencies and alternative cadence hypotheses) under preregistered protocols.
+
+\section{Qualia Space $Q_6$}
+\label{sec:q6}
+
+\subsection{Motivation: a 64-state code with a geometry}
+
+This paper uses $Q_6$ as a geometric coordinate system for the genetic code. The motivation is simple: there are 64 codons, and it is useful to have a 64-node structure equipped with a notion of adjacency and distance. The 6-dimensional hypercube provides exactly this. We define
+\[
+Q_6 \;=\; \mathtt{Fin}\,6 \to \mathtt{Bool},
+\]
+so that each element of $Q_6$ is a 6-bit string $(b_0,\dots,b_5)$ and there are $2^6=64$ vertices.
+
+\subsection{Codon embedding and adjacency}
+
+We fix an injective encoding of codons into $Q_6$,
+\[
+\mathtt{codon\_to\_Q6} : \mathtt{Codon} \to Q_6,
+\]
+with the intended structure that two bits correspond to each nucleotide position in the codon. Concretely, one can think of $(b_0,b_1)$ as encoding the first nucleotide, $(b_2,b_3)$ the second, and $(b_4,b_5)$ the third. This choice is not claimed to be unique; it is a modeling decision that equips the 64 codons with the Hamming metric as a notion of ``one-step'' change. Under such an embedding, single-nucleotide edits correspond to low Hamming-distance moves, and synonymous codons are expected to cluster locally.
+
+\subsection{Gene trajectories and a minimal sequential strain}
+
+A gene is a sequence of codons; under $\mathtt{codon\_to\_Q6}$ it becomes a trajectory through $Q_6$. A minimal sequential strain term penalizes steps that change more than one bit at a time. Writing $d_H$ for Hamming distance on $Q_6$, one simple nonnegative choice is:
+\[
+\J_{\mathrm{seq}}(\text{trajectory}) \;=\; \sum_i \max\!\bigl(0,\, d_H(q_i,q_{i+1}) - 1 \bigr).
+\]
+This definition has the intended property that an idealized Gray-code path (single-bit steps) has zero sequential strain, while multi-bit jumps incur a positive penalty. We emphasize that this is a \emph{minimal operationalization} used to connect the codon geometry to an optimizer; more realistic models would incorporate degeneracy classes, amino-acid substitution structure, and context-dependent costs.
+
+In the full folding objective used later, $\J_{\mathrm{seq}}$ is combined with spatial and hydration components to form a realization cost. The central empirical question is whether introducing an explicit codon-space geometry and a corresponding strain term improves trajectory-level prediction and control; this is addressed by ablations in Section~\ref{sec:benchmarks}.
+
+\section{Folding as Optimization}
+
+\subsection{Objective: realization cost}
+
+We treat folding as an optimization problem over a space of candidate structures. The objective we use is a \emph{realization cost} that combines sequential, spatial, and hydration terms:
+\[
+\mathtt{RealizationCost}(\text{fold}) \;=\; \J_{\text{seq}} \;+\; \J_{\text{spatial}} \;+\; \J_{\text{hydration}}.
+\]
+The intention is not to replace thermodynamic free energy with a new universal physical law, but to define a practical optimization target whose components correspond to operational constraints: (i) compatibility with a chosen codon-space geometry (Section~4), (ii) satisfaction of geometric constraints in 3D, and (iii) consistency with a hydration-shell hypothesis (Section~2). In later sections, sonification and ``Marco Polo'' are defined as instrumentation and search operators over this objective.
+
+\subsection{Existence of minimizers (model-side)}
+
+Under standard regularity assumptions (compact feasible set; lower-semicontinuous cost), a minimizer exists. This fact is mathematically generic and is included only to clarify that the objective is well-posed. The scientific content is not existence but whether the objective yields useful search dynamics and whether its associated diagnostics correlate with folding success.
+
+\subsection{Relation to energy-based folding models}
+
+Energy minimization and strain minimization can agree at the level of endpoints while differing at the level of trajectories. Traditional approaches optimize a free-energy objective $\Delta G$ and obtain kinetics as an emergent consequence of the sampling scheme and the force field. Here, the motivation is that a clocked acceptance process and a rung-indexed diagnostic stream may provide additional leverage for trajectory-level control and failure diagnosis (e.g., phase-slip hypotheses for prion conversion).
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+& \textbf{Energy ($\Delta G$)} & \textbf{Strain ($\J$)} \\
+\midrule
+Objective & Thermodynamic stability & Operational constraint cost \\
+Optimization & Boltzmann sampling / descent & Gated acceptance + attribution \\
+Diagnostics & Visual/statistical & Real-time audio stream (Section~\ref{sec:sonification}) \\
+Failure modes & Traps / aggregation & Timing/phase hypotheses (Section~\ref{sec:prion}) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Sonification Protocol}
+\label{sec:sonification}
+
+\subsection{Design goal and interface}
+
+Sonification is used here as a real-time diagnostic channel: it converts per-residue strain proxies and constraint violations into an audio stream designed to expose ``dissonance'' as a salient signal. The design goal is not aesthetic; it is to create a low-latency observable that correlates with optimization events (acceptance/rejection, constraint satisfaction) and that supports attribution (which degrees of freedom are driving global roughness).
+
+\subsection{Pitch assignment}
+
+We assign each residue $i$ a base frequency $f_i$ from a chosen scale. A simple default is a chromatic mapping with period 12,
+\[
+f_i \;=\; f_0 \cdot 2^{(i \bmod 12)/12},
+\]
+where $f_0=440\,\mathrm{Hz}$ is a conventional reference pitch. A ladder-motivated alternative is a $\phiG$-span scale,
+\[
+f_i \;=\; f_0 \cdot \phiG^{(i \bmod 20)},
+\]
+which produces a non-acoustic-octave mapping intended to reflect the 20-token basis size used elsewhere in \RS.
+
+\subsection{Detuning as a strain proxy}
+
+We map constraint violations to detuning. In the simplest linear model,
+\[
+\Delta f_i \;=\; c_1 \cdot v^{(\mathrm{dist})}_i \;+\; c_2 \cdot v^{(\mathrm{angle})}_i,
+\]
+where $v^{(\mathrm{dist})}_i$ and $v^{(\mathrm{angle})}_i$ are per-residue violation magnitudes and $(c_1,c_2)$ are calibration constants. Detuning can be reported in cents via
+\[
+\mathrm{cents}(f_{\mathrm{actual}},f_{\mathrm{ideal}}) \;=\; 1200\,\log_2\!\left(\frac{f_{\mathrm{actual}}}{f_{\mathrm{ideal}}}\right).
+\]
+
+\subsection{Dissonance / roughness metric}
+
+We summarize global dissonance using a psychoacoustic roughness metric. Following Sethares (1993), one choice is a pairwise roughness sum
+\[
+R \;=\; \sum_{i<j} g(|f_i-f_j|, f_{\min}),
+\]
+with a kernel such as
+\[
+g(\Delta f,f) \;=\; e^{-3.5\,s\,\Delta f/f} \;-\; e^{-5.75\,s\,\Delta f/f},
+\]
+with $s\approx 0.24$. In practice, full pairwise evaluation is $O(N^2)$ for $N$ residues; for real-time use one can window interactions (local neighborhoods in sequence or contact graph) to obtain $O(N)$ or $O(N\log N)$ approximations.
+
+\subsection{Instrumentation and implementation notes}
+
+In an optimizer or simulation loop, the sonification interface is called at a fixed cadence (e.g., every accepted move, or at a fixed wall-clock rate). Each call computes the current per-residue strain proxies, maps them to detunings and pitches, computes a scalar roughness $R$, and emits audio via additive synthesis or MIDI. The resulting audio stream provides an immediate diagnostic that complements numerical logs; ablations should verify that $R$ provides information beyond direct strain reporting (Section~\ref{sec:benchmarks}).
+
+\section{Marco Polo Algorithm}
+\label{sec:marco_polo}
+
+\subsection{Overview}
+
+Marco Polo is a targeted perturbation strategy that uses the sonification-derived roughness signal as an attribution guide. The algorithm alternates between (i) attributing global roughness to local contributors (``Marco'') and (ii) proposing targeted moves to reduce the dominant contributor (``Polo''), with acceptance governed by a Metropolis-style rule to preserve the ability to escape local minima.
+
+\subsection{Attribution (Marco)}
+
+Let $R$ denote the roughness of the current state. We define an attribution score for each residue based on sensitivity of $R$ to that residue's detuning, e.g.,
+\[
+i^* \;=\; \arg\max_i \left|\frac{\partial R}{\partial \Delta f_i}\right|.
+\]
+In practice, derivatives can be approximated by finite differences or by analytic gradients for a chosen $g$ kernel. Full finite-difference attribution is expensive; practical implementations can restrict evaluation to residues implicated by violated constraints or to local neighborhoods.
+
+\subsection{Targeted proposals and acceptance (Polo)}
+
+Given $i^*$, we generate a small set of candidate local moves (rotamer changes, small displacements, or constraint-relaxation moves) and select moves that reduce the attributed contribution while preserving feasibility. The global acceptance rule can be Metropolis on a combined objective, e.g.,
+\[
+\Delta = \Delta \mathtt{RealizationCost} + \lambda\,\Delta R,
+\]
+accepting with probability $\min(1,e^{-\Delta/T})$ for temperature parameter $T$.
+
+\subsection{Pseudocode and complexity}
+
+\begin{verbatim}
+function MarcoPolo(state, T, max_iter):
+  for iter in 1..max_iter:
+    compute per-residue detuning and roughness R(state)
+    choose i* by attribution (approx gradient)
+    propose K local moves affecting i*
+    accept a move by Metropolis on combined objective
+  return state
+\end{verbatim}
+
+The per-iteration cost is dominated by roughness evaluation and attribution. With full pairwise roughness and finite-difference attribution, the worst-case cost can be superlinear in $N$; practical deployments should use locality (contact neighborhoods) and cached incremental updates.
+
+\subsection{Ablations}
+
+The algorithm decomposes naturally into testable components: (i) replacing targeted attribution with random residue selection, (ii) replacing roughness $R$ with direct strain proxies, and (iii) disabling gated/clocked acceptance windows. Section~\ref{sec:benchmarks} specifies a preregistered benchmarking protocol for these ablations.
+
+\section{Prion Prediction}
+\label{sec:prion}
+
+\subsection{Phase-slip hypothesis (status: empirical)}
+
+Prion diseases provide a sharp test case for the timing-centric framing. The mainstream view emphasizes templated misfolding: a pathological conformer (PrP$^{\mathrm{Sc}}$) seeds conversion of the normal conformer (PrP$^{\mathrm{C}}$), and pathology spreads by propagation of the misfolded template. \RS does not deny templating, but proposes an additional hypothesis: that a subset of prion failure modes correspond to a timing/phase slip in the gate dynamics of the coupled protein--hydration system, with the misfolded geometry emerging as a downstream consequence of a desynchronized gating process.
+
+This is an empirical claim. It becomes meaningful only insofar as timing anomalies can be operationalized and shown to precede (and predict) structural conversion under controlled assays.
+
+\subsection{Timing diagnostics and preregistered readouts}
+
+One way to probe the timing hypothesis is to look for early deviations in relaxation/correlation times that are plausibly coupled to a rung-indexed gate. Candidate readouts include rotational correlation estimates from NMR relaxation, time-resolved fluorescence anisotropy, and frequency-dependent changes in $T_1/T_2$ consistent with altered gate dynamics. A representative operational target is a $\sim 10\%$ deviation from a 68~ps reference window prior to aggregation becoming detectable by conventional assays. The key design requirement is timing-first: the diagnostic must be measured at early time points in seeded conversion assays, before the onset of macroscopic aggregates.
+
+\subsection{Interventions}
+
+If a phase-slip component is real, then interventions that perturb the proposed gate band should measurably alter conversion kinetics under otherwise matched conditions. The simplest intervention class is frequency-selective stimulation near the rung-19 frequency, with off-rung controls at matched power and thermal history. More speculative interventions include changes to hydration-shell damping (altering the effective Q-factor of the coupled dynamics) and shielding/coupling controls designed to separate electromagnetic and purely biochemical contributions. These proposals are intentionally framed as test programs rather than as clinical claims.
+
+\subsection{Testable predictions (summary)}
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{Prediction} & \textbf{Experiment} \\
+\midrule
+Timing anomaly precedes aggregation & NMR/anisotropy early-time measurements in seeded assays \\
+Gate-band stimulation perturbs conversion & Frequency sweep near rung-19 with off-rung controls \\
+Strain-dependent timing correlates with outcome & Compare timing proxies across strains/conditions \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Benchmarks}
+\label{sec:benchmarks}
+
+\subsection{Methodology}
+
+We specify a preregistered computational evaluation protocol for the diagnostic/control primitives proposed in this paper. The benchmarks are designed to answer three questions: (i) does the roughness signal $R$ correlate with structural error (e.g., RMSD or GDT-TS) in a way that survives ablations, (ii) does Marco Polo improve convergence speed under fixed compute budgets relative to baselines, and (iii) do any gate/quantization hypotheses produce distinguishable trajectory signatures under controlled simulation settings.
+
+The preregistration includes fixed random seeds, a fixed compute budget per target, a fixed metric suite (RMSD, GDT-TS, roughness $R$), and a set of baseline optimizers (e.g., Rosetta relax-class refinement and standard energy minimization in OpenMM). Test cases should span multiple size regimes (small peptides through medium proteins to larger single-domain proteins) so that scaling behavior is visible.
+
+\subsection{Results}
+
+This manuscript is a method specification and preregistration. Benchmark results should be reported against the preregistered protocol once an implementation and evaluation harness are available. The natural outcome measures are (i) correlation between $R$ and structural error across trajectories, (ii) iterations-to-threshold under fixed compute budgets, and (iii) sensitivity of performance to ablations of attribution, roughness, and gating.
+
+\subsection{Ablations}
+
+Key ablations separate the algorithmic contributions from the mechanistic hypotheses. The first class removes the audio layer while keeping the same numeric signals (roughness replaced by direct strain proxies). The second removes targeting (random residue selection rather than attribution-guided selection). The third disables any gated/quantized acceptance rule while keeping the same move set. The interpretation is straightforward: if the method gains disappear under an ablation, the removed component was carrying the benefit; if the method gains persist, the removed component is not essential.
+
+\section{Discussion}
+
+\subsection{Limitations}
+
+Several limitations should be explicit. First, the paper describes a method construction and a preregistered evaluation plan; a complete end-to-end implementation and benchmark suite is still required. Second, any claim about hydration-shell ``gearbox'' dynamics is limited by the fidelity of the water model used in simulation; standard fixed-charge water models are not designed to capture ordered interfacial water phenomena. Third, the timing/quantization hypotheses concern tens-of-picoseconds dynamics and therefore demand instrumentation and simulation strategies that can resolve those scales with adequate signal-to-noise.
+
+\subsection{Integration with AlphaFold}
+
+The proposed control/diagnostic layer is complementary to AlphaFold-class predictors. One practical integration route is to use AlphaFold to generate candidate structures and then use Marco Polo-style targeted refinement as a local search operator while sonification provides a rapid, human-interpretable diagnostic stream. Regions with persistent dissonance/roughness under refinement can be flagged as candidates for additional computation or experimental validation.
+
+\subsection{Future Directions}
+
+Near-term priorities are to complete a reference implementation, publish benchmark results under the preregistered protocol, and develop a small set of high-value auditory diagnostics that are robust across proteins and force fields. Longer-term, the mechanistic hypotheses can be tested experimentally: quantization signatures in time-resolved data, frequency-selective stimulation near rung-19 with strict controls, and timing-first diagnostics in prion conversion assays. Force-field development is a separate research program and should be treated as such.
+
+\section{Conclusion}
+
+\subsection{Summary}
+
+This paper presented a control-and-diagnostics proposal for folding trajectories. The central technological contributions are a sonification mapping that converts strain/constraint violations into an audio stream and a targeted perturbation strategy (Marco Polo) that uses roughness attribution to guide search. Alongside these methods, we recorded mechanistic hypotheses that make testable predictions: a rung-indexed gate cadence in folding transitions and a timing/phase-slip component in prion conversion assays.
+
+\subsection{The Technology}
+
+The practical claim is modest: even if the broader \RS picture is incomplete, trajectory-level diagnostics and attribution-guided local search are useful engineering primitives. They can be evaluated by ablations and benchmarks in conventional simulation settings, and they can be used as instrumentation layers on top of existing optimizers.
+
+\subsection{Experimental and Benchmarking Program}
+
+The method and the hypotheses can be tested on different timescales. The method can be evaluated immediately by computational benchmarks under preregistration. The mechanistic hypotheses require time-resolved measurements and carefully controlled frequency-selective perturbations. The standard remains ordinary scientific discipline: preregistered targets, negative controls, and decisive falsifiers.
+
+% ===========================================================================
+\appendix
+
+\section{Sonification Protocol Specification}
+\label{app:sonification}
+
+\noindent This appendix provides a machine-readable specification for the sonification mapping used in Sections~\ref{sec:sonification}--\ref{sec:marco_polo}. The intent is reproducibility: benchmark runs should record the exact mapping parameters (scale choice, base frequency, detuning gain, roughness model) alongside trajectory logs. The JSON snippets below are illustrative defaults; in preregistered evaluations they should be treated as locked configuration.
+
+\subsection{Pitch Mapping (JSON)}
+
+\begin{verbatim}
+{
+  "version": "1.0",
+  "mapping": "chromatic",
+  "base_frequency_hz": 440.0,
+  "octave_divisions": 12,
+  "residue_to_pitch": "i -> base * 2^((i mod 12)/12)",
+  "detuning_scale_cents_per_angstrom": 20.0,
+  "roughness_model": "sethares_1993"
+}
+\end{verbatim}
+
+\subsection{Alternative: $\phiG$-Scale}
+
+\noindent This variant uses a $\phiG$-span mapping rather than an acoustic octave. It is included as an RS-motivated alternative and should be evaluated by ablation rather than assumed superior.
+
+\begin{verbatim}
+{
+  "version": "1.0",
+  "mapping": "phi_scale",
+  "base_frequency_hz": 440.0,
+  "octave_divisions": 20,
+  "residue_to_pitch": "i -> base * phi^(i mod 20)",
+  "detuning_scale_cents_per_angstrom": 15.0,
+  "roughness_model": "sethares_1993"
+}
+\end{verbatim}
+
+\section{Marco Polo Pseudocode}
+\label{app:marco_polo}
+
+\noindent This pseudocode is a conceptual specification of the Marco Polo loop. Practical implementations should (i) restrict attribution to residues implicated by violated constraints, (ii) cache incremental roughness updates, and (iii) preregister the move set and acceptance schedule used in benchmarks.
+
+\begin{verbatim}
+// Marco Polo Algorithm for Protein Folding
+//
+// Input:
+//   structure: initial 3D coordinates
+//   temperature: annealing temperature
+//   max_iter: maximum iterations
+//   roughness_threshold: convergence criterion
+//
+// Output:
+//   refined structure
+
+function marco_polo(structure, temperature, max_iter, roughness_threshold):
+    
+    for iteration in 1..max_iter:
+        
+        // Compute current roughness
+        detunings = compute_detunings(structure)
+        R = roughness(detunings)
+        
+        if R < roughness_threshold:
+            return structure  // Converged
+        
+        // MARCO: Identify worst contributor
+        gradients = []
+        for i in 1..num_residues:
+            dR_dDelta = numerical_gradient(R, detunings, i)
+            gradients.append((i, dR_dDelta))
+        
+        i_star = argmax(gradients, by=second)
+        
+        // POLO: Perturb that residue
+        candidates = generate_local_moves(structure, i_star)
+        
+        for move in candidates:
+            new_structure = apply_move(structure, move)
+            new_detunings = compute_detunings(new_structure)
+            new_R = roughness(new_detunings)
+            delta_R = new_R - R
+            
+            // Metropolis acceptance
+            if delta_R < 0 or random() < exp(-delta_R / temperature):
+                structure = new_structure
+                break
+        
+        // Cooling schedule
+        temperature = temperature * 0.99
+    
+    return structure
+\end{verbatim}
+
+\section{Audio Examples}
+\label{app:audio}
+
+\noindent When available, audio examples demonstrating the sonification mapping will be hosted at:
+
+\url{https://github.com/jonwashburn/rsfold/audio/}
+
+\noindent The filenames below indicate the intended minimal example set for qualitative inspection and regression testing:
+\begin{itemize}
+    \item \texttt{trp\_cage\_native.wav}: Native structure, low roughness (consonant)
+    \item \texttt{trp\_cage\_misfolded.wav}: Misfolded structure, high roughness (dissonant)
+    \item \texttt{trp\_cage\_folding.wav}: Folding trajectory, roughness decreasing
+    \item \texttt{prion\_phase\_slip.wav}: Simulated phase slip, timing anomaly audible
+\end{itemize}
+
+\section{Benchmark Protocols}
+\label{app:benchmarks}
+
+\noindent This appendix records concrete benchmark settings that support reproducibility. The main text describes the benchmark goals; here we list a default preregistration bundle (seeds, budget, and metrics) that can be reused across targets.
+
+\subsection{Preregistered Seeds}
+
+Random seeds for reproducibility:
+\begin{verbatim}
+[42, 137, 314, 271, 161, 618, 1414, 1729, 2718, 3141]
+\end{verbatim}
+
+\subsection{Compute Budget}
+
+Per-target budget:
+\begin{itemize}
+    \item Marco Polo iterations: 1000
+    \item Temperature schedule: $T_0 = 1.0$, $\alpha = 0.99$
+    \item Convergence threshold: $R < 0.1$
+\end{itemize}
+
+\subsection{Metrics}
+
+Primary:
+\begin{itemize}
+    \item RMSD to native (backbone atoms)
+    \item GDT-TS (Global Distance Test, Total Score)
+\end{itemize}
+
+Secondary:
+\begin{itemize}
+    \item Final roughness $R$
+    \item Iterations to convergence
+    \item Wall-clock time
+\end{itemize}
+
+\bibliographystyle{unsrt}
+\bibliography{RESONANCE_PAPERS}
+
+\end{document}
+

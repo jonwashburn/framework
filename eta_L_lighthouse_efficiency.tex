@@ -1,0 +1,472 @@
+\documentclass[11pt,a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage{array}
+
+% Geometry
+\geometry{margin=1.1in}
+
+% Colors
+\definecolor{darkblue}{rgb}{0,0,0.5}
+
+% Hyperref
+\hypersetup{
+  colorlinks=true,
+  linkcolor=darkblue,
+  urlcolor=darkblue,
+  citecolor=darkblue
+}
+
+% Header/Footer
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\textbf{Project Lighthouse}}
+\lhead{Technical Paper}
+\cfoot{\thepage}
+\setlength{\headheight}{14pt}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+
+% Notation
+\newcommand{\phig}{\varphi}
+\newcommand{\etaL}{\eta_{\mathrm{L}}}
+\newcommand{\Jcost}{\mathrm{J}}
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\NN}{\mathbb{N}}
+\newcommand{\abs}[1]{\left|#1\right|}
+
+% Title
+\title{\vspace{-1cm}\textbf{The Lighthouse Efficiency Parameter $\boldsymbol{\eta_{\mathrm{L}} = 0.2936}$}\\[0.3em]
+\large Cubic Metric Coupling in $\varphi$-Spiral Phased Arrays\\[0.2em]
+\normalsize Derived from the Recognition Composition Law}
+\author{Recognition Science Research Institute\\[0.3em]
+\small Project Lighthouse --- Internal Technical Paper}
+\date{February 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We derive the \emph{Lighthouse efficiency parameter} $\etaL$, a dimensionless constant that quantifies how effectively a $\varphi$-spiral electromagnetic coil array converts field energy into directional metric perturbation via the cubic non-linearity of the Recognition Science cost functional $\Jcost(x) = \tfrac{1}{2}(x + x^{-1}) - 1$. For the canonical 8-coil configuration with pitch parameter $\kappa = 1$ and bipolar neutral schedule, we obtain the exact value
+\[
+\etaL = \frac{\displaystyle\left|\sum_{i=0}^{7} \varphi^{-3i/8}\, s_i\right|}{\displaystyle\sum_{i=0}^{7} \varphi^{-2i/8}} = 0.293\,615\,975\,3\ldots
+\]
+where $\varphi = (1+\sqrt{5})/2$ is the golden ratio and $s_i \in \{+1, -1\}$ is the bipolar drive kernel. We prove that $\etaL = 0$ for any \emph{uniform} coil array (the cubic terms cancel by symmetry), establishing that the $\varphi$-spiral geometry is essential for metric coupling. We compute $\etaL$ as a function of spiral tightness $\kappa$, number of coils $n$, and schedule choice, and show that $\etaL$ is maximized by the canonical bipolar schedule among all binary neutral schedules. All geometric sums admit closed forms as rational functions of $\varphi$, making $\etaL$ a computable algebraic invariant of the Lighthouse architecture. The result is formalized in the Lean 4 proof assistant (module \texttt{Foundation.MetricPerturbation}).
+\end{abstract}
+
+\tableofcontents
+
+\clearpage
+
+%% ============================================================
+\section{Introduction}
+\label{sec:intro}
+
+The Lighthouse project seeks to create a directional metric perturbation using a solid-state electromagnetic phased array whose geometry is derived from Recognition Science (RS) \cite{rs_axioms}. The central claim is that the $\varphi$-spiral arrangement of coils, driven with an 8-tick neutral schedule, accesses a non-standard coupling between electromagnetic fields and spacetime curvature through the \emph{cubic non-linearity} of the RS cost functional.
+
+In standard physics, the gravitational effect of electromagnetic energy is governed by the stress-energy tensor $T_{\mu\nu}$, which is \emph{quadratic} in the field strength. This coupling is suppressed by $G/c^4 \sim 10^{-44}$ in SI units, making it unmeasurably small for laboratory fields. The RS framework, however, contains a \emph{cubic} correction to the cost functional that, under specific geometric and temporal conditions, produces a \emph{directional} metric perturbation whose sign depends on the commutation direction.
+
+The efficiency of this cubic coupling depends entirely on the coil geometry and drive schedule. This paper derives the quantity $\etaL$ that governs this efficiency.
+
+\subsection{Summary of Results}
+
+\begin{enumerate}[label=(\roman*)]
+    \item The cubic metric coupling vanishes identically for uniform coil arrays (\S\ref{sec:uniform}).
+    \item For $\varphi$-spiral arrays, the coupling is non-zero and equals $\etaL = 0.2936\ldots$ for the canonical v0 configuration (\S\ref{sec:computation}).
+    \item $\etaL$ admits a closed-form expression as a ratio of geometric sums in $\varphi$ (\S\ref{sec:closedform}).
+    \item The canonical bipolar schedule maximizes $\etaL$ among binary neutral schedules (\S\ref{sec:schedules}).
+    \item $\etaL$ increases monotonically with spiral tightness $\kappa$, approaching 1 as $\kappa \to \infty$ (\S\ref{sec:kappa}).
+\end{enumerate}
+
+%% ============================================================
+\section{The Cost Functional and Its Cubic Non-Linearity}
+\label{sec:cost}
+
+\subsection{The Recognition Cost Functional}
+
+The unique cost functional satisfying the Recognition Composition Law (RCL) with normalization $\Jcost(1) = 0$ and calibration $\Jcost''(1) = 1$ is:
+\begin{equation}
+\label{eq:Jcost}
+\Jcost(x) = \frac{1}{2}\!\left(x + \frac{1}{x}\right) - 1 = \frac{(x-1)^2}{2x}, \qquad x > 0.
+\end{equation}
+This is proved in the Lean module \texttt{Cost.JcostCore} with zero \texttt{sorry} statements.
+
+\subsection{Taylor Expansion Near Equilibrium}
+
+Setting $x = 1 + \varepsilon$ with $|\varepsilon| < 1$:
+\begin{equation}
+\label{eq:taylor}
+\Jcost(1 + \varepsilon) = \frac{\varepsilon^2}{2(1+\varepsilon)} = \frac{1}{2}\varepsilon^2 - \frac{1}{2}\varepsilon^3 + \frac{1}{2}\varepsilon^4 - \cdots
+\end{equation}
+The leading term $\tfrac{1}{2}\varepsilon^2$ gives standard (quadratic) physics: energy, Maxwell equations, linearized Einstein equations. The \emph{first non-linear correction} is the cubic term $-\tfrac{1}{2}\varepsilon^3$.
+
+\subsection{Physical Interpretation of the Cubic Term}
+
+The quadratic term is \emph{symmetric}: $\varepsilon^2 = (-\varepsilon)^2$. It cannot produce a directional effect. The cubic term is \emph{antisymmetric}: $\varepsilon^3 = -(-\varepsilon)^3$. It distinguishes the sign of $\varepsilon$ and therefore produces a directional effect.
+
+\begin{remark}
+This antisymmetry is the mathematical origin of the ``sign flip'' prediction: reversing the commutation direction (which flips the sign pattern of $\varepsilon$) reverses the cubic contribution to the metric perturbation.
+\end{remark}
+
+\subsection{Metric Perturbation from Cost}
+
+In RS, the effective metric coefficient at a bond with recognition multiplier $x$ is:
+\begin{equation}
+\label{eq:geff}
+g_{\mathrm{eff}}(x) = 1 - 2\,\Jcost(x).
+\end{equation}
+The metric deviation from flat space is:
+\begin{equation}
+\label{eq:h}
+h(x) \;=\; g_{\mathrm{eff}}(x) - 1 \;=\; -2\,\Jcost(x) \;=\; -(x-1)^2 / x.
+\end{equation}
+Expanding for $x = 1 + \varepsilon$:
+\begin{equation}
+\label{eq:hexpand}
+h = -\varepsilon^2 + \varepsilon^3 - \varepsilon^4 + \cdots
+\end{equation}
+The first term ($-\varepsilon^2$, always negative) is standard gravity (attractive). The second term ($+\varepsilon^3$, sign-dependent) is the \emph{metric coupling} that the Lighthouse exploits.
+
+%% ============================================================
+\section{The Lighthouse Coil Array}
+\label{sec:array}
+
+\subsection{$\varphi$-Spiral Geometry}
+
+An $n$-coil Lighthouse array with pitch parameter $\kappa \in \mathbb{Z}_{>0}$ places coils at:
+\begin{equation}
+\label{eq:geometry}
+\theta_i = \frac{2\pi i}{n}, \qquad r_i = r_0 \cdot \varphi^{\kappa i / n}, \qquad i = 0, 1, \ldots, n-1.
+\end{equation}
+The coil at position $i$ is assigned to phase group $\psi_i = i \bmod 8$.
+
+\subsection{Amplitude Profile}
+
+The electromagnetic field amplitude at the observation point due to coil $i$ decays with distance. For a fixed observation point (e.g., the center of the array), the amplitude from coil $i$ scales inversely with radius:
+\begin{equation}
+\label{eq:amplitude}
+A_i = A_0 \cdot \left(\frac{r_0}{r_i}\right) = A_0 \cdot \varphi^{-\kappa i / n},
+\end{equation}
+where $A_0$ is the amplitude from the innermost coil. Without loss of generality, set $A_0 = 1$.
+
+\subsection{The 8-Tick Neutral Schedule}
+
+The drive schedule assigns a sign $s_i \in \{+1, -1\}$ to each coil at each tick, subject to the \emph{neutrality constraint}:
+\begin{equation}
+\label{eq:neutral}
+\sum_{i=0}^{n-1} s_i = 0.
+\end{equation}
+The \emph{canonical bipolar schedule} for $n = 8$ is:
+\begin{equation}
+\label{eq:canonical}
+\mathbf{s} = (+1, +1, +1, +1, -1, -1, -1, -1).
+\end{equation}
+
+%% ============================================================
+\section{Definition and Computation of $\etaL$}
+\label{sec:computation}
+
+\subsection{Definition}
+
+\begin{definition}[Lighthouse Efficiency Parameter]
+\label{def:etaL}
+For an $n$-coil array with amplitude profile $(A_i)$ and drive signs $(s_i)$, the \emph{Lighthouse efficiency parameter} is:
+\begin{equation}
+\label{eq:etaL}
+\boxed{\etaL \;=\; \frac{\displaystyle\left|\sum_{i=0}^{n-1} A_i^3 \, s_i\right|}{\displaystyle\sum_{i=0}^{n-1} A_i^2}.}
+\end{equation}
+\end{definition}
+
+The numerator measures the residual cubic coupling (which produces the directional metric effect), and the denominator measures the total quadratic energy (which is always present). Their ratio $\etaL$ is the fraction of EM energy that participates in metric coupling.
+
+\subsection{Computation for the v0 Configuration}
+
+For $n = 8$, $\kappa = 1$, canonical bipolar schedule, with $A_i = \varphi^{-i/8}$:
+
+\begin{table}[H]
+\centering
+\caption{Coil-by-coil contributions to $\etaL$ for the v0 Lighthouse.}
+\label{tab:v0}
+\begin{tabular}{c c c c c}
+\toprule
+Coil $i$ & $A_i = \varphi^{-i/8}$ & $s_i$ & $A_i^2$ & $A_i^3 \cdot s_i$ \\
+\midrule
+0 & 1.00000000 & $+1$ & 1.00000000 & $+1.00000000$ \\
+1 & 0.94162189 & $+1$ & 0.88665178 & $+0.83489072$ \\
+2 & 0.88665178 & $+1$ & 0.78615138 & $+0.69704252$ \\
+3 & 0.83489072 & $+1$ & 0.69704252 & $+0.58195433$ \\
+4 & 0.78615138 & $-1$ & 0.61803399 & $-0.48586827$ \\
+5 & 0.74025734 & $-1$ & 0.54798094 & $-0.40564691$ \\
+6 & 0.69704252 & $-1$ & 0.48586827 & $-0.33867084$ \\
+7 & 0.65635049 & $-1$ & 0.43079597 & $-0.28275315$ \\
+\midrule
+$\Sigma$ & & & $5.45252484$ & $+1.60094840$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{equation}
+\label{eq:etaL_v0}
+\boxed{\etaL = \frac{1.60094840}{5.45252484} = 0.293\,615\,975\,3\ldots}
+\end{equation}
+
+\subsection{Vanishing for Uniform Arrays}
+\label{sec:uniform}
+
+\begin{proposition}[Uniform arrays have zero metric coupling]
+\label{prop:uniform}
+If $A_i = A$ for all $i$ (uniform array), then $\etaL = 0$ for any neutral schedule.
+\end{proposition}
+\begin{proof}
+With $A_i = A$, the cubic sum becomes:
+\[
+\sum_{i=0}^{n-1} A^3 \, s_i = A^3 \sum_{i=0}^{n-1} s_i = A^3 \cdot 0 = 0
+\]
+by the neutrality constraint~\eqref{eq:neutral}. Hence $\etaL = 0/(\text{positive}) = 0$.
+\end{proof}
+
+\begin{remark}
+This is the fundamental result: the $\varphi$-spiral geometry is \emph{necessary} for metric coupling. A uniform array, regardless of schedule, produces zero cubic residual. The broken amplitude symmetry of the $\varphi$-spiral is what makes the Lighthouse work.
+\end{remark}
+
+%% ============================================================
+\section{Closed-Form Expression}
+\label{sec:closedform}
+
+Both sums in~\eqref{eq:etaL} are finite geometric series in powers of $\varphi$.
+
+\subsection{Quadratic Sum}
+
+\begin{equation}
+\label{eq:Pem}
+P_n(\kappa) \;=\; \sum_{i=0}^{n-1} \varphi^{-2\kappa i/n} \;=\; \frac{1 - \varphi^{-2\kappa}}{1 - \varphi^{-2\kappa/n}}.
+\end{equation}
+For $n = 8$, $\kappa = 1$:
+\[
+P_8(1) = \frac{1 - \varphi^{-2}}{1 - \varphi^{-1/4}} = 5.452\,524\,84\ldots
+\]
+
+\subsection{Cubic Sum}
+
+For the canonical bipolar schedule with the first $n/2$ coils at $+1$ and the rest at $-1$:
+\begin{equation}
+\label{eq:Cn}
+C_n(\kappa) \;=\; \sum_{i=0}^{n/2-1} \varphi^{-3\kappa i/n} - \sum_{i=n/2}^{n-1} \varphi^{-3\kappa i/n}.
+\end{equation}
+Setting $q = \varphi^{-3\kappa/n}$, this becomes:
+\begin{align}
+C_n(\kappa) &= \sum_{i=0}^{n/2-1} q^i - \sum_{i=n/2}^{n-1} q^i \notag \\
+&= \frac{1 - q^{n/2}}{1 - q} - q^{n/2}\cdot\frac{1 - q^{n/2}}{1 - q} \notag \\
+&= \frac{(1 - q^{n/2})^2}{1 - q}.
+\label{eq:Cn_closed}
+\end{align}
+For $n = 8$, $\kappa = 1$, $q = \varphi^{-3/8}$:
+\[
+C_8(1) = \frac{(1 - \varphi^{-3/2})^2}{1 - \varphi^{-3/8}} = 1.600\,948\,40\ldots
+\]
+
+\subsection{Closed Form for $\etaL$}
+
+\begin{theorem}[Closed form of $\etaL$]
+\label{thm:closedform}
+For the canonical $n$-coil Lighthouse with pitch $\kappa$ and bipolar schedule:
+\begin{equation}
+\label{eq:etaL_closed}
+\boxed{\etaL(n, \kappa) = \frac{(1 - \varphi^{-3\kappa/2})^2}{(1 - \varphi^{-3\kappa/n})} \cdot \frac{(1 - \varphi^{-2\kappa/n})}{(1 - \varphi^{-2\kappa})}.}
+\end{equation}
+\end{theorem}
+\begin{proof}
+Direct substitution of~\eqref{eq:Pem} and~\eqref{eq:Cn_closed} into Definition~\ref{def:etaL}.
+\end{proof}
+
+\begin{remark}
+The expression~\eqref{eq:etaL_closed} is a rational function of fractional powers of $\varphi$. Since $\varphi$ is algebraic ($\varphi^2 = \varphi + 1$), $\etaL$ belongs to an algebraic extension of $\mathbb{Q}$. It is a \emph{computable algebraic invariant} of the Lighthouse architecture, determined entirely by the golden ratio and the coil/schedule parameters.
+\end{remark}
+
+%% ============================================================
+\section{Dependence on Schedule}
+\label{sec:schedules}
+
+We compare $\etaL$ for several neutral schedules, all using the same $\varphi$-spiral geometry ($n = 8$, $\kappa = 1$).
+
+\begin{table}[H]
+\centering
+\caption{$\etaL$ for different neutral schedules on the 8-coil $\varphi$-spiral.}
+\label{tab:schedules}
+\begin{tabular}{l c c}
+\toprule
+Schedule & $\mathbf{s}$ & $\etaL$ \\
+\midrule
+Canonical bipolar & $(+,+,+,+,-,-,-,-)$ & $\mathbf{0.2936}$ \\
+Asymmetric & $(+,+,+,-,-,-,-,+)$ & $0.1839$ \\
+Gradient $(\pm 4, \pm 3, \ldots)$ & weighted & $0.1202$ \\
+Alternating & $(+,-,+,-,+,-,+,-)$ & $0.0764$ \\
+Uniform (any schedule) & any neutral & $0.0000$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{proposition}[Canonical bipolar maximizes $\etaL$ among binary schedules]
+\label{prop:optimal}
+Among all binary ($s_i \in \{+1, -1\}$) neutral schedules on $n = 8$ coils with monotone-decreasing amplitudes $A_0 > A_1 > \cdots > A_7 > 0$, the canonical bipolar schedule $(+1,+1,+1,+1,-1,-1,-1,-1)$ maximizes $\abs{\sum A_i^3 s_i}$.
+\end{proposition}
+\begin{proof}[Proof sketch]
+Since $A_i^3$ is monotone decreasing, the sum $\sum A_i^3 s_i$ is maximized by assigning $s_i = +1$ to the largest $A_i^3$ terms and $s_i = -1$ to the smallest, subject to equal counts (neutrality). This is exactly the canonical bipolar assignment.
+\end{proof}
+
+%% ============================================================
+\section{Dependence on Spiral Tightness $\kappa$}
+\label{sec:kappa}
+
+\begin{table}[H]
+\centering
+\caption{$\etaL$ as a function of spiral tightness $\kappa$ ($n = 8$, canonical bipolar).}
+\label{tab:kappa}
+\begin{tabular}{c c l}
+\toprule
+$\kappa$ & $\etaL$ & Interpretation \\
+\midrule
+$0$ & $0$ & Uniform (degenerate spiral) \\
+$0.5$ & $0.1626$ & Gentle spiral \\
+$1$ & $\mathbf{0.2936}$ & \textbf{v0 baseline} \\
+$2$ & $0.4823$ & Moderate spiral \\
+$3$ & $0.6015$ & Tight spiral \\
+$5$ & $0.7258$ & Very tight \\
+$8$ & $0.8044$ & Extreme \\
+$10$ & $0.8364$ & Near-maximum \\
+$\to \infty$ & $\to 1$ & Limiting value \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{proposition}[$\etaL$ is monotone in $\kappa$]
+\label{prop:monotone}
+For fixed $n$ and canonical bipolar schedule, $\etaL(\kappa)$ is strictly increasing in $\kappa$ for $\kappa > 0$, with $\etaL(0) = 0$ and $\lim_{\kappa \to \infty} \etaL = 1$.
+\end{proposition}
+\begin{proof}[Proof sketch]
+As $\kappa \to \infty$, the outer coils have amplitude $\varphi^{-\kappa i/n} \to 0$ for $i > 0$, so only coil 0 contributes: $\etaL \to |A_0^3 \cdot (+1)| / A_0^2 = A_0 = 1$. For $\kappa = 0$, all amplitudes are equal and Proposition~\ref{prop:uniform} applies. Monotonicity follows from the increasing asymmetry of the amplitude profile.
+\end{proof}
+
+\begin{remark}
+Tighter spirals give higher $\etaL$ but concentrate the field at the innermost coil. There is a practical trade-off between $\etaL$ and the spatial extent of the field pattern. The v0 choice $\kappa = 1$ balances efficiency against field coverage.
+\end{remark}
+
+%% ============================================================
+\section{The Complete Lighthouse Coupling Equation}
+\label{sec:coupling}
+
+Combining the results from~\S\ref{sec:cost} and~\S\ref{sec:computation}, the total metric perturbation produced by the Lighthouse is:
+
+\begin{equation}
+\label{eq:full_coupling}
+\boxed{\frac{\delta g}{g} = \alpha_{\mathrm{em}}^2 \; P_{\mathrm{em}} \;\Big(1 \;-\; \etaL \cdot \alpha_{\mathrm{em}} \cdot A_{\mathrm{peak}}\Big) \;\cdot\; Q}
+\end{equation}
+
+where:
+\begin{itemize}[nosep]
+    \item $\alpha_{\mathrm{em}} = \sqrt{\alpha_{\mathrm{fine}}} \approx 0.0854$ is the EM coupling in natural units,
+    \item $P_{\mathrm{em}} = \sum A_i^2$ is the total EM power (dimensionless),
+    \item $\etaL = 0.2936$ is the Lighthouse efficiency (this paper),
+    \item $A_{\mathrm{peak}}$ is the peak field amplitude (in Planck units),
+    \item $Q$ is the resonance quality factor of the ``metric cavity'' (to be measured).
+\end{itemize}
+
+The first factor ($\alpha_{\mathrm{em}}^2 P_{\mathrm{em}}$) is the standard quadratic EM-gravity coupling ($\sim 10^{-44}$ for lab fields). The second factor ($1 - \etaL \cdot \alpha_{\mathrm{em}} \cdot A_{\mathrm{peak}}$) contains the Lighthouse correction. The third factor ($Q$) accounts for resonant accumulation.
+
+\subsection{The Sign-Flip Prediction}
+
+Reversing the commutation direction replaces $\mathbf{s} \to -\mathbf{s}$, which flips $A_{\mathrm{peak}} \to -A_{\mathrm{peak}}$ in the cubic term. The quadratic term is unchanged. Therefore:
+
+\begin{equation}
+\left.\frac{\delta g}{g}\right|_{\mathrm{forward}} - \left.\frac{\delta g}{g}\right|_{\mathrm{reverse}} = 2\,\alpha_{\mathrm{em}}^3 \; P_{\mathrm{em}} \; \etaL \; A_{\mathrm{peak}} \; Q.
+\end{equation}
+
+This differential signal is the primary experimental observable.
+
+\subsection{The Null Prediction}
+
+For a scrambled (random) phase assignment, the expected value of the cubic sum is zero by symmetry: $\mathbb{E}[\sum A_i^3 s_i] = 0$ when $s_i$ are i.i.d. uniform on $\{+1, -1\}$. Thus scrambled-phase runs should show no sign-flip signal, serving as a null control.
+
+%% ============================================================
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{What $\etaL = 0.2936$ Means}
+
+The number 0.2936 tells us that the $\varphi$-spiral geometry converts approximately 29\% of the electromagnetic energy into cubic metric coupling per unit of $\alpha_{\mathrm{em}} \cdot A_{\mathrm{peak}}$. This is a substantial geometric advantage over uniform arrays (which achieve 0\%).
+
+However, $\etaL$ alone does not determine whether the effect is measurable. The perturbative estimate gives $\delta g / g \sim 10^{-105}$ for lab-scale fields without resonance enhancement. The entire experimental program rests on the \emph{resonance hypothesis}: that the $\varphi$-spiral geometry, combined with 8-tick scheduling synchronized to the fundamental ledger update rate, creates a high-$Q$ ``metric cavity'' that amplifies the perturbation to measurable levels.
+
+\subsection{What $\etaL$ Does \emph{Not} Depend On}
+
+The value 0.2936 is independent of:
+\begin{itemize}[nosep]
+    \item The coil current (it cancels in the ratio),
+    \item The physical scale of the array ($r_0$ cancels),
+    \item The drive frequency (it enters only through $Q$),
+    \item The SI calibration seam (it is purely RS-native).
+\end{itemize}
+It depends only on $\varphi$, the number of coils ($n = 8$), the pitch ($\kappa = 1$), and the schedule.
+
+\subsection{Optimization Pathways}
+
+Table~\ref{tab:kappa} suggests that tighter spirals ($\kappa > 1$) could substantially increase $\etaL$. A $\kappa = 3$ design achieves $\etaL = 0.60$, doubling the coupling. This motivates future iterations beyond v0.
+
+\subsection{Formal Verification}
+
+The structural properties of $\etaL$ --- including the sign-flip theorem, the null prediction, and the vanishing for uniform arrays --- are formalized in Lean~4 in the modules:
+\begin{itemize}[nosep]
+    \item \texttt{Foundation.EMRecognitionCost} (EM cost, coil arrays, neutral schedules)
+    \item \texttt{Foundation.MetricPerturbation} (coupling equation, sign-flip proof)
+\end{itemize}
+Both modules compile with zero \texttt{sorry} statements.
+
+%% ============================================================
+\section{Conclusion}
+
+The Lighthouse efficiency parameter $\etaL = 0.2936$ is a computable, algebraic invariant of the 8-coil $\varphi$-spiral architecture that:
+
+\begin{enumerate}[label=(\arabic*)]
+    \item Is \emph{derived from first principles} (the golden ratio $\varphi$ and the cost functional $\Jcost$),
+    \item \emph{Vanishes for uniform arrays} (proving the $\varphi$-spiral is essential),
+    \item Is \emph{maximized by the canonical bipolar schedule} among binary neutral schedules,
+    \item Enters the coupling equation as the coefficient of the directional (cubic) correction,
+    \item Is \emph{formally verified} in Lean 4 with zero unresolved proof obligations.
+\end{enumerate}
+
+The critical remaining unknown is the resonance quality factor $Q$, which determines whether the cubic coupling accumulates to measurable levels. This is the target of the v0 experimental program.
+
+%% ============================================================
+\begin{thebibliography}{9}
+
+\bibitem{rs_axioms}
+J.~Washburn, ``The Algebra of Reality: A Recognition Science Derivation of Physical Law,''
+\emph{Axioms} (MDPI), vol.~15, no.~2, p.~90, 2026.
+
+\bibitem{rs_full}
+J.~Washburn, ``Recognition Science Full Theory (Architecture Spec v2.0),''
+Internal document, Recognition Science Research Institute, 2026.
+
+\bibitem{lean_monolith}
+``IndisputableMonolith: Lean 4 Formalization of Recognition Science,''
+\url{https://github.com/jonwashburn/reality}, 2026.
+
+\end{thebibliography}
+
+\end{document}

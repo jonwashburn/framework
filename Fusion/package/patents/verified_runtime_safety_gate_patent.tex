@@ -1,0 +1,184 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{hyperref}
+
+% Simple page style
+\pagestyle{plain}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\begin{document}
+
+\begin{center}
+\textbf{\LARGE PATENT APPLICATION}\\[0.5cm]
+\textbf{\Large Method and System for Verified Runtime Safety Gating\\in Certified Control Software}\\[1cm]
+
+\begin{tabular}{rl}
+\textbf{Application Type:} & Utility Patent \\
+\textbf{Filing Date:} & January 25, 2026 \\
+\textbf{Inventor:} & Jonathan Washburn \\
+\textbf{Technology Field:} & Fusion Energy / Software Engineering / Safety-Critical Systems \\
+\textbf{International Class:} & G06F 11/00; G05B 9/02; G21C 17/00 \\
+\end{tabular}
+\end{center}
+
+\vspace{1cm}
+\hrule
+\vspace{0.5cm}
+
+\section*{ABSTRACT}
+
+A method and system for enforcing runtime safety in certified control software for nuclear fusion reactors. The invention implements a ``Verified Runtime Safety Gate'' that prevents the execution of control logic unless a comprehensive self-check routine has passed. Unlike conventional unit tests which run offline, this self-check is executed at runtime before any control action is authorized. The system architecture enforces a ``No Import-Time Side Effects'' policy for external effects (e.g., file I/O, network calls, or hardware actuation), ensuring that loading the software library is safe and inert with respect to actuators. Upon invocation, the gate verifies internal invariants (e.g., constant identities, boundedness/consistency checks, numerical precision configuration) and returns a pass/fail status code and optionally an auditable certificate bundle including a cryptographic input digest. Only upon receipt of a success status does the main control loop proceed. This mechanism provides a defense-in-depth layer against corruption, configuration drift, and deployment errors in high-stakes environments.
+
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+
+\section{BACKGROUND OF THE INVENTION}
+
+\subsection{Technical Field}
+
+This invention relates generally to software architecture for safety-critical systems, and specifically to runtime verification methods for ensuring the integrity of control software in nuclear fusion environments.
+
+\subsection{Description of Related Art}
+
+Safety-critical software (e.g., for avionics, medical devices, nuclear reactors) typically undergoes rigorous testing \textit{before} deployment. However, runtime errors can still occur due to:
+\begin{itemize}
+    \item \textbf{Environment Mismatch:} The production hardware differs from the test environment (e.g., different floating-point precision).
+    \item \textbf{Corruption:} Bit rot or file corruption affects the binary or configuration files.
+    \item \textbf{Dependency Drift:} Dynamic linking loads an incompatible version of a math library.
+\end{itemize}
+
+In a fusion reactor, a software failure can lead to equipment damage or safety incidents. Conventional ``defensive programming'' (assertions scattered throughout the code) is often insufficient because it is reactive—it catches errors only when bad code paths are executed.
+
+There is a need for a proactive mechanism that verifies the \textit{entire} software integrity immediately upon startup, before any actuators are engaged.
+
+\section{SUMMARY OF THE INVENTION}
+
+The present invention provides a \textbf{Verified Runtime Safety Gate} architecture.
+
+The core components are:
+\begin{enumerate}
+    \item \textbf{Explicit Entrypoint:} The control software is structured such that importing the library performs no actions (no side effects). Execution must be explicitly triggered via a specific entrypoint (e.g., \texttt{selfcheck.run\_all()}).
+    \item \textbf{Comprehensive Self-Check:} The entrypoint executes a suite of internal verifications:
+    \begin{itemize}
+        \item \textbf{Constant Verification:} Checking that fundamental constants (e.g., $\pi$, $\phi$, nuclear masses) match their certified values to high precision.
+        \item \textbf{Theorem Consistency:} Verifying that implemented functions satisfy known mathematical identities (e.g., $J(1)=0$, $S \le 1$).
+        \item \textbf{Numerical Environment:} Confirming that the numerical environment meets declared requirements (e.g., configured precision for deterministic computation).
+    \end{itemize}
+    \item \textbf{Gating Logic:} The control loop is designed to block actuation until the self-check returns a \texttt{PASS} signal.
+    \item \textbf{Audit Artifact:} The self-check can generate a hash-based audit artifact (e.g., a certificate bundle with input digest and results) confirming that the software verified itself successfully at a specific timestamp. Optional external signing/attestation may be added as an integration step if required.
+\end{enumerate}
+
+This architecture ensures that the controller effectively ``asks permission'' from its own internal verification logic before attempting to control the reactor.
+
+\section{BRIEF DESCRIPTION OF THE DRAWINGS}
+
+\begin{itemize}
+    \item \textbf{FIG. 1} is a flowchart of the startup sequence with the Safety Gate.
+    \item \textbf{FIG. 2} illustrates the module dependency graph, showing the isolation of the self-check logic.
+    \item \textbf{FIG. 3} shows the state machine of the controller (Init $\to$ Verify $\to$ Armed).
+\end{itemize}
+
+\section{DETAILED DESCRIPTION OF EMBODIMENTS}
+
+\subsection{Definitions}
+
+\begin{itemize}
+    \item \textbf{Side Effect (external):} An external action (e.g., file write, network call, or hardware actuation) that occurs merely by loading a software module, as distinguished from internal computation or in-memory configuration.
+    \item \textbf{Safety Gate:} A logical check that inhibits system operation until a specific condition is met.
+    \item \textbf{Invariant:} A property that must always be true for the system to be in a valid state.
+\end{itemize}
+
+\subsection{Architecture}
+
+The software is organized into three layers:
+\begin{enumerate}
+    \item \textbf{Foundation Layer:} Pure functions and constants (e.g., \texttt{jcost.py}, \texttt{phi\_constants.py}). These have no external dependencies and no side effects.
+    \item \textbf{Verification Layer:} The \texttt{selfcheck} module. This imports the Foundation Layer and runs tests against it. It does not import the Control Layer.
+    \item \textbf{Control Layer:} The main loop. This imports the Verification Layer.
+\end{enumerate}
+
+\subsection{Startup Sequence}
+
+\begin{enumerate}
+    \item \textbf{Load:} The system loads the control binary. No hardware is touched.
+    \item \textbf{Trigger:} The operator (or supervisor script) calls \texttt{selfcheck.main()}.
+    \item \textbf{Verify:}
+    \begin{itemize}
+        \item The \texttt{selfcheck} module iterates through a registry of verification functions (e.g., \texttt{\_verify\_jcost}, \texttt{\_verify\_barrier\_scale}).
+        \item Each function tests critical invariants. For example, \texttt{\_verify\_barrier\_scale} checks that $S \le 1$ for a grid of inputs.
+        \item If any check fails, the function raises an exception or returns a failure code.
+    \end{itemize}
+    \item \textbf{Gate:}
+    \begin{itemize}
+        \item If \texttt{selfcheck} returns \texttt{FAIL}: The system enters a \textbf{Lockout State}. Actuators remain disabled. An error log is written.
+        \item If \texttt{selfcheck} returns \texttt{PASS}: The system enters an \textbf{Armed State}. The control loop is allowed to start.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Example Verifications}
+
+\begin{itemize}
+    \item \textbf{J-Cost:} Verify $J(x) \ge 0$ for random $x > 0$.
+    \item \textbf{Barrier Scale:} Verify $S = 1/(1+C_\varphi+C_\sigma) \le 1$.
+    \item \textbf{Precision:} Verify that \texttt{mpmath.mp.dps} is set to at least a declared minimum (e.g., 100 digits for deterministic high-precision runs).
+\end{itemize}
+
+\subsection{Seams}
+
+The Safety Gate itself is a seam—it relies on the integrity of the hardware executing it. However, by placing the check \textit{inside} the runtime environment, it minimizes the distance between verification and execution.
+
+\section{CLAIMS}
+
+\begin{enumerate}
+    \item \textbf{A method for ensuring safety in a control system, comprising:}
+    \begin{enumerate}
+        \item loading a control software library into memory without executing any side-effecting code;
+        \item invoking a dedicated self-check entrypoint within the library;
+        \item executing a plurality of internal verification routines that test mathematical invariants and constant values against expected baselines;
+        \item determining a pass/fail status based on the results of the verification routines; and
+        \item enabling control outputs only if the pass/fail status indicates success.
+    \end{enumerate}
+
+    \item The method of claim 1, wherein the verification routines include checking that a computed barrier scale factor does not exceed unity.
+
+    \item The method of claim 1, wherein the verification routines include checking that the floating-point environment precision meets a minimum requirement.
+
+    \item The method of claim 1, further comprising generating a cryptographic input digest and audit record of the self-check results and optionally cryptographically signing said record using an external signing/attestation integration.
+
+    \item \textbf{A control system for a fusion reactor, comprising:}
+    \begin{enumerate}
+        \item a memory storing executable control code;
+        \item a processor configured to execute the control code;
+        \item a safety gate module within the control code configured to run a suite of self-tests upon initialization; and
+        \item an interlock logic configured to prevent the processor from sending signals to reactor actuators until the safety gate module signals a successful self-test.
+    \end{enumerate}
+
+    \item The system of claim 5, wherein the control code is structured such that importing modules does not trigger execution of the self-tests or any other side effects.
+
+    \item \textbf{A non-transitory computer-readable medium storing instructions that, when executed by a processor, cause a system to:}
+    \begin{enumerate}
+        \item perform a runtime verification of internal software integrity;
+        \item validate that critical physics constants match hardcoded reference values;
+        \item verify that core mathematical functions satisfy required convexity or boundedness properties; and
+        \item authorize the transition of the system state from Initialization to Ready only upon successful verification.
+    \end{enumerate}
+\end{enumerate}
+
+\section*{APPENDIX: Implementation Evidence}
+
+The core logic of this invention is implemented in the accompanying software artifacts:
+\begin{itemize}
+    \item \textbf{Python Implementation:} \texttt{fusion/simulator/selfcheck.py} implements the \texttt{run\_all} function, the registry of verification checks, and \texttt{run\_safety\_gate} which emits a hash-based certificate bundle for gating.
+    \item \textbf{Test Suite:} \texttt{fusion/simulator/tests/test\_selfcheck.py} confirms that the self-check mechanism itself functions correctly.
+\end{itemize}
+
+\end{document}

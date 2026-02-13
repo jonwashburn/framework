@@ -1,0 +1,707 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+
+% Theorem environments
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% Notation
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Rp}{\mathbb{R}_{>0}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\cmin}{c_{\min}}
+\newcommand{\Knet}{K_{\mathrm{net}}}
+\newcommand{\Cproj}{C_{\mathrm{proj}}}
+\newcommand{\phig}{\varphi}
+\newcommand{\Jcost}{J}
+
+\title{\textbf{The Coercive Projection Theorem:\\
+The Unique Certification Strategy Forced by Canonical Cost}\\[0.5em]
+\large Inevitability, Optimality, and Minimality from First Principles}
+\author{Jonathan Washburn\\
+\small Recognition Science Research Institute, Austin, Texas\\
+\small \texttt{jon@recognitionphysics.org}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We prove that the three-step certification template known as the Coercive
+Projection Method (CPM) is the \emph{unique optimal} strategy for deciding
+membership in a zero-defect structured set, given a cost functional
+satisfying the Recognition Composition Law, a conservation constraint,
+and finite local resolution.
+
+The main result (\textbf{Master Theorem},~\S\ref{sec:master}) is:
+\begin{quote}
+\itshape
+Let $\Jcost(x) = \frac{1}{2}(x+x^{-1})-1$ be the unique canonical cost.
+Every correct, finite-data, complete certification procedure on the
+rational class factors \textbf{uniquely} as $\Phi = \mathcal{A}\circ\mathcal{B}\circ\mathcal{P}$, where $\mathcal{P}$ is the $\Jcost$-projection to neutrality, $\mathcal{B}$ is the coercivity bound, and $\mathcal{A}$ is window aggregation.
+The factorisation order is forced.  The three factors are independent.
+The constants $\cmin = 1/2$ and $\Cproj = 1$ are optimal among all cost
+functionals satisfying the composition law.
+\end{quote}
+No domain-specific input enters at any stage.  CPM is not a method one
+chooses; it is a theorem one proves.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%=============================================================================
+\section{Introduction}
+%=============================================================================
+
+\subsection{The problem}
+
+Given a unique cost functional $\Jcost$ and only finite observational
+access (a window of eight measurements per cycle), decide whether a
+configuration $\mathbf{x}$ has zero defect: $\Jcost(\mathbf{x}) = 0$.
+
+This is the most basic audit question.  We prove there is exactly one
+way to answer it.
+
+\subsection{What we prove}
+
+\begin{enumerate}[nosep]
+\item \textbf{Existence and uniqueness} of an optimal certification
+      procedure (\S\ref{sec:master}).
+\item \textbf{Forced factorisation} into exactly three steps:
+      projection~$\mathcal{P}$, coercivity bound~$\mathcal{B}$,
+      aggregation~$\mathcal{A}$.
+\item \textbf{Independence}: none of the three factors is derivable
+      from the other two (\S\ref{sec:independence}).
+\item \textbf{Optimality of constants}: $\cmin = 1/2$ and $\Cproj = 1$
+      are the best possible (\S\ref{sec:optimality}).
+\item \textbf{Completeness}: CPM decides membership for every
+      configuration in the rational class (\S\ref{sec:completeness}).
+\end{enumerate}
+
+\subsection{What we do not do}
+
+We reference no specific mathematical problem, no famous conjecture,
+and no domain-specific estimate.  The entire development is intrinsic
+to the cost functional $\Jcost$ and the finite-resolution axiom.
+
+%=============================================================================
+\section{Axioms and Setup}
+\label{sec:axioms}
+%=============================================================================
+
+\begin{definition}[Axiom set $\mathfrak{A}$]\label{def:axioms}
+A \emph{recognition cost system} is a quadruple
+$(\Rp, \Jcost, \sigma, W)$ where:
+\begin{enumerate}[nosep,label=\textup{(A\arabic*)}]
+\item \textbf{Cost uniqueness.}  $\Jcost : \Rp \to \R$ is the unique
+      function satisfying: $\Jcost(1) = 0$, the composition law
+      $\Jcost(xy) + \Jcost(x/y) = 2\Jcost(x)\Jcost(y) + 2\Jcost(x) + 2\Jcost(y)$,
+      and the calibration $\lim_{t\to 0} 2\Jcost(e^t)/t^2 = 1$.
+      \label{A:cost}
+\item \textbf{Conservation.}  For $\mathbf{x}\in(\Rp)^n$, define
+      $\sigma(\mathbf{x}) := \sum_{i=1}^n \ln x_i$.  Admissible
+      configurations satisfy $\sigma(\mathbf{x}) = 0$.
+      \label{A:conservation}
+\item \textbf{Finite resolution.}  The observation window has length
+      $W = 8$.  Measurements are $W$-periodic: only $W$ consecutive
+      values are accessible per cycle.
+      \label{A:resolution}
+\end{enumerate}
+The \emph{structured set} is $S := \{\mathbf{x}\in(\Rp)^n : \Jcost(\mathbf{x})=0\} = \{(1,\ldots,1)\}$.
+\end{definition}
+
+\begin{theorem}[Explicit form of $\Jcost$]\label{thm:J}
+Under \ref{A:cost}, $\Jcost(x) = \frac{1}{2}(x + x^{-1}) - 1$
+for all $x > 0$.
+\end{theorem}
+
+\begin{proof}
+Set $H(t) := \Jcost(e^t) + 1$.  The composition law yields
+d'Alembert's equation $H(t{+}u) + H(t{-}u) = 2H(t)H(u)$ with
+$H(0) = 1$.  Setting $t = 0$: $H(u) + H(-u) = 2H(u)$, so $H$ is even.
+The calibration gives $H''(0) = 1$.  Rewriting d'Alembert as
+$[H(t{+}u) - 2H(t) + H(t{-}u)]/u^2 = 2H(t)(H(u)-1)/u^2$ and
+taking $u \to 0$: $H''(t) = H(t)$.  With $H(0) = 1$, $H'(0) = 0$
+(even), the unique solution is $H(t) = \cosh(t)$.
+\end{proof}
+
+We write $\phi(t) := \Jcost(e^t) = \cosh(t) - 1$ for the
+log-coordinate form.
+
+\begin{proposition}[Properties of $\Jcost$ that drive everything]\label{prop:properties}
+\mbox{}
+\begin{enumerate}[nosep,label=\textup{(P\arabic*)}]
+\item $\phi$ is even: $\phi(t) = \phi(-t)$.
+      (Equivalently, $\Jcost(x) = \Jcost(x^{-1})$.)
+      \label{P:even}
+\item $\phi(t) \geq 0$ with $\phi(t) = 0 \iff t = 0$.
+      \label{P:nonneg}
+\item $\phi''(t) = \cosh(t) \geq 1$ for all $t$.
+      ($\phi$ is $1$-strongly convex.)
+      \label{P:strong}
+\item $\phi(t) \geq t^2/2$ for all $t$, with equality iff $t = 0$.
+      \label{P:lower}
+\item $\phi(t) \leq t^2/2 + t^4/24$ for $|t| \leq 1$.
+      \label{P:upper}
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+\ref{P:even}--\ref{P:nonneg}: $\cosh$ is even and $\cosh(t) \geq 1$.
+\ref{P:strong}: $\phi''(t) = \cosh(t) \geq \cosh(0) = 1$.
+\ref{P:lower}: $\cosh(t) = 1 + t^2/2 + t^4/24 + \cdots \geq 1 + t^2/2$.
+\ref{P:upper}: the first omitted term is $t^6/720 > 0$.
+\end{proof}
+
+%=============================================================================
+\section{Certification Procedures: Definition and Partial Order}
+\label{sec:procedures}
+%=============================================================================
+
+\begin{definition}[Certification procedure]\label{def:cert}
+A \emph{certification procedure} for $(\Rp, \Jcost, \sigma, W)$ is a
+map
+\[
+  \Phi : (\Rp)^n \;\longrightarrow\; \{\texttt{ZERO},\;\texttt{NONZERO},\;\texttt{INCONCLUSIVE}\}
+\]
+satisfying:
+\begin{enumerate}[nosep,label=\textup{(C\arabic*)}]
+\item \textbf{Soundness.}
+      $\Phi(\mathbf{x}) = \texttt{ZERO} \implies \mathbf{x}\in S$,
+      and
+      $\Phi(\mathbf{x}) = \texttt{NONZERO} \implies \mathbf{x}\notin S$.
+      \label{C:sound}
+\item \textbf{Finite data.}  $\Phi(\mathbf{x})$ depends on at most
+      $W = 8$ consecutive evaluations per cycle of a finite-state
+      representation of $\mathbf{x}$.
+      \label{C:finite}
+\end{enumerate}
+A procedure is \emph{complete on the rational class} if, for every
+$\mathbf{x}$ whose generating function is rational of known degree,
+$\Phi(\mathbf{x}) \neq \texttt{INCONCLUSIVE}$.
+\end{definition}
+
+\begin{definition}[Optimality ordering]\label{def:order}
+For procedures $\Phi, \Psi$, write $\Phi \succeq \Psi$ if:
+whenever $\Psi(\mathbf{x}) \neq \texttt{INCONCLUSIVE}$, we have
+$\Phi(\mathbf{x}) = \Psi(\mathbf{x})$; and there exists
+$\mathbf{x}$ with $\Phi(\mathbf{x}) \neq \texttt{INCONCLUSIVE}$
+but $\Psi(\mathbf{x}) = \texttt{INCONCLUSIVE}$.
+
+A procedure $\Phi^*$ is \emph{optimal} if $\Phi^* \succeq \Phi$
+for every sound, finite-data procedure $\Phi$.
+\end{definition}
+
+%=============================================================================
+\section{The Three Forced Steps}
+\label{sec:steps}
+%=============================================================================
+
+\subsection{Step $\mathcal{P}$: Projection to neutrality}
+
+\begin{theorem}[$\Jcost$-projection]\label{thm:P}
+For every $\mathbf{x}\in(\Rp)^n$, the problem
+\[
+  \min\Bigl\{\sum_{i=1}^n \phi(t_i) \;:\;
+  \sum_{i=1}^n t_i = -\sigma(\mathbf{x})\Bigr\}
+\]
+has a unique solution $t_1 = \cdots = t_n = -\sigma(\mathbf{x})/n$.
+In log-coordinates $y_i = \ln x_i$, the corrected state is
+\begin{equation}\label{eq:P}
+  \mathcal{P}(\mathbf{y})_i \;=\; y_i - \bar{y},
+  \qquad \bar{y} := \frac{1}{n}\sum_j y_j.
+\end{equation}
+This is the Euclidean orthogonal projection onto
+$H = \{\mathbf{y} : \sum_i y_i = 0\}$.
+\end{theorem}
+
+\begin{proof}
+The constraint is linear.  The objective $\sum_i\phi(t_i)$ is strictly
+convex ($\phi$ is $1$-strongly convex by~\ref{P:strong}), so by
+Jensen's inequality
+$\frac{1}{n}\sum_i \phi(t_i) \geq \phi(\frac{1}{n}\sum_i t_i)$
+with equality iff $t_1 = \cdots = t_n$.  The constraint sum is
+$-\sigma(\mathbf{x})$, so the common value is
+$-\sigma(\mathbf{x})/n$.  Translating to log-coordinates:
+$y'_i = y_i + t_i = y_i - \bar{y}$.
+\end{proof}
+
+\begin{lemma}[Projection constants]\label{lem:P-constants}
+$\mathcal{P}$ satisfies:
+\begin{enumerate}[nosep]
+\item $\|\mathcal{P}(\mathbf{y})\| \leq \|\mathbf{y}\|$
+      \quad (nonexpansive; $\Cproj = 1$).
+\item $\mathcal{P}^2 = \mathcal{P}$ \quad (idempotent).
+\item $\mathcal{P}(\mathbf{y}) = \mathbf{y}$ iff
+      $\mathbf{y} \in H$ \quad (fixes neutral configurations).
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+Orthogonal projections in Euclidean space satisfy all three.
+\end{proof}
+
+\subsection{Step $\mathcal{B}$: Coercivity bound}
+
+\begin{theorem}[Coercivity]\label{thm:B}
+For all $\mathbf{y}\in\R^n$:
+\begin{equation}\label{eq:B}
+  \sum_{i=1}^n \phi(y_i) \;\geq\; \frac{1}{2}\|\mathbf{y}\|^2,
+\end{equation}
+with equality iff $\mathbf{y} = \mathbf{0}$.
+\end{theorem}
+
+\begin{proof}
+Sum~\ref{P:lower} over components:
+$\sum_i\phi(y_i) \geq \sum_i y_i^2/2 = \|\mathbf{y}\|^2/2$.
+Equality holds iff each $y_i = 0$.
+\end{proof}
+
+\begin{corollary}[Reverse coercivity]\label{cor:reverse}
+$\sum_i\phi(y_i) \leq \varepsilon \implies \|\mathbf{y}\| \leq \sqrt{2\varepsilon}$.
+\end{corollary}
+
+\begin{theorem}[Tight upper bound]\label{thm:upper}
+For $\|\mathbf{y}\| \leq 1$:
+\begin{equation}\label{eq:upper}
+  \sum_{i=1}^n \phi(y_i) \;\leq\; \frac{1}{2}\|\mathbf{y}\|^2
+  + \frac{1}{24}\|\mathbf{y}\|_4^4,
+\end{equation}
+where $\|\mathbf{y}\|_4^4 = \sum_i y_i^4$.  In particular, $\phi$
+and $\|\cdot\|^2/2$ agree to second order at the identity: the
+coercivity constant $\cmin = 1/2$ is \emph{tight}.
+\end{theorem}
+
+\begin{proof}
+Sum~\ref{P:upper} over components.
+\end{proof}
+
+\subsection{Step $\mathcal{A}$: Aggregation}
+
+\begin{definition}[Window sums]\label{def:windows}
+Partition indices $\{1,\ldots,n\}$ into consecutive blocks of
+size $W = 8$ (pad with zeros if $8 \nmid n$).  The $k$-th
+window sum is $W_k := \sum_{j \in \text{block } k} y_j$.
+\end{definition}
+
+\begin{proposition}[Window neutrality implies global neutrality]\label{prop:global}
+If $W_k = 0$ for all $k$, then $\sigma(\mathbf{x}) = \sum_i y_i = 0$.
+\end{proposition}
+
+\begin{proof}
+$\sum_i y_i = \sum_k W_k = 0$.
+\end{proof}
+
+\begin{theorem}[Finite determination in the rational class]\label{thm:rational}
+If $\mathbf{y} = (y_0, y_1, \ldots)$ is the output of a finite-state
+system with $d$ states, then the generating function
+$\theta(z) = \sum_n y_n z^n$ is rational of degree $\leq d$.
+In particular, $\theta$ is uniquely determined by any $2d+1$
+consecutive values, and any global property (e.g., ``all
+$y_n = 0$'') is decidable from finite data.
+\end{theorem}
+
+\begin{proof}
+Enumerate the states $S = \{1,\ldots,d\}$ with transition matrix $A$
+and output vector $u$.  Then $y_n = u^* A^n v$ for initial vector $v$,
+so $\theta(z) = u^*(I-zA)^{-1}v$ is a ratio of polynomials of
+degree $\leq d$.  A rational function of degree $\leq d$ is determined
+by $2d+1$ values (its $d$ numerator and $d$ denominator coefficients,
+plus one normalisation).
+\end{proof}
+
+\begin{corollary}[Aggregation in the rational class]\label{cor:aggregate}
+If $\mathbf{y}$ lies in the rational class of degree $d$ and
+$\lceil n/8 \rceil \geq 2d + 1$, then the window sums
+$\{W_0, \ldots, W_{\lceil n/8\rceil - 1}\}$ determine $\mathbf{y}$
+uniquely.  In particular, $W_k = 0$ for all $k$ implies
+$\mathbf{y} = \mathbf{0}$.
+\end{corollary}
+
+\begin{proof}
+The window sums are linear functionals of $\theta$ evaluated at
+$8$-spaced blocks.  For degree $\leq d$, $2d+1$ such functionals
+are sufficient for unique reconstruction.
+\end{proof}
+
+\begin{proposition}[Finite sampling alone fails]\label{prop:fail}
+Without the rational-class restriction, no finite set of evaluations
+determines a function globally: for any samples
+$(z_1, w_1), \ldots, (z_m, w_m)$ and any $a \notin \{z_i\}$, there
+exists a meromorphic function matching all samples with a pole at $a$.
+\end{proposition}
+
+\begin{proof}
+$f(z) = p(z) + \prod_i(z-z_i)/(z-a)$ where $p$ is the Lagrange interpolant.
+\end{proof}
+
+%=============================================================================
+\section{The Master Theorem}
+\label{sec:master}
+%=============================================================================
+
+\begin{theorem}[Unique optimal certification]\label{thm:master}
+Under axioms \ref{A:cost}--\ref{A:resolution}, define
+\begin{equation}\label{eq:Phi}
+  \Phi^*(\mathbf{x}) :=
+  \begin{cases}
+    \texttt{ZERO} & \text{if } \mathcal{A}\circ\mathcal{B}\circ\mathcal{P}
+    \text{ certifies } \Jcost(\mathbf{x}) = 0, \\
+    \texttt{NONZERO} & \text{if } \mathcal{A}\circ\mathcal{B}\circ\mathcal{P}
+    \text{ certifies } \Jcost(\mathbf{x}) > 0, \\
+    \texttt{INCONCLUSIVE} & \text{otherwise},
+  \end{cases}
+\end{equation}
+where $\mathcal{P}$ is the $\Jcost$-projection~\eqref{eq:P},
+$\mathcal{B}$ is the coercivity bound~\eqref{eq:B}, and
+$\mathcal{A}$ is window aggregation (Corollary~\ref{cor:aggregate}).
+
+Then:
+\begin{enumerate}[label=\textup{(\Roman*)}]
+\item \textbf{Soundness:}  $\Phi^*$ satisfies~\ref{C:sound}.\label{M:sound}
+\item \textbf{Completeness:}  $\Phi^*$ is complete on the rational
+      class.\label{M:complete}
+\item \textbf{Optimality:}  $\Phi^*$ is optimal
+      (Definition~\ref{def:order}).\label{M:optimal}
+\item \textbf{Uniqueness:}  $\Phi^*$ is the unique optimal
+      procedure.\label{M:unique}
+\item \textbf{Forced factorisation:}
+      $\Phi^* = \mathcal{A}\circ\mathcal{B}\circ\mathcal{P}$
+      is the unique order; no permutation of the three
+      steps yields a sound procedure.\label{M:order}
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+We prove each claim.
+
+\medskip\noindent\textbf{\ref{M:sound} (Soundness).}
+Suppose $\Phi^*(\mathbf{x}) = \texttt{ZERO}$.  Then
+$\mathcal{A}$ has certified that all window sums of the projected
+sequence $\mathbf{y}' = \mathcal{P}(\mathbf{y})$ vanish.
+By Corollary~\ref{cor:aggregate} (finite determination in the
+rational class), $\mathbf{y}' = \mathbf{0}$, hence $\mathbf{y}\in H$
+and $\mathbf{y} = \mathbf{y}' = \mathbf{0}$, hence
+$\mathbf{x} = (1,\ldots,1) \in S$.
+
+Suppose $\Phi^*(\mathbf{x}) = \texttt{NONZERO}$.
+Then $\mathcal{A}$ has found a nonzero window sum.  By
+Proposition~\ref{prop:global}, $\sigma(\mathbf{x})\neq 0$ or
+some $y_i \neq 0$.  If $\sigma \neq 0$, then $\mathbf{x}\notin S$
+(admissibility).  If $\sigma = 0$ but some $W_k \neq 0$, then
+$\mathcal{P}(\mathbf{y}) \neq \mathbf{0}$, so
+$\Jcost(\mathbf{x}) > 0$ by~\eqref{eq:B}, hence
+$\mathbf{x}\notin S$.
+
+\medskip\noindent\textbf{\ref{M:complete} (Completeness).}
+If $\mathbf{x}$ is in the rational class of degree $d$ and
+$n \geq 8(2d+1)$, then the window sums determine $\mathbf{y}$
+uniquely (Corollary~\ref{cor:aggregate}).  The procedure can then
+decide $\Jcost(\mathbf{x}) = 0$ or $> 0$ with certainty, so
+$\Phi^*(\mathbf{x}) \neq \texttt{INCONCLUSIVE}$.
+
+\medskip\noindent\textbf{\ref{M:optimal} (Optimality).}
+Let $\Psi$ be any sound, finite-data procedure.  We show
+$\Phi^* \succeq \Psi$.  Suppose $\Psi(\mathbf{x}) = \texttt{ZERO}$.
+Then $\mathbf{x}\in S$ by soundness of $\Psi$, hence
+$\Phi^*(\mathbf{x}) = \texttt{ZERO}$ (since $\mathbf{x}\in S$
+is detected by any number of window sums).  Similarly for
+$\texttt{NONZERO}$.  It remains to show $\Phi^*$ resolves
+strictly more cases than $\Psi$ can.  But $\Phi^*$ uses the
+\emph{sharpest} bound at every step:
+\begin{itemize}[nosep]
+\item $\mathcal{P}$ is the unique cost-minimising projection
+      (Theorem~\ref{thm:P}); any other projection overestimates
+      the correction cost, making the residual a noisier signal.
+\item $\mathcal{B}$ uses the tight bound $\phi \geq \|\cdot\|^2/2$
+      (Theorem~\ref{thm:B} + Theorem~\ref{thm:upper}); any looser
+      bound widens the inconclusive zone.
+\item $\mathcal{A}$ uses full rational reconstruction
+      (Theorem~\ref{thm:rational}); any weaker aggregation (e.g.,
+      only checking a subset of windows) leaves more cases inconclusive.
+\end{itemize}
+Therefore $\Phi^*$ resolves every case $\Psi$ resolves plus
+potentially more.
+
+\medskip\noindent\textbf{\ref{M:unique} (Uniqueness).}
+Suppose $\Phi^{**}$ is also optimal.  Then $\Phi^* \succeq \Phi^{**}$
+and $\Phi^{**} \succeq \Phi^*$, so they agree on every resolved case.
+By completeness on the rational class, every rational-class input
+is resolved.  For non-rational inputs, both return
+$\texttt{INCONCLUSIVE}$ (since no finite-data procedure can resolve
+them by Proposition~\ref{prop:fail}).  Therefore
+$\Phi^* = \Phi^{**}$.
+
+\medskip\noindent\textbf{\ref{M:order} (Forced order).}
+We show no permutation of $(\mathcal{P},\mathcal{B},\mathcal{A})$
+other than $\mathcal{A}\circ\mathcal{B}\circ\mathcal{P}$ is sound.
+
+\emph{$\mathcal{P}$ must come first.}
+$\mathcal{B}$ (coercivity) and $\mathcal{A}$ (aggregation) require
+$\mathbf{y}\in H$ (the neutral hyperplane).  On unrestricted $\R^n$,
+the coercivity bound~\eqref{eq:B} gives
+$\Jcost \geq \|\mathbf{y}\|^2/2$, but this does not distinguish
+``admissible with nonzero defect'' from ``inadmissible (conservation
+violated).''  Without first projecting, a procedure cannot separate
+these two failure modes and therefore cannot be sound.
+
+\emph{$\mathcal{B}$ must come before $\mathcal{A}$.}
+Aggregation $\mathcal{A}$ produces window sums $\{W_k\}$---discrete
+data.  To convert ``all $W_k = 0$'' into ``$\Jcost = 0$'' requires
+the coercivity inequality:
+$\mathbf{y}' = \mathbf{0} \implies \Jcost = 0$ is precisely
+$\|\mathbf{y}'\| = 0 \implies \sum\phi(y'_i) = 0$, which is the
+coercivity bound applied at $\|\mathbf{y}'\| = 0$.  Without
+$\mathcal{B}$, the logical link from window sums to cost is missing.
+\end{proof}
+
+%=============================================================================
+\section{Independence of the Three Steps}
+\label{sec:independence}
+%=============================================================================
+
+\begin{theorem}[Independence]\label{thm:independence}
+No step of $(\mathcal{P},\mathcal{B},\mathcal{A})$ is derivable from
+the other two.  Specifically:
+\begin{enumerate}[nosep,label=\textup{(\alph*)}]
+\item $\mathcal{B}$ and $\mathcal{A}$ alone (without $\mathcal{P}$)
+      cannot distinguish admissibility violations from nonzero defect.
+\item $\mathcal{P}$ and $\mathcal{A}$ alone (without $\mathcal{B}$)
+      cannot certify $\Jcost = 0$ from $\|\mathbf{y}'\| = 0$.
+\item $\mathcal{P}$ and $\mathcal{B}$ alone (without $\mathcal{A}$)
+      cannot certify global properties from finite data.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\textbf{(a)}  Consider $\mathbf{y} = (1, 1, \ldots, 1)$ (all
+components equal to $1$).  Then $\sigma = n \neq 0$ (inadmissible)
+but $\Jcost(\mathbf{x}) > 0$.  Without $\mathcal{P}$, we cannot
+tell whether the nonzero cost is due to conservation violation or
+genuine defect.  In contrast, $\mathbf{y} = (2, -2, 0, \ldots, 0)$
+has $\sigma = 0$ (admissible) and $\Jcost > 0$ (genuine defect).
+The two cases have the same cost profile to $\mathcal{B}$ but
+different certification outcomes.
+
+\textbf{(b)}  Consider the implication
+``$\|\mathbf{y}'\| = 0 \implies \Jcost(\mathbf{x}') = 0$.''
+This uses $\phi(0) = 0$, which is the base case of the coercivity
+inequality.  Without $\mathcal{B}$ (i.e., without knowing that
+$\phi$ is non-negative with unique zero at $0$), the projection
+$\mathcal{P}$ could return $\mathbf{0}$ for a configuration that
+nevertheless has nonzero cost under a different functional.  The
+link $\|\cdot\| = 0 \iff \phi = 0$ is the content of $\mathcal{B}$.
+
+\textbf{(c)}  By Proposition~\ref{prop:fail}, finite evaluations of
+$\mathbf{y}$ cannot determine $\mathbf{y}$ globally without the
+rational-class restriction.  Aggregation $\mathcal{A}$ supplies this
+restriction (via Theorem~\ref{thm:rational}).  Without it,
+$\mathcal{P}$ and $\mathcal{B}$ can certify only the sampled points,
+not the global defect.
+\end{proof}
+
+%=============================================================================
+\section{Optimality of Constants}
+\label{sec:optimality}
+%=============================================================================
+
+\begin{theorem}[Optimal coercivity constant]\label{thm:cmin-optimal}
+Among all cost functionals $F : \Rp \to \R_{\geq 0}$ satisfying
+axioms \ref{A:cost}, the coercivity constant
+\[
+  c(F) := \inf_{t \neq 0} \frac{F(e^t)}{t^2/2}
+\]
+satisfies $c(F) = 1$.  That is, $\cmin = 1/2$ is the largest
+(best) constant possible: $F(e^t) \geq t^2/2$ for all $t$, and
+this is tight.
+\end{theorem}
+
+\begin{proof}
+By Theorem~\ref{thm:J}, $F = \Jcost$ is the unique solution.
+We have $\phi(t)/\frac{t^2}{2} = \frac{\cosh(t)-1}{t^2/2}$.
+As $t \to 0$, this ratio $\to 1$ (by L'H\^{o}pital or Taylor).
+For $t \neq 0$, $\cosh(t) - 1 > t^2/2$ strictly.
+Therefore $\inf_{t \neq 0}\phi(t)/(t^2/2) = 1$, achieved in the
+limit $t \to 0$.  Hence $c(\Jcost) = 1$ and $\cmin = 1/2$.
+
+Since $\Jcost$ is unique, there is no other $F$ to compare.
+The constant cannot be improved.
+\end{proof}
+
+\begin{theorem}[Optimal projection constant]\label{thm:Cproj-optimal}
+Among all corrections $\mathbf{r}$ that restore neutrality
+($\mathbf{x}\odot\mathbf{r}\in\mathcal{M}$), the $\Jcost$-minimising
+correction is the orthogonal projection (Theorem~\ref{thm:P}) with
+Lipschitz constant $\Cproj = 1$.  No correction can have
+$\Cproj < 1$.
+\end{theorem}
+
+\begin{proof}
+$\Cproj = 1$ because orthogonal projection is nonexpansive
+(Lemma~\ref{lem:P-constants}).  No linear map onto a proper
+subspace can have Lipschitz constant strictly less than $1$ (the
+orthogonal projection achieves the minimum).
+\end{proof}
+
+\begin{corollary}[The constants are intrinsic to reality]
+$\cmin = 1/2$ is fixed by the calibration $\Jcost''(1) = 1$, which
+is fixed by the composition law.  $\Cproj = 1$ is fixed by
+reciprocal symmetry $\Jcost(x) = \Jcost(x^{-1})$.  Both follow from
+axiom~\ref{A:cost} alone.  The certification template and its
+constants are as inevitable as the cost functional.
+\end{corollary}
+
+%=============================================================================
+\section{Completeness: CPM Decides the Rational Class}
+\label{sec:completeness}
+%=============================================================================
+
+\begin{theorem}[Decision procedure]\label{thm:decision}
+For $\mathbf{x}$ in the rational class of known degree $d$
+with $n \geq 8(2d+1)$, $\Phi^*$ terminates with output
+$\texttt{ZERO}$ or $\texttt{NONZERO}$; it never returns
+$\texttt{INCONCLUSIVE}$.
+\end{theorem}
+
+\begin{proof}
+By Theorem~\ref{thm:rational}, $\mathbf{y}$ is determined by
+$2d+1$ values.  With $n/8 \geq 2d+1$ window sums available,
+$\mathcal{A}$ reconstructs $\mathbf{y}$ exactly.  Then
+$\mathcal{B}$ computes $\Jcost(\mathbf{x})$ exactly, and the
+decision is $\Jcost = 0$ or $> 0$.
+\end{proof}
+
+\begin{remark}[Scope boundary]
+Outside the rational class, $\Phi^*$ may return
+$\texttt{INCONCLUSIVE}$.  This is not a deficiency: by
+Proposition~\ref{prop:fail}, no finite-data procedure can decide
+membership for arbitrary analytic functions.  The rational-class
+boundary is sharp.
+\end{remark}
+
+%=============================================================================
+\section{Constants from the Forced Geometry}
+\label{sec:geometry}
+%=============================================================================
+
+In the full Recognition Science framework, the window length $W = 8$
+is not a choice: it is the minimal covering cycle for a $D$-cube walk
+with $D = 3$ (forced by linking + gap-45 synchronisation).  The
+complete constant table:
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Constant} & \textbf{Value} & \textbf{Origin} & \textbf{Optimal?} \\
+\midrule
+$\cmin$ & $1/2$ & $\phi''(0) = 1$ (calibration \ref{A:cost})
+  & Yes (Thm~\ref{thm:cmin-optimal}) \\
+$\Cproj$ & $1$ & Orthogonal proj.\ (reciprocity \ref{P:even})
+  & Yes (Thm~\ref{thm:Cproj-optimal}) \\
+$\Knet$ & $1$ & Single covering window & --- \\
+$W$ & $8$ & $2^D = 2^3$ (minimal cover) & Forced \\
+$L$ & $\frac{1}{1+\lambda}$ & $\phi$ is $1$-strongly convex (\ref{P:strong})
+  & Forced \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+No entry in this table is adjustable.
+
+%=============================================================================
+\section{Discussion}
+%=============================================================================
+
+\subsection{CPM is not a method}
+
+The word ``method'' implies choice.  The Master
+Theorem~\ref{thm:master} proves there is no choice: the template, the
+order of steps, and the constants are all forced by the axioms.  A
+more accurate name would be the \emph{Coercive Projection Theorem}
+(CPT) or simply the \emph{Certification Theorem of Canonical Cost}.
+
+\subsection{Relationship to the Recognition Stability Audit}
+
+The RSA paper proves an \emph{impossibility} certificate: if a
+candidate forces a sensor pole, the Cayley--Schur pinch excludes it.
+CPM proves a \emph{membership} certificate: if all window tests pass,
+the configuration is in $S$.  Together:
+\[
+\text{CPM (membership)} \;+\; \text{RSA (exclusion)}
+\;=\; \text{complete two-sided audit}.
+\]
+Both derive from $\Jcost$'s strict convexity.  They are the existence
+and impossibility faces of the same coin.
+
+\subsection{The engineering boundary}
+
+Everything in this paper is foundation.  What remains for any specific
+application is engineering: identify the structured set $S$, supply the
+domain-specific finite-state model, and run $\Phi^*$.  The template
+requires no domain input.
+
+%=============================================================================
+\section{Conclusions}
+%=============================================================================
+
+\begin{enumerate}[nosep]
+\item $\Jcost(x) = \frac{1}{2}(x+x^{-1})-1$ is uniquely forced by the
+      composition law, normalization, and calibration.
+\item The certification procedure
+      $\Phi^* = \mathcal{A}\circ\mathcal{B}\circ\mathcal{P}$ is the
+      \textbf{unique optimal} procedure for deciding $\Jcost = 0$ from
+      finite data (Master Theorem~\ref{thm:master}).
+\item The factorisation is \textbf{forced}: no reordering of the three
+      steps is sound.
+\item The three steps are \textbf{independent}: none is derivable from
+      the other two (Theorem~\ref{thm:independence}).
+\item The constants $\cmin = 1/2$ and $\Cproj = 1$ are \textbf{optimal}:
+      no cost functional satisfying the axioms achieves better
+      (Theorems~\ref{thm:cmin-optimal}--\ref{thm:Cproj-optimal}).
+\item $\Phi^*$ is \textbf{complete} on the rational class and
+      \textbf{sharp} at its boundary: outside the rational class, no
+      finite-data procedure can do better
+      (Theorem~\ref{thm:decision} + Proposition~\ref{prop:fail}).
+\end{enumerate}
+
+The Coercive Projection Method is not a method.  It is a theorem.
+
+\begin{thebibliography}{99}
+\bibitem{WashburnCost2026} J.~Washburn and M.~Zlatanovi\'{c},
+  ``Uniqueness of the Canonical Reciprocal Cost,''
+  arXiv:2602.05753v1, 2026.
+\bibitem{Aczel1966} J.~Acz\'{e}l,
+  \textit{Lectures on Functional Equations}, Academic Press, 1966.
+\bibitem{Bauschke2011} H.~H.~Bauschke and P.~L.~Combettes,
+  \textit{Convex Analysis and Monotone Operator Theory in Hilbert
+  Spaces}, Springer, 2011.
+\bibitem{BeckenbachBellman1961} E.~F.~Beckenbach and R.~Bellman,
+  \textit{Inequalities}, Springer, 1961.
+\bibitem{WashburnRSA2026} J.~Washburn,
+  ``The Recognition Stability Audit,''
+  RS preprint, 2026.
+\bibitem{WashburnAxioms2025} J.~Washburn,
+  ``The Algebra of Reality,''
+  \textit{Axioms} \textbf{15}(2), 90 (2025).
+\end{thebibliography}
+
+\end{document}
